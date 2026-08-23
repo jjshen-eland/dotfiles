@@ -3051,6 +3051,86 @@ if grep -q 'repo contract.*優先' "$PJS_CLAUDE/references/log-workflow.md" \
     ok "project commit／PR title 以 target repo convention 優先"
 else bad "project commit／PR title 未明定 repo convention 優先與 fallback"; fi
 
+echo "▶ 12d. handoff skill 跨 Claude Code／Codex 共用核心與 state store"
+HFS_CLAUDE="$ROOT/claude/skills/handoff"
+HFS_CODEX="$ROOT/codex/skills/handoff"
+HFS_SCRIPT="$HFS_CLAUDE/scripts/handoff-anchor.sh"
+if [ -f "$HFS_CLAUDE/SKILL.md" ] && [ -f "$HFS_CODEX/SKILL.md" ] \
+    && [ "$HFS_CODEX/references" -ef "$HFS_CLAUDE/references" ] \
+    && [ "$HFS_CODEX/scripts" -ef "$HFS_CLAUDE/scripts" ]; then
+    ok "handoff 兩個薄入口共用 canonical references/scripts"
+else bad "handoff 跨 runtime 封裝未共用同一核心"; fi
+if grep -q 'references/workflow.md' "$HFS_CLAUDE/SKILL.md" \
+    && grep -q 'references/workflow.md' "$HFS_CODEX/SKILL.md" \
+    && [ -f "$HFS_CODEX/references/workflow.md" ]; then
+    ok "handoff 兩個入口都載入 shared workflow"
+else bad "handoff 入口未共同指向 shared workflow"; fi
+if [ "$(grep -c '<handoff-anchor> survey \[--slug <slug>\] <handoff-directory>' \
+        "$HFS_CLAUDE/references/workflow.md")" -eq 2 ]; then
+    ok "handoff write／resume survey 都明確使用 resolver 回傳的 store"
+else bad "handoff survey 可能丟失 store resolver 結果、回到 runtime 預設路徑"; fi
+handoff_env_name="HANDOFF_DIR"
+if grep -q '不得把它當 slug' "$HFS_CLAUDE/SKILL.md" \
+    && grep -q '不得把它當 slug' "$HFS_CODEX/SKILL.md" \
+    && grep -q "ambient \`$handoff_env_name\`" "$HFS_CLAUDE/SKILL.md" \
+    && grep -q "ambient \`$handoff_env_name\`" "$HFS_CODEX/SKILL.md"; then
+    ok "handoff 兩個 adapter 都隔離 store control token 與 slug，不信任 ambient override"
+else bad "handoff adapter 的 HANDOFF_DIR control token 或 ambient-env 邊界不一致"; fi
+hfs_codex_frontmatter="$(awk 'NR == 1 { next } /^---$/ { exit } { print }' "$HFS_CODEX/SKILL.md")"
+if ! grep -Eq '^(user-invocable|disable-model-invocation|argument-hint|allowed-tools|context|agent):' \
+    <<< "$hfs_codex_frontmatter"; then
+    ok "Codex handoff frontmatter 無 Claude Code 專屬欄位"
+else bad "Codex handoff frontmatter 混入 Claude Code 專屬欄位"; fi
+handoff_sig="\$handoff"
+if [ -f "$HFS_CODEX/agents/openai.yaml" ] \
+    && grep -qF "$handoff_sig" "$HFS_CODEX/agents/openai.yaml"; then
+    ok "Codex handoff 有可發現的 UI metadata"
+else bad "Codex handoff 缺 openai.yaml 或 default prompt 未提 skill"; fi
+if ! rg -q "${runtime_tilde}/.claude/skills/handoff|${runtime_tilde}/.codex/skills/handoff" \
+    "$HFS_CLAUDE/references" "$HFS_CLAUDE/scripts"; then
+    ok "handoff shared core 不綁 runtime skill 安裝路徑"
+else bad "handoff shared core 仍綁 Claude／Codex 私有 skill path"; fi
+if grep -q 'handoff invocation 本身不授權編輯' "$HFS_CLAUDE/evals.md" \
+    && grep -q 'repo 內檔案必須 byte-identical' "$HFS_CLAUDE/evals.md" \
+    && grep -q '只有使用者已另行授權該 repo mutation 時才寫入' \
+        "$HFS_CLAUDE/references/workflow.md"; then
+    ok "handoff 續寫 oracle 不把 durable-doc repo mutation 當隱性授權"
+else bad "handoff 續寫 workflow／eval 仍可能未授權改 repo"; fi
+
+HFS_HOME="$TMP/handoff-store-home"
+mkdir -p "$HFS_HOME"
+out="$(HOME="$HFS_HOME" "$HFS_SCRIPT" store)"
+assert_rc "store 無既存資料 → exit 0" 0 $?
+if grep -qF "handoff-dir: $HFS_HOME/.agents/handoffs" <<< "$out" \
+    && grep -q '^store-status: NEW$' <<< "$out" \
+    && [ -d "$HFS_HOME/.agents/handoffs" ]; then
+    ok "新安裝選 runtime-neutral canonical store 並建立可用目錄"
+else bad "新安裝 store 路徑、狀態或目錄建立錯誤（${out}）"; fi
+
+rm -rf "$HFS_HOME/.agents/handoffs"
+mkdir -p "$HFS_HOME/.claude/handoffs"
+out="$(HOME="$HFS_HOME" "$HFS_SCRIPT" store)"
+assert_rc "store 只有 legacy 資料 → exit 0" 0 $?
+if grep -qF "handoff-dir: $HFS_HOME/.claude/handoffs" <<< "$out" \
+    && grep -q '^store-status: LEGACY$' <<< "$out"; then
+    ok "既有 handoff 採 legacy-compatible store（不遺失資料）"
+else bad "legacy store 未被安全沿用（${out}）"; fi
+
+mkdir -p "$HFS_HOME/.agents/handoffs"
+out="$(HOME="$HFS_HOME" "$HFS_SCRIPT" store 2>&1)"
+assert_rc "canonical 與 legacy 分裂 → exit 1" 1 $?
+if grep -q '^store-status: SPLIT$' <<< "$out"; then
+    ok "兩份獨立 store → STOP，避免跨 harness split-brain"
+else bad "split store 未被明確攔截（${out}）"; fi
+
+rm -rf "$HFS_HOME/.agents/handoffs"
+ln -s ../.claude/handoffs "$HFS_HOME/.agents/handoffs"
+out="$(HOME="$HFS_HOME" "$HFS_SCRIPT" store)"
+assert_rc "canonical symlink 指向 legacy → exit 0" 0 $?
+if grep -q '^store-status: SHARED$' <<< "$out"; then
+    ok "同一實體 store 可由兩個相容路徑共同使用"
+else bad "同實體 store 被誤判 split（${out}）"; fi
+
 echo "▶ 13. handoff-anchor.sh 錨點驗證與生命週期判定"
 HA_SCRIPT="$ROOT/claude/skills/handoff/scripts/handoff-anchor.sh"
 # 錨點記的是 `rev-parse --show-toplevel`，會解析 symlink（macOS 的 $TMPDIR 走 /var → /private/var），
@@ -3531,7 +3611,7 @@ out="$("$HA_SCRIPT" survey "$SVT2")"
 assert_eq "同 mtime → 檔名升冪（C locale 序，穩定可重跑）" "a-Zed.md a-first.md z-second.md" \
     "$(awk '/^active: /{printf "%s%s", sep, $2; sep=" "}' <<< "$out")"
 
-# active: none —— 先前零測試覆蓋。它是 R1 的硬依賴（`claude/skills/handoff/SKILL.md`「R1：定位」）
+# active: none —— 先前零測試覆蓋。它是 R1 的硬依賴（`claude/skills/handoff/references/workflow.md`「R1：定位」）
 # 與 eval H3 的判定證據。空 rows 若照 `done <<< "$rows"` 讀會產生**一次空行迭代**，
 # found 被誤設為 1、這一行反而消失
 SVN="$TMP/ha-sv-none"; mkdir -p "$SVN"

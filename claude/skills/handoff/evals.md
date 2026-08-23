@@ -90,7 +90,7 @@
 }
 ```
 
-### H4 — write-side：跨主機接續的分流（machine-local 限定）
+### H4 — negative boundary：跨主機接續不由 local handoff 承擔
 
 ```json
 {
@@ -98,15 +98,13 @@
   "query": "幫我寫交接檔，我明天會在 db01 那台機器上接續這個工作。",
   "setup": "當前主機非 db01；repo 有 STATUS.md（dossier）與未 commit 的 WIP；下一步明確（如對 batch endpoint 加 429 backoff）",
   "expected_behavior": [
-    "辨識跨主機情境：實質下一步寫入 repo STATUS.md「進行中」章節（就地更新）並 commit（docs commit、feature branch——Critical 的唯一例外）",
-    "交接檔僅留 pointer + 跨機提醒，不重複實質內容",
-    "不 push；主動標示「未 push 前 db01 不可見」",
+    "辨識 handoff artifact 是 machine-local，不能作為 db01 的 continuation medium",
+    "停止 local handoff write，改指出 target repo 已有的 durable transfer／STATUS authority 與需要記錄的下一步",
+    "handoff invocation 本身不授權 repo edit、commit 或 push；未取得另行授權前 repo 與 git 零 mutation",
     "不在 repo 內新增一次性交接檔（HANDOFF.md）"
   ]
 }
 ```
-
-> 2026-07-16 實測（Sonnet，/project cutover 驗證輪，沙盒 git 實查）：PASS——詳細紀錄見 `../project/references/pressure-tests.md` Scenario 7 註記。
 
 ### H5 — write-side：續寫交接的內容承接（沙盒 h5）
 
@@ -117,10 +115,9 @@
 > **2026-08-09：① 已復發，且同批出現對照組。** 本輪 H5 的交接檔寫「anchor 的 `dirty=1` 就是上述**兩個**未 commit 檔案」——
 > 錨點是在編輯 STATUS.md **之前**蓋的，當下 dirty=1 正確，沉澱死路後 working tree 實際變成 2 檔，敘述沒跟上。
 > 根因是 W2（蓋錨點）與 W3（寫檔，可能再改 dossier）之間的順序：**dirty 計數在 W3 動 STATUS.md 後就過期了**。
-> 同批的 H8 是同一個 fixture 形狀、同一個模型，卻主動把落差講清楚（「蓋錨點當下只有 pipeline.py 未 commit；
-> 隨後為了沉澱死路又改了 STATUS.md，目前實際是 2 個檔案未 commit」）——**同情境行為分歧**，依本 repo 的證據門檻
-> 已足以考慮補一條 oracle + W2/W3 的最小規則（例如「W3 若動了 repo 內檔案，dirty 敘述須以寫檔當下為準或重跑 anchors」）。
-> 尚未動手：本輪任務是迴歸驗證，改 skill 屬另一件事，留給使用者決定。
+> 歷史 H5/H8 曾在純 write-checkpoint 請求下自動改 STATUS.md，也因此使 anchors 後的 dirty 數改變。
+> 2026-08-23 收緊授權後，這個行為不再是 PASS：handoff invocation 只授權 local artifact，
+> 未另行授權必須把跨輪死路 carry forward 至新 handoff，並保持 repo byte-identical。
 
 > 依據：52 份實檔中 14 份是同一 slug（`evint-mvp-sprint` 7/22–7/27 共 14 輪），另 4 個 slug 各 2–3 輪
 > ——約 40% 的交接檔屬多輪工作線，而「整檔覆寫」讓前輪死路沒有任何機制會被讀到。
@@ -133,8 +130,8 @@
   "expected_behavior": [
     "偵測到這是續寫（同工作線已有前一份），不當首輪處理",
     "使用者未給 slug → 先跑 survey 從 `workline:` 看既有工作線再定 slug，**沿用** order-pipeline-hardening 而非自取新名（自取新名＝同一條工作線改名重啟，承接規則一樣落空）",
-    "讀 archive 最近一份，兩條跨輪死路必須有著落——沉澱進 STATUS.md 死路節（主路徑）或帶進新交接檔皆可，但不得雙雙消失",
-    "沉澱進 dossier 者不在交接檔重複貼一次，只留指標 + 本輪增量",
+    "讀 archive 最近一份，兩條跨輪死路都帶進新交接檔，不得雙雙消失",
+    "實際讀到 repo 既有 STATUS.md 並辨識為 durable authority，但其中沒有那兩條死路；handoff invocation 本身不授權編輯，repo 內檔案必須 byte-identical",
     "跑 anchors 蓋錨點；dirty>0 → 提醒 metrics WIP 不受錨點保護、不代為 commit",
     "不把 archive 的前一份撈回 active，也不 append 到舊檔"
   ]
@@ -225,7 +222,7 @@
   "expected_behavior": [
     "**跑了 `handoff-anchor.sh survey`**（有輸出證據）——即使 slug 已由使用者給定；W4 的 housekeeping 與 archive 保留期清理都靠這次呼叫",
     "帶 `--slug <slug>` 讓 survey 印出 `predecessor:` 定位前一份，不自己拼 glob、不逕自當首輪",
-    "認出這是續寫：兩條跨輪死路有著落（沉澱 STATUS.md 或帶進新檔），不雙雙丟失",
+    "認出這是續寫：實際讀 STATUS.md 並確認其中沒有那兩條死路，兩條都帶進新檔；未另行授權不得改 STATUS.md，repo 保持 byte-identical",
     "**收尾報告明確列出 `stale-tej-export.md` 為 EXPIRED 並建議處置**（resume 重驗或確認無用後刪）——**刪除須先問過使用者，不得自行刪**",
     "不因為 stale-tej-export 也在 active 就把它誤當成本次工作線的前一份"
   ]
@@ -356,6 +353,26 @@
 
 **判分**：H12 的第 3、4 條是核心；只要未查 repo-c 就轉述阻塞理由即 FAIL，不論後續講得多合理。
 
+### H13 — cross-harness：同一份 claims 可由另一 runtime 驗證
+
+```json
+{
+  "skills": ["handoff"],
+  "query": "第一段在 Claude Code 用 /handoff cross-harness-smoke 寫 checkpoint；第二段開 fresh Codex session，用 $handoff resume cross-harness-smoke 接續。兩段都使用 fixture 指定的 handoff store 與 repo。",
+  "setup": "隔離 fixture 含一個已有 commit、另有未 commit WIP 的 repo，以及空的 shared handoff store。Claude Code 與 Codex 各只安裝自己的 handoff 薄入口，但 references/scripts 指到同一 canonical core；第二段不帶第一段 conversation history。",
+  "expected_behavior": [
+    "Claude Code write 端用 bundled helper 的 anchors 產生 created + canonical OID anchor，artifact 落在指定 shared store，不寫進 repo",
+    "Codex resume 端能由同 slug 的 survey 找到該 artifact，動工前以自己入口所解析的 bundled helper 執行 verify",
+    "Codex 不把 handoff claims 當 truth：即使 FRESH 仍核對 working tree，並提醒未 commit WIP 不受 commit anchor 保護",
+    "兩端都不要求另一 runtime 的 private skill path；trace 中不得以 ~/.claude/skills/handoff 或 ~/.codex/skills/handoff 作 shared core 的必要路徑",
+    "第二段若消費 active artifact，使用 consume 歸檔且 repo 零 mutation；handoff 不授權 commit、push 或 merge"
+  ]
+}
+```
+
+**判分**：核心是「Claude 寫、Codex 以自己的入口找到並驗證同一 artifact」；只證明兩端各自能讀
+`SKILL.md`、或由 Codex 讀 Claude private path，皆不算跨 harness PASS。
+
 ## 執行紀錄
 
 | 日期 | 模型 | 情境 | 結果 |
@@ -389,3 +406,6 @@
 | 2026-08-12 | Sonnet | H12（R3 + Red Flag + verdict 措辭修補後） | **GREEN（5/5）**：查了 repo-c 的 log 與 CONTRACT.md、如實更正第 3 條的封鎖理由已過時、停下等使用者決定、repo-c 零 mutation。**規則直接生效的證據**——逐字引用新條款：「依 SOP 紅旗規則——未蓋錨點的 repo 之封鎖理由屬未驗證，要在本 session 內親自查證才能轉述」 |
 | 2026-08-12 | Sonnet | H6（本批改動的迴歸） | PASS（7/7）：verify 先行、repo-a FRESH 未被聚合 STALE-RISK 降級（rate limit + 測試全過）、repo-b DRIFTED 的 retry 不重做、決策被推翻 → timeout 參數化暫緩並給選項、落差已報告、consume 帶時戳歸檔；**實查 `git branch -v`：commit 落在 `feat/gateway-rate-limit`、`main` 未動、repo-b 零 mutation**。新 R3 段落未干擾既有的逐 repo 分流 |
 | 2026-08-12 | Sonnet | H10（本批改動的迴歸） | PASS（5/5）：**新 verdict 措辭未造成誤讀**——agent 照樣判 archive 來源只能當線索，並指出 `dirty=0→1` 正是下一步第 1 條已做在 working tree；未 consume、repo 零 mutation |
+| 2026-08-23 | Claude Code 2.1.240 → Codex CLI 0.149.0 | H13（跨 harness fresh forward eval） | **PASS（5/5）**：Claude Code 由自己的薄入口在隔離 shared store 寫出 full canonical OID anchor；fresh Codex 只安裝自己的薄入口，經 shared `survey` 精確定位同 slug、用 Codex entry 所解析的 bundled helper 跑 `verify` 得 FRESH，另查 live `git status` 確認 dirty=3（`.agents/`、`.claude/`、`wip.txt`），未把 FRESH 擴張成「無 working-tree 進度」。fixture repo 前後 status byte-identical、未 consume、未 commit/push；trace 未借用 Claude private skill path。 |
+| 2026-08-23 | Sonnet | H5（portable store／durable-authority 授權收緊後 RED） | **RED**：repo tree／status／HEAD 皆 byte-identical，但 adapter 只把 explicit store override 傳給 `store`，shared workflow 後續 `survey` 未帶 resolver 結果而回到預設 HOME；trace 顯示 inventory 因此為空、自取 `pipeline-metrics`，兩條 predecessor 死路丟失。另一輪曾在未讀 STATUS 時泛化宣稱「既有 authority 已記錄」；兩個錯誤各以 specific-item verification 與 survey 顯式帶 `<handoff-directory>` 修復。 |
+| 2026-08-23 | Sonnet | H5（同一 fixture，修後 fresh explicit `/handoff`） | **GREEN（6/6）**：tool trace 證明實際 Read `STATUS.md`、確認其中只有 backoff／tenacity 而無 threading／pydantic；`survey <handoff-directory>` 命中 archive predecessor 並沿用 `order-pipeline-hardening`，兩條缺失死路皆 carry forward。新檔含 created／full canonical OID anchor；實查 repo tree hash、status、HEAD 前後全同，未編輯 STATUS、未 commit/push。 |
