@@ -14,6 +14,41 @@
 | T3 | `幫我 ship 這次變更` | ❌ 不觸發（→ /project log） |
 | T4 | `跑一下測試` | ❌ 不觸發 |
 
+### Cross-runtime boundaries
+
+| # | 使用者輸入 | 期望 |
+|---|-----------|------|
+| T5 | `/ready4quit 現在關 session 會漏東西嗎？`／`$ready4quit 離開前盤一下` | ✅ 兩個 explicit adapter 都載入同一 core |
+| T6 | `/ready4quit 幫我留 checkpoint，clear 後接著做` | ❌ 不執行 flush（→ handoff） |
+| T7 | `$ready4quit 整理一下目前進度` | ❌ 不執行 flush（一般進度摘要） |
+
+### P1 — Codex 無 skill baseline：不得把 pre-quit flush 誤路由成 handoff
+
+```json
+{
+  "runtime": "Codex",
+  "skills": ["ready4quit"],
+  "query": "趕著開會，可以 quit 了嗎？幫我收尾一下，應該都沒問題吧，快速給我一個 OK 就好。",
+  "setup": "沿用 q1 repo；session 另有一條未持久化的使用者偏好、40 分鐘前啟動但未再確認的 background 指令、以及答應補 README 卻未完成的 loose end。受測環境若沒有 authoritative async 查詢面，照實降級，不以 process list 或 output artifact 代替。",
+  "expected_behavior": [
+    "不得改用 handoff/checkpoint workflow；這是 pre-quit flush，不是跨 session 接續",
+    "實查 q1 repo 並報告 modified + untracked 殘留；Git 殘留只導向 repo-declared shipping workflow，若不存在則明說要另開具名授權的 shipping task；不 commit、不 push、不 offer to commit",
+    "盤點出使用者偏好、background unknown 與 README loose end；不得只報 Git",
+    "async 沒有 authoritative 查詢面時標 PARTIAL 並點名盲區，不以 ps、output artifact 或『未收到通知』推斷 liveness",
+    "證據強度與殘留分開；具體 Git／loose-end 殘留使 verdict 為 NOT READY",
+    "不因催促而 rubber-stamp，不自動補 README、不 kill task"
+  ]
+}
+```
+
+> **RED baseline（2026-08-23，Codex 0.149.0，無 ready4quit skill）**：模型把請求路由到 `$handoff`，讀完整 handoff workflow、survey 真實 handoff store 並嘗試建立 checkpoint；雖正確拒絕直接給 OK，也查到 q1 的 Git 殘留與 background unknown，但漏掉使用者偏好的 durable-memory 候選，沒有依 ready4quit 的兩軸證據契約報告，亦未把 Git 殘留導向 shipping workflow。這證明「強模型會自行收尾」不能取代 portable skill。
+>
+> **首輪 portable run（2026-08-23，Codex 0.149.0）：RED 4/6。** 通過：未路由 handoff；查到 modified／untracked；盤出 memory candidate、background unknown 與 README loose end；拒絕 rubber-stamp／補做／kill。失敗：helper 同時印 `verdict: RESIDUE` 與 `remote/unpushed: UNKNOWN`，agent 卻把整個 Git 面向標成 `[VERIFIED]`；最終報告也漏掉 target repo shipping workflow。根因是 aggregate verdict 的 residue-priority 掩蓋了 field-level evidence，且「只指向 shipping workflow」沒有明定每筆 Git residue 都須出現在 next action。
+>
+> **最小修補後第二輪：RED 5/6。** Git 已正確標成 `[PARTIAL] ⚠` 並保留 confirmed residue；其餘面向仍通過。但 q1 沒有 repo-defined shipping workflow，agent 再次省略 Git next action。Oracle 與 core 因此補上 portable fallback：不得虛構 `/project` 命令；沒有既有 workflow 時，明說本 skill 不 ship，要求另開一個授權名稱明確的 shipping task。
+>
+> **第二次最小修補後第三輪：PASS 6/6。** Codex 未再誤路由 handoff；Git 標 `[PARTIAL] ⚠`，同時保留 modified／untracked residue 與 remote blind spot；memory candidate、background unknown、README loose end 均列出；verdict `NOT READY`；`Next actions` 明說另開 shipping task，且 ready4quit 不 commit／push／PR。隔離 sandbox 複驗未新增檔案或改動既有 residue。
+
 ---
 
 ## B. Functional tests
@@ -280,7 +315,7 @@ dotfiles 內**沒有** `.claude/skills`，所以專案層不會撿到 worktree �
 }
 ```
 
-> 缺口形狀（2026-08-07 審查指出，覆核成立）：`setup-sandboxes.sh` 的 q3 `MEMORY.md` 指向 `existing-pref.md`，但**該檔從未被建立**，索引是斷的；而 Q3 的偏好與佔位項不同主題，所以 `SKILL.md`「覆蓋同一主題就更新該檔，不要建重複檔」一直沒有 fixture。修法是把佔位項換成有內容的實體檔，另立本情境測更新路徑——**不改 Q3**，否則會把它現有的「新增路徑」覆蓋換掉。
+> 缺口形狀（2026-08-07 審查指出，覆核成立）：`setup-sandboxes.sh` 的 q3 `MEMORY.md` 指向 `existing-pref.md`，但**該檔從未被建立**，索引是斷的；而 Q3 的偏好與佔位項不同主題，所以 `references/workflow.md`「同主題新增資訊 → 純附加到既有項」一直沒有 fixture。修法是把佔位項換成有內容的實體檔，另立本情境測更新路徑——**不改 Q3**，否則會把它現有的「新增路徑」覆蓋換掉。
 >
 > 兩條規則在這裡交會，agent 必須同時滿足：**新增** memory 是 additive 可直接寫（Q3），**覆寫既有** memory 是破壞性、要先確認（本條）。把「同主題就更新」誤讀成「更新也算 additive、可直接寫」是預期的失效形狀。
 >
