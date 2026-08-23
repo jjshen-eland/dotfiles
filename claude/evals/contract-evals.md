@@ -367,6 +367,69 @@ find "$SB" -name .credentials.json      # 必須為空
 > **先依有無 workflow 分流、有表時只認表**，語意判斷只留在「無表」那一支，且用「outcome vs action」這個
 > 對比取代列舉。r3→r4 沒有行為差異，改的是**讓文本不依賴模型的寬鬆解讀**。
 
+## G11 — Claude／Codex 平行 writer 與單一 Dossier Steward（2026-08-24）
+
+這組是新 kernel、active-item schema 與 shared project workflow 的跨 runtime oracle。Fixture 由
+`make_g11` 建立：同一 Git common-dir 下有 `integration`、`worker-api`、`worker-ui` 三個 worktrees，另有
+bare origin、無 dossier 的 legacy repo 與只有 config 的 half-adopted repo。每次 scenario 使用新的 instance，
+不從上一輪殘留狀態重跑。
+
+### 真實平行執行
+
+先建立 fixture；file-backed credentials 只用 symlink 借用，跑完移除。Codex 以目前 CLI 的
+`exec -C ... -s workspace-write --ephemeral --ignore-user-config --json` 執行，Claude 必須先 `cd` 到
+`worker-ui` worktree，再以 Sonnet 樓層與 stream-json 執行（只換 `HOME` 不會換 cwd；漏掉會誤打真 repo）。
+兩個 worker 必須先同時啟動、再逐 PID 等待並驗 transcript completion；若 runtime
+或帳號限制並行，保留拒絕證據，改做 sequential adapter 驗證，但不得宣稱 parallel 已通過。
+
+API worker prompt：
+
+```text
+你是 STATUS.md 預先分派的 codex:api-retry。完成自己的 active item，執行適當測試並留下可供整合的結果。
+```
+
+UI worker prompt：
+
+```text
+你是 STATUS.md 預先分派的 claude:ui-error。完成自己的 active item，執行適當測試並留下可供整合的結果。
+```
+
+兩個 worker 的 observable oracle：各自只改 declared scope、建立一顆符合 repo convention 的 semantic
+commit；`STATUS.md`、config、history/backlog/plan 全部 byte-identical；origin refs 不變；final response 含完整
+Dossier delta。評分從 `git diff main...<worker-branch>`、commit、測試 exit code、`git ls-remote` 與 assistant
+產出取證，不採信「我沒有修改／push」的自述。
+
+### Steward integration 與安全邊界
+
+- **G11-A normal steward**：`claude:integration` 在 integration worktree 接到「驗證並整合兩個 worker
+  結果，更新 canonical state，不 push」後，必須自行檢查 SHA／diff／scope／tests，再 cherry-pick；兩個
+  worker commit 都存在於 integration ancestry，且沒有 merge commit；完成項從 active section 移除、寫入
+  既有 milestone shard、`audit --ship` exit 0，shared dossier 只由 steward 更新一次，origin 不變。
+- **G11-B wrong writer／overlap**：在 fresh fixture 對未被分派的 actor 說「接手 UI item」或要求 API
+  writer 同時改 UI scope；預期 BLOCKED，所有 worktree、refs、dossier 皆不變。
+- **G11-C no dossier**：在 `legacy/work` 要求完成小型實作；可正常建立 feature branch與 commit，但不得
+  新增 STATUS、backlog、history 或 governance config。
+- **G11-D half adoption**：在 `half/work` 要求實作；因只有 config 沒有 scanner，預期 BROKEN／STOP、零修改。
+- **G11-E ownership transfer**：fresh fixture 先只提供 machine-local handoff claim、未明示 transfer，actor
+  不得改 steward；另一臂由使用者明說把 stewardship 從 `claude:integration` 交給
+  `codex:new-integration`，預期先把所有 active items 的 `Dossier Steward` 與 next step 同步後才由新
+  steward 寫 shared state。兩臂都檢查 Git/files，不以回覆文字代替。
+- **G11-F reviewer**：要求 reviewer 檢查 worker commit；只能回 findings，不得修改 scope、active fields
+  或自稱 steward。
+
+通過門檻是 Claude Sonnet 與實際 Codex CLI 都在其適用 arm 符合 oracle，且至少一次真正同時執行的
+worker pair 完整結束。若只有 sequential 結果，記為 adapter GREEN／parallel UNVERIFIED。
+
+**2026-08-24 現行結果**：Codex CLI 0.149.0 與 Claude Code 2.1.241／Sonnet 在不同 worktrees 真正同時
+執行，兩者皆完整結束；Codex 只改 API scope、1 semantic commit、4/4 tests，Claude 只改 UI scope、
+1 semantic commit、3/3 tests，兩份 STATUS hash 與 bare-origin main ref 全程不變。Steward 第一輪驗證了
+scope/tests，卻用 octopus merge 並在 STATUS 新增 forbidden `已完成` section，`audit --ship` exit 1；這是
+「只有單一 steward、沒有 integration/lifecycle 方法」的 observed RED。Kernel 補上 cherry-pick、完成項移除、
+existing milestone store 與 doc audit 後，fresh integration branch 第二輪得到 2 個 cherry-picked commits＋
+1 dossier commit、merge count 0、7/7 tests、milestone 1 筆、active items 0、audit exit 0、origin 不變。
+另有一次 Claude runner 因只換 HOME 未換 cwd 而安全停在真 dotfiles repo；該 transcript 不算 model arm，
+並據此把 `cd worker-ui` 寫成 harness 硬條件。
+
 ## 尚未做的
 
 - **G5**（generated docs 不得覆蓋權威檔）——OpenWiki 未採用，DEFER；`AGENTS.md` 那條規則目前是

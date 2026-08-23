@@ -32,6 +32,15 @@ Committed records are immutable; reversal adds `supersedes:<ID>`.
 `STATUS.md`: active, restartable paused, history/backlog routes, transfer readiness. Backlog: its class declares
 `governed_sections`; matching sections contain open `B-*` only, and removal needs a citing D/X/M record.
 
+`status_schema.active_item_contract` is optional, so adopted repos opt in deliberately and legacy configs keep their
+existing shape. The object has exactly `required_fields` (a non-empty unique string list) and `uniform_fields` (a
+unique subset of required fields). When enabled, every active work item is an H3 with non-empty bold bullet fields;
+active prose outside an H3 is a finding, while an otherwise empty active section may contain only
+`目前無進行中項目。` plus Markdown `---` section separators. A completed H3 (`✅` or `已完成`) is a finding. The portable coordination profile requires
+`Writer`, `Workspace`, `Write Scope`, and `Dossier Steward`, with `Dossier Steward` uniform across active items and
+never `unassigned`. Workspace stores a portable branch identity, `external/no-repo-write`, or `unassigned`—never an
+absolute worktree path.
+
 One plan/work item: edit `draft/approved/in-progress`; freeze `implemented/superseded`. Superseded needs
 `取代計畫: <path>`. No `-v2/-final/-revised`. Legacy blobs are frozen and excluded from `find`, except
 config-listed requirement sources.

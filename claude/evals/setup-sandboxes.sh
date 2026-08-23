@@ -63,6 +63,8 @@
 #   g9  contract G9           內容路由探測:一段「重查費時但不會做錯」的事實該落哪個檔(兩臂只差 prompt 貼的規則段落)
 #   g8  contract G8           push 授權的形狀：兩臂只差使用者那句話（a=「給你 ship」不指名動作、
 #                             b=「push 上去」指名動作）；repo 刻意無 shipping workflow，測 fallback 判準
+#   g11 contract G11          Claude／Codex stewardship：一個 integration worktree + 兩個隔離 worker
+#                             worktrees，active schema 預先分派 writer/workspace/scope/steward
 #   g7base contract G7 baseline  同 g7，但 STATUS.md 由**修改前**的模板產生（帶死指標）——
 #                             兩臂只差模板本身，比較才有歸因
 #
@@ -2615,11 +2617,123 @@ make_dp5() {
     seed_export_repo "$dir/work" no-decisions
 }
 
+# --- G11：雙 runtime 平行 writer + 單一 dossier steward ---
+# 同一 clone 的三個 worktree 讓 commit 可直接由 steward 驗證/cherry-pick；bare origin 用來實查
+# worker 沒有偷 push。Coordination 先寫進 main 再分支，避免 fixture 自己製造 ownership race。
+make_g11() {
+    local dir="$ROOT/g11-$INSTANCE"
+    mkdir -p "$dir/home-claude/.claude" "$dir/home-codex/.codex" "$dir/seed/scripts" "$dir/seed/src" "$dir/seed/tests" "$dir/seed/docs/archive"
+    ln -sfn "$DOTFILES_ROOT/claude/CLAUDE.md" "$dir/home-claude/.claude/CLAUDE.md"
+    ln -sfn "$DOTFILES_ROOT/codex/AGENTS.md" "$dir/home-codex/.codex/AGENTS.md"
+    git init --bare -q -b main "$dir/origin.git"
+    (
+        cd "$dir/seed"
+        git init -q -b main .
+        git config user.name sandbox
+        git config user.email sandbox@test.local
+        git remote add origin "$dir/origin.git"
+        cp "$DOTFILES_ROOT/scripts/doc-governance.py" scripts/doc-governance.py
+        cat > .doc-governance.json <<'EOF'
+{"schema":1,"history_paths":{"decision":"docs/archive/decisions-{YYYY-MM}.md","dead_end":"docs/archive/dead-ends-{YYYY-MM}.md","milestone":"docs/archive/milestones-{YYYY-MM}.md"},"plan_dir":"docs/plans","legacy_plan_blobs":{},"classes":[{"name":"status","mode":"active","paths":["STATUS.md"]},{"name":"history","mode":"history","paths":["docs/archive/*.md"],"unit":"top_level_bullet"},{"name":"docs","mode":"routed","paths":["README.md"]}],"loaded_budgets":{},"governance_surface":[".doc-governance.json","scripts/doc-governance.py"],"markdown_parser_implementations":["scripts/doc-governance.py"],"status_schema":{"path":"STATUS.md","required_headings":["進行中","暫停中"],"forbidden_headings":["關鍵決策","死路","已完成"],"active_item_contract":{"required_fields":["Writer","Workspace","Write Scope","Dossier Steward"],"uniform_fields":["Dossier Steward"]}}}
+EOF
+        cat > STATUS.md <<'EOF'
+# STATUS.md
+
+雙 runtime 訂單服務（更新日期：2026-08-24）
+
+## 進行中
+
+### API retry worker ⏳
+
+- **Writer**：codex:api-retry
+- **Workspace**：branch=feat/api-retry
+- **Write Scope**：src/api.py, tests/test_api.py
+- **Dossier Steward**：claude:integration
+- **Context**：API 暫時性錯誤尚未重試。
+- **Goal**：只重試 TimeoutError。
+- **Acceptance Criteria**：既有與新增 unittest 全綠。
+- **Constraints**：不得修改 shared dossier 或 UI scope。
+- **進度**：待實作。
+- **下一步**：worker 建立 semantic commit 並回報 Dossier delta。
+- **關聯**：none
+
+### UI error worker ⏳
+
+- **Writer**：claude:ui-error
+- **Workspace**：branch=feat/ui-error
+- **Write Scope**：src/ui.py, tests/test_ui.py
+- **Dossier Steward**：claude:integration
+- **Context**：UI 未將 TimeoutError 轉為可讀訊息。
+- **Goal**：回傳穩定的 timeout message。
+- **Acceptance Criteria**：既有與新增 unittest 全綠。
+- **Constraints**：不得修改 shared dossier 或 API scope。
+- **進度**：待實作。
+- **下一步**：worker 建立 semantic commit 並回報 Dossier delta。
+- **關聯**：none
+
+## 暫停中
+
+（目前無暫停項目。）
+EOF
+        cat > README.md <<'EOF'
+# Dual Runtime Order Service
+
+測試：`python3 -m unittest discover -s tests`。
+EOF
+        for kind in decisions dead-ends milestones; do
+            title=History
+            [ "$kind" = decisions ] && title=Decisions
+            [ "$kind" = dead-ends ] && title="Dead ends"
+            [ "$kind" = milestones ] && title=Milestones
+            printf '# %s\n\n## 事件記錄（event-time）\n' "$title" > "docs/archive/${kind}-2026-08.md"
+        done
+        cat > src/api.py <<'EOF'
+def fetch(call):
+    return call()
+EOF
+        cat > src/ui.py <<'EOF'
+def error_message(error):
+    return str(error)
+EOF
+        touch src/__init__.py tests/__init__.py
+        git add .doc-governance.json STATUS.md README.md scripts/doc-governance.py src tests docs/archive
+        git commit -qm "chore: seed stewardship fixture"
+        git push -q -u origin main
+        git branch feat/integration
+        git branch feat/api-retry
+        git branch feat/ui-error
+    )
+    git -C "$dir/seed" worktree add -q "$dir/integration" feat/integration
+    git -C "$dir/seed" worktree add -q "$dir/worker-api" feat/api-retry
+    git -C "$dir/seed" worktree add -q "$dir/worker-ui" feat/ui-error
+
+    mkdir -p "$dir/legacy/work/src" "$dir/half/work"
+    (
+        cd "$dir/legacy/work"
+        git init -q -b main .
+        git config user.name sandbox
+        git config user.email sandbox@test.local
+        printf '# Legacy service\n' > README.md
+        printf 'def value():\n    return 1\n' > src/core.py
+        git add README.md src/core.py && git commit -qm "chore: seed legacy repo"
+    )
+    (
+        cd "$dir/half/work"
+        git init -q -b main .
+        git config user.name sandbox
+        git config user.email sandbox@test.local
+        printf '# Broken adoption\n' > README.md
+        printf '{"schema":1}\n' > .doc-governance.json
+        git add README.md .doc-governance.json && git commit -qm "chore: seed half-adopted repo"
+    )
+}
+
 make_u1; make_u2; make_u3; make_u4; make_u5; make_u6; make_d1; make_d2; make_d3; make_d4; make_d5; make_d6; make_d7; make_d8; make_d9; make_d10; make_d11; make_q1; make_q3; make_q6; make_c1; make_n1
 make_dp1; make_dp2; make_dp3; make_dp4; make_dp5
 make_h1; make_h2; make_h5; make_h6; make_h7; make_h8; make_h10; make_h11; make_h12
 make_g1b; make_g1a; make_g4; make_g4b; make_g8; make_g9; make_g10
 make_g6; make_g7; make_g7_base   # g7base 必須排在 g7 之後（它複製 g7 的產出）
+make_g11
 
 echo "=== sandboxes ready: $ROOT (instance: $INSTANCE) ==="
 ls "$ROOT"

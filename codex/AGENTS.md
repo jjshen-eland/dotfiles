@@ -26,6 +26,17 @@ conventions defer to whatever the repo itself mandates. Where a repo has no cont
 - **If the working tree holds changes you did not make, STOP and report before staging, committing, or building on top of them.** Whether two sessions may share one tree is a dispatch decision made above you — never resolve it locally by guessing which changes are yours. Once authorized, explicit paths are still whole-file: stage verified hunks with `git add -p`.
 - **Inspect `git diff --cached` before every commit.** After splitting a mixed file, verify from a clean clone — `git clone --no-local <repo> <tmpdir>`. "I checked the working tree" is not evidence.
 
+### Shared work and durable project state
+
+- **Do NOT create a dossier or decision store that the repo has not adopted.** When an existing active-state store is present, record the success criteria for non-trivial work before implementation; when both a governance config and its scanner exist, use that adopted lifecycle, when neither exists follow the repo's legacy store, and when only one exists STOP as broken adoption.
+- **One writer per work item.** Parallel writers require a separate branch/worktree and disjoint declared write scopes. If durable state names another writer or the scope/ownership is ambiguous, STOP and get a reassignment instead of self-claiming.
+- Shared active state, backlog, history shards, and shared plans have exactly one **Dossier Steward**. Only that steward edits those surfaces; isolated workers and reviewers remain read-only there, and reviewers never self-promote into writers.
+- An isolated worker returns a **Dossier delta** containing its work item, actor, branch/workspace, commit SHA, changed scope/files, tests, progress, decisions with reasons, dead ends, blockers, and next step. The steward verifies those claims against the commit and tests before integrating them or updating canonical state.
+- Record durable decisions, dead ends, and milestones at event time, not reconstructed at shipping time. With parallel workers, report the fact immediately to the steward; the steward is the sole writer to shared history.
+- The steward integrates verified worker commits with `git cherry-pick` on a feature integration branch, never with a merge commit. Remove completed items from active state, write milestones to the repo's existing history store, and pass its documentation audit before declaring integration complete.
+- Ownership transfer requires explicit user direction or a handoff from the current steward, followed by a durable-state update before the new steward writes. A checkpoint or handoff artifact is evidence, never a lock or authority to mutate the repository.
+
+
 ### Fallback conventions — this repo's own convention wins where it has one
 
 - Conventional Commits: `<type>: <short desc>`, type is one of `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`. **If this repo mandates another commit format, follow the repo.**
@@ -37,3 +48,8 @@ conventions defer to whatever the repo itself mandates. Where a repo has no cont
 - With authorization in hand (see the kernel's push rule), follow **the repo's own shipping workflow** — its protection and dossier checks, its ship summary, its PR step. Use the repo's shipping skill when one exists.
 - **No shipping workflow in the repo → commit on the feature branch and stop.** Do not assemble an approximation of one; the checks you would be skipping are the reason the workflow exists.
 - Merge only on an explicit merge instruction. Without authorization, leave the work committed on the feature branch and report it.
+
+## Explicit workflow pointers
+
+- Project lifecycle and shipping are explicit-only: use `$project spec` for an active contract, `$project transfer` for owner handoff, and `$project --pr` or `$project --merge` only when the user explicitly invokes that skill and endpoint.
+- Session-exit evidence is explicit-only: use `$ready4quit` only when the user explicitly invokes it. It audits readiness but does not ship repository changes.

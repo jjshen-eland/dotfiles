@@ -957,3 +957,9 @@
   - 放棄:維護 Claude/Codex 兩份 review workflow；在 Codex 同時部署語意重疊的 `$deep-review` 與既有 `$repo-review`；讓 Codex 依賴 Claude private absolute path；以主 agent 自審冒充 fresh reviewer；用 WIP commit/squash 才能固定 dirty scope；在這批刪除仍被 project shipping 與既有 recovery jobs 使用的 legacy helpers
   - 重議:任一 runtime 無法追蹤 nested resource symlink；scope manifest 對實際 Git 檔名或工作樹形狀出現 failing behavior eval；或 project 完成 terminal/review-residue migration、可安全移除相容層
   - 關聯:D-20260822-portable-deep-plan;D-20260822-portable-project-skill;claude/skills/deep-review/evals.md;claude/skills/deep-review/references/workflow.md;codex/skills/repo-review
+
+- **D-20260824-cross-runtime-dossier-stewardship · 2026-08-24 Claude Code／Codex 採單一 dossier steward 與隔離 worker**:同一 repo 的 active work 由一位可辨識的 dossier steward 維護 `STATUS.md`、backlog、history shard 與 shared plan；其他 Claude Code／Codex writer 只在獨立 branch／worktree 與互斥 scope 內工作，交付 semantic commit 和可驗證的 Dossier delta，由 steward 驗證後 cherry-pick 並走一次 shared project shipping。Active item 以 optional schema 宣告 Writer、Workspace、Write Scope、Dossier Steward，四份 always-on kernel 共享相同安全契約；舊 repo 未 opt in 時保持相容。此模型先靠 dispatcher、durable state 與 schema／behavior gates，v1 不建立 machine-local claim／lease。Kernel 擴充使 root `AGENTS.md` 超過原 8 KiB loaded budget；它是所有 runtime／clone 都必須載入的 correctness contract，依既有 surface policy 將該檔預算提升到下一個二進位級距 16 KiB，不靠壓縮無關規則騰出當前 patch 所需 bytes。
+  - 日期來源:direct
+  - 放棄:兩個 runtime 各自維護 dossier；讓所有 writer 直接追加 shared history；以 handoff artifact 當 ownership lock；v1 先做 Git common-dir lease；只規定單一 steward 卻不規定 integration/lifecycle（G11 R1 實測產生 octopus merge 與 forbidden STATUS 已完成節）
+  - 重議:實測仍出現兩個已分派 session 同時自選 steward，或跨主機 race 無法靠 durable assignment 避免
+  - 關聯:D-20260822-portable-project-skill;D-20260823-portable-handoff-skill;STATUS.md

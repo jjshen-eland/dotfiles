@@ -21,6 +21,7 @@ PLAN_STATES = FINAL_PLAN_STATES | ACTIVE_PLAN_STATES
 FENCE_RE = re.compile('^(?P<indent> {0,3})(?P<fence>`{3,}|~{3,})(?P<info>.*)$')
 HEADING_RE = re.compile('^(#{1,6})\\s+(.*)$')
 TOP_BULLET_RE = re.compile('^([-+*])\\s+(.*)$')
+STATUS_FIELD_RE = re.compile(r'^\s*[-+*]\s+\*\*(?P<field>[^*]+)\*\*\s*[：:]\s*(?P<value>.*)$')
 COMMENT_RE = re.compile('<!--.*?-->', re.S)
 DATE_RE = re.compile('(?<!\\d)(\\d{4}-\\d{2}-\\d{2})(?!\\d)')
 STABLE_ID_RE = re.compile('\\b([DXM])-(\\d{8})-([a-z0-9][a-z0-9-]*)\\b')
@@ -214,7 +215,7 @@ def load_config(root, *, optional=False):
     validate_relpath(target, 'external_reference_targets entry')
   status = raw.get('status_schema')
   if status is not None:
-    allowed = {'path', 'required_headings', 'forbidden_headings', 'stale_days'}
+    allowed = {'path', 'required_headings', 'forbidden_headings', 'stale_days', 'active_item_contract'}
     need(isinstance(status, dict) and bool(status) and set(status) <= allowed, 'status_schema invalid')
     if 'path' in status:
       need(isinstance(status['path'], str) and status['path'], 'status_schema.path invalid')
@@ -224,6 +225,13 @@ def load_config(root, *, optional=False):
         need(isinstance(status[key], list) and all(isinstance(item, str) and item for item in status[key]), f'status_schema.{key} invalid')
     if 'stale_days' in status:
       need(type(status['stale_days']) is int and status['stale_days'] > 0, 'status_schema.stale_days invalid')
+    if 'active_item_contract' in status:
+      contract = status['active_item_contract']
+      need(isinstance(contract, dict) and set(contract) == {'required_fields', 'uniform_fields'}, 'status_schema.active_item_contract invalid')
+      required = contract.get('required_fields')
+      uniform = contract.get('uniform_fields')
+      need(isinstance(required, list) and bool(required) and all(isinstance(item, str) and item for item in required) and len(required) == len(set(required)), 'status_schema.active_item_contract.required_fields invalid')
+      need(isinstance(uniform, list) and all(isinstance(item, str) and item for item in uniform) and len(uniform) == len(set(uniform)) and set(uniform) <= set(required), 'status_schema.active_item_contract.uniform_fields invalid')
   need(isinstance(raw.get('governance_surface', []), list), 'governance_surface must be list')
   return Config(root=root, raw=raw, classes=classes)
 
@@ -972,6 +980,61 @@ def status_findings(config, documents):
       block = [line]
     elif block:
       block.append(line)
+  contract = spec.get('active_item_contract')
+  if contract:
+    items = []
+    outside = []
+    in_active = False
+    current = None
+    for index, line in enumerate(doc.visible, start=1):
+      heading = HEADING_RE.match(line)
+      if heading and heading.group(1) == '##':
+        in_active = section_matches(heading.group(2), '進行中')
+        current = None
+        continue
+      if not in_active:
+        continue
+      if heading and heading.group(1) == '###':
+        current = {'line': index, 'title': heading.group(2).strip(), 'fields': {}}
+        items.append(current)
+        if '✅' in current['title'] or '已完成' in current['title']:
+          findings.append(f'STATUS active item marked complete: {path}:{index}')
+        continue
+      if current is None:
+        stripped = line.strip()
+        if stripped and stripped != '---':
+          outside.append((index, stripped))
+        continue
+      field = STATUS_FIELD_RE.match(line)
+      if field:
+        current['fields'][field.group('field').strip()] = field.group('value').strip()
+
+    placeholders = {'（目前無進行中項目。）', '(目前無進行中項目。)', '目前無進行中項目。'}
+    for index, content in outside:
+      if content in placeholders and not items:
+        continue
+      findings.append(f'STATUS active content outside H3 item: {path}:{index}')
+
+    required = contract['required_fields']
+    uniform_values = {field: [] for field in contract['uniform_fields']}
+    for item in items:
+      fields = item['fields']
+      for field in required:
+        if field not in fields:
+          findings.append(f"STATUS active item missing field: {field} at {path}:{item['line']}")
+        elif not fields[field]:
+          findings.append(f"STATUS active item empty field: {field} at {path}:{item['line']}")
+      steward = fields.get('Dossier Steward', '')
+      if steward == 'unassigned' or steward.startswith('unassigned:'):
+        findings.append(f"STATUS Dossier Steward cannot be unassigned: {path}:{item['line']}")
+      for field in uniform_values:
+        value = fields.get(field, '')
+        if value:
+          uniform_values[field].append((item['line'], value))
+    for field, values in uniform_values.items():
+      distinct = {value for _, value in values}
+      if len(distinct) > 1:
+        findings.append(f'STATUS active item field mismatch: {field} at {path}')
   days = spec.get('stale_days')
   if days is not None:
     before = run_git(config.root, ['log', '-1', '--format=%ct', '--', path], allow_failure=True).strip()

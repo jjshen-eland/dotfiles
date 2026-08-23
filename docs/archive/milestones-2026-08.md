@@ -203,3 +203,9 @@
   - 放棄:複製一套 Codex review skill；把舊 workflow 當目標規格；用 prose reviewer 零 findings 取代 behavior eval；為 portable rollout 同批刪除仍有 recovery／shipping consumer 的 legacy helpers
   - 重議:nested resource symlink 在任一 runtime 實測失效；scope helper 出現無法表示的 Git subject／historical guidance；或新的跨 runtime behavior eval 顯示 reviewer isolation、partition coverage、ownership gate、terminal verdict 不一致
   - 關聯:D-20260823-portable-deep-review;claude/skills/deep-review/evals.md;claude/skills/deep-review/references/workflow.md;tests/run.sh
+
+- **M-20260824-cross-runtime-dossier-core · 2026-08-24 Claude Code／Codex 平行 dossier stewardship 核心完成**:四份 always-on kernel 已納入 byte-identical 的單一 writer／Dossier Steward 契約，optional coordination schema 與 scanner 能 fail closed 檢出缺欄、空值、未分派 steward、active 區塊逸出與 steward 漂移；shared `/project`／`$project` workflow 以隔離 worker commits 加上 steward `git cherry-pick` 收斂實作與持久狀態。G11 真實並行 Codex API worker 與 Claude UI worker 皆只改各自 scope、不改 dossier／remote；steward R1 暴露 octopus merge 與 completed-active lifecycle 違約，最小修正後 R2 以兩個 cherry-pick 及單一 dossier commit 通過 7/7 fixture tests 與 audit。Doc-governance unittest 75/75、Codex project validator、kernel gate、ship audit 與全 repo `tests/run.sh` 均通過，最終為 1128 PASS、0 FAIL；canary rollout 依據散佈契約等本批進 `origin/main` 後另行。
+  - 日期來源:direct
+  - 放棄:維護兩套 runtime-specific dossier 規則；只寫 steward prose 不做 schema 機檢；只宣告支援平行而不跑真實雙 CLI；讓 steward 以 merge commit 收斂 worker
+  - 重議:active schema 出現實際 scope race 而需要 overlap parser／lease；任一 runtime 無法載入 managed kernel 或 shared workflow；canary 暴露無法以 optional schema 平滑採用的 legacy shape
+  - 關聯:D-20260824-cross-runtime-dossier-stewardship;claude/evals/contract-evals.md;tests/run.sh
