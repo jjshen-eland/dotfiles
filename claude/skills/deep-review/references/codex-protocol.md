@@ -1,7 +1,7 @@
 # Codex 呼叫協議 — 機制詳解（autocodex）
 
-> 本檔是 `../SKILL.md`「6. Codex 第三方審查循環（autocodex 模式）」的機制層：低自由度、照表操作，勿憑記憶重組。
-> 硬約束（NEVER 類）同時列於 SKILL.md body 該節——兩處衝突時以 body 為準。
+> 本檔只保留給 portable deep-review 上線前建立的 Codex job 做人工 recovery；現行 skill 不載入
+> 本檔，也不以這套舊編排定義 review 行為。新審查一律走 portable workflow。
 
 ## 目錄
 

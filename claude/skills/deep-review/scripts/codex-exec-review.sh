@@ -157,7 +157,7 @@ cmd_run() {
     repo="$(cd "$repo" && pwd)" || die_env "無法解析 repo 路徑：$repo"
     git -C "$repo" rev-parse --git-dir >/dev/null 2>&1 || die_env "不是 git repo：$repo"
 
-    # range 驗證必須與**下游 repo-review 的契約**一致（codex/skills/repo-review/scripts/review-context.sh）：
+    # range 驗證必須與**下游 repo-review 的共用 scope 契約**一致（review-scope.sh）：
     # 它明確拒絕三點 range 與無法解析的 base。wrapper 放行、下游拒絕的話，codex 只會把錯誤訊息
     # 寫進 report.md，而報告非空 → 本腳本回 0 → 產出「成功但其實什麼都沒審」的報告。
     # Validate against the DOWNSTREAM contract, not just against git.
@@ -174,9 +174,8 @@ cmd_run() {
     # base 端：只放行**明確的 baseline 表示法**，其餘無法解析者一律攔下。
     # 若一概只警告，`maim..HEAD` 這種拼錯照樣啟動 codex；codex 把「無法 diff」寫進報告後
     # 腳本仍回 0 → 產出一份「成功但其實什麼都沒審」的報告。
-    # ∅ / EMPTY 是**報告模板用的顯示寫法**，下游 review-context.sh 不認得（實測回
-    # `cannot resolve range base: ∅`）→ 必須在此正規化成 empty-tree hash 再送出，
-    # 不能原樣傳遞。
+    # ∅ / EMPTY 是**報告模板用的顯示寫法**，不是 Git object name；下游 portable
+    # scope helper 支援 canonical empty-tree hash，因此先正規化再送出，不能原樣傳遞。
     local EMPTY_TREE=4b825dc642cb6eb9a060e54bf8d69288fbee4904
     if [ -n "$base_ref" ] && ! git -C "$repo" rev-parse --verify --quiet "$base_ref" >/dev/null 2>&1; then
         case "$base_ref" in

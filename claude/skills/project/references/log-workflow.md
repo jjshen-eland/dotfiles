@@ -194,7 +194,7 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
 依 reviewed code 的狀態決定文檔如何「一起提交」。**前提：送出前所有 reviewed code 都必須已 commit**——working tree 不留未 commit 的 code，否則 Step 5 會送出不完整變更集。
 
 - **code 未 commit**（review 在 working tree）：`git add` 程式 + 文檔 → 一個或多個符合 target repo convention 的語意 commit，code 與其文檔**同 commit**。
-- **code 已 commit**（如 deep-review 已 squash）：文檔另起符合 target repo convention 的 docs commit（沒有規定時用 `docs: …`），**同 branch**（同 PR 一起出）。**不 amend、不重寫已 review 的 commit。**
+- **code 已 commit**（例如 review 前本來就在 feature branch commits）：文檔另起符合 target repo convention 的 docs commit（沒有規定時用 `docs: …`），**同 branch**（同 PR 一起出）。**不 amend、不重寫已 review 的 commit。**
 - **mixed state**（部分 code 已 commit、部分仍在 working tree——如 Step 1 情況 B 搬移後又改了東西）：**先**把 working-tree 的 code 補成語意 commit（與已 commit 的同 branch），**不可只補文檔 commit 就送出、把未 commit 的 code 留在 working tree**；code 全部 commit 後再依「code 已 commit」處理文檔。
 - 無文檔需更新且 code 已 commit → 本步不產生 commit。
 
@@ -247,7 +247,7 @@ runtime user-input primitive（Claude Code 的 `AskUserQuestion` 或 Codex 對�
 
 `ship-state.sh` 印 `verdict: STOP` → **停下照訊息處理，即使使用者已給說法**。**A ship keyword authorizes HOW to ship, NEVER whether a batch may ship at all.** doc-governance findings／BROKEN 必須產生 `verdict: STOP`；其他來源包含無 remote、非 bootstrap 的 default 解析失敗、以及——
 
-- **`review-terminal:`**：上一場 deep-review 在仍有未修 blocking findings 時終止，且那場涵蓋當前 HEAD（腳本已驗過 ancestry，不必自行判斷）。停下用 runtime user-input primitive 給兩個選項：`重跑審查`（通過並 squash 後 anchor 自動清除）／`知道了，照送`（PR body 記一筆「未完整審查」）。**anchor 的欄位與指令不要攤給使用者看**——那是實作細節，使用者只需回答這一題。
+- **`review-terminal:`**：上一場 deep-review autofix 在 blocking findings 尚存或必要驗證受阻時終止，且那場涵蓋當前 HEAD（腳本已驗過 ancestry，不必自行判斷）。停下用 runtime user-input primitive 給兩個選項：`重跑審查`（通過且 scope 涵蓋該終止點後 signal 清除）／`知道了，照送`（PR body 記一筆「未完整審查」）。**anchor 的欄位與指令不要攤給使用者看**——那是相容層實作細節，使用者只需回答這一題。
   - 例外：使用者說的是**「merge 照送」／「merge 未審完」**（見說法表）→ 已預先放行，不停、照送，PR 仍記一筆。
 
 > 為什麼這條存在：Step 4 從「每批停下確認」改成「說法即授權」之後，原本那道 gate 順帶接住的「這批還沒審完」就沒有別人接了。**拆掉守衛就得補上它接住的東西。**

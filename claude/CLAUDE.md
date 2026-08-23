@@ -41,7 +41,6 @@ fallback conventions 則由該 repo 自己的規定勝出。Repo 沒有契約檔
 - **說法授權的是「怎麼送」，never whether an unreviewed batch may ship.** `ship-state.sh` 印 `verdict: STOP`（含 `review-terminal:` 上一場審查未修完就終止）→ 停下處置，關鍵字不得覆蓋。
 - **Solo repo is not a lighter process** — "It's just me" / "no protection anyway" is never a reason to relax the kernel's safety floor, the PR default, or explicit merge（後兩者是個人流程、不在契約裡；理由與完整條文見 `ship-paths.md` 檔首，勿在此重述）。
 - 誤 commit 已落在 default branch 時的救援序列見 `~/.claude/skills/project/references/ship-paths.md`「Branch-first 與誤 commit 搬移」（唯一權威，本檔不重述）。**規則本體在 kernel**——它不隨 skill 是否載入而變（實測失效面：`claude/skills/handoff/evals.md` H6 首跑，同一輪 repo-a 的 commit 落在 main、repo-b 才開 branch，因為當時規則只存在於 `/project` 載入後才讀得到的檔案裡）。
-- kernel 廣義 staging 禁令的**唯一例外**：`/deep-review` 的 **WIP snapshot**（`deep-review/SKILL.md` 明列，本地暫存、終態會 squash），它要的正是「使用者原始變更的完整快照」。**但執行前須確認 working tree 全屬本次工作**——混了他人 in-flight 變更就停下問，別指望 snapshot 之後再拆（squash 終態一樣會把它送進 PR）。
 
 ## Third-party Review Verification
 
@@ -49,9 +48,10 @@ When the user pastes third-party review findings, read the source code and verif
 
 ### 觸發詞「由 codex 進行第三方審查」（變體：「交給 codex 審查」「codex 第三方」）
 
-載入 `deep-review` skill，完整依其 Codex protocol 與 anchor 腳本決定 range；**NEVER 猜 `HEAD~1`、
-NEVER 呼叫 `codex:rescue`**。收到 findings 後先逐條驗證；最近一次流程帶 `autofix` 才自動修復，
-否則列出判定等使用者決定。完整 range 恢復與已 merge 分流在該 skill，勿在 always-on 複製。
+載入 `deep-review` skill，依其 immutable scope manifest 與 fresh-context 契約決定 range；**NEVER 猜
+`HEAD~1`**。使用者點名 Codex 時不得悄悄換成別的 reviewer；Codex 無法取得有效結果就報
+`BLOCKED`。收到 findings 後先逐條驗證；只有使用者明確要求 autofix 才自動修復，否則只報告。
+完整 scope、隔離與終態契約在該 skill，勿在 always-on 複製。
 
 ---
 

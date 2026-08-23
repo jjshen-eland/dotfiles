@@ -194,7 +194,9 @@ git -C <toplevel> commit -m "<符合 target repo convention 的語意描述>
 <Co-Authored-By trailer，取 runtime system prompt 的 Git 區塊>"
 ```
 
-> `review-anchor.sh squash-cmd` **不是這裡的來源**——deep-review 收尾最後一步就是 `clear`，anchor 已刪、該指令會回 `verdict: STOP`。它只在「deep-review 中途停下、anchor 仍在」時可用。
+> `review-anchor.sh squash-cmd` **不是這裡的來源**——portable deep-review 不以 review commits／squash
+> 編排 autofix；該 helper 只保留給舊 review recovery。送出前的 squash 邊界一律取本流程 Step 1
+> 記下的 `ship-state.sh` 輸出。
 
 **本節到 commit 為止，不含任何 push。** branch 已 push 過時，覆寫 remote 需要 `--force-with-lease`——**那是 Step 5 的送出動作**，必須等重印摘要、使用者再次確認後才做（`git -C <repo> push --force-with-lease=<feature-branch>:<步驟 0 記下的 SHA> origin <feature-branch>`——**帶 expected SHA，理由見下**）。在這裡順手推掉，等於用 gate 沒顯示過的 commit set 重寫 remote，正是 Step 4 硬 gate 要防的事。
 

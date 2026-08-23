@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deep Review"
+  short_description: "Fresh-context repository change review"
+  default_prompt: "Use $deep-review to review this repository change set with independent fresh-context reviewers."

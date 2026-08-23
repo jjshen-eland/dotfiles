@@ -197,3 +197,9 @@
   - 放棄:以舊實作正文當目標規格；複製 Codex workflow；讓 `ready4quit` 隱式啟動；把「可退出」誤作 shipping 授權；因新增 Codex forward eval 就宣稱 Q4c 已覆蓋
   - 重議:任一 runtime 無法載入 shared workflow／helper；或新的跨 runtime behavior eval 出現 evidence strength、residue、UNKNOWN 或 mutation boundary 分歧
   - 關聯:D-20260823-portable-ready4quit-skill;B-20260807-gap-02;claude/skills/ready4quit/evals.md;tests/run.sh
+
+- **M-20260823-portable-deep-review · 2026-08-23 Claude Code／Codex 共用 deep-review skill 完成**:`deep-review` 已收斂成單一 portable core：Claude Code 以 `/deep-review` 進入，Codex 沿用 `$repo-review` 薄入口並以 nested symlink 共用 workflow／reviewer brief、immutable scope 與 shipping-visible terminal helpers；Codex 不再另裝語意重疊的 `$deep-review`。Codex baseline 在有完整 review 結果時仍依賴 Claude private absolute path，確認為 RED；改後 blind forward scenarios 驗過 clean ambiguous scope 不猜 range、cumulative feature diff 同時涵蓋 committed／staged／unstaged／untracked、autofix mixed ownership 在首個 edit 前 `BLOCKED`。第二階段另補 historical-head guidance、scale-aware fresh reviewer partition、empty-tree baseline 及 divergent／tree/non-current autofix gates，並保留 Claude→Codex 的 `$repo-review` explicit-range 協議；Claude Code 真實 forward trace 另揭露 macOS `/bin/bash` 3.2 的 empty-array `set -u` 差異，helper 已同時通過系統 Bash 3.2 與 PATH 上新版 Bash。Claude/Codex official validator、scope/guidance/range/terminal gates、shellcheck、xref、doc-governance 與全 repo `tests/run.sh` 均通過，最終為 1124 PASS、0 FAIL。
+  - 日期來源:direct
+  - 放棄:複製一套 Codex review skill；把舊 workflow 當目標規格；用 prose reviewer 零 findings 取代 behavior eval；為 portable rollout 同批刪除仍有 recovery／shipping consumer 的 legacy helpers
+  - 重議:nested resource symlink 在任一 runtime 實測失效；scope helper 出現無法表示的 Git subject／historical guidance；或新的跨 runtime behavior eval 顯示 reviewer isolation、partition coverage、ownership gate、terminal verdict 不一致
+  - 關聯:D-20260823-portable-deep-review;claude/skills/deep-review/evals.md;claude/skills/deep-review/references/workflow.md;tests/run.sh

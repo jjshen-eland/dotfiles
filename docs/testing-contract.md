@@ -326,9 +326,18 @@ checked-out——任一不成立即 STOP 零 mutation。remote 走 `ls-remote` �
 
 **untracked 用 `-uall` 展開目錄**：預設 porcelain 折疊成 `?? dir/`，reviewer 拿到目錄名會整批漏審。
 
-## 11. repo-review review-context.sh range / guidance / autofix gate
+## 11. portable review-scope range / historical guidance / autofix gate
 
-## 12. repo-review skill packaging
+固定 explicit range 的 object IDs、historical-head guidance blob、empty-tree baseline、divergent
+range、arbitrary tree、detached／non-current head 與 three-dot rejection。Autofix 的結構安全由
+shared helper 回傳，ownership 仍由 workflow 依可觀察來源判定。
+
+## 12. repo-review thin-adapter packaging
+
+Codex 只保留 `$repo-review` 公開入口；workflow、reviewer brief 與 scope／terminal helpers 必須和
+Claude canonical source inode 相同。Eval oracle 只存在 canonical Claude tree，adapter 不重複曝光，
+doc-governance 的 `skill-eval` class 也不得要求 Codex adapter 另放一份。`SKILL.md` 只路由 runtime
+entry，不複製核心。
 
 ## 13. handoff-anchor.sh 錨點驗證與生命週期判定
 

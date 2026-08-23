@@ -1,4 +1,4 @@
 interface:
-  display_name: "Multi-Repo Review"
-  short_description: "Low-bias committed-diff review with optional safe autofix."
-  default_prompt: "Use $repo-review to review a local repository with immutable committed ranges and fresh-context subagents."
+  display_name: "Repo Review"
+  short_description: "Fresh-context repository change review"
+  default_prompt: "Use $repo-review to review this local repository change set with independent fresh-context reviewers."

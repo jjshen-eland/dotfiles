@@ -50,7 +50,7 @@
 - ⚠️ **寫文件時會踩到的一條**：交叉引用 gate 的 pattern 分不出「使用」與「提及」——討論一條（尤其壞掉的）引用時，寫法與真指標一模一樣。處置是放進 code fence 或在路徑與引號間插字，**不放寬 pattern**（能區分兩者的唯一訊號就是 fence）。
 - 各 gate 的判準、反例與設計理由見 `docs/testing-contract.md`。**放寬任何判準前先讀該檔**——多數判準是踩過才收窄的，且不少收窄伴隨刻意放棄的 false negative。
 - Skill 行為測試（弱模型 evals）：`claude/evals/README.md`（沙盒建置 + 手動 runner），各 skill 情境在其目錄的 `evals.md`。
-- deep-review 時 `verify-tests.sh` 對本 repo 判 SKIP（無 uv/bun 測試框架）——真測試就是本指令，每輪修復後手動跑。
+- deep-review 對本 repo 的權威驗證就是本指令；每批 autofix 後都要重跑並保留 exit code。
 
 ## 重要規則
 
