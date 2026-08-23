@@ -185,3 +185,9 @@
   - 放棄:cap 不回填(多樣性換成少給答案);把 cap 做成可調 config(現在只有一個語料形狀支持這個數字,先寫死 2、需要時再參數化)
   - 重議:出現「同一份檔案裡就是有 3 條以上真正相關」的實際查詢,或 cap 讓某類問題的正確答案掉出 top-5
   - 關聯:B-20260821-debt-28;X-20260822-doc-h1-token-signal;B-20260821-debt-27
+
+- **M-20260823-portable-handoff-skill · 2026-08-23 Claude Code／Codex 共用 handoff skill 完成**:`handoff` 已拆成 shared workflow 與 Claude Code `/handoff`、Codex `$handoff` 薄入口；新安裝共用 `~/.agents/handoffs`，只有舊 `~/.claude/handoffs` 時保留原 store，兩邊同時且分裂則 fail closed。Claude 寫入→fresh Codex resume 的真實 CLI eval 通過 5/5，並證明 FRESH anchor 不會掩蓋 live dirty state；fresh Sonnet H5 另驗過沿用 archive workline、實讀 durable authority、carry-forward 缺失死路且 repo tree／status／HEAD 全不變。雙 runtime validator、doc-governance audit、shellcheck 與全 repo `tests/run.sh` 均通過，最終為 1114 PASS、0 FAIL。
+  - 日期來源:direct
+  - 放棄:強制搬遷舊 store；維護兩份 runtime-specific workflow；把 handoff 當作 commit／push／PR／merge 授權；用封存文字蓋過 live Git 與 repo 權威文件
+  - 重議:任一 runtime 無法追蹤 shared reference，或之後需要經驗證的 cross-host／multi-writer store 協定
+  - 關聯:D-20260823-portable-handoff-skill;claude/skills/handoff/evals.md;tests/run.sh

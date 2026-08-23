@@ -18,6 +18,8 @@
 #   handoff-anchor.sh find-predecessor <slug> [dir]
 #                                              # 底層原語：依 slug 精確定位前一份（active 優先，
 #                                              # 其次 archive 最新一輪）；無命中印 NONE（＝首輪）
+#   handoff-anchor.sh store                     # 解析跨 runtime 共用的 handoff directory；
+#                                              # 偵測 canonical／legacy split-brain 時拒絕
 #   （SKILL.md 一律走 survey；兩個原語留給除錯與既有守門測試）
 #
 # active 行格式（survey／list 共用，此處為唯一權威）：
@@ -45,7 +47,7 @@
 #            2 = 用法錯誤
 #
 # 限制：repo 路徑（解析後的 toplevel）不可含空白（anchor 行以空白分欄）——anchors 直接報錯拒絕。
-# list 的 dir 預設 $HANDOFF_DIR，未設則 ~/.claude/handoffs。
+# dir 未明給時由 store resolver 決定；$HANDOFF_DIR 可作測試／明確 override。
 
 set -uo pipefail
 
@@ -55,9 +57,75 @@ MAX_LOG=20           # DRIFTED 時最多列出的中間 commit 數；只影響�
 
 usage() {
     echo "用法：$0 anchors <repo>... | verify <handoff.md> | consume <handoff.md>" >&2
+    echo "      $0 store                              # 解析共用 handoff directory" >&2
     echo "      $0 survey [--slug <slug>] [dir]        # W1／R1 單一入口" >&2
     echo "      $0 list [dir] | find-predecessor <slug> [dir]   # 底層原語（SKILL.md 一律走 survey）" >&2
     exit 2
+}
+
+# 跨 runtime state store：新安裝用 ~/.agents/handoffs；既有 ~/.claude/handoffs 仍沿用，
+# 避免升級時把 active/archive 歷史靜默切成空目錄。兩者同時存在但不是同一實體時屬
+# split-brain：Claude Code 與 Codex 可能各寫一邊，任何一方的 survey 都會漏資料，故 STOP。
+STORE_DIR=""; STORE_STATUS=""
+resolve_store() {
+    STORE_DIR=""; STORE_STATUS=""
+    if [ -n "${HANDOFF_DIR:-}" ]; then
+        STORE_DIR="$HANDOFF_DIR"
+        STORE_STATUS="OVERRIDE"
+        return 0
+    fi
+    if [ -z "${HOME:-}" ]; then
+        echo "error: HOME 未設定，無法解析 handoff store" >&2
+        return 1
+    fi
+    local canonical="$HOME/.agents/handoffs"
+    local legacy="$HOME/.claude/handoffs"
+    if [ -e "$canonical" ] && [ ! -d "$canonical" ]; then
+        echo "error: canonical handoff store 不是目錄：$canonical" >&2
+        STORE_STATUS="BROKEN"
+        return 1
+    fi
+    if [ -e "$legacy" ] && [ ! -d "$legacy" ]; then
+        echo "error: legacy handoff store 不是目錄：$legacy" >&2
+        STORE_STATUS="BROKEN"
+        return 1
+    fi
+    if [ -d "$canonical" ] && [ -d "$legacy" ]; then
+        if [ "$canonical" -ef "$legacy" ]; then
+            STORE_DIR="$canonical"
+            STORE_STATUS="SHARED"
+            return 0
+        fi
+        echo "error: canonical 與 legacy handoff stores 同時存在且不是同一實體；先合併或以 symlink 指向同一目錄，拒絕自行選邊" >&2
+        echo "handoff-dir-canonical: $canonical"
+        echo "handoff-dir-legacy: $legacy"
+        echo "store-status: SPLIT"
+        return 1
+    fi
+    if [ -d "$canonical" ]; then
+        STORE_DIR="$canonical"
+        STORE_STATUS="CANONICAL"
+    elif [ -d "$legacy" ]; then
+        STORE_DIR="$legacy"
+        STORE_STATUS="LEGACY"
+    else
+        STORE_DIR="$canonical"
+        STORE_STATUS="NEW"
+    fi
+    return 0
+}
+
+cmd_store() {
+    [ $# -eq 0 ] || usage
+    resolve_store || return 1
+    if ! mkdir -p "$STORE_DIR" || [ ! -d "$STORE_DIR" ]; then
+        echo "error: 無法建立或使用 handoff store：$STORE_DIR" >&2
+        echo "store-status: BROKEN"
+        return 1
+    fi
+    echo "handoff-dir: $STORE_DIR"
+    echo "store-status: $STORE_STATUS"
+    return 0
 }
 
 # 解析 YYYY-MM-DD → epoch（macOS 的 date -j 與 GNU date -d 皆支援）
@@ -577,7 +645,11 @@ emit_worklines() {  # <dir>
 # 找不到是正常結果（＝首輪，不是錯誤），故一律 exit 0；用法錯誤才 exit 2。
 cmd_find_predecessor() {
     [ $# -ge 1 ] && [ $# -le 2 ] || usage
-    local dir="${2:-${HANDOFF_DIR:-$HOME/.claude/handoffs}}"
+    local dir="${2:-}"
+    if [ -z "$dir" ]; then
+        resolve_store || exit 1
+        dir="$STORE_DIR"
+    fi
     if [ ! -d "$dir" ]; then
         echo "predecessor: NONE（目錄不存在：${dir}）"
         exit 0
@@ -587,7 +659,12 @@ cmd_find_predecessor() {
 }
 
 cmd_list() {
-    local dir="${1:-${HANDOFF_DIR:-$HOME/.claude/handoffs}}"
+    [ $# -le 1 ] || usage
+    local dir="${1:-}"
+    if [ -z "$dir" ]; then
+        resolve_store || exit 1
+        dir="$STORE_DIR"
+    fi
     if [ ! -d "$dir" ]; then
         echo "handoffs: NONE（目錄不存在：${dir}）"
         exit 0
@@ -618,7 +695,10 @@ cmd_survey() {
     done
     # `--slug ""` 是缺值，不是「沒給 slug」——靜默當成後者會讓 predecessor 區段消失而無人察覺
     [ "$slug_given" -eq 1 ] && [ -z "$slug" ] && usage
-    [ -n "$dir" ] || dir="${HANDOFF_DIR:-$HOME/.claude/handoffs}"
+    if [ -z "$dir" ]; then
+        resolve_store || exit 1
+        dir="$STORE_DIR"
+    fi
     if [ ! -d "$dir" ]; then
         echo "handoffs: NONE（目錄不存在：${dir}）"
         exit 0
@@ -639,6 +719,7 @@ cmd_survey() {
 [ $# -ge 1 ] || usage
 cmd="$1"; shift
 case "$cmd" in
+    store)   cmd_store "$@" ;;
     anchors) cmd_anchors "$@" ;;
     verify)  cmd_verify "$@" ;;
     consume) cmd_consume "$@" ;;

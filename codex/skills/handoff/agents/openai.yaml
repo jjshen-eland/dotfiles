@@ -1,0 +1,4 @@
+interface:
+  display_name: "Handoff"
+  short_description: "Checkpoint and resume task state safely."
+  default_prompt: "Use $handoff to checkpoint this workline or resume a prior checkpoint after verifying it."

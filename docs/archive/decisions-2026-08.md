@@ -939,3 +939,9 @@
   - 放棄:以 `supersedes:` 取代整條 D-20260822(它其餘條文都還有效,整條取代等於要在新記錄裡逐條抄一遍,抄漏就靜默失效);就地改寫 D-20260822 的用詞(history 是 append-only,改它本身就是 finding);把批次序改成「照實際執行的順序」(那是把一次取捨追認成規則,而挑 canary 的判準本來就該是資訊量)
   - 重議:第三個 repo 之後發現「先簡單後複雜」確實比較省,或 canary 的角色需要同時由兩個 repo 擔任
   - 關聯:D-20260822-rollout-gate-replacement;M-20260822-doc-governance-adopted;docs/doc-governance-rollout.md;docs/rollout-ledger.md
+
+- **D-20260823-portable-handoff-skill · 2026-08-23 handoff 採雙薄入口、單一 claims lifecycle 與共用 state store**:`handoff` 的目標定為 checkpoint → verify → reconcile → continue；artifact 永遠只是 claims，不能兼任聊天摘要、shipping、跨主機 transfer 或 repo durable authority。Claude Code 與 Codex 各保留一個只正規化 invocation arguments／skill directory 的薄 `SKILL.md`，共同 workflow 與 deterministic helper 只留在 `claude/skills/handoff/{references,scripts}`，Codex 以 nested symlink 共用。新安裝的 state store 為 `~/.agents/handoffs`；若只存在舊 `~/.claude/handoffs` 則沿用以免遺失 active/archive，兩者同時存在且不是同一實體就以 `SPLIT` STOP，拒絕 runtime 各寫一邊。Handoff invocation 只授權 machine-local artifact，不再自行修改／commit repo 來模擬 cross-host transfer。
+  - 日期來源:direct
+  - 放棄:維護兩份 handoff workflow（claims gate 會漂移）；把整個 Claude skill 直接掛給 Codex（舊 frontmatter 與 `$ARGUMENTS`／resource-root 語意不相容）；Codex 永久使用 Claude private skill path；看到 canonical／legacy 兩份 store 時自動挑一份或自動搬資料（都可能靜默遺失另一側）
+  - 重議:兩個 runtime 都提供完全相同的 argument/resource-root contract，可移除薄 adapter；或有通過 behavior eval 的安全自動 migration／locking protocol，可取代 legacy-compatible resolver
+  - 關聯:D-20260822-portable-deep-plan;D-20260822-portable-project-skill;claude/skills/handoff/evals.md;claude/skills/handoff/references/workflow.md;codex/skills/handoff
