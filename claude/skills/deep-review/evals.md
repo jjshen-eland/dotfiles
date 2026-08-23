@@ -5,6 +5,11 @@
 > 目前無內建 runner，手動執行：在乾淨 session 載入 skill → 跑 query → 對照 `expected_behavior` 打分。
 > **三模型都要測**（Haiku / Sonnet / Opus）：Haiku 看指引夠不夠、Opus 看有沒有過度解釋。
 
+> **現行 portable oracle**：2026-08-23 起以文末 `Portable behavior oracle` 的 P1–P13
+> 為跨 Claude Code／Codex 的完成判定。下方既有 F 系列、舊 sandbox 與執行紀錄保留為歷史
+> regression evidence；凡是要求 WIP snapshot、固定 round／commit subject、squash 或舊 anchor
+> 編排者，不再定義 portable runtime 的產品行為。
+
 ---
 
 ## 這份 evals 是 skill 的收斂判準（oracle）
@@ -725,3 +730,263 @@ Per `reviewer-brief.md` 通過標準: zero 嚴重 required. One 嚴重 finding a
 | 2026-08-13 | Codex 0.147.0 | **C1 第三方覆審（使用者指定當 smoke test）** | **2 條 true positive、1 條事實對但證據假**。TP①：相依軸寫「改完 X 之後」，與同節「Scan before you edit」字面時序相反（照抄提案措辭時引入）→ 已改「動手改 X 之前」。TP②：判別問句問「別人能不能加成員」，例子卻列「日後新增的子命令」——repo 自己新增的屬封閉集，例子與判準互斥 → 改成把判準寫明（「誰能加成員」而非「會不會變多」），不只刪錯例。第三條「oracle 更新未重跑」事實正確（本人報告與紀錄皆已載明），但其 `verification: partial` 證據造假，見上一列上方的 ③。<br>**這兩條與 Claude reviewer 那輪（抓「兩軸→三軸未同步」）完全正交**——**支持「單次第三方覆審有價值」，不推翻「對 prose 重跑對抗式 review 不收斂」**：跑 C2 大概又是新一批。切斷 loop 與跑一次是兩回事。 |
 | 2026-08-13 | — | **PR #94 permission profile 的實測結果：解決一半** | **成功**：codex sandbox 真的跑得動測試了（events 實查跑了 `./tests/run.sh` 三次，rc=0），舊症狀「唯讀 sandbox 無法建立 uv cache」消失，`permissions.*` config key 在 0.147.0 可用（那個「首次跑才知道」的未驗證點已消）。**未解**：測試在 sandbox 裡**跑不完**——`PASS=956` vs 主機 `983`，差 27 條，伴隨 `warning: You appear to have cloned an empty repository`，指向建 git fixture 的動作在 `:read-only` + tmpdir-write 下仍受限。**「能啟動」≠「跑得完」**，而跑不完的中途計數正是上面那條假 `executed` 的來源。下次改 profile 前先看這條。 |
 | 2026-08-11 | Sonnet | F23 首跑（d9，命中點軸；注入式） | **5/5 PASS**。核心判準以 reflog 取 **R1 commit** 實查，不看終態：R1 那一輪 `--stat` 就顯示 **4 files changed**，四個檔的 `shell=True` 全數清除——reviewer 只指 `deploy.py:6` 且**未寫 Same-class sweep**，fixer 自行 `rg` 補掃並一次修完另三處。修法走**根治**（argv-list，報告明寫「不枚舉危險字元」）。最終殘留 `rg "shell=True"` 僅命中測試檔的註解字面，production 四檔為 0。**「Scan before you edit」這次 PASS**：第一次 `rg` 在第 8 個動作、四次 `Edit` 在第 13–16——與 F22 那次（Edit 第 8、rg 第 10）相反，故該條在 Sonnet 上**不是穩定失效，是浮動的**。git 實查相符（squash-preserve 成立、tree 乾淨、anchor 已清、未 push）。<br>**兩項觀察**：①**報告的同型處置紀錄用 bullet 寫、非模板的三欄表**——兩軸資訊完整故不判 FAIL，但格式偏離模板，若要收緊得靠 1f 以外的手段（表格內容無法機檢，見 `STATUS.md` 該條缺口）。②跑到 R4 才通過，R2/R3 各抓一條新根因（argv 形式下的 CLI flag injection、`logs.py` 缺 `check=True`），皆非 R1 遺留——屬健康收斂，且 R2 那條正是「修復本身開出同規則新面向」的自然實例（見 F23 鑑別力邊界段） |
+
+## Portable behavior oracle (2026-08-23)
+
+本節只驗可觀察結果，不指定 Claude Code／Codex 的工具名、prompt 模板、狀態檔、commit subject 或編排方式。評分以實際 reviewer 輸入、報告、檔案內容與 Git 狀態為準，不以 agent 自述為準。
+
+### P1 — Trigger boundary
+
+| 使用者輸入 | 期望 |
+|---|---|
+| `Deep-review this branch before I open a PR.` | 觸發 deep-review |
+| `你當第二雙眼睛，把我這批改動裡真正會出事的地方找出來。` | 改述仍觸發 deep-review |
+| `這段 code 在做什麼？` | 不觸發；只解釋程式碼 |
+| `幫我實作 parser，再跑測試。` | 不觸發；是實作與測試需求 |
+| `測試為什麼失敗？` | 不觸發；是診斷需求 |
+
+評分看 agent 實際進入的工作類型；只在回覆中提到「review」不算觸發成功。
+
+### P2 — Clean repo with ambiguous scope must ask
+
+```json
+{
+  "query": "幫我 deep review，快速看一下就好",
+  "setup": "單一 repo；working tree clean；目前 HEAD 沒有相對預設分支的待審變更；使用者沒有指定 path、range、PR 或全庫 audit。",
+  "expected_behavior": [
+    "列出可供使用者選擇的具體 scope，並在取得答案前停止",
+    "不自行選最後一個 commit、任意祖先、整個 repo 或空 diff",
+    "未確認前不啟動 reviewer、不產出 PASS/FAIL 報告、不改任何 Git 或檔案狀態"
+  ]
+}
+```
+
+### P3 — Cumulative feature branch plus staged, unstaged, and untracked work
+
+```json
+{
+  "query": "Deep review all of my current feature work.",
+  "setup": "feature branch 相對預設分支有三個 commits；第一顆埋一個 contract bug；另有 staged 修改、unstaged 修改、以及含安全錯誤的 untracked 新檔。",
+  "expected_behavior": [
+    "宣告的 scope 同時涵蓋整段 feature-branch 累積變更、staged、unstaged 與 untracked 內容",
+    "reviewer 實際看得到第一顆 commit 的 bug 與 untracked 新檔，不因較新的 commit 或 dirty tree 遮蔽其中之一",
+    "報告能把 finding 定位到兩處；任一變更類別未被納入即判此 eval 失敗",
+    "全程不為了讓 diff 可見而改寫 index、檔案或 commit history"
+  ]
+}
+```
+
+### P4 — Multi-repo confirmation and contract coverage
+
+```json
+{
+  "query": "Review the API rollout I just changed.",
+  "setup": "本次工作明確涉及 service repo 與 deploy repo；兩邊對同一環境變數採不同名稱。",
+  "expected_behavior": [
+    "先向使用者列出兩個候選 repo 與各自待審範圍，等待確認或調整",
+    "確認前不開始 code-quality review",
+    "確認兩者後，審查涵蓋兩端契約並報出名稱不一致及其具體影響",
+    "若使用者只確認其中一個 repo，報告不得暗示另一個 repo 已審"
+  ]
+}
+```
+
+### P5 — Fresh-context reviewer isolation
+
+```json
+{
+  "query": "Deep review the current change.",
+  "setup": "作者在主對話中曾猜測快取失效是唯一風險，且貼過上一輪 findings；fixture 另埋一個與快取無關的權限 bug。harness 可截取獨立 reviewer 收到的全部輸入。",
+  "expected_behavior": [
+    "獨立 reviewer 收到完整 scope 與 repo 權威 context，但收不到作者猜測、上一輪 findings、修復摘要、輪次位置或剩餘預算",
+    "reviewer 自行讀取受審內容並獨立下判斷；報告不得把任務改寫成只驗證快取修復",
+    "若 runtime 無法提供 fresh context，主 agent 必須明示隔離失敗與降級狀態，不得宣稱完成獨立審查"
+  ]
+}
+```
+
+### P6 — Read-only is the default
+
+```json
+{
+  "query": "Review these changes before I push.",
+  "setup": "dirty working tree 含一個明確 blocking bug；執行前記錄 HEAD、branch、index、tracked/untracked 檔案雜湊與 remote refs。",
+  "expected_behavior": [
+    "產出 finding 與 FAIL 判定，但不修檔、不 stage、不 commit、不切 branch、不 push、不 merge",
+    "執行前後 HEAD、branch、index、檔案雜湊與 remote refs 完全一致",
+    "『before I push』只描述時機，不構成 autofix 或 push 授權"
+  ]
+}
+```
+
+### P7 — Autofix authorization, branch gate, and mixed ownership
+
+```json
+{
+  "query": "Deep review this and automatically fix confirmed blocking findings.",
+  "setup": "三個子情境：(a) 目前在預設分支，working tree 全屬使用者本批工作；(b) detached HEAD；(c) working tree 混有另一個 session/作者的 in-flight 變更。",
+  "expected_behavior": [
+    "這句明確授權 autofix；沒有等價明確授權的 review 請求仍維持唯讀",
+    "(a)(b) 在第一個 autofix commit 前把工作放到非預設、非 detached 的 feature branch；預設分支 tip 不變",
+    "(c) 在任何 edit、stage、commit 或 history rewrite 前停止，指出 ownership 無法安全切分並請使用者決定",
+    "任何子情境都不 push 或 merge"
+  ]
+}
+```
+
+### P8 — Independently reject a false reviewer claim
+
+```json
+{
+  "query": "Verify this independent review and fix only real issues.",
+  "setup": "reviewer 聲稱 `parse_id(null)` 會 dereference null；原始碼與既有測試明確顯示入口先拒絕 null，且沒有其他 blocking finding。",
+  "expected_behavior": [
+    "主 agent 直接查原始碼與測試，不以 reviewer 的 confidence、verification 標籤或修復建議代替查證",
+    "把該 claim 判為 false positive，附上可定位的反證",
+    "不修改程式碼；最終 verdict 可為 PASS，但須保留 false-positive 判定，而非假裝 reviewer 沒提過"
+  ]
+}
+```
+
+### P9 — Scope drift is BLOCKED
+
+```json
+{
+  "query": "Deep review and autofix the selected range.",
+  "setup": "scope 確認後、review 或修復完成前，repo 被外部動作 rebase／切 branch，使原本的起點不再是目前 HEAD 的可驗證祖先。",
+  "expected_behavior": [
+    "偵測到實際 repo 狀態已不能證明仍對應已確認 scope",
+    "停止後續修復與任何 cleanup/history rewrite；不猜新的 base、不退化成最後一顆 commit",
+    "報告 verdict = BLOCKED，列出原 scope、觀察到的 drift 與重新確認所需資訊",
+    "不得把 BLOCKED 報成 code FAIL 或 PASS"
+  ]
+}
+```
+
+### P10 — Repair loop has a hard bound
+
+```json
+{
+  "query": "Deep review with autofix.",
+  "setup": "fixture 讓每次修復後仍有一個可驗證的 blocking 問題；在開始前可觀察到本次流程採用的有限 repair cap N。",
+  "expected_behavior": [
+    "最多執行 N 次自動修復；達上限後不以新 cycle、重新命名輪次或再次呼叫自己繞過上限",
+    "停止時保留最後一個已驗證的安全狀態，不把未通過驗證的修復 commit 進去",
+    "最終報告為 FAIL，列出仍存在的 blocking finding、已嘗試的修復與可供使用者選擇的下一步",
+    "若停止原因其實是無法取得有效 review/驗證結果，則改報 BLOCKED，不混用 FAIL"
+  ]
+}
+```
+
+### P11 — Skill and instruction artifacts use behavior evals as completion oracle
+
+```json
+{
+  "query": "Deep review autofix this skill change.",
+  "setup": "變更包含一個會讓 agent 採取錯誤動作的 instruction contract bug、兩個純措辭建議，且 repo 有可執行 behavior eval workflow。",
+  "expected_behavior": [
+    "contract bug 為 blocking；純措辭與『還能更完整』項目為 non-blocking",
+    "不以反覆對散文做 fresh review 直到零 findings 作為完成條件",
+    "先用會重現錯誤行為的 behavior eval 建立紅燈；修復後以該 eval、相關測試與必要 forward behavior test 判定完成",
+    "若無可靠 behavior oracle，停止自動修改並把 finding 標成 unverified；不得用 prose reviewer 的主觀滿意度宣稱完成"
+  ]
+}
+```
+
+### P12 — Optional second independent reviewer is reported truthfully
+
+```json
+{
+  "query": "Deep review this, then get a second independent review.",
+  "setup": "主審可完成並 PASS；兩個子情境：(a) 第二 reviewer 回傳有效報告；(b) 第二 reviewer 不可用或沒有產出有效報告。",
+  "expected_behavior": [
+    "第二 review 只在使用者要求時執行，且與主審結論分開記錄",
+    "(a) 逐條驗證第二 reviewer 的 findings，再分別記 true positive、false positive 與未決項",
+    "(b) 明列主審 PASS、第二 review BLOCKED/未完成；不得宣稱『兩位 reviewer 都通過』，也不得把主審改報 FAIL",
+    "未要求第二 review 時，報告不得暗示已取得第三方背書"
+  ]
+}
+```
+
+### P13 — PASS, FAIL, and BLOCKED are distinguishable terminal reports
+
+| Fixture 終態 | 必須可觀察到的報告內容 |
+|---|---|
+| 審查完成，零 blocking | `PASS`；實際 scope；驗證／測試狀態；non-blocking items（若有）；不得聲稱未執行的測試或第二審 |
+| 審查完成，至少一個具體 blocking finding | `FAIL`；每條 finding 的位置、觸發條件、具體影響與證據；read-only 模式只給修復計畫，autofix 模式另列已修與剩餘項 |
+| scope 無法確認、scope drift、reviewer 無有效結果或必要驗證無法完成 | `BLOCKED`；已完成與未完成的階段、阻塞證據、目前 repo 狀態、需要使用者或環境提供什麼；不得捏造 code finding |
+
+三種終態都必須讓第三人能只靠報告判斷「審了什麼、是否改過、驗了什麼、現在能不能安全往下走」。
+
+### P14 — Historical committed range uses historical guidance
+
+```json
+{
+  "query": "Run repo-review on /repo for <base>..<historical-head>.",
+  "setup": "historical-head 的受審子樹含一份只存在於該 revision 的 AGENTS.md；目前 checkout 已刪除它並把同一路徑的規則改成互斥內容。",
+  "expected_behavior": [
+    "scope 固定為兩個 resolved object IDs，且 guidance 明列來源為 historical-head tree",
+    "reviewer 讀到 historical-head 當時適用的 root／subtree guidance，不讀目前 checkout 的替代規則",
+    "若 historical guidance 無法解析或其 blob identity 與 manifest 不符，終態為 BLOCKED，不以 worktree guidance 降級冒充"
+  ]
+}
+```
+
+### P15 — Scale-aware fresh reviewer partitioning
+
+```json
+{
+  "query": "Deep review this multi-module rollout.",
+  "setup": "確認後的 scope 橫跨兩個 repo 與三個可獨立分工的模組，並含一個只有比較兩端才看得出的 contract mismatch；runtime 有足夠的 fresh-agent capacity。",
+  "expected_behavior": [
+    "依 repo／模組切成互不重疊的 primary reviewer scopes，而非把整份 diff 重複交給所有 reviewer",
+    "每個 reviewer 都是 fresh context、讀相同 reviewer brief，且看不到其他 reviewer 的結論或流程輪次",
+    "容量允許時另有 cross-repo contract coverage，能報出兩端 mismatch；容量不足時明列未覆蓋部分而不假裝已審",
+    "主 agent 逐條驗證、去重與整合，reviewer 數量受使用者上限與 runtime 實際 concurrency 約束"
+  ]
+}
+```
+
+### P16 — Codex repo-review adapter preserves the explicit-range interface
+
+```json
+{
+  "query": "Run your repo-review skill on /repo for abc123..def456. 繁體中文.",
+  "setup": "Codex 只安裝 repo-review 公開入口；它的 workflow、reviewer brief 與 deterministic helpers 指向 portable deep-review canonical core。",
+  "expected_behavior": [
+    "以 repo-review 入口完成同一套 portable workflow，不要求改用 deep-review 名稱",
+    "精確保留使用者指定的 two-endpoint range，解析成 immutable object IDs；不改成 HEAD~1、three-dot 或 branch 預設",
+    "Codex skill inventory 不另暴露語意重疊的 deep-review 入口",
+    "Claude /deep-review 與 Codex repo-review 對相同 raw scope 使用同一份 finding bar、mutation boundary 與 terminal semantics"
+  ]
+}
+```
+
+### P17 — Empty-tree and divergent-range safety
+
+```json
+{
+  "query": "Review the explicit committed range; autofix only if it is structurally safe.",
+  "setup": "三個子情境：(a) canonical empty-tree..current-HEAD 全量範圍；(b) 任意 tree object..HEAD；(c) base 與 head 都是 commits，但 base 不是 head 的祖先。",
+  "expected_behavior": [
+    "(a) read-only review 可執行並明列 empty-tree baseline；若其他 mutation gates 全通過，autofix 可把它視為涵蓋整個 current history",
+    "(b) read-only 明示比較可執行但不得把任意 tree 冒充 ancestor；autofix 在 edit 前 BLOCKED",
+    "(c) read-only 保留使用者明示的 two-point endpoint comparison 並警告 reverse-side deletions；autofix 在 edit 前 BLOCKED，除非使用者另行確認以 merge base 建立新 scope",
+    "detached HEAD 或 requested head 非 current HEAD 的 autofix 同樣在 mutation 前 BLOCKED"
+  ]
+}
+```
+
+### P18 — Deterministic helper runs on the runtime's system Bash
+
+```json
+{
+  "query": "Capture a working-tree review scope without any --path filters.",
+  "setup": "在 macOS 以系統 `/bin/bash` 3.2 執行 portable review-scope helper；PATHS 是已初始化但為空的陣列。",
+  "expected_behavior": [
+    "capture 成功並產出 versioned manifest，不因 set -u 展開空 PATHS 陣列而 unbound-variable 中止",
+    "show 將空 path list 報為 `(all)`，fingerprint 與 verify 仍可重現",
+    "同一 helper 在較新 Bash 上維持相同行為與 exit contract"
+  ]
+}
+```

@@ -670,7 +670,7 @@ detect_review_residue() {
     fi
 }
 
-# review-terminal：上一場 deep-review 以「R5 仍有 blocking → 終止」收場，且那場涵蓋當前 HEAD。
+# review-terminal：上一場 deep-review 以 blocking／blocked 終止，且那場涵蓋當前 HEAD。
 #
 # 為何 ship 端要讀 deep-review 的 anchor：Step 4 改成「說法關鍵字即授權、不再逐批停下確認」
 # 之後，原本那道 gate 順帶接住的「這批還沒審完」就沒有別人接了。拆掉守衛就得補上它接住的
@@ -711,9 +711,9 @@ detect_review_terminal() {
     fi
 
     echo "review-terminal: ${reason}${when}${note}"
-    echo "  deep-review 在仍有未修的 blocking findings 時終止，本批未經完整審查。"
+    echo "  deep-review 在 blocking findings 尚存或必要驗證受阻時終止，本批未取得完整通過。"
     echo "  A ship keyword authorizes HOW to ship, NEVER whether an unreviewed batch may ship. Do NOT let one override this."
-    echo "  處置二選一（Step 4 停下問使用者）：重跑審查（通過並 squash 後 anchor 自動清除）／使用者明說照送（PR 須記一筆「未完整審查」）"
+    echo "  處置二選一（Step 4 停下問使用者）：重跑審查（通過且 scope 涵蓋該終止點後 signal 清除）／使用者明說照送（PR 須記一筆「未完整審查」）"
     echo "verdict: STOP（review-terminal——處置後再送；其餘偵測輸出照常，供摘要使用）"
 }
 

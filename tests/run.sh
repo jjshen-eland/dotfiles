@@ -15,8 +15,8 @@
 #   9. ship-state.sh（project skill script）偵測與 protection 判定（gh stub；含 resolve 子指令 / bootstrap 判定 / dossier 偵測）
 #  9b. branch-first.sh（project skill script）情況 A/B 判定與誤 commit 救援序列（真 git fixture）
 #  10. review-state.sh（deep-review skill script）scope-priority / round / branch-first / continuity 判定
-#  11. review-context.sh（repo-review skill script）range 解析 / guidance / autofix gate（含分岔 base / detached HEAD / 閘序）
-#  12. repo-review skill packaging（evals 不進 runtime context）
+#  11. portable review-scope range / historical guidance / autofix gate
+#  12. repo-review 薄殼 packaging（evals 不進 runtime context）
 #  13. handoff-anchor.sh（handoff skill script）錨點驗證與生命週期判定（含 consume 消費歸檔）
 #  14. codex-runtime-hygiene.sh（deep-review skill script）孤兒偵測 / 誤殺防護 / exit 契約
 #  15. ensure-rc-source.sh 幂等補 source shell/functions.sh 行
@@ -683,11 +683,11 @@ else
 fi
 
 echo "▶ 1g. doc-governance 跨檔契約"
-if grep -q 'references/modes-and-scope.md.*Autocodex 模式' "$ROOT/claude/skills/deep-review/SKILL.md" \
+if grep -q 'references/workflow.md' "$ROOT/claude/skills/deep-review/SKILL.md" \
     && ! grep -q '見上方「Codex 呼叫協議」' "$ROOT/claude/skills/deep-review/SKILL.md"; then
-    ok "deep-review 的 Codex protocol 指向現行 reference"
+    ok "deep-review 入口指向現行 portable workflow"
 else
-    bad "deep-review 仍指向搬走後不存在的『上方 Codex 呼叫協議』"
+    bad "deep-review 入口未指向 portable workflow 或仍留 stale Codex protocol 指標"
 fi
 if sed -n '1,24p' "$ROOT/tests/xref-gate.py" | grep -q 'finding.*0.*error.*2'; then
     ok "xref compatibility wrapper 檔頭保留 exit contract"
@@ -2820,176 +2820,138 @@ git clone -q "$TMP/rs-origin.git" "$TMP/rs-detach"
 out="$("$RS_SCRIPT" "$TMP/rs-detach")"
 if echo "$out" | grep -q "branch-first: REQUIRED（HEAD 在 DETACHED"; then ok "detached HEAD → branch-first REQUIRED"; else bad "detached branch-first 誤判"; fi
 
-echo "▶ 11. repo-review review-context.sh range / guidance / autofix gate"
-RRC_SCRIPT="$ROOT/codex/skills/repo-review/scripts/review-context.sh"
-RRC_EMPTY_TREE="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+echo "▶ 11. portable review-scope range / historical guidance / autofix gate"
+DRS_CLAUDE="$ROOT/claude/skills/deep-review"
+RRS_CODEX="$ROOT/codex/skills/repo-review"
+DR_SCOPE="$DRS_CLAUDE/scripts/review-scope.sh"
+DR_EMPTY_TREE="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 
-git init -q -b main "$TMP/rrc-work"
-(cd "$TMP/rrc-work" \
+git init -q -b main "$TMP/drs-context"
+(cd "$TMP/drs-context" \
     && mkdir -p src \
-    && printf 'root guidance\n' > CLAUDE.md \
-    && printf 'subtree guidance\n' > src/AGENTS.md \
+    && printf 'root historical\n' > AGENTS.md \
+    && printf 'subtree historical\n' > src/AGENTS.md \
     && printf 'v1\n' > src/app.txt \
-    && "${GITC[@]}" add CLAUDE.md src/AGENTS.md src/app.txt \
+    && "${GITC[@]}" add AGENTS.md src/AGENTS.md src/app.txt \
     && "${GITC[@]}" commit -qm init)
-rrc_base="$(git -C "$TMP/rrc-work" rev-parse HEAD)"
-(cd "$TMP/rrc-work" \
-    && printf 'v2\n' > src/app.txt \
-    && "${GITC[@]}" commit -qam "feat: update app")
-rrc_head="$(git -C "$TMP/rrc-work" rev-parse HEAD)"
+drs_base="$(git -C "$TMP/drs-context" rev-parse HEAD)"
+(cd "$TMP/drs-context" && printf 'v2\n' > src/app.txt && "${GITC[@]}" commit -qam change)
+drs_historical_head="$(git -C "$TMP/drs-context" rev-parse HEAD)"
+drs_historical_guidance="$(git -C "$TMP/drs-context" rev-parse "$drs_historical_head:src/AGENTS.md")"
+(cd "$TMP/drs-context" \
+    && git rm -q src/AGENTS.md \
+    && printf 'root current\n' > AGENTS.md \
+    && "${GITC[@]}" commit -qam current)
 
-out="$("$RRC_SCRIPT" "$TMP/rrc-work" "HEAD~1..HEAD")"
-assert_rc "review-context 基本 range → exit 0" 0 $?
-if echo "$out" | grep -q "^resolved-base: $rrc_base$" \
-    && echo "$out" | grep -q "^resolved-head: $rrc_head$" \
-    && echo "$out" | grep -q "^review-range: $rrc_base..$rrc_head$"; then
-    ok "range endpoint 解析成固定 object id"
-else bad "range endpoint 解析輸出錯誤"; fi
-if echo "$out" | grep -q "  CLAUDE.md" && echo "$out" | grep -q "  src/AGENTS.md"; then
-    ok "guidance 偵測 root + subtree"
-else bad "guidance 偵測缺 root 或 subtree"; fi
-if echo "$out" | grep -q "src/app.txt" && echo "$out" | grep -q "^autofix-safe: n/a$"; then
-    ok "changed files 與非 autofix 狀態輸出"
-else bad "changed files 或 autofix n/a 輸出錯誤"; fi
+/bin/bash "$DR_SCOPE" capture --repo "$TMP/drs-context" --mode working-tree >/dev/null 2>&1
+assert_rc "review-scope 空 path list 相容 macOS Bash 3.2" 0 $?
 
-out="$("$RRC_SCRIPT" "$TMP/rrc-work" "$rrc_base..HEAD" --autofix)"
-assert_rc "clean current HEAD autofix gate → exit 0" 0 $?
-if echo "$out" | grep -q "^autofix-safe: yes$" && echo "$out" | grep -q "^autofix-reason: clean-current-head$"; then
-    ok "clean current HEAD → autofix-safe yes"
-else bad "clean current HEAD 未判 autofix-safe yes"; fi
+out="$("$DR_SCOPE" capture --repo "$TMP/drs-context" --mode range \
+    --range "$drs_base..$drs_historical_head")"
+assert_rc "portable range capture → exit 0" 0 $?
+drs_context_manifest="$(sed -n 's/^manifest: //p' <<< "$out")"
+drs_context_show="$("$DR_SCOPE" show --manifest "$drs_context_manifest")"
+if grep -q "^base: $drs_base$" <<< "$drs_context_show" \
+    && grep -q "^head: $drs_historical_head$" <<< "$drs_context_show"; then
+    ok "range endpoints 固定為 immutable object IDs"
+else bad "range endpoints 解析錯誤"; fi
+if grep -q '^guidance-source: head$' <<< "$drs_context_show" \
+    && grep -q "guidance: head .* AGENTS.md$" <<< "$drs_context_show" \
+    && grep -q "guidance: head $drs_historical_guidance src/AGENTS.md$" <<< "$drs_context_show"; then
+    ok "historical range 從 resolved head tree 取得 root + subtree guidance"
+else bad "historical guidance 被 current worktree 污染或遺漏"; fi
+"$DR_SCOPE" verify --manifest "$drs_context_manifest" >/dev/null
+assert_rc "current checkout 前進不污染 immutable historical range" 0 $?
+drs_noncurrent="$("$DR_SCOPE" autofix-check --manifest "$drs_context_manifest" 2>/dev/null)"
+assert_rc "historical non-current head autofix → BLOCKED" 5 $?
+if grep -q '^autofix-reason: requested-head-not-current$' <<< "$drs_noncurrent"; then
+    ok "non-current head autofix reason 明確"
+else bad "non-current head autofix reason 錯誤"; fi
 
-printf 'dirty\n' > "$TMP/rrc-work/untracked.txt"
-out="$("$RRC_SCRIPT" "$TMP/rrc-work" "$rrc_base..HEAD" --autofix)"
-if echo "$out" | grep -q "^autofix-safe: no$" && echo "$out" | grep -q "^autofix-reason: dirty-worktree$"; then
-    ok "dirty worktree → autofix-safe no"
-else bad "dirty worktree gate 失效"; fi
-rm "$TMP/rrc-work/untracked.txt"
+empty_out="$("$DR_SCOPE" capture --repo "$TMP/drs-context" --mode range \
+    --range "$DR_EMPTY_TREE..HEAD")"
+empty_manifest="$(sed -n 's/^manifest: //p' <<< "$empty_out")"
+if grep -q '^base-type: tree$' <<< "$empty_out" && grep -q '^baseline: yes$' <<< "$empty_out"; then
+    ok "canonical empty-tree baseline 可固定為全量 range"
+else bad "empty-tree baseline range 不相容"; fi
+"$DR_SCOPE" autofix-check --manifest "$empty_manifest" >/dev/null
+assert_rc "empty-tree current-head structural autofix gate → yes" 0 $?
 
-rrc_old_head="$rrc_head"
-(cd "$TMP/rrc-work" \
-    && printf 'v3\n' > src/app.txt \
-    && "${GITC[@]}" commit -qam "feat: advance head")
-out="$("$RRC_SCRIPT" "$TMP/rrc-work" "$rrc_base..$rrc_old_head" --autofix)"
-if echo "$out" | grep -q "^autofix-safe: no$" && echo "$out" | grep -q "^autofix-reason: requested-head-not-current$"; then
-    ok "requested head 非 current HEAD → autofix-safe no"
-else bad "requested-head-not-current gate 失效"; fi
+arbitrary_tree="$(git -C "$TMP/drs-context" rev-parse 'HEAD^{tree}')"
+tree_out="$("$DR_SCOPE" capture --repo "$TMP/drs-context" --mode range \
+    --range "$arbitrary_tree..HEAD")"
+tree_manifest="$(sed -n 's/^manifest: //p' <<< "$tree_out")"
+tree_gate="$("$DR_SCOPE" autofix-check --manifest "$tree_manifest" 2>/dev/null)"
+assert_rc "arbitrary tree base autofix → BLOCKED" 5 $?
+if grep -q '^autofix-reason: arbitrary-tree-base$' <<< "$tree_gate"; then
+    ok "arbitrary tree 不冒充 ancestor"
+else bad "arbitrary tree autofix reason 錯誤"; fi
 
-out="$("$RRC_SCRIPT" "$TMP/rrc-work" "$RRC_EMPTY_TREE..HEAD" --autofix)"
-if echo "$out" | grep -q "^resolved-base-type: tree$" && echo "$out" | grep -q "^baseline-range: yes$" \
-    && echo "$out" | grep -q "^base-is-ancestor: yes$" && echo "$out" | grep -q "^autofix-safe: yes$"; then
-    ok "empty-tree baseline range 支援 autofix（base-is-ancestor yes）"
-else bad "empty-tree baseline range 輸出錯誤"; fi
+drs_main_tip="$(git -C "$TMP/drs-context" rev-parse HEAD)"
+(cd "$TMP/drs-context" \
+    && git switch -qc feat/diverge "$drs_base" \
+    && printf 'side\n' > side.txt \
+    && "${GITC[@]}" add side.txt \
+    && "${GITC[@]}" commit -qm side)
+diverge_out="$("$DR_SCOPE" capture --repo "$TMP/drs-context" --mode range \
+    --range "$drs_main_tip..HEAD")"
+diverge_manifest="$(sed -n 's/^manifest: //p' <<< "$diverge_out")"
+if grep -q '^base-is-ancestor: no$' <<< "$diverge_out" \
+    && ! grep -q '^merge-base: (none)$' <<< "$diverge_out"; then
+    ok "divergent commit pair 記錄 merge base"
+else bad "divergent range ancestry 訊號錯誤"; fi
+diverge_gate="$("$DR_SCOPE" autofix-check --manifest "$diverge_manifest" 2>/dev/null)"
+assert_rc "divergent range autofix → BLOCKED" 5 $?
+if grep -q '^autofix-reason: base-not-ancestor$' <<< "$diverge_gate"; then
+    ok "divergent range autofix reason 明確"
+else bad "divergent range autofix reason 錯誤"; fi
 
-out="$("$RRC_SCRIPT" "$TMP/rrc-work" 'HEAD~1^{tree}..HEAD' --autofix)"
-if echo "$out" | grep -q "^resolved-base-type: tree$" && echo "$out" | grep -q "^base-is-ancestor: n/a$" \
-    && echo "$out" | grep -q "^autofix-safe: no$" && echo "$out" | grep -q "^autofix-reason: base-not-commit$"; then
-    ok "任意 tree base → autofix 擋（base-not-commit）"
-else bad "非 empty-tree base 誤通過 autofix"; fi
+attached_out="$("$DR_SCOPE" capture --repo "$TMP/drs-context" --mode range \
+    --range "$drs_base..HEAD")"
+attached_manifest="$(sed -n 's/^manifest: //p' <<< "$attached_out")"
+git -C "$TMP/drs-context" checkout -q --detach HEAD
+detached_gate="$("$DR_SCOPE" autofix-check --manifest "$attached_manifest" 2>/dev/null)"
+assert_rc "detached HEAD autofix → BLOCKED" 5 $?
+if grep -q '^autofix-reason: detached-head$' <<< "$detached_gate"; then
+    ok "detached HEAD autofix reason 明確"
+else bad "detached HEAD autofix reason 錯誤"; fi
 
-# 新訊號基準：branch / detached-head / base-is-ancestor / merge-base / guidance-source
-out="$("$RRC_SCRIPT" "$TMP/rrc-work" "HEAD~1..HEAD")"
-if echo "$out" | grep -q "^branch: main$" && echo "$out" | grep -q "^detached-head: no$" \
-    && echo "$out" | grep -q "^base-is-ancestor: yes$" && echo "$out" | grep -q "^merge-base: n/a$"; then
-    ok "祖先 base + attached HEAD → 新訊號基準輸出"
-else bad "新訊號基準輸出錯誤"; fi
-if echo "$out" | grep -q "^guidance-source: worktree$"; then
-    ok "guidance-source 標示 worktree"
-else bad "guidance-source 標示缺失"; fi
+"$DR_SCOPE" capture --repo "$TMP/not-a-repo" --mode working-tree >/dev/null 2>&1
+assert_rc "review-scope 非 git repo → exit 3" 3 $?
+"$DR_SCOPE" capture --repo "$TMP/drs-context" --mode range --range 'HEAD...HEAD' >/dev/null 2>&1
+assert_rc "review-scope three-dot range → exit 4" 4 $?
+"$DR_SCOPE" >/dev/null 2>&1
+assert_rc "review-scope 無引數 → exit 2" 2 $?
 
-# 分岔 base（非祖先）→ base-is-ancestor no + merge-base 分叉點 + autofix 擋
-(cd "$TMP/rrc-work" && git switch -qc rrc-feat "$rrc_base" \
-    && printf 'branch\n' > src/feat.txt \
-    && "${GITC[@]}" add src/feat.txt && "${GITC[@]}" commit -qm "feat: diverge")
-out="$("$RRC_SCRIPT" "$TMP/rrc-work" "main..HEAD" --autofix)"
-if echo "$out" | grep -q "^base-is-ancestor: no$" && echo "$out" | grep -q "^merge-base: $rrc_base$"; then
-    ok "分岔 base → base-is-ancestor no + merge-base 分叉點"
-else bad "分岔 base 偵測錯誤"; fi
-if echo "$out" | grep -q "^autofix-safe: no$" && echo "$out" | grep -q "^autofix-reason: base-not-ancestor$"; then
-    ok "分岔 base → autofix 擋（base-not-ancestor）"
-else bad "base-not-ancestor gate 失效"; fi
+echo "▶ 12. repo-review 薄殼 packaging"
+if [ -f "$DRS_CLAUDE/evals.md" ] && [ ! -e "$RRS_CODEX/evals.md" ]; then
+    ok "behavior oracle 只留在 canonical core，不從 adapter 重複曝光"
+else bad "repo-review adapter 重複暴露或缺少 canonical eval oracle"; fi
+if python3 - "$ROOT/.doc-governance.json" <<'PY'
+import json
+import sys
 
-# merge-base 重錨定後 → autofix 通過
-out="$("$RRC_SCRIPT" "$TMP/rrc-work" "$rrc_base..HEAD" --autofix)"
-if echo "$out" | grep -q "^autofix-safe: yes$" && echo "$out" | grep -q "^base-is-ancestor: yes$"; then
-    ok "merge-base 重錨定 → autofix 通過"
-else bad "重錨定後 autofix 仍被擋"; fi
-
-# detached HEAD → autofix 擋、純 review 不擋
-(cd "$TMP/rrc-work" && git checkout -q --detach HEAD)
-out="$("$RRC_SCRIPT" "$TMP/rrc-work" "$rrc_base..HEAD" --autofix)"
-if echo "$out" | grep -q "^branch: (detached)$" && echo "$out" | grep -q "^detached-head: yes$" \
-    && echo "$out" | grep -q "^autofix-safe: no$" && echo "$out" | grep -q "^autofix-reason: detached-head$"; then
-    ok "detached HEAD → autofix 擋（detached-head）"
-else bad "detached-head gate 失效"; fi
-out="$("$RRC_SCRIPT" "$TMP/rrc-work" "$rrc_base..HEAD")"
-if echo "$out" | grep -q "^detached-head: yes$" && echo "$out" | grep -q "^autofix-safe: n/a$"; then
-    ok "detached HEAD 純 review → 不擋"
-else bad "detached 純 review 被誤擋"; fi
-
-# 閘序：dirty-worktree 優先於 detached-head
-printf 'dirty\n' > "$TMP/rrc-work/untracked.txt"
-out="$("$RRC_SCRIPT" "$TMP/rrc-work" "$rrc_base..HEAD" --autofix)"
-if echo "$out" | grep -q "^autofix-reason: dirty-worktree$"; then
-    ok "閘序：dirty-worktree 優先於 detached-head"
-else bad "閘序錯誤（dirty 未優先於 detached）"; fi
-rm "$TMP/rrc-work/untracked.txt"
-
-# 無共同祖先 → merge-base (none)
-(cd "$TMP/rrc-work" && git checkout -q --orphan rrc-orphan && git rm -rq --cached . \
-    && rm -rf src CLAUDE.md && printf 'x\n' > z.txt \
-    && "${GITC[@]}" add z.txt && "${GITC[@]}" commit -qm "orphan root")
-out="$("$RRC_SCRIPT" "$TMP/rrc-work" "main..HEAD")"
-if echo "$out" | grep -q "^base-is-ancestor: no$" && echo "$out" | grep -q "^merge-base: (none)$"; then
-    ok "無共同祖先 → merge-base (none)"
-else bad "unrelated histories 偵測錯誤"; fi
-
-"$RRC_SCRIPT" "$TMP/not-a-repo" "$rrc_base..$rrc_head" >/dev/null 2>&1
-assert_rc "review-context 非 git repo → exit 1" 1 $?
-"$RRC_SCRIPT" "$TMP/rrc-work" "HEAD...HEAD" >/dev/null 2>&1
-assert_rc "three-dot range 被拒 → exit 1" 1 $?
-"$RRC_SCRIPT" >/dev/null 2>&1
-assert_rc "review-context 無引數 → exit 2" 2 $?
-
-echo "▶ 12. repo-review skill packaging"
-if [ -f "$ROOT/codex/skills/repo-review/evals.md" ]; then
-    ok "repo-review evals.md 存在（開發 oracle）"
-else bad "repo-review evals.md 不存在"; fi
-if ! grep -qi 'evals\.md' "$ROOT/codex/skills/repo-review/SKILL.md"; then
-    ok "SKILL.md 不連結 evals.md（避免 runtime 載入）"
-else bad "SKILL.md 不應連結 evals.md"; fi
-if grep -q "Run your repo-review skill on /path/repo for abc123..def456" "$ROOT/codex/skills/repo-review/evals.md"; then
-    ok "evals 覆蓋 Claude Code autocodex 一行協議"
-else bad "evals 缺 Claude Code autocodex 相容性 case"; fi
-if grep -q "Historical-only guidance is discovered" "$ROOT/codex/skills/repo-review/evals.md" \
-    && grep -q "No-findings wording coexists with autofix history" "$ROOT/codex/skills/repo-review/evals.md"; then
-    ok "repo-review v2 evals 覆蓋 historical guidance 與 autofix clean output"
-else bad "repo-review v2 behavior evals 不完整"; fi
-if grep -q "Fresh reviewers inherit no parent history" "$ROOT/codex/skills/repo-review/evals.md" \
-    && grep -q "Arbitrary tree base blocks autofix" "$ROOT/codex/skills/repo-review/evals.md" \
-    && grep -q "Later autofix rounds validate owned dirty state" "$ROOT/codex/skills/repo-review/evals.md"; then
-    ok "repo-review GPT-5.6 evals 覆蓋 fresh context 與 autofix safety"
-else bad "repo-review GPT-5.6 behavior evals 不完整"; fi
-if grep -q "Review-pass position stays private" "$ROOT/codex/skills/repo-review/evals.md" \
-    && grep -q "Checkpoint metadata does not reveal review progress" "$ROOT/codex/skills/repo-review/evals.md"; then
-    ok "repo-review evals 覆蓋輪次隔離與 metadata 洩漏"
-else bad "repo-review 盲審 behavior evals 不完整"; fi
-if grep -q "Round-cap diagnosis follows root-cause history" "$ROOT/codex/skills/repo-review/evals.md" \
-    && grep -q "Do not infer an architectural problem or recommend a rewrite from the cap alone" "$ROOT/codex/skills/repo-review/SKILL.md"; then
-    ok "repo-review evals 覆蓋輪次上限的收斂診斷"
-else bad "repo-review 收斂診斷 behavior contract 不完整"; fi
-if grep -q "Autofix propagates semantic dependencies" "$ROOT/codex/skills/repo-review/evals.md" \
-    && grep -q "Findings identify verification basis" "$ROOT/codex/skills/repo-review/evals.md" \
-    && grep -q "Autofix stops enumerating externally extensible sets" "$ROOT/codex/skills/repo-review/evals.md" \
-    && grep -q "condition.*message" "$ROOT/codex/skills/repo-review/SKILL.md" \
-    && grep -q "verification.*executed.*static.*partial" "$ROOT/codex/skills/repo-review/references/reviewer-brief.md" \
-    && grep -q "externally extensible" "$ROOT/codex/skills/repo-review/SKILL.md"; then
-    ok "repo-review evals 與 runtime contract 覆蓋相依軸、取證類型、枚舉停損"
-else bad "repo-review 新 behavior contracts 尚未完整落地"; fi
-if [ -f "$ROOT/codex/skills/repo-review/references/reviewer-brief.md" ] \
-    && grep -q "references/reviewer-brief.md" "$ROOT/codex/skills/repo-review/SKILL.md"; then
-    ok "repo-review reviewer brief 已納入 runtime contract"
-else bad "repo-review reviewer brief 缺失或未連結"; fi
-
+with open(sys.argv[1], encoding="utf-8") as stream:
+    config = json.load(stream)
+skill_eval = next(item for item in config["classes"] if item["name"] == "skill-eval")
+raise SystemExit("codex/skills/*/evals.md" in skill_eval["paths"])
+PY
+then
+    ok "doc-governance 只分類 canonical eval tree，不要求 adapter 重複 eval"
+else bad "doc-governance 仍要求 Codex adapter eval，與 single-oracle 架構衝突"; fi
+if ! grep -qi 'evals\.md' "$RRS_CODEX/SKILL.md"; then
+    ok "repo-review runtime entry 不載入 eval oracle"
+else bad "repo-review runtime entry 不應連結 evals.md"; fi
+rrs_lines="$(wc -l < "$RRS_CODEX/SKILL.md" | tr -d ' ')"
+if [ "$rrs_lines" -le 30 ] \
+    && grep -q 'references/workflow.md' "$RRS_CODEX/SKILL.md" \
+    && grep -q 'references/portable-reviewer-brief.md' "$RRS_CODEX/SKILL.md"; then
+    ok "repo-review 是薄入口，不複製 shared workflow"
+else bad "repo-review adapter 過厚或未路由 shared resources"; fi
+if [ ! -e "$RRS_CODEX/scripts/review-context.sh" ] \
+    && [ ! -e "$RRS_CODEX/references/reviewer-brief.md" ]; then
+    ok "repo-review 舊獨立 helper 與 brief 已退役"
+else bad "repo-review 仍殘留第二套 runtime contract"; fi
 echo "▶ 12b. deep-plan skill 跨 Claude Code／Codex 共用封裝"
 DPS_CLAUDE="$ROOT/claude/skills/deep-plan"
 DPS_CODEX="$ROOT/codex/skills/deep-plan"
@@ -3008,6 +2970,85 @@ if grep -q 'fork_turns: "none"' "$DPS_CLAUDE/SKILL.md" \
     && grep -q 'spawn reviewer_a.*spawn reviewer_b.*wait_agent' "$DPS_CLAUDE/SKILL.md"; then
     ok "deep-plan 明列兩個 runtime 的 fresh-context adapter"
 else bad "deep-plan 缺少雙 runtime fresh-context contract"; fi
+
+echo "▶ 12bb. deep-review skill 跨 Claude Code／Codex 共用核心"
+DRS_CLAUDE="$ROOT/claude/skills/deep-review"
+RRS_CODEX="$ROOT/codex/skills/repo-review"
+if [ ! -e "$ROOT/codex/skills/deep-review" ] \
+    && [ -f "$DRS_CLAUDE/SKILL.md" ] && [ -f "$RRS_CODEX/SKILL.md" ] \
+    && [ "$RRS_CODEX/references/workflow.md" -ef "$DRS_CLAUDE/references/workflow.md" ] \
+    && [ "$RRS_CODEX/references/portable-reviewer-brief.md" -ef "$DRS_CLAUDE/references/portable-reviewer-brief.md" ] \
+    && [ "$RRS_CODEX/scripts/review-scope.sh" -ef "$DRS_CLAUDE/scripts/review-scope.sh" ] \
+    && [ "$RRS_CODEX/scripts/review-terminal.sh" -ef "$DRS_CLAUDE/scripts/review-terminal.sh" ]; then
+    ok "Claude deep-review 與 Codex repo-review 薄殼共用 portable core"
+else bad "repo-review 薄殼未完整共用 deep-review canonical core 或仍有重複入口"; fi
+if grep -q 'references/workflow.md' "$DRS_CLAUDE/SKILL.md" \
+    && grep -q 'references/workflow.md' "$RRS_CODEX/SKILL.md" \
+    && [ -f "$RRS_CODEX/agents/openai.yaml" ]; then
+    ok "兩個 runtime 入口都路由 shared workflow，Codex metadata 完整"
+else bad "deep-review adapter 或 Codex metadata 不完整"; fi
+drs_codex_frontmatter="$(awk 'NR == 1 { next } /^---$/ { exit } { print }' "$RRS_CODEX/SKILL.md" 2>/dev/null)"
+if ! grep -Eq '^(user-invocable|disable-model-invocation|argument-hint|allowed-tools|context|agent):' \
+    <<< "$drs_codex_frontmatter"; then
+    ok "Codex deep-review frontmatter 無 Claude Code 專屬欄位"
+else bad "Codex deep-review frontmatter 混入 Claude Code 專屬欄位"; fi
+deep_review_sig="\$repo-review"
+drs_tilde='~'
+if grep -qF "$deep_review_sig" "$RRS_CODEX/agents/openai.yaml" 2>/dev/null \
+    && ! rg -q "${drs_tilde}/.claude|${drs_tilde}/.codex|codex exec|TaskOutput|AskUserQuestion" \
+        "$DRS_CLAUDE/references/workflow.md" "$DRS_CLAUDE/references/portable-reviewer-brief.md" 2>/dev/null; then
+    ok "repo-review metadata 與 shared core 不綁 runtime-private API、CLI 或安裝路徑"
+else bad "deep-review metadata 或 shared core 仍有 runtime 偶合"; fi
+if grep -q 'resolved head' "$DRS_CLAUDE/references/workflow.md" \
+    && grep -q '8–12' "$DRS_CLAUDE/references/workflow.md" \
+    && grep -q 'cross-repository contract pass' "$DRS_CLAUDE/references/workflow.md" \
+    && grep -q 'non-overlapping primary assignments' "$DRS_CLAUDE/references/workflow.md"; then
+    ok "shared workflow 承接 historical guidance 與 scale-aware partition"
+else bad "portable core 尚未承接 repo-review 的必要成熟能力"; fi
+if grep -q 'Portable behavior oracle (2026-08-23)' "$DRS_CLAUDE/evals.md" \
+    && grep -q 'P14 — Historical committed range uses historical guidance' "$DRS_CLAUDE/evals.md" \
+    && grep -q 'P15 — Scale-aware fresh reviewer partitioning' "$DRS_CLAUDE/evals.md" \
+    && grep -q 'P16 — Codex repo-review adapter preserves the explicit-range interface' "$DRS_CLAUDE/evals.md" \
+    && grep -q 'P17 — Empty-tree and divergent-range safety' "$DRS_CLAUDE/evals.md" \
+    && grep -q "P18 — Deterministic helper runs on the runtime's system Bash" "$DRS_CLAUDE/evals.md" \
+    && rg -q 'PASS.*FAIL.*BLOCKED' "$DRS_CLAUDE/evals.md"; then
+    ok "portable behavior oracle 覆蓋薄殼、歷史 guidance、scale partition 與 range safety"
+else bad "deep-review portable behavior oracle 尚未落地"; fi
+
+drs_tmp="$TMP/deep-review-portable"
+mkdir -p "$drs_tmp"
+git init -q -b main "$drs_tmp/repo"
+(cd "$drs_tmp/repo" && "${GITC[@]}" commit --allow-empty -qm base)
+drs_base="$(git -C "$drs_tmp/repo" rev-parse HEAD)"
+drs_capture="$("$DRS_CLAUDE"/scripts/review-scope.sh capture --repo "$drs_tmp/repo" --mode working-tree)"
+drs_manifest="$(awk '/^manifest: / {sub(/^manifest: /, ""); print}' <<< "$drs_capture")"
+"$DRS_CLAUDE"/scripts/review-scope.sh verify --manifest "$drs_manifest" >/dev/null
+assert_rc "deep-review immutable scope capture 後未漂移 → FRESH" 0 $?
+touch "$drs_tmp/repo/untracked"
+"$DRS_CLAUDE"/scripts/review-scope.sh verify --manifest "$drs_manifest" >/dev/null 2>&1
+assert_rc "deep-review scope 新增 untracked → BLOCKED" 5 $?
+rm -f "$drs_tmp/repo/untracked"
+
+(cd "$drs_tmp/repo" && git switch -qc feat/portable && "${GITC[@]}" commit --allow-empty -qm change)
+drs_head="$(git -C "$drs_tmp/repo" rev-parse HEAD)"
+"$DRS_CLAUDE"/scripts/review-scope.sh capture --repo "$drs_tmp/repo" --mode range \
+    --range "$drs_base...$drs_head" >/dev/null 2>&1
+assert_rc "deep-review 明示 three-dot range → 拒絕猜 two endpoints" 4 $?
+
+drs_anchor="$(git -C "$drs_tmp/repo" rev-parse --absolute-git-dir)/deep-review/anchor"
+mkdir -p "$(dirname "$drs_anchor")"
+echo 'base=legacy-compatible' > "$drs_anchor"
+"$DRS_CLAUDE"/scripts/review-terminal.sh record --repo "$drs_tmp/repo" \
+    --reason blocking-findings --head "$drs_base" >/dev/null
+"$DRS_CLAUDE"/scripts/review-terminal.sh clear --repo "$drs_tmp/repo" \
+    --base "$drs_head" --head "$drs_head" >/dev/null 2>&1
+assert_rc "deep-review PASS scope 未涵蓋舊 terminal → 保留 signal" 5 $?
+"$DRS_CLAUDE"/scripts/review-terminal.sh clear --repo "$drs_tmp/repo" \
+    --base "$drs_base" --head "$drs_head" >/dev/null
+assert_rc "deep-review PASS scope 涵蓋 terminal → 清除 signal" 0 $?
+if grep -qx 'base=legacy-compatible' "$drs_anchor" && ! grep -q '^terminal_' "$drs_anchor"; then
+    ok "deep-review terminal helper 保留 legacy anchor 非 terminal 欄位"
+else bad "deep-review terminal helper 破壞 legacy anchor 或殘留 terminal signal"; fi
 
 echo "▶ 12c. project skill 跨 Claude Code／Codex 共用核心"
 PJS_CLAUDE="$ROOT/claude/skills/project"
@@ -4277,10 +4318,9 @@ assert_rc "--round 含 / → exit 2" 2 $?
 # range 多組 .. 會讓中段被靜默吞掉；三點 range（branch diff）則必須照常可用
 cer_run run --repo "$cer_repo" --range "a..b..c" --round C1 >/dev/null 2>&1
 assert_rc "range 多組 .. → exit 5" 5 $?
-# 三點 range 必須**拒絕**：下游 codex/skills/repo-review/scripts/review-context.sh 明確
-# die「three-dot ranges are ambiguous here」。wrapper 若放行，codex 只會把該錯誤寫進
-# report.md，而報告非空 → 回 0 → 假成功。（stub 不會真的跑 review-context.sh，故這條
-# 契約只能靠斷言釘死，不能靠測試自然發現。）
+# 三點 range 必須**拒絕**：下游 shared review-scope helper 明確拒絕語意不唯一的 three-dot。
+# wrapper 若放行，codex 可能只把錯誤寫進 report.md，而報告非空會被誤判為成功；stub 不會
+# 真的跑 helper，故這條仍須靠斷言釘死。
 cer_run run --repo "$cer_repo" --range "HEAD...HEAD" --round C1 >/dev/null 2>&1
 assert_rc "三點 range → exit 5（與下游 repo-review 契約一致）" 5 $?
 # base 端只放行明確的 baseline 表示法：拼錯的 base 若只警告就放行，會產出「成功但其實
@@ -4290,7 +4330,7 @@ assert_rc "拼錯的 base → exit 5（不得只警告放行）" 5 $?
 cer_argv_bl="$TMP/cer-baseline.argv"
 CODEX_STUB_ARGV="$cer_argv_bl" cer_run run --repo "$cer_repo" --range "∅..HEAD" --round C1 >/dev/null 2>&1
 assert_rc "baseline ∅ base → 照常放行" 0 $?
-# ∅ 是報告模板的顯示寫法，下游 review-context.sh 不認得 → 必須正規化成 empty-tree hash 再送出
+# ∅ 是報告模板的顯示寫法、不是 object name → 必須正規化成 shared helper 支援的 empty-tree hash
 if grep -q '4b825dc642cb6eb9a060e54bf8d69288fbee4904\.\.HEAD' "$cer_argv_bl"; then
     ok "∅ 已正規化為 empty-tree hash 才送給 codex"
 else bad "∅ 原樣送出——下游會回 cannot resolve range base"; fi
