@@ -1,0 +1,7 @@
+interface:
+  display_name: "Ready4Quit"
+  short_description: "Audit volatile session state before quitting"
+  default_prompt: "Use $ready4quit to flush durable facts and audit session residue before I quit."
+
+policy:
+  allow_implicit_invocation: false

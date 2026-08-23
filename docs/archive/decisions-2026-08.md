@@ -945,3 +945,9 @@
   - 放棄:維護兩份 handoff workflow（claims gate 會漂移）；把整個 Claude skill 直接掛給 Codex（舊 frontmatter 與 `$ARGUMENTS`／resource-root 語意不相容）；Codex 永久使用 Claude private skill path；看到 canonical／legacy 兩份 store 時自動挑一份或自動搬資料（都可能靜默遺失另一側）
   - 重議:兩個 runtime 都提供完全相同的 argument/resource-root contract，可移除薄 adapter；或有通過 behavior eval 的安全自動 migration／locking protocol，可取代 legacy-compatible resolver
   - 關聯:D-20260822-portable-deep-plan;D-20260822-portable-project-skill;claude/skills/handoff/evals.md;claude/skills/handoff/references/workflow.md;codex/skills/handoff
+
+- **D-20260823-portable-ready4quit-skill · 2026-08-23 ready4quit 採雙薄入口、單一 runtime-neutral 證據流程**:`ready4quit` 的目標由 fresh agent 只讀 eval／history 後先凍結為「flush 值得留存的事實，再以可追溯證據盤點 Git、背景工作、記憶與退出阻礙」；Claude Code 與 Codex 各保留 explicit-only 薄 `SKILL.md`，共同 workflow 與既有 deterministic Git helper 只留在 `claude/skills/ready4quit/{references,scripts}`，Codex 以 nested symlink 共用。共享核心只描述能力與證據，不綁 runtime 私有工具名；某一欄位無法觀測時該欄位保持 `UNKNOWN`，不得被 Git 的 aggregate `RESIDUE` 或其他欄位推成已知。檢查只授權必要的 memory flush 與 read-only audit，不把未送出的變更自行 commit／push／開 PR，也不為 target repo 發明不存在的 shipping command。
+  - 日期來源:direct
+  - 放棄:讓主 agent 先讀舊實作再反推目標（會把既有手段誤當需求）；維護 Claude/Codex 兩份 workflow；把整個 Claude skill 直接掛給 Codex；以 runtime 私有 task API 或私人安裝路徑寫進共享核心；用單一 Git 結論覆蓋 remote／async 等未知欄位
+  - 重議:任一 runtime 無法追蹤 nested references/scripts symlink；或跨 runtime behavior eval 證明薄 adapter 無法維持相同證據語意與 mutation boundary
+  - 關聯:D-20260822-portable-project-skill;D-20260823-portable-handoff-skill;B-20260807-gap-02;claude/skills/ready4quit/evals.md;codex/skills/ready4quit

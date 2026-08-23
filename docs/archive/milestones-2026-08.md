@@ -191,3 +191,9 @@
   - 放棄:強制搬遷舊 store；維護兩份 runtime-specific workflow；把 handoff 當作 commit／push／PR／merge 授權；用封存文字蓋過 live Git 與 repo 權威文件
   - 重議:任一 runtime 無法追蹤 shared reference，或之後需要經驗證的 cross-host／multi-writer store 協定
   - 關聯:D-20260823-portable-handoff-skill;claude/skills/handoff/evals.md;tests/run.sh
+
+- **M-20260823-portable-ready4quit-skill · 2026-08-23 Claude Code／Codex 共用 ready4quit skill 完成**:`ready4quit` 已拆成 shared evidence workflow 與 Claude Code `/ready4quit`、Codex `$ready4quit` 兩個 explicit-only 薄入口；Codex metadata、共享 references/scripts symlink、Claude frontmatter 與 runtime-neutral core 都有 repo gate。Codex 真實 CLI forward eval 從無 skill 時誤轉 handoff 的 baseline，經兩次最小 instruction 修正走到 6/6：正確保留 remote `UNKNOWN`、報 `[PARTIAL] ⚠`、列出 memory／async／README residue、判定 NOT READY、給出另開授權 shipping task 的下一步且全程無 write／commit／push／PR。雙 runtime validator、helper shellcheck、doc-governance audit 與全 repo `tests/run.sh` 均通過，最終為 1120 PASS、0 FAIL；`B-20260807-gap-02` 的 deferred-tools／Q4c 缺口仍未解，未因本次 portable rollout 移除。
+  - 日期來源:direct
+  - 放棄:以舊實作正文當目標規格；複製 Codex workflow；讓 `ready4quit` 隱式啟動；把「可退出」誤作 shipping 授權；因新增 Codex forward eval 就宣稱 Q4c 已覆蓋
+  - 重議:任一 runtime 無法載入 shared workflow／helper；或新的跨 runtime behavior eval 出現 evidence strength、residue、UNKNOWN 或 mutation boundary 分歧
+  - 關聯:D-20260823-portable-ready4quit-skill;B-20260807-gap-02;claude/skills/ready4quit/evals.md;tests/run.sh

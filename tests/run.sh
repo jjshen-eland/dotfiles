@@ -3131,6 +3131,40 @@ if grep -q '^store-status: SHARED$' <<< "$out"; then
     ok "同一實體 store 可由兩個相容路徑共同使用"
 else bad "同實體 store 被誤判 split（${out}）"; fi
 
+echo "▶ 12e. ready4quit skill 跨 Claude Code／Codex 共用核心"
+RQS_CLAUDE="$ROOT/claude/skills/ready4quit"
+RQS_CODEX="$ROOT/codex/skills/ready4quit"
+if [ -f "$RQS_CLAUDE/SKILL.md" ] && [ -f "$RQS_CODEX/SKILL.md" ] \
+    && [ "$RQS_CODEX/references" -ef "$RQS_CLAUDE/references" ] \
+    && [ "$RQS_CODEX/scripts" -ef "$RQS_CLAUDE/scripts" ]; then
+    ok "ready4quit 兩個薄入口共用 canonical references/scripts"
+else bad "ready4quit 跨 runtime 封裝未共用同一核心"; fi
+if grep -q 'references/workflow.md' "$RQS_CLAUDE/SKILL.md" \
+    && grep -q 'references/workflow.md' "$RQS_CODEX/SKILL.md" \
+    && [ -f "$RQS_CODEX/references/workflow.md" ]; then
+    ok "ready4quit 兩個入口都載入 shared workflow"
+else bad "ready4quit 入口未共同指向 shared workflow"; fi
+rqs_codex_frontmatter="$(awk 'NR == 1 { next } /^---$/ { exit } { print }' "$RQS_CODEX/SKILL.md")"
+if ! grep -Eq '^(user-invocable|disable-model-invocation|argument-hint|allowed-tools|context|agent):' \
+    <<< "$rqs_codex_frontmatter"; then
+    ok "Codex ready4quit frontmatter 無 Claude Code 專屬欄位"
+else bad "Codex ready4quit frontmatter 混入 Claude Code 專屬欄位"; fi
+ready4quit_sig="\$ready4quit"
+if grep -q '^disable-model-invocation: true$' "$RQS_CLAUDE/SKILL.md" \
+    && grep -q '^  allow_implicit_invocation: false$' "$RQS_CODEX/agents/openai.yaml" \
+    && grep -qF "$ready4quit_sig" "$RQS_CODEX/agents/openai.yaml"; then
+    ok "ready4quit 在兩個 runtime 都保留 explicit-only policy"
+else bad "ready4quit explicit-only policy 未跨 runtime 對齊"; fi
+if ! rg -q 'TaskOutput|TaskList|CronList|ScheduleWakeup|scratchpad|~/.claude|~/.codex' \
+    "$RQS_CLAUDE/references" "$RQS_CLAUDE/scripts"; then
+    ok "ready4quit shared core 不綁 runtime private evidence surface 或安裝路徑"
+else bad "ready4quit shared core 混入 runtime-private evidence surface 或安裝路徑"; fi
+if grep -q 'Codex 無 skill baseline' "$RQS_CLAUDE/evals.md" \
+    && grep -q '不得改用 handoff/checkpoint workflow' "$RQS_CLAUDE/evals.md" \
+    && grep -q 'target repo contract 指定的 project authority' "$RQS_CLAUDE/references/workflow.md"; then
+    ok "ready4quit portable behavior oracle 與 authority routing 已落地"
+else bad "ready4quit portable eval 或 authority routing contract 缺失"; fi
+
 echo "▶ 13. handoff-anchor.sh 錨點驗證與生命週期判定"
 HA_SCRIPT="$ROOT/claude/skills/handoff/scripts/handoff-anchor.sh"
 # 錨點記的是 `rev-parse --show-toplevel`，會解析 symlink（macOS 的 $TMPDIR 走 /var → /private/var），
