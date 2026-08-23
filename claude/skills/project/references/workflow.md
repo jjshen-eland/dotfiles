@@ -1,4 +1,4 @@
-# Project shared workflow
+# Project shared workflow — 跨 runtime／harness 收尾與 Critical Step 0–5
 
 本檔是 Claude Code `/project` 與 Codex `$project` 的共同核心。入口會提供 **normalized invocation
 arguments** 與它自己的 skill directory；先把該目錄下的 `scripts/`、`templates/` 解析成絕對路徑
@@ -7,6 +7,8 @@ arguments** 與它自己的 skill directory；先把該目錄下的 `scripts/`�
 
 涵蓋工作項三個時點：開工（spec）、收尾送出（log）、移交（transfer）。每次執行先完整讀取
 [dossier.md](dossier.md)；它定義 adopted repo 的 active／backlog／history 生命週期與 legacy fallback。
+跨 runtime／harness 的 project 收尾前，由本檔分派 Log 模式並完整載入 `log-workflow.md` 的 Critical
+與 Step 0–5；薄入口不得用摘要或自身記憶替代。
 
 ## 模式分派
 
@@ -29,9 +31,13 @@ normalized invocation arguments 的第一個 token 分派模式，其餘 token �
    查相關 decision／dead end；命中的 stable IDs 稍後寫入 active item 的 `關聯`。不得先整批讀 archive。
 3. 無 `STATUS.md` 時，adopted repo 從 `<project-templates>/STATUS-template.md` 建立；legacy repo
    從 `<project-templates>/STATUS-legacy-template.md` 建立。建立後確認專案定位；撞名的領域產物不得覆寫。
-4. 在 `進行中` 寫 Context／Goal／Acceptance Criteria／Constraints／進度／下一步／關聯 IDs。
-   模糊處直接問，不猜。暫停則移到 `暫停中` 並寫可觀察的恢復條件。
-5. Legacy repo 依自己的 STATUS schema 寫 spec，不強迫建立 history/backlog family。
+4. 在 `進行中` 寫 Context／Goal／Acceptance Criteria／Constraints／進度／下一步／關聯 IDs。若 target
+   config 啟用 `status_schema.active_item_contract`，另依 dossier 的「平行協作與 stewardship」填四個
+   coordination fields：目前 runtime 以 `<runtime>:<workline>` 作 actor；尚未建立 feature branch 時
+   `Workspace` 先填 `unassigned`。沒有其他 active steward 證據時可由本 workline 擔任 steward；已有另一位
+   steward 時，除非使用者明示或原 steward handoff 已授權 transfer，否則不修改並 STOP。
+5. 模糊處直接問，不猜。暫停則移到 `暫停中` 並寫可觀察的恢復條件。
+6. Legacy repo 依自己的 STATUS schema 寫 spec，不強迫建立 history/backlog family。
 
 ## Log 模式
 

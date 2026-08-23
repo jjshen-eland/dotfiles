@@ -3,6 +3,15 @@
 本 reference 說明 project workflow 如何維護 active state、backlog 與 history。已採用 repo 的完整資料模型與
 CLI exit contract 以 repo-local `docs/document-governance.md` 為權威；本檔只規定 skill 的行為。
 
+## 目錄
+
+- 角色分工
+- 平行協作與 stewardship
+- 已採用 repo 的開工與檢索
+- 記錄時機與 record schema
+- Log 與 audit
+- Legacy fallback
+
 ## 角色分工
 
 | 內容 | Canonical 落點 | 生命週期 |
@@ -17,6 +26,29 @@ CLI exit contract 以 repo-local `docs/document-governance.md` 為權威；本�
 `STATUS.md` 只留 `進行中`、`暫停中`、`歷史入口`、`待辦入口`、`移交準備度`。暫停項必須寫可觀察的
 恢復條件；已完成項、決策、死路與 session log 都不能殘留。
 
+## 平行協作與 stewardship
+
+Repo 的 `status_schema.active_item_contract` 啟用時，每個 active H3 除了 spec 欄位，還要有：
+
+- `Writer`：`claude:<workline>`、`codex:<workline>`、`human:<name>`、`external:<party>` 或
+  `unassigned:<slug>`。
+- `Workspace`：repo writer 使用 `branch=<feature-branch>`；外部事項用 `external/no-repo-write`；尚未分派
+  用 `unassigned`。NEVER 寫絕對 worktree path。
+- `Write Scope`：逗號分隔的 repo-relative paths/modules；外部事項用 `none`；`repo-wide` 代表禁止其他
+  repo writer 平行工作。
+- `Dossier Steward`：所有 active items 使用同一個 actor key，且不得是 `unassigned`。
+
+Steward 是 shared `STATUS.md`、backlog、history shards 與 shared plan 的唯一 writer。其他 writer 必須在
+不同 branch/worktree 與不重疊 scope 內工作，不改上述 shared surfaces、不 push，完成後建立符合 repo
+convention 的 semantic commit，交給 steward 驗證並 cherry-pick 到 integration branch。Scope 相交、workspace
+相同、durable state 指向另一位 writer/steward 或 ownership 不明時一律 STOP，不自行接管或解衝突。
+
+Worker 的 `Dossier delta` 固定回報：work item、actor、branch/workspace、commit SHA、changed scope/files、
+tests、progress、decisions with reasons、dead ends、blockers、next step。這是 claim，不是 canonical state；
+steward 必須自行檢查 commit ancestry／diff／scope／tests，再決定是否 cherry-pick 與寫入 dossier。Review
+agent 維持 read-only。Ownership transfer 只接受使用者明示或原 steward handoff，且要先同步所有 active
+items 的 steward 與 next step；machine-local handoff artifact 不授予 repo mutation。
+
 ## 已採用 repo 的開工與檢索
 
 同時存在 `.doc-governance.json` 與 `scripts/doc-governance.py` 即為 adopted repo：
@@ -25,7 +57,8 @@ CLI exit contract 以 repo-local `docs/document-governance.md` 為權威；本�
    git common-dir 證明同 repo），再執行 `python3 "<project-scripts>/doc-governance.py" --root "$repo" find '<工作問題>'`
    查相關 decision／dead end；命中的 stable IDs
    寫入 active item 的 `關聯`。
-2. Spec 寫 Context／Goal／Acceptance Criteria／Constraints／進度／下一步，不把歷史理由複製進 active state。
+2. Spec 寫 Context／Goal／Acceptance Criteria／Constraints／進度／下一步，不把歷史理由複製進 active state；
+   啟用 active item contract 時，同時依上節寫入四個 coordination fields。
 3. 無路徑線索也使用 `find`；history／archive 的人工 pointer 不作為可檢索性的代理。
 
 ## 記錄時機與 record schema

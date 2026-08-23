@@ -855,6 +855,37 @@ class DocGovernanceTests(RepoCase):
                 searchable_legacy_plans=["../../outside.md"],
             ),
             "escaping status path": base_config([], status_schema={"path": "../STATUS.md"}),
+            "empty active item contract": base_config(
+                [], status_schema={"active_item_contract": {}}
+            ),
+            "unknown active item contract key": base_config(
+                [],
+                status_schema={
+                    "active_item_contract": {
+                        "required_fields": ["Writer"],
+                        "uniform_fields": [],
+                        "lease": True,
+                    }
+                },
+            ),
+            "duplicate active item required field": base_config(
+                [],
+                status_schema={
+                    "active_item_contract": {
+                        "required_fields": ["Writer", "Writer"],
+                        "uniform_fields": [],
+                    }
+                },
+            ),
+            "uniform field outside required fields": base_config(
+                [],
+                status_schema={
+                    "active_item_contract": {
+                        "required_fields": ["Writer"],
+                        "uniform_fields": ["Dossier Steward"],
+                    }
+                },
+            ),
             "backlog missing governed sections": backlog_without_sections,
         }
         for label, config in cases.items():
@@ -1701,6 +1732,186 @@ class DocGovernanceTests(RepoCase):
         self.assertIn("STATUS active item marked complete", result.stdout)
         self.assertIn("STATUS stale: 73 days>30", result.stdout)
         self.assertNotIn("STATUS historical heading remains", result.stdout)
+
+    def test_status_active_item_contract_accepts_isolated_writers_with_one_steward(self) -> None:
+        self.write(
+            "STATUS.md",
+            """# Status
+
+## ⏳ 進行中（本批）
+
+### API worker
+
+- **Writer**：codex:api
+- **Workspace**：branch=feat/api
+- **Write Scope**：src/api/, tests/api/
+- **Dossier Steward**：claude:integration
+
+### UI worker
+
+- **Writer**：claude:ui
+- **Workspace**：branch=feat/ui
+- **Write Scope**：src/ui/, tests/ui/
+- **Dossier Steward**：claude:integration
+
+## 暫停中
+
+（目前無暫停項目。）
+""",
+        )
+        self.configure(
+            base_config(
+                [{"name": "status", "mode": "active", "paths": ["STATUS.md"]}],
+                status_schema={
+                    "path": "STATUS.md",
+                    "required_headings": ["進行中", "暫停中"],
+                    "forbidden_headings": [],
+                    "active_item_contract": {
+                        "required_fields": ["Writer", "Workspace", "Write Scope", "Dossier Steward"],
+                        "uniform_fields": ["Dossier Steward"],
+                    },
+                },
+            )
+        )
+        self.track()
+        result = self.run_tool("audit", "--ship")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_status_active_item_contract_allows_an_empty_active_section(self) -> None:
+        self.write(
+            "STATUS.md",
+            "# Status\n\n## 進行中\n\n（目前無進行中項目。）\n\n---\n\n## 暫停中\n",
+        )
+        self.configure(
+            base_config(
+                [{"name": "status", "mode": "active", "paths": ["STATUS.md"]}],
+                status_schema={
+                    "path": "STATUS.md",
+                    "required_headings": ["進行中"],
+                    "forbidden_headings": [],
+                    "active_item_contract": {
+                        "required_fields": ["Writer", "Workspace", "Write Scope", "Dossier Steward"],
+                        "uniform_fields": ["Dossier Steward"],
+                    },
+                },
+            )
+        )
+        self.track()
+        result = self.run_tool("audit")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_status_active_item_contract_reports_missing_empty_unassigned_and_drift(self) -> None:
+        contract = {
+            "required_fields": ["Writer", "Workspace", "Write Scope", "Dossier Steward"],
+            "uniform_fields": ["Dossier Steward"],
+        }
+        self.write(
+            "STATUS.md",
+            """# Status
+
+## 進行中
+
+這段 active 工作沒有放在 H3 item 裡。
+
+### Missing scope
+
+- **Writer**：codex:api
+- **Workspace**：branch=feat/api
+- **Dossier Steward**：claude:integration
+
+### Empty writer
+
+- **Writer**：
+- **Workspace**：branch=feat/ui
+- **Write Scope**：src/ui/
+- **Dossier Steward**：codex:other-integration
+
+### Unassigned steward
+
+- **Writer**：external:registrar
+- **Workspace**：external/no-repo-write
+- **Write Scope**：none
+- **Dossier Steward**：unassigned:integration
+""",
+        )
+        self.configure(
+            base_config(
+                [{"name": "status", "mode": "active", "paths": ["STATUS.md"]}],
+                status_schema={
+                    "path": "STATUS.md",
+                    "required_headings": ["進行中"],
+                    "forbidden_headings": [],
+                    "active_item_contract": contract,
+                },
+            )
+        )
+        self.track()
+        result = self.run_tool("audit", "--ship")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("STATUS active content outside H3 item", result.stdout)
+        self.assertIn("STATUS active item missing field: Write Scope", result.stdout)
+        self.assertIn("STATUS active item empty field: Writer", result.stdout)
+        self.assertIn("STATUS Dossier Steward cannot be unassigned", result.stdout)
+        self.assertIn("STATUS active item field mismatch: Dossier Steward", result.stdout)
+
+    def test_status_active_item_contract_rejects_completed_h3_and_ignores_hidden_examples(self) -> None:
+        self.write(
+            "STATUS.md",
+            """# Status
+
+## 進行中
+
+<!-- hidden active prose -->
+```md
+hidden active prose
+### Hidden item
+- **Writer**：
+```
+
+### ✅ Finished item
+
+- **Writer**：codex:done
+- **Workspace**：branch=feat/done
+- **Write Scope**：src/
+- **Dossier Steward**：codex:integration
+""",
+        )
+        self.configure(
+            base_config(
+                [{"name": "status", "mode": "active", "paths": ["STATUS.md"]}],
+                status_schema={
+                    "path": "STATUS.md",
+                    "required_headings": ["進行中"],
+                    "forbidden_headings": [],
+                    "active_item_contract": {
+                        "required_fields": ["Writer", "Workspace", "Write Scope", "Dossier Steward"],
+                        "uniform_fields": ["Dossier Steward"],
+                    },
+                },
+            )
+        )
+        self.track()
+        result = self.run_tool("audit")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("STATUS active item marked complete", result.stdout)
+        self.assertNotIn("missing field", result.stdout)
+        self.assertNotIn("outside H3", result.stdout)
+
+    def test_status_without_active_item_contract_keeps_legacy_shape(self) -> None:
+        self.write("STATUS.md", "# Status\n\n## 進行中\n\n- legacy active item\n")
+        self.configure(
+            base_config(
+                [{"name": "status", "mode": "active", "paths": ["STATUS.md"]}],
+                status_schema={
+                    "path": "STATUS.md",
+                    "required_headings": ["進行中"],
+                    "forbidden_headings": [],
+                },
+            )
+        )
+        self.track()
+        result = self.run_tool("audit")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_governance_surface_limit_and_single_parser(self) -> None:
         self.write("README.md", "12345")

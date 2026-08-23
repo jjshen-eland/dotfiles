@@ -20,6 +20,17 @@ fallback conventions 則由該 repo 自己的規定勝出。Repo 沒有契約檔
 - **If the working tree holds changes you did not make, STOP and report before staging, committing, or building on top of them.** Whether two sessions may share one tree is a dispatch decision made above you — never resolve it locally by guessing which changes are yours. Once authorized, explicit paths are still whole-file: stage verified hunks with `git add -p`.
 - **Inspect `git diff --cached` before every commit.** After splitting a mixed file, verify from a clean clone — `git clone --no-local <repo> <tmpdir>`. "I checked the working tree" is not evidence.
 
+### Shared work and durable project state
+
+- **Do NOT create a dossier or decision store that the repo has not adopted.** When an existing active-state store is present, record the success criteria for non-trivial work before implementation; when both a governance config and its scanner exist, use that adopted lifecycle, when neither exists follow the repo's legacy store, and when only one exists STOP as broken adoption.
+- **One writer per work item.** Parallel writers require a separate branch/worktree and disjoint declared write scopes. If durable state names another writer or the scope/ownership is ambiguous, STOP and get a reassignment instead of self-claiming.
+- Shared active state, backlog, history shards, and shared plans have exactly one **Dossier Steward**. Only that steward edits those surfaces; isolated workers and reviewers remain read-only there, and reviewers never self-promote into writers.
+- An isolated worker returns a **Dossier delta** containing its work item, actor, branch/workspace, commit SHA, changed scope/files, tests, progress, decisions with reasons, dead ends, blockers, and next step. The steward verifies those claims against the commit and tests before integrating them or updating canonical state.
+- Record durable decisions, dead ends, and milestones at event time, not reconstructed at shipping time. With parallel workers, report the fact immediately to the steward; the steward is the sole writer to shared history.
+- The steward integrates verified worker commits with `git cherry-pick` on a feature integration branch, never with a merge commit. Remove completed items from active state, write milestones to the repo's existing history store, and pass its documentation audit before declaring integration complete.
+- Ownership transfer requires explicit user direction or a handoff from the current steward, followed by a durable-state update before the new steward writes. A checkpoint or handoff artifact is evidence, never a lock or authority to mutate the repository.
+
+
 ### Fallback conventions — this repo's own convention wins where it has one
 
 - Conventional Commits: `<type>: <short desc>`, type is one of `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`. **If this repo mandates another commit format, follow the repo.**
@@ -29,9 +40,7 @@ fallback conventions 則由該 repo 自己的規定勝出。Repo 沒有契約檔
 ## Think Before Implementing
 
 - Ambiguous task: NEVER silently pick one reading. List the plausible interpretations and let the user choose before writing anything.（自主執行時的 fallback 見本節下方 `Uncertain?` 條目）
-- Non-trivial task: state the success criteria before starting; if the repo has `STATUS.md`, record Context／Goal／AC／Constraints in its active section（儀式面用 `/project spec`）.
-- 工作過程中做出**關鍵取捨／放棄一條路（死路）／完成里程碑**時，先判 adoption：`.doc-governance.json` 與 `scripts/doc-governance.py` 兩者皆有才是 adopted，當下用 repo-local `record-path` 決定 event-time history shard 並追加 record；兩者皆無才走 legacy；只存在一個＝BROKEN，停止且不回退 legacy。Do NOT defer these notes to ship time — context may be compacted before then.
-- Uncertain?（含上條的 ambiguity）互動 session：stop and ask — do NOT assume just to keep momentum。自主執行（背景 turn、使用者無法即時回覆）：取最合理解讀繼續，but the assumption MUST land somewhere — 就地寫入 STATUS.md「進行中」（無 dossier 則在最終回報明列「本次假設」）並標示待使用者確認。**Irreversible or outward-facing actions still require asking — the autonomous fallback NEVER extends to them.**
+- Uncertain? 互動 session：stop and ask — do NOT assume just to keep momentum。自主執行（背景 turn、使用者無法即時回覆）：取最合理解讀繼續，並在既有 active-state store 或最終回報明列假設、標示待確認。**Irreversible or outward-facing actions still require asking — the autonomous fallback NEVER extends to them.**
 - Bug fix: ALWAYS write a reproducing test FIRST, then fix. 無法可行地自動重現者（環境相依、一次性腳本、外部服務行為）→ 改記手動重現步驟與修後驗證方式（有 STATUS.md 寫進去、無則寫在回報裡）；「先重現、再修」的順序不變。
 
 ## PR / Git
@@ -99,9 +108,8 @@ When the user pastes third-party review findings, read the source code and verif
 ## 跨 Agent 工作分配（Claude Code / Codex 並用）
 
 - **writer 不限**：一般實作、測試、除錯兩邊都可做，依當下工具與模型選，**不按目錄分**（「codex 只碰 `codex/`」向來只是慣例、非規則）。
-- **ship 單一流程**：Claude 的 `/project log` 是 pressure-tested 的送出路徑（branch-first／protection／dossier 蒸餾），其「說法表」是**授權判定的唯一權威**——kernel 指向它，兩邊因此不會對同一句話給出不同答案。Codex 拿到授權時重用同一套狀態、保護與 mutation 腳本，不另寫一套近似流程；repo 沒有這套流程時，兩者都停在 feature branch 的 commit。
+- **ship 單一流程**：Claude 的 `/project` 與 Codex 的 `$project` 共用同一套 pressure-tested workflow（branch-first／protection／dossier 蒸餾）與授權說法表，不另寫近似流程；repo 沒有 shipping workflow 時，兩者都停在 feature branch 的 commit。
 - **review 刻意隔離**：同一變更的作者與 reviewer 用不同 agent。可共用＝repo 事實／程式碼／測試／機械腳本／最終決策；**不主動共用**＝嫌疑清單、上輪 findings、輪次、預期答案、作者的判斷路徑；可刻意不同＝兩邊 reviewer 的判準與 orchestration（各自有 eval oracle 即可）。**共用與獨立審查是張力**——共用越多判準，blind review 的價值越低。
-- **One writer per work item.** Two agent sessions must NEVER edit the same working tree concurrently — use a separate worktree or clone. 這與上方 staging 紀律同源：並行編輯製造混檔，混檔製造誤收。
 
 ## 跨主機工作流（多主機開發；主機清單見 `~/.dotfiles/scripts/inventory.conf`，勿在此硬編清單——會漂移）
 

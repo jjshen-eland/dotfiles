@@ -51,13 +51,21 @@ MIN_ROUTE_LINES = 2  # heading + executable route contract; blocks equal to "x" 
 
 # 逐字複本的意義在於「規則只寫一次」。這些字串是規則本體的指紋——出現在 block 之外，
 # 代表有人又抄了一份（複本一旦落在 gate 管不到的地方，漂移就回來了）。
-CANARIES = ("git add -A", "--no-local", "git switch -c", "`perf`, `ci`")
+CANARIES = ("git add -A", "--no-local", "git switch -c", "`perf`, `ci`", "One writer per work item.")
+REQUIRED_KERNEL_RULES = (
+    "One writer per work item.",
+    "separate branch/worktree",
+    "Dossier Steward",
+    "Dossier delta",
+    "Do NOT create a dossier",
+    "`git cherry-pick`",
+)
 
 # 封閉集合：每個 blocking 分支必須回傳其中一碼；tests/run.sh 會執行 RED fixtures 並驗證
 # 每一碼都真的被命中。新增 finding 分支時只加 code、不加 fixture，meta-test 必紅。
 FINDING_CODES = (
     "KERNEL_FILE_MISSING", "KERNEL_MARKER_COUNT", "KERNEL_MARKER_ORDER",
-    "KERNEL_CANARY_OUTSIDE", "KERNEL_MIN_RULES", "KERNEL_DRIFT",
+    "KERNEL_CANARY_OUTSIDE", "KERNEL_MIN_RULES", "KERNEL_REQUIRED_RULE", "KERNEL_DRIFT",
     "ROUTE_MARKER_COUNT", "ROUTE_MARKER_ORDER", "ROUTE_EMPTY",
     "ROUTE_MIN_RULES", "ROUTE_EXECUTABLE", "ROUTE_DRIFT", "ROUTE_MISPLACED",
     "PORTABLE_FILE_MISSING", "PORTABLE_MARKER_COUNT", "PORTABLE_MARKER_ORDER",
@@ -130,6 +138,10 @@ def scan(root):
             findings.append(finding("KERNEL_MIN_RULES", "kernel block 只有 %d 條規則行（<%d）——內容被掏空？"
                             % (len(rules), MIN_RULE_LINES)))
         ref = bodies[KERNEL_FILES[0]]
+        missing = [rule for rule in REQUIRED_KERNEL_RULES if rule not in ref]
+        if missing:
+            findings.append(finding("KERNEL_REQUIRED_RULE", "kernel block 缺跨 runtime dossier 規則指紋: %s"
+                            % ", ".join(repr(item) for item in missing)))
         for rel in KERNEL_FILES[1:]:
             if bodies[rel] != ref:
                 findings.append(finding("KERNEL_DRIFT", "%s 的 kernel block 與 %s 不是逐字相同——複本已漂移"

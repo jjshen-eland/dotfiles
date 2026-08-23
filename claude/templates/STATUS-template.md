@@ -16,6 +16,10 @@ STATUS.md — 專案 active state（repo 內、隨 git 跨主機、隨專案移�
 
 ### 1. <工作項標題> <⏳/🆕>
 
+- **Writer**：`claude:<workline>`／`codex:<workline>`／`human:<name>`／`external:<party>`／`unassigned:<slug>`
+- **Workspace**：`branch=<feature-branch>`／`external/no-repo-write`／`unassigned`
+- **Write Scope**：repo-relative paths/modules；外部事項填 `none`，獨占全 repo 才填 `repo-wide`
+- **Dossier Steward**：唯一可改 shared dossier 的 actor；所有 active items 必須相同且不得 `unassigned`
 - **Context**：為什麼要做這件事
 - **Goal**：做到什麼程度算完成
 - **Acceptance Criteria**：怎麼驗證它真的好了

@@ -165,11 +165,17 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
 
 **Adopted repo**（config + core 兩者皆在）：
 
-1. 核對本 session 的 decision／dead end 是否已在事件當下寫入；漏記才用 `record-path` 決定 shard 與 ID 後補寫。
-2. 工作完成時寫 `M-*` milestone、從 `STATUS.md` 移除 completed active item；暫停項必須有恢復條件。
+1. 先讀 target config 與 active items。若啟用 `active_item_contract`，目前 actor 必須等於所有 active items
+   的 `Dossier Steward` 才能進入 shared dossier／commit／shipping 流程。Worker 呼叫 Log 時立即 STOP：不得
+   改 STATUS/backlog/history/plan、不得 push；若已有乾淨 semantic commit，輸出 dossier 規定的完整
+   `Dossier delta` 交給 steward，未 commit 或 scope 無法驗證則列為 blocker。NEVER 把呼叫 Log 當 ownership transfer。
+2. Steward 核對本 session 與已驗證 worker deltas 的 decision／dead end 是否已在事件當下寫入；漏記才用
+   `record-path` 決定 shard 與 ID 後補寫。整合 worker commit 前驗 SHA、ancestry、diff、declared scope 與 tests；
+   通過才 cherry-pick，衝突或越界就 STOP，不自動解衝突。
+3. 工作完成時寫 `M-*` milestone、從 `STATUS.md` 移除 completed active item；暫停項必須有恢復條件。
    Backlog 新項給 `B-*`；解決／放棄／變成決策時寫對應 history record、保留 `B-*` 關聯後移除原 item。
-3. 同一 work item 的 plan 只修原檔；本次實作真正完成才把狀態改 `implemented`，不得另建 `-v2`／`-final`。
-4. 文檔更新後執行 `python3 "<project-scripts>/doc-governance.py" --root "$repo" audit --ship`。exit 0 才通過；exit 1 的 findings 必須處置；
+4. 同一 work item 的 plan 只修原檔；本次實作真正完成才把狀態改 `implemented`，不得另建 `-v2`／`-final`。
+5. 文檔更新後執行 `python3 "<project-scripts>/doc-governance.py" --root "$repo" audit --ship`。exit 0 才通過；exit 1 的 findings 必須處置；
    exit 2 是 BROKEN。兩種非零都設定 doc STOP，但繼續收集其餘摘要。**這是 adopted repo 唯一 doc verdict；
    NEVER 再跑 legacy dossier/backlog detector 來覆蓋它。**
 

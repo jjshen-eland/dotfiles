@@ -450,8 +450,17 @@ kg_reverse_markers() {  # $1=檔案；$2=block 名。保留各一個 marker，�
         "$file" && rm -f "$file.bak"
 }
 
-# 八條規則的合法 body（GREEN 基準）
-kg_body="$(for i in 1 2 3 4 5 6 7 8; do echo "- rule ${i}"; done)"
+# 合法 body（GREEN 基準）：八條以上，並帶齊跨 runtime dossier 的必要行為指紋。
+# shellcheck disable=SC2016  # backtick 是餵給 gate 的 Markdown 字面，不是 command substitution。
+kg_body='- rule 1
+- rule 2
+- rule 3
+- One writer per work item.
+- Use a separate branch/worktree for another writer.
+- The Dossier Steward owns shared state.
+- A worker returns a Dossier delta.
+- The steward uses `git cherry-pick` for integration.
+- Do NOT create a dossier when none exists.'
 
 rm -rf "$KG"; kg_make "$KG/green" "$kg_body"
 kg_capture "$KG/green"
@@ -459,7 +468,7 @@ assert_rc "gate 自檢：合法 fixture → exit 0" 0 "$kg_rc"
 assert_eq "gate 自檢：合法 fixture 無 findings" "" "$kg_out"
 
 # 漂移：其中一份的 body 不同
-kg_make "$KG/drift" "$kg_body" "$(printf '%s\n' "$kg_body" | sed 's/rule 8/rule 8 （偷改）/')"
+kg_make "$KG/drift" "$kg_body" "$(printf '%s\n' "$kg_body" | sed 's/rule 3/rule 3 （偷改）/')"
 kg_red "$KG/drift" '漂移' "gate 自檢：複本漂移 → 命中" "gate 自檢：複本漂移未命中"
 
 # doc-find route 也在兩個 repo-resident always-on 檔逐字複製；單邊漂移要紅
@@ -509,6 +518,10 @@ kg_red "$KG/route-empty" '\[ROUTE_EMPTY\]' "gate 自檢：route 空 block → �
 # 四份都被掏空 → 「空 == 空」會相等，靠條目數下限擋
 kg_make "$KG/hollow" "- rule 1"
 kg_red "$KG/hollow" '規則行' "gate 自檢：四份同時掏空 → 命中（空==空 的假綠）" "gate 自檢：掏空未命中——這是最關鍵的假綠"
+
+# 條目數足夠、四份也一致，但拿掉 stewardship 語意仍須紅，否則可用 filler 騙過下限。
+kg_make "$KG/required-rule" "$(printf '%s\n' "$kg_body" | sed 's/Dossier delta/worker report/')"
+kg_red "$KG/required-rule" '\[KERNEL_REQUIRED_RULE\]' "gate 自檢：kernel 缺 stewardship 必要規則 → 命中" "gate 自檢：kernel required-rule 分支未命中"
 
 # 缺一份
 kg_make "$KG/missing" "$kg_body"; rm -f "$KG/missing/codex/AGENTS.md"
@@ -3091,6 +3104,21 @@ if grep -q 'repo contract.*優先' "$PJS_CLAUDE/references/log-workflow.md" \
         "$PJS_CLAUDE/scripts/branch-first.sh" "$PJS_CLAUDE/scripts/ship-state.sh"; then
     ok "project commit／PR title 以 target repo convention 優先"
 else bad "project commit／PR title 未明定 repo convention 優先與 fallback"; fi
+if grep -q '## 平行協作與 stewardship' "$PJS_CLAUDE/references/dossier.md" \
+    && grep -q 'Dossier delta' "$PJS_CLAUDE/references/dossier.md" \
+    && grep -q '目前 actor 必須等於所有 active items' "$PJS_CLAUDE/references/log-workflow.md" \
+    && grep -q 'Worker 呼叫 Log 時立即 STOP' "$PJS_CLAUDE/references/log-workflow.md" \
+    && grep -q 'active_item_contract' "$PJS_CLAUDE/references/workflow.md"; then
+    ok "project shared workflow 區分 dossier steward 與 isolated worker"
+else bad "project shared workflow 缺 stewardship／worker STOP 契約"; fi
+project_spec_sig="\$project spec"
+project_transfer_sig="\$project transfer"
+ready4quit_sig="\$ready4quit"
+if grep -qF "$project_spec_sig" "$ROOT/codex/AGENTS.md" \
+    && grep -qF "$project_transfer_sig" "$ROOT/codex/AGENTS.md" \
+    && grep -qF "$ready4quit_sig" "$ROOT/codex/AGENTS.md"; then
+    ok "Codex 全域 contract 提示 explicit project／ready4quit 入口"
+else bad "Codex 全域 contract 缺 explicit workflow pointers"; fi
 
 echo "▶ 12d. handoff skill 跨 Claude Code／Codex 共用核心與 state store"
 HFS_CLAUDE="$ROOT/claude/skills/handoff"
