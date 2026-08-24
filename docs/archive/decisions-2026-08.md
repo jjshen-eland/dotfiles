@@ -969,3 +969,9 @@
   - 放棄:以統一開啟或關閉兩端 memory 達成一致性；建立共用 private-memory store；讓 ready4quit 自動改 always-on instruction；讓 transfer guide、local commit 或 open PR 提前切 steward；繼續維護 root CLAUDE 的第四份 kernel 複本
   - 重議:任一 runtime 的 memory 開關實測會改變 authority routing；G1c import/control 任一臂回歸；或 canonical endpoint 無法為 remote-visible atomic switch 提供可驗證條件
   - 關聯:D-20260823-portable-handoff-skill;D-20260823-portable-ready4quit-skill;D-20260824-cross-runtime-dossier-stewardship;claude/evals/contract-evals.md;claude/skills/project/references/pressure-tests.md
+
+- **D-20260824-project-steward-authority · 2026-08-24 Project 將 executor、durable steward 與本輪 authority 分欄解析**:adopted repo 的 Project Spec／Log 在 mutation、commit 或 shipping 前，改由 deterministic helper 從 runtime prefix、current branch、active item 與 structured invocation arguments 產出 `executor actor`、`durable steward`、`authority actor`、`authority source`。Agent workline 只能用 same-runtime exact `resume=` 接續；human／legacy owner steward 只能由本輪 explicit `as=` 作 bounded execution delegation，下一輪失效且不改 ownership。普通身分宣稱、Git author、GitHub login、endpoint authorization 或名稱相似皆不參與 actor resolution。Portable skill 文件與 fixtures 只使用中性 actor，不保存個人帳號、repo 或 PR incident ID。
+  - 日期來源:direct
+  - 放棄:只靠 prose 要求 actor exact match；把「我是 owner」視為身份驗證；讓 runtime session 自行改標成 human／owner；建立長效 impersonation token；把真實 incident 識別寫進 portable oracle
+  - 重議:runtime 能提供可機械驗證且跨 session 穩定的 signed delegation primitive；或 adopted repo 的 actor schema 出現無法由 current branch／active workspace 表示的合法 workline
+  - 關聯:D-20260824-cross-runtime-dossier-stewardship;D-20260824-memory-independent-transfer;X-20260824-project-identity-claim-authority;claude/skills/project/references/pressure-tests.md;claude/skills/project/scripts/steward-authority.py

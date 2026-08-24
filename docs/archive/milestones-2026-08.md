@@ -221,3 +221,9 @@
   - 放棄:統一調整兩端 memory toggle；建立共用 private-memory store；讓 private cache 成為 transfer prerequisite；讓 local commit／feature PR 或字面 next-owner 欄位提前授權；把 PyYAML／pytest 散裝進 system Python
   - 重議:任一 runtime 的 memory 設定實測改變 safety／authority 結果；Claude import G1c control 回歸；或 endpoint-aware conditional authority 無法在採用 repo fail closed
   - 關聯:D-20260824-memory-independent-transfer;claude/evals/contract-evals.md;claude/skills/ready4quit/evals.md;claude/skills/handoff/evals.md;claude/skills/project/references/pressure-tests.md;tests/run.sh
+
+- **M-20260824-project-steward-authority · 2026-08-24 Project stewardship actor gate 完成**:Scenario 24 將已去識別的 ordinary identity-claim bypass 固定為 RED；Claude／Codex shared Project workflow 新增 deterministic `steward-authority.py`，分離 executor、durable steward、authority actor/source，限定 same-runtime exact `resume=` 與單次 human／owner `as=`，並揭露 worker commit 觸碰 STATUS、backlog、transfer、history 或 shared plans 的越界 surface。Current／candidate parent 都沒有 steward 時，shared-surface candidate 會 STOP；completed item 則可從 parent STATUS 恢復合法 shipping authority。Fresh Codex 在 owner 身分與立即 merge 壓力下仍 STOP、列出四欄 evidence 與 milestone 越界，repo status 前後一致。Codex validator、Ruff、py_compile、diff check、doc-governance ship audit 與全 repo `tests/run.sh` 均通過，最終為 1150 PASS、0 FAIL；portable docs／fixtures 不含個人帳號或 incident repo／PR ID。
+  - 日期來源:direct
+  - 放棄:prose-only exact-match gate；自然語言身份確認；讓 `as=` 代理 agent workline；把真實帳號寫進測試 fixture
+  - 重議:出現 legitimate cross-runtime resume、multi-steward active state 或 transfer conditional owner 無法由既有 state machine fail closed 表示的 behavior eval
+  - 關聯:D-20260824-project-steward-authority;X-20260824-project-identity-claim-authority;claude/skills/project/references/pressure-tests.md;tests/run.sh

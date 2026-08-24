@@ -180,3 +180,9 @@
   - 放棄:以混合 20 題的 +1 當作採用理由(逐語料拆開就看得出那是遮蓋,committed ratchet 會紅);把 ratchet 門檻下修來讓變體過關(那是把量測改成能過,不是把檢索改好)
   - 重議:出現第三份語料且三者在多語料上一致為正;或 title/body 權重的比值本身有獨立證據支持調整
   - 關聯:B-20260821-debt-27;X-20260822-doc-h1-token-signal;M-20260822-retrieval-source-diversity
+
+- **X-20260824-project-identity-claim-authority · 2026-08-24 用自然語言身分確認解除 Project steward gate**:實地 rollout 出現 worker actor mismatch 先 STOP，後續卻因使用者普通身分宣稱而被 agent 解讀成「身份已確認」，繼續寫 steward-only history 並 merge；另有 sessions 在沒有可稽核 actor evidence 時直接完成相同行為。這不是 authentication，也不會留下 invocation-scoped authority evidence；Git author 與 GitHub login 同樣只能證明工具設定，不能證明 durable dossier delegation。公開紀錄已去識別，只保留可重現的 failure shape。
+  - 日期來源:direct
+  - 放棄:用追問「你是不是 owner」補 prose gate；把帳號／姓名寫死在 skill 或 fixture；把 merge authorization 當 stewardship authorization
+  - 重議:runtime 提供 authenticated principal 且 repo contract 明定它與 actor key 的機械映射
+  - 關聯:D-20260824-project-steward-authority;claude/skills/project/references/pressure-tests.md

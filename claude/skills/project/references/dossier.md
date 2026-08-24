@@ -38,6 +38,22 @@ Repo 的 `status_schema.active_item_contract` 啟用時，每個 active H3 除�
   repo writer 平行工作。
 - `Dossier Steward`：所有 active items 使用同一個 actor key，且不得是 `unassigned`。
 
+既有 repo 的 human authority 可能寫成 `human:<name>` 或 legacy `owner:<name>`；兩者都代表 durable human
+steward，不代表任何 Claude／Codex session 自動取得該 actor。Runtime executor 與 authority actor 必須分開：
+
+- `resume=<runtime:workline>` 只恢復**同 runtime、exact durable actor key** 的既有 workline；不改 ownership。
+- `as=<human-or-owner>` 是使用者在**本次新的 explicit project invocation arguments** 對 human steward 的
+  bounded execution delegation。值必須 exact match 所有 active items 的 durable steward，只涵蓋本輪
+  Project mutation／shipping，下一輪自動失效，也不把 executor 寫成 owner。
+- 普通自然語言「我是某人」、Git author、GitHub login、同 runtime 或名稱相似都不是 resume／delegation
+  credential。Agent session 不得把自己重新標成 `human:*`／`owner:*`。
+
+每次 gate 與 ship summary 都分別列 `executor actor`、`durable steward`、`authority actor`、
+`authority source`。沒有 exact match、合法同-runtime resume 或 explicit bounded human delegation 就 STOP。
+若 current STATUS 已因完成而沒有 active item，但入口正在評估一顆同時移除該 item 的 candidate commit，
+可從 candidate parent 的 STATUS 恢復 durable steward evidence；current 與 parent 都沒有 steward 時，candidate
+不得寫 history／backlog／transfer／shared plan，必須先用 Spec 建立 work item，不能把「零 active」當免 steward。
+
 Steward 是 shared `STATUS.md`、backlog、history shards 與 shared plan 的唯一 writer。其他 writer 必須在
 不同 branch/worktree 與不重疊 scope 內工作，不改上述 shared surfaces、不 push，完成後建立符合 repo
 convention 的 semantic commit，交給 steward 驗證並 cherry-pick 到 integration branch。Scope 相交、workspace
@@ -52,6 +68,12 @@ machine-local handoff artifact 不授予 repo mutation。正式切換必須依 w
 該 commit 到達 canonical handover endpoint 前，舊 steward 仍是唯一 shared-dossier authority。若 checkout 已含
 next actor 的 pending coordination fields，任何 authority check 都必須定位 conditional owner record 所在 commit、
 fetch endpoint 並驗 remote-visible ancestry；不得只按字面欄位授權，證據不可得即 STOP。
+
+Bounded human delegation 不是 ownership transfer：durable steward 不變，runtime 只是本輪受指示的 executor。
+它不能代理 `claude:*`／`codex:*` steward；agent workline 的接續只能用 same-runtime `resume=` exact match。
+Worker commit 若含 `STATUS.md`、backlog、history shard、shared plan 或 transfer guide，delta 已越界；不得原樣
+ship 或當作合格 cherry-pick。先由 worker 交出不含 shared surfaces 的 semantic commit，或由合法 steward
+在受控整合中重建 commit 並重新驗 diff／tests。
 
 ## 已採用 repo 的開工與檢索
 

@@ -3115,11 +3115,120 @@ if grep -q 'repo contract.*優先' "$PJS_CLAUDE/references/log-workflow.md" \
 else bad "project commit／PR title 未明定 repo convention 優先與 fallback"; fi
 if grep -q '## 平行協作與 stewardship' "$PJS_CLAUDE/references/dossier.md" \
     && grep -q 'Dossier delta' "$PJS_CLAUDE/references/dossier.md" \
-    && grep -q '目前 actor 必須等於所有 active items' "$PJS_CLAUDE/references/log-workflow.md" \
+    && grep -q 'authority actor 必須等於所有 active items' "$PJS_CLAUDE/references/log-workflow.md" \
     && grep -q 'Worker 呼叫 Log 時立即 STOP' "$PJS_CLAUDE/references/log-workflow.md" \
     && grep -q 'active_item_contract' "$PJS_CLAUDE/references/workflow.md"; then
     ok "project shared workflow 區分 dossier steward 與 isolated worker"
 else bad "project shared workflow 缺 stewardship／worker STOP 契約"; fi
+if grep -q 'Scenario 24 — 身分宣稱不得冒充 steward actor' "$PJS_CLAUDE/references/pressure-tests.md" \
+    && grep -q 'ordinary identity claim.*not.*delegation' "$PJS_CLAUDE/references/log-workflow.md" \
+    && grep -q 'explicit-bounded-human-delegation' "$PJS_CLAUDE/references/log-workflow.md" \
+    && grep -q 'executor actor.*durable steward.*authority source' "$PJS_CLAUDE/references/log-workflow.md" \
+    && grep -q 'resume=.*same runtime' "$PJS_CLAUDE/references/log-workflow.md" \
+    && grep -q 'candidate-shared-surface' "$PJS_CLAUDE/references/log-workflow.md" \
+    && grep -q '本輪稍後由合法 steward 新建' "$PJS_CLAUDE/references/log-workflow.md"; then
+    ok "project stewardship gate 區分自然語言身分、workline resume 與 bounded human delegation"
+else bad "project stewardship gate 仍可能把『我是 owner』誤當 actor authority"; fi
+
+PJS_STEWARD_GATE="$PJS_CLAUDE/scripts/steward-authority.py"
+PSG="$TMP/project-steward-gate"
+mkdir -p "$PSG/repo/docs/archive" "$PSG/repo/src"
+git init -q -b main "$PSG/repo"
+git -C "$PSG/repo" config user.name test
+git -C "$PSG/repo" config user.email test@example.com
+printf '%s\n' '{"status_schema":{"path":"STATUS.md","active_item_contract":{"required_fields":["Writer","Workspace","Write Scope","Dossier Steward"],"uniform_fields":["Dossier Steward"]}},"history_paths":{"decision":"docs/archive/decisions-{YYYY-MM}.md","dead_end":"docs/archive/dead-ends-{YYYY-MM}.md","milestone":"docs/archive/milestones-{YYYY-MM}.md"},"plan_dir":"docs/plans"}' > "$PSG/repo/.doc-governance.json"
+printf '%s\n' '# Status' '' '## 進行中' '' '### Contract sync' '' '- **Writer**：codex:agent-contract-sync' '- **Workspace**：branch=docs/agent-contract-sync' '- **Write Scope**：AGENTS.md, CLAUDE.md, tests/' '- **Dossier Steward**：owner:repo-maintainer' '' '## 暫停中' > "$PSG/repo/STATUS.md"
+printf '%s\n' '# Milestones' > "$PSG/repo/docs/archive/milestones-2026-08.md"
+git -C "$PSG/repo" add .doc-governance.json STATUS.md docs/archive/milestones-2026-08.md
+git -C "$PSG/repo" commit -qm "chore: seed authority fixture"
+git -C "$PSG/repo" switch -qc docs/agent-contract-sync
+printf '%s\n' 'implemented = true' > "$PSG/repo/src/change.py"
+printf '%s\n' '' '- worker wrote steward-only milestone' >> "$PSG/repo/docs/archive/milestones-2026-08.md"
+git -C "$PSG/repo" add src/change.py docs/archive/milestones-2026-08.md
+git -C "$PSG/repo" commit -qm "docs: sync contract"
+psg_commit="$(git -C "$PSG/repo" rev-parse HEAD)"
+
+psg_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --commit "$psg_commit" 2>"$PSG/err")"
+psg_rc=$?
+assert_rc "steward gate：owner 身分未顯式 delegation → STOP" 1 "$psg_rc"
+if grep -q '^executor-actor: codex:agent-contract-sync$' <<< "$psg_out" \
+    && grep -q '^durable-steward: owner:repo-maintainer$' <<< "$psg_out" \
+    && grep -q '^authority-source: active-writer-workspace-match$' <<< "$psg_out" \
+    && grep -q '^verdict: STOP$' <<< "$psg_out"; then
+    ok "steward gate 不把普通『我是 repo owner』身分宣稱映射成 owner actor"
+else bad "steward gate actor／steward／authority evidence 不完整"; fi
+if grep -q '^candidate-shared-surface: docs/archive/milestones-2026-08.md$' <<< "$psg_out"; then
+    ok "steward gate 揭露 worker commit 越界 milestone surface"
+else bad "steward gate 未揭露 worker 的 shared-surface 越界"; fi
+
+psg_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --as-human owner:repo-maintainer --commit "$psg_commit" 2>"$PSG/err")"
+psg_rc=$?
+assert_rc "steward gate：exact human delegation → PASS" 0 "$psg_rc"
+if grep -q '^authority-actor: owner:repo-maintainer$' <<< "$psg_out" \
+    && grep -q '^authority-source: explicit-bounded-human-delegation$' <<< "$psg_out" \
+    && grep -q '^verdict: PASS$' <<< "$psg_out"; then
+    ok "steward gate 保留 runtime executor 並以 bounded human delegation 放行"
+else bad "steward gate human delegation evidence 不完整"; fi
+
+python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --as-human owner:someone-else >/dev/null 2>&1
+assert_rc "steward gate：human delegation actor 非 durable steward → STOP" 1 $?
+python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --as-human codex:integration >/dev/null 2>&1
+assert_rc "steward gate：as= 不得代理 agent actor" 2 $?
+python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --resume-actor owner:repo-maintainer >/dev/null 2>&1
+assert_rc "steward gate：resume= 不得冒充 human actor" 2 $?
+
+sed -i.bak 's/owner:repo-maintainer/codex:cross-runtime-dossier-rollout/' "$PSG/repo/STATUS.md" && rm -f "$PSG/repo/STATUS.md.bak"
+psg_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --resume-actor codex:cross-runtime-dossier-rollout 2>"$PSG/err")"
+psg_rc=$?
+assert_rc "steward gate：same-runtime exact workline resume → PASS" 0 "$psg_rc"
+if grep -q '^executor-actor: codex:cross-runtime-dossier-rollout$' <<< "$psg_out" \
+    && grep -q '^authority-source: explicit-same-runtime-resume$' <<< "$psg_out"; then
+    ok "steward gate resume evidence 精確指向 durable workline"
+else bad "steward gate resume evidence 不完整"; fi
+
+PSG_EMPTY="$TMP/project-steward-empty"
+mkdir -p "$PSG_EMPTY/repo/docs/archive"
+git init -q -b main "$PSG_EMPTY/repo"
+git -C "$PSG_EMPTY/repo" config user.name test
+git -C "$PSG_EMPTY/repo" config user.email test@example.com
+cp "$PSG/repo/.doc-governance.json" "$PSG_EMPTY/repo/.doc-governance.json"
+printf '%s\n' '# Status' '' '## 進行中' '' '目前無進行中項目。' '' '## 暫停中' > "$PSG_EMPTY/repo/STATUS.md"
+printf '%s\n' '# Milestones' > "$PSG_EMPTY/repo/docs/archive/milestones-2026-08.md"
+git -C "$PSG_EMPTY/repo" add .doc-governance.json STATUS.md docs/archive/milestones-2026-08.md
+git -C "$PSG_EMPTY/repo" commit -qm "chore: seed empty authority fixture"
+git -C "$PSG_EMPTY/repo" switch -qc docs/no-steward-history
+printf '%s\n' '' '- milestone without a steward' >> "$PSG_EMPTY/repo/docs/archive/milestones-2026-08.md"
+git -C "$PSG_EMPTY/repo" add docs/archive/milestones-2026-08.md
+git -C "$PSG_EMPTY/repo" commit -qm "docs: write ownerless milestone"
+psg_empty_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG_EMPTY/repo" --runtime codex --commit HEAD 2>"$PSG_EMPTY/err")"
+assert_rc "steward gate：current／parent 零 steward 的 shared history candidate → STOP" 1 $?
+if grep -q '^authority-source: no-durable-steward-for-shared-surface$' <<< "$psg_empty_out" \
+    && grep -q '^candidate-shared-surface: docs/archive/milestones-2026-08.md$' <<< "$psg_empty_out"; then
+    ok "steward gate 不把零 active item 當成 shared-history 免責"
+else bad "steward gate 未攔下無 durable steward 的 shared history"; fi
+
+PSG_PARENT="$TMP/project-steward-parent"
+mkdir -p "$PSG_PARENT/repo/docs/archive"
+git init -q -b main "$PSG_PARENT/repo"
+git -C "$PSG_PARENT/repo" config user.name test
+git -C "$PSG_PARENT/repo" config user.email test@example.com
+cp "$PSG/repo/.doc-governance.json" "$PSG_PARENT/repo/.doc-governance.json"
+printf '%s\n' '# Status' '' '## 進行中' '' '### Completing item' '' '- **Writer**：codex:integration' '- **Workspace**：branch=docs/completed-item' '- **Write Scope**：docs/' '- **Dossier Steward**：codex:integration' '' '## 暫停中' > "$PSG_PARENT/repo/STATUS.md"
+printf '%s\n' '# Milestones' > "$PSG_PARENT/repo/docs/archive/milestones-2026-08.md"
+git -C "$PSG_PARENT/repo" add .doc-governance.json STATUS.md docs/archive/milestones-2026-08.md
+git -C "$PSG_PARENT/repo" commit -qm "chore: seed completing item"
+git -C "$PSG_PARENT/repo" switch -qc docs/completed-item
+printf '%s\n' '# Status' '' '## 進行中' '' '目前無進行中項目。' '' '## 暫停中' > "$PSG_PARENT/repo/STATUS.md"
+printf '%s\n' '' '- completed item milestone' >> "$PSG_PARENT/repo/docs/archive/milestones-2026-08.md"
+git -C "$PSG_PARENT/repo" add STATUS.md docs/archive/milestones-2026-08.md
+git -C "$PSG_PARENT/repo" commit -qm "docs: complete item"
+psg_parent_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG_PARENT/repo" --runtime codex --resume-actor codex:integration --commit HEAD 2>"$PSG_PARENT/err")"
+assert_rc "steward gate：completed candidate 從 parent STATUS 恢復 steward → PASS" 0 $?
+if grep -q '^durable-steward: codex:integration$' <<< "$psg_parent_out" \
+    && grep -q '^durable-steward-source: commit-parent-active-state$' <<< "$psg_parent_out" \
+    && grep -q '^verdict: PASS$' <<< "$psg_parent_out"; then
+    ok "steward gate 保留 completed-item 跨 session shipping liveness"
+else bad "steward gate 無法從 candidate parent 恢復 completed-item steward"; fi
 if grep -q 'BLOCKED.*PREPARED.*TRANSFERRED' "$PJS_CLAUDE/references/workflow.md" \
     && grep -q 'portable-knowledge' "$PJS_CLAUDE/references/workflow.md" \
     && grep -q 'canonical handover endpoint' "$PJS_CLAUDE/references/workflow.md" \

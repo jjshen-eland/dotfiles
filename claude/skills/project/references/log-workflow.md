@@ -84,6 +84,7 @@ These are hard constraints. Read them before touching git.
 | 形狀 | 是什麼 | 例 |
 |---|---|---|
 | `--` 開頭 | **flag**（模式或送出說法） | `--log` `--merge` `--pr` |
+| `resume=`／`as=`／`to=` 開頭 | **authority／transfer control token** | `resume=codex:integration` `as=owner:repo-maintainer` `to=codex:beta` |
 | 裸字，且是模式名 | 模式（僅限**第 1 個** token） | `spec` `log` `transfer` |
 | 裸字，且命中說法表 | **送出說法**（見 `ship-paths.md`「說法表」） | `merge` `bypass merge` |
 | 含 `/` 或 `.` 開頭，或存在的路徑 | repo 或 module —— 交給 `resolve` | `.` `~/Projects/krepo` `./docs/plans` |
@@ -168,10 +169,21 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
 1. 先讀 target config 與 active items。若存在 `PREPARED` transfer guide 或 conditional owner `D-*` record，
    先依 transfer workflow 定位該 record 所在 commit、fetch canonical endpoint 並驗 remote-visible ancestry；
    未抵達時 active fields 中的 next actor 只是 pending value，effective authority 仍取 guide 的 current steward，
-   查不到證據就 STOP。若啟用 `active_item_contract`，目前 actor 必須等於所有 active items
-   的 `Dossier Steward` 才能進入 shared dossier／commit／shipping 流程。Worker 呼叫 Log 時立即 STOP：不得
+   查不到證據就 STOP。接著用 shared workflow 的 `steward-authority.py` 跑 ordinary gate，runtime prefix 只能
+   由入口提供；`resume=`／`as=` 只能來自 normalized invocation arguments。ordinary identity claim is not delegation；
+   「我是 owner」、Git author、GitHub login 或同 runtime 都不得改 helper 的 executor actor。
+   若啟用 `active_item_contract`，helper 的 authority actor 必須等於所有 active items 的 durable steward，
+   才能進入 shared dossier／commit／shipping 流程。`resume=` must use the same runtime prefix and exact actor；
+   `as=` 只接受 exact `human:*`／`owner:*` steward，authority source 固定為
+   `explicit-bounded-human-delegation`，且只活本輪。Worker 呼叫 Log 時立即 STOP：不得
    改 STATUS/backlog/history/plan、不得 push；若已有乾淨 semantic commit，輸出 dossier 規定的完整
-   `Dossier delta` 交給 steward，未 commit 或 scope 無法驗證則列為 blocker。NEVER 把呼叫 Log 當 ownership transfer。
+   `Dossier delta` 交給 steward，未 commit 或 scope 無法驗證則列為 blocker。若入口正在評估既有 worker
+   candidate，呼叫 helper 時以 `--commit` 指向**那顆 candidate**；若輸出任何
+   `candidate-shared-surface:`，該 worker candidate 越界，不得原樣 ship／cherry-pick，先拆出乾淨 worker
+   commit 或由合法 steward 在本輪 Step 2 受控重建。不要把本輪稍後由合法 steward 新建的 dossier commit
+   倒填成 `--commit` candidate，否則會把合法 history write 誤報成 worker delta。NEVER 把呼叫 Log 當 ownership transfer。
+   若 current active items 已在 candidate 中被移除，helper 只可從 candidate parent 的 STATUS 恢復 steward；
+   current／parent 都沒有 durable steward 而 candidate 觸碰 shared surface 時 STOP，先用 Spec 建立 work item。
    唯一特例是 repo 已有 `$project transfer` 產生的 `PREPARED` pending transfer，且依上述 ancestry gate 判定目前
    actor 仍是其中記錄的
    current steward：先重跑 portable-knowledge／recipient／endpoint gates，再在本輪 Step 3 的**同一顆 transfer
@@ -227,8 +239,13 @@ Ship 摘要：
     branch commit（相對 default，= PR 內容）: 2 feat + 1 docs（push 為冪等，已 push 則 no-op）
     變更檔: src/..., scripts/..., STATUS.md, docs/archive/...
     PR: feat/... → main（將開，不 merge）
+    stewardship: executor actor=...; durable steward=...; authority actor=...; authority source=...
     附註: doc-governance audit OK；新增 D-*、M-* records
 ```
+
+啟用 active-item contract 時，這四個 stewardship 欄位是摘要與 PR body 的必要 evidence；任何一欄未知、
+helper 非 PASS、或摘要把 executor actor 寫成 human／owner 都不得進 Step 3–5。`as=` 的 evidence 只證明本輪
+bounded delegation，不能寫成 ownership transfer 或供下次 invocation 沿用。
 
 「附註」列兩類：**純告知**（已依 flag 處置完的結果）、以及**超出出題上限而未出成選項的待決項**（後者一律標明「未處理」，不得因出不了題就靜默丟掉）。無則省略。輕量路徑摘要縮為 3 行（路徑＋branch＋變更檔），確認語意不變。
 
