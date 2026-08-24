@@ -18,7 +18,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 暫停中
 
-- **krepo-mops-major-news canary rollout**：dotfiles 的 shared kernel、coordination schema、workflow 與 G11 eval 已完成，目前留在 `feat/cross-runtime-dossier-stewardship`。**恢復條件**：本批 dotfiles 變更已 merge 進 `origin/main`；之後另開 canary feature branch，同步 byte-identical core、opt in schema、遷移 `STATUS.md`，完成 canary audit／PR 並回填 rollout ledger。
+（目前無暫停中項目。）
 
 ## 歷史入口
 
