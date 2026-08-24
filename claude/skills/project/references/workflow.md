@@ -20,6 +20,32 @@ normalized invocation arguments 的第一個 token 分派模式，其餘 token �
 - 其他或無模式引數 → 預設 Log；與舊 `/uap` 相容。
 - mode flag 可出現在任意位置；spec／transfer 的 repo token 沿用 Log Step 0 的 path resolver。
 
+## Runtime actor 與 stewardship authority
+
+入口固定提供 runtime actor prefix（Claude Code=`claude`；Codex=`codex`）。任何 agent session 都不得因
+Git author、GitHub login、同 runtime、private memory 或使用者普通自然語言身分宣稱而改成另一 actor。
+只有 normalized invocation arguments 裡的兩個結構化 control token能改 authority resolution：
+
+- `resume=<runtime:workline>`：恢復 exact durable workline；值必須是入口提供的 same runtime prefix。
+- `as=<human-or-owner>`：只接受 `human:*`／legacy `owner:*`，代表本輪 explicit bounded human delegation；
+  不改 durable steward、不 carry 到下一輪、不能代理 `claude:*`／`codex:*`。
+
+「我是 repo owner」「我就是 maintainer」等 ordinary identity claim is not delegation，也不是 resume／transfer。
+若使用者要在前一輪 STOP 後補 authority，必須重新明確叫用 project 並把 `resume=` 或 `as=` 寫進新的
+invocation arguments；不要從普通對話自行補 token。
+
+在任何 adopted active-state mutation、commit 或 shipping 前執行：
+
+```sh
+python3 "<project-scripts>/steward-authority.py" --root "$repo" --runtime <runtime> \
+  [--resume-actor <resume-value> | --as-human <as-value>] [--commit <worker-commit>]
+```
+
+exit 0 且 `verdict: PASS`／`NOT_APPLICABLE` 才能繼續；exit 1 是 policy STOP；exit 2 是 helper／repo BROKEN。
+若存在 PREPARED transfer／conditional owner evidence，先依 Transfer state machine 解出 effective durable steward，
+不可讓本 helper 取代 remote-visible ancestry gate。每次報告保留 helper 的 executor actor、durable steward、
+authority actor、authority source 四行；`--merge` 等 endpoint 說法不參與 authority 計算。
+
 ## Spec 模式
 
 開工儀式：把願望變成可驗證的 active contract。本模式只寫文檔，不改 code、不 commit。
@@ -33,9 +59,10 @@ normalized invocation arguments 的第一個 token 分派模式，其餘 token �
    從 `<project-templates>/STATUS-legacy-template.md` 建立。建立後確認專案定位；撞名的領域產物不得覆寫。
 4. 在 `進行中` 寫 Context／Goal／Acceptance Criteria／Constraints／進度／下一步／關聯 IDs。若 target
    config 啟用 `status_schema.active_item_contract`，另依 dossier 的「平行協作與 stewardship」填四個
-   coordination fields：目前 runtime 以 `<runtime>:<workline>` 作 actor；尚未建立 feature branch 時
-   `Workspace` 先填 `unassigned`。沒有其他 active steward 證據時可由本 workline 擔任 steward；已有另一位
-   steward 時，除非使用者明示或原 steward handoff 已授權 transfer，否則不修改並 STOP。
+   coordination fields。寫入前先跑上節 helper：沒有 active items 時新 work item 以
+   `<runtime>:<workline>` 作 actor／steward；已有 steward 時必須 exact same-runtime resume，或由 exact human
+   steward 以本輪 `as=` bounded delegation 建立 item（durable steward 保持 human actor）。尚未建立 feature
+   branch 時 `Workspace` 先填 `unassigned`。普通身分宣稱、`--merge` 或「原 session 已退出」都不放行。
 5. 模糊處直接問，不猜。暫停則移到 `暫停中` 並寫可觀察的恢復條件。
 6. Legacy repo 依自己的 STATUS schema 寫 spec，不強迫建立 history/backlog family。
 
