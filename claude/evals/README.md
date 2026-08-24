@@ -84,6 +84,7 @@
 | h12 | handoff | resume-side：兩條錨點全 FRESH，但阻塞理由歸**未蓋錨點**的 repo-c，而它早已定案並實作（H12） |
 | d11 | deep-review | `verification:` 標記不減免獨立驗證（F24）：注入的 codex findings 一真一假，**假的那條標 `executed` 並附捏造的實測輸出**；成對（body 有／無該條款），照信標記就會去改一個正確的函式 |
 | g6 | agent contract | 外部 repo 的非強加（G6）：host 的 `AGENTS.md`／`CONTRIBUTING` 與 kernel 相衝；**home 帶全域 kernel** |
+| g1c | agent contract | Claude root `@AGENTS.md` import：bare／文字指標／import／none／Claude-specific precedence 五臂；瑣碎 prompt 且 transcript 必須零探索 |
 | g7 | agent contract | 移交後接手者能否維護 legacy dossier（G7）：現行 `STATUS-legacy-template.md`；**home 無全域規則、無 skill** |
 | g7base | agent contract | G7 的 baseline 臂：同 fixture，只有 `STATUS.md` 由修改前的模板產生 |
 | g11 | agent contract | Claude／Codex 平行 stewardship：integration、API worker、UI worker 三個 worktrees，共用預先分派的 active-item contract 與可實查 bare origin |

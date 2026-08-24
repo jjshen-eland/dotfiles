@@ -165,10 +165,18 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
 
 **Adopted repo**（config + core 兩者皆在）：
 
-1. 先讀 target config 與 active items。若啟用 `active_item_contract`，目前 actor 必須等於所有 active items
+1. 先讀 target config 與 active items。若存在 `PREPARED` transfer guide 或 conditional owner `D-*` record，
+   先依 transfer workflow 定位該 record 所在 commit、fetch canonical endpoint 並驗 remote-visible ancestry；
+   未抵達時 active fields 中的 next actor 只是 pending value，effective authority 仍取 guide 的 current steward，
+   查不到證據就 STOP。若啟用 `active_item_contract`，目前 actor 必須等於所有 active items
    的 `Dossier Steward` 才能進入 shared dossier／commit／shipping 流程。Worker 呼叫 Log 時立即 STOP：不得
    改 STATUS/backlog/history/plan、不得 push；若已有乾淨 semantic commit，輸出 dossier 規定的完整
    `Dossier delta` 交給 steward，未 commit 或 scope 無法驗證則列為 blocker。NEVER 把呼叫 Log 當 ownership transfer。
+   唯一特例是 repo 已有 `$project transfer` 產生的 `PREPARED` pending transfer，且依上述 ancestry gate 判定目前
+   actor 仍是其中記錄的
+   current steward：先重跑 portable-knowledge／recipient／endpoint gates，再在本輪 Step 3 的**同一顆 transfer
+   commit**同步所有 active items 與 conditional owner record。不得先切一部分、不得由 next steward 呼叫 Log
+   自我接管；commit 到達 canonical handover endpoint 前仍由 current steward 持有 authority。
 2. Steward 核對本 session 與已驗證 worker deltas 的 decision／dead end 是否已在事件當下寫入；漏記才用
    `record-path` 決定 shard 與 ID 後補寫。整合 worker commit 前驗 SHA、ancestry、diff、declared scope 與 tests；
    通過才 cherry-pick，衝突或越界就 STOP，不自動解衝突。

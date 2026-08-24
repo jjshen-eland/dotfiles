@@ -14,7 +14,8 @@ disable-model-invocation: true
    不得跳去另一個 checkout 或 Codex 的安裝路徑。
 2. 使用以下 Claude Code adapter facts：
    - runtime label：`Claude Code`；exit wording：`/quit`。
-   - durable user memory：只用本 session 實際提供的 memory facility 與格式；沒有就回報無合法 sink。
+   - durable user memory：只用本 session 實際提供的 supported facility 與格式處理 optional cache；不得
+     切換 memory settings。沒有 facility 時依 shared workflow 分成 skipped 或 concrete residue，不一律阻擋。
    - background/subagent：優先用 runtime 的 authoritative task status／完成通知；scratchpad 同層
      `tasks/` 只能枚舉 candidate，不能判 liveness；`TaskList` 不是 background-task list。
    - cron/routine：有 `CronList` 才算可枚舉；`/loop` 與 `ScheduleWakeup` 沒有列表工具時只靠對話回溯。

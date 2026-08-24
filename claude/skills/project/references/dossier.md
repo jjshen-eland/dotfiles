@@ -46,8 +46,12 @@ convention 的 semantic commit，交給 steward 驗證並 cherry-pick 到 integr
 Worker 的 `Dossier delta` 固定回報：work item、actor、branch/workspace、commit SHA、changed scope/files、
 tests、progress、decisions with reasons、dead ends、blockers、next step。這是 claim，不是 canonical state；
 steward 必須自行檢查 commit ancestry／diff／scope／tests，再決定是否 cherry-pick 與寫入 dossier。Review
-agent 維持 read-only。Ownership transfer 只接受使用者明示或原 steward handoff，且要先同步所有 active
-items 的 steward 與 next step；machine-local handoff artifact 不授予 repo mutation。
+agent 維持 read-only。Ownership transfer 只接受使用者明示或 current steward 的 durable transfer direction；
+machine-local handoff artifact 不授予 repo mutation。正式切換必須依 workflow 的 transfer state machine，
+由 current steward 在同一 transfer commit 同步**所有 active items**的 steward／writer／workspace／next step；
+該 commit 到達 canonical handover endpoint 前，舊 steward 仍是唯一 shared-dossier authority。若 checkout 已含
+next actor 的 pending coordination fields，任何 authority check 都必須定位 conditional owner record 所在 commit、
+fetch endpoint 並驗 remote-visible ancestry；不得只按字面欄位授權，證據不可得即 STOP。
 
 ## 已採用 repo 的開工與檢索
 

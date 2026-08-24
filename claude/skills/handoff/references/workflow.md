@@ -23,10 +23,15 @@
 - **A handoff is a set of CLAIMS, not truth. The repo is truth.** On resume you MUST run `handoff-anchor.sh verify` BEFORE acting on any claim. No verify output in this session → no action based on the handoff.
 - **On any verdict other than FRESH**, re-check every claim you rely on against the current repo; where they conflict, the repo wins. NEVER "restore" the repo to match the handoff.
 - **Consume-once.** After verification and reconciliation have produced an actionable continuation plan, archive an active handoff via `consume` before continuing. NEVER consume merely because the file was read; NEVER leave a consumed handoff active or rewrite it with a done-marker. The archive IS the audit trail.
-- **Durable facts do not live in the handoff.** Route repo facts to the repo's existing STATUS/backlog/decision authority; route user-level preferences to the current runtime's durable-memory facility when one exists. Leave only a stable ID/path pointer. Do not invent a new authority or assume another runtime's private memory store.
+- **Durable facts do not live in the handoff.** Route repo facts to the repo's existing STATUS/backlog/decision authority;
+  route safety rules and cross-runtime stable preferences to an instruction promotion candidate; only runtime-specific,
+  non-critical convenience may use the current runtime's optional cache. Leave only a verified stable ID/path pointer.
+  Do not invent a new authority or assume another runtime's private memory store. **Memory availability must not change
+  this routing**; disabled/unavailable optional cache is skipped, while a necessary or explicitly retained fact with no
+  legal sink remains concrete residue.
 - **No state snapshots the repo already carries.** Do not paste full diffs or file contents into the handoff — point at commits and paths. Snapshots go stale silently; the anchor makes staleness detectable, a pasted diff does not.
 - **Write side: every file path mentioned MUST exist** (check it) or be explicitly marked 規劃中/待新建.
-- **Handoff itself authorizes only its machine-local artifact.** It does NOT authorize repo edits, commit, push, PR, merge, deployment, messaging, or deletion outside the approved retention contract. A cross-host/owner transfer belongs in the repo's durable transfer/project workflow; report that routing and STOP unless the user separately authorizes those mutations.
+- **Handoff itself authorizes only its machine-local artifact.** It does NOT authorize repo edits, commit, push, PR, merge, deployment, messaging, or deletion outside the approved retention contract. A cross-host/owner transfer belongs in the repo's durable transfer/project workflow; report that routing and STOP unless the user separately authorizes those mutations. **Action authorization不得 carry across session、runtime 或 owner transfer**，也不得寫進 artifact 當作後續授權。
 
 ### Red Flags — STOP and re-read Critical
 
@@ -34,6 +39,7 @@
 - "I'll update the handoff in place with status: done for traceability" → archive it; traceability lives in `archive/`, not the active directory.
 - Re-doing a next-step item on a DRIFTED handoff without checking the drift commits — it may already be done.
 - Putting a durable rule in the handoff "so it won't get lost after the session resets". That is exactly how it gets lost — route it to the existing durable authority.
+- Writing a shared rule or project fact only into private memory because memory happens to be enabled. Memory availability is cache capability, not authority.
 - Routing cross-host continuation into a machine-local handoff — the other host will never see it. Route it to the repo (STATUS.md).
 - Committing a throwaway HANDOFF.md into the repo. The add→delete churn and the rotting consumed-handoff (the general-rag-cs failure mode) are exactly what this forbids — repo-side state lives in STATUS.md, updated in place.
 - Dropping earlier rounds' dead-ends when re-handing off the same slug because "they're in archive/ anyway" — nothing reads archive/ on resume. Carry them forward, or sink them into STATUS.md (see W3 續寫交接).

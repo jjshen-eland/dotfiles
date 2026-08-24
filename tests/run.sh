@@ -384,14 +384,13 @@ else
 fi
 
 echo "▶ 1e. agent contract kernel block 完整性 gate"
-# 契約的 kernel 必須在四處逐字存在（repo 根 AGENTS.md／CLAUDE.md／全域 Claude 檔／全域 Codex 檔）——
-# 純指標方案已被 H6 實測證偽（規則不在 always-on context 就不生效）。四份自足的代價是漂移，
-# 這支 gate 就是把那個代價換成機檢。判準與輸出契約見 tests/kernel-gate.py 檔頭。
+# 契約 kernel 在三個 canonical 來源逐字存在；root CLAUDE.md 以原生 @AGENTS.md import 載入共同正文。
+# G1c clean-room 已驗證普通指標不生效、import 與 Claude-specific precedence 各 2/2。判準見 scanner 檔頭。
 KERNEL_GATE="$ROOT/tests/kernel-gate.py"
 KG="$TMP/kernel"
 KG_CODES=""
 
-kg_make() {   # $1=fixture 根；$2=kernel body（四份共用）；$3=覆寫給 codex；$4=route body（後兩者可省）
+kg_make() {   # $1=fixture 根；$2=kernel body（三份共用）；$3=覆寫給 codex；$4=route body（後兩者可省）
     local d="$1" body="$2" codex_body="${3:-$2}"
     local route_body='## 文檔檢索路由
 
@@ -413,20 +412,14 @@ kg_make() {   # $1=fixture 根；$2=kernel body（四份共用）；$3=覆寫給
         echo "## Repo specifics"
         echo "- 本節可以出現 ~/.dotfiles 與 dotsync，因為它逐 repo 重填、不會被複製走"
     } > "$d/AGENTS.md"
-    # root CLAUDE.md 也要有一份——Claude Code 自動載入它、但不自動載入 AGENTS.md（2026-08-10 實測）
-    for f in "$d/CLAUDE.md" "$d/claude/CLAUDE.md" "$d/codex/AGENTS.md"; do
+    printf '@AGENTS.md\n\n# Claude-specific\n' > "$d/CLAUDE.md"
+    for f in "$d/claude/CLAUDE.md" "$d/codex/AGENTS.md"; do
         b="$body"; [ "$f" = "$d/codex/AGENTS.md" ] && b="$codex_body"
-        is_root=0; [ "$f" = "$d/CLAUDE.md" ] && is_root=1
         {
             echo "# 全域規則"
             echo "<!-- agent-contract:kernel:start v1 -->"
             printf '%s\n' "$b"
             echo "<!-- agent-contract:kernel:end -->"
-            if [ "$is_root" -eq 1 ]; then
-                echo "<!-- agent-contract:route:start v1 -->"
-                printf '%s\n' "$route_body"
-                echo "<!-- agent-contract:route:end -->"
-            fi
         } > "$f"
     done
 }
@@ -467,16 +460,26 @@ kg_capture "$KG/green"
 assert_rc "gate 自檢：合法 fixture → exit 0" 0 "$kg_rc"
 assert_eq "gate 自檢：合法 fixture 無 findings" "" "$kg_out"
 
+# root CLAUDE import 的檔案、唯一性、首行順序與禁止複製 managed block 都各有 RED。
+kg_make "$KG/root-claude-missing" "$kg_body"; rm -f "$KG/root-claude-missing/CLAUDE.md"
+kg_red "$KG/root-claude-missing" '\[ROOT_CLAUDE_FILE_MISSING\]' "gate 自檢：root CLAUDE 缺失 → 命中" "gate 自檢：root CLAUDE missing 分支未命中"
+
+kg_make "$KG/root-import-count" "$kg_body"; printf '\n@AGENTS.md\n' >> "$KG/root-import-count/CLAUDE.md"
+kg_red "$KG/root-import-count" '\[ROOT_CLAUDE_IMPORT_COUNT\]' "gate 自檢：root import 非唯一 → 命中" "gate 自檢：root import count 分支未命中"
+
+kg_make "$KG/root-import-order" "$kg_body"; sed -i.bak '1i\
+# 前置文字' "$KG/root-import-order/CLAUDE.md" && rm -f "$KG/root-import-order/CLAUDE.md.bak"
+kg_red "$KG/root-import-order" '\[ROOT_CLAUDE_IMPORT_ORDER\]' "gate 自檢：root import 不是首行 → 命中" "gate 自檢：root import order 分支未命中"
+
+kg_make "$KG/root-managed-copy" "$kg_body"
+sed -n '/agent-contract:kernel:start/,/agent-contract:kernel:end/p' "$KG/root-managed-copy/AGENTS.md" >> "$KG/root-managed-copy/CLAUDE.md"
+kg_red "$KG/root-managed-copy" '\[ROOT_CLAUDE_MANAGED_BLOCK\]' "gate 自檢：root CLAUDE 重複 managed block → 命中" "gate 自檢：root managed-copy 分支未命中"
+
 # 漂移：其中一份的 body 不同
 kg_make "$KG/drift" "$kg_body" "$(printf '%s\n' "$kg_body" | sed 's/rule 3/rule 3 （偷改）/')"
 kg_red "$KG/drift" '漂移' "gate 自檢：複本漂移 → 命中" "gate 自檢：複本漂移未命中"
 
-# doc-find route 也在兩個 repo-resident always-on 檔逐字複製；單邊漂移要紅
-kg_make "$KG/route-drift" "$kg_body"
-sed -i.bak 's/先執行 doc-find。/改走人工 archive。/' "$KG/route-drift/CLAUDE.md" && rm -f "$KG/route-drift/CLAUDE.md.bak"
-kg_red "$KG/route-drift" 'route block.*漂移' "gate 自檢：doc-find route 漂移 → 命中" "gate 自檢：doc-find route 漂移未命中"
-
-# 兩份 route block 同時被掏空時仍會逐字相同；內容下限必須獨立擋住這種假綠。
+# route block 被掏空時仍需獨立擋住假綠。
 kg_make "$KG/route-hollow" "$kg_body" "$kg_body" 'doc-find'
 kg_red "$KG/route-hollow" 'route block 只有 1 條規則行' "gate 自檢：route 複本同時掏空 → 命中" "gate 自檢：route 複本同時掏空仍假綠"
 
@@ -505,21 +508,21 @@ kg_red "$KG/route-misplaced" '\[ROUTE_MISPLACED\]' "gate 自檢：route 出現�
 
 # route 自己的 marker 與空 block 分支也要各有 executable RED fixture。
 kg_make "$KG/route-unpaired" "$kg_body"
-sed -i.bak 's|<!-- agent-contract:route:end -->||' "$KG/route-unpaired/CLAUDE.md" && rm -f "$KG/route-unpaired/CLAUDE.md.bak"
+sed -i.bak 's|<!-- agent-contract:route:end -->||' "$KG/route-unpaired/AGENTS.md" && rm -f "$KG/route-unpaired/AGENTS.md.bak"
 kg_red "$KG/route-unpaired" '\[ROUTE_MARKER_COUNT\]' "gate 自檢：route marker 不成對 → 命中" "gate 自檢：route marker count 分支未命中"
 
 kg_make "$KG/route-order" "$kg_body"
-kg_reverse_markers "$KG/route-order/CLAUDE.md" route
+kg_reverse_markers "$KG/route-order/AGENTS.md" route
 kg_red "$KG/route-order" '\[ROUTE_MARKER_ORDER\]' "gate 自檢：route marker 反序 → 命中" "gate 自檢：route marker order 分支未命中"
 
 kg_make "$KG/route-empty" "$kg_body" "$kg_body" '   '
 kg_red "$KG/route-empty" '\[ROUTE_EMPTY\]' "gate 自檢：route 空 block → 命中" "gate 自檢：route empty 分支未命中"
 
-# 四份都被掏空 → 「空 == 空」會相等，靠條目數下限擋
+# 三份都被掏空 → 「空 == 空」會相等，靠條目數下限擋
 kg_make "$KG/hollow" "- rule 1"
-kg_red "$KG/hollow" '規則行' "gate 自檢：四份同時掏空 → 命中（空==空 的假綠）" "gate 自檢：掏空未命中——這是最關鍵的假綠"
+kg_red "$KG/hollow" '規則行' "gate 自檢：三份同時掏空 → 命中（空==空 的假綠）" "gate 自檢：掏空未命中——這是最關鍵的假綠"
 
-# 條目數足夠、四份也一致，但拿掉 stewardship 語意仍須紅，否則可用 filler 騙過下限。
+# 條目數足夠、三份也一致，但拿掉 stewardship 語意仍須紅，否則可用 filler 騙過下限。
 kg_make "$KG/required-rule" "$(printf '%s\n' "$kg_body" | sed 's/Dossier delta/worker report/')"
 kg_red "$KG/required-rule" '\[KERNEL_REQUIRED_RULE\]' "gate 自檢：kernel 缺 stewardship 必要規則 → 命中" "gate 自檢：kernel required-rule 分支未命中"
 
@@ -600,7 +603,7 @@ kernel_rc=$?
 if [ "$kernel_rc" -ne 0 ]; then
     bad "kernel-gate 掃描器執行失敗（exit ${kernel_rc}）——空輸出不可信"
 elif [ -z "$kernel_hits" ]; then
-    ok "kernel／route managed blocks 逐字一致、契約檔可攜"
+    ok "三份 kernel 一致、root CLAUDE import 唯一且 route／契約可攜"
 else
     bad "kernel block 有問題（複本漂移／被掏空／混入私人路徑）"
     printf '%s\n' "$kernel_hits" | sed 's/^/     /'
@@ -735,6 +738,12 @@ if grep -q 'G7 template placeholder missing' "$ROOT/claude/evals/setup-sandboxes
     ok "G7 fixture builder 對模板替換 no-op fail closed"
 else
     bad "G7 fixture builder 的 str.replace miss 仍會靜默產生空 oracle"
+fi
+if grep -q 'uv run --no-project --with pyyaml python' "$ROOT/codex/skill-building-guide.md" \
+    && grep -q '不要假設 system Python 已安裝 PyYAML' "$ROOT/codex/skill-building-guide.md"; then
+    ok "skill validator 以 uv 隔離 PyYAML，不依賴 system Python"
+else
+    bad "skill validator 指令仍會因 system Python 缺 PyYAML 而失敗"
 fi
 
 echo "▶ 2. bash -n 語法 gate"
@@ -3111,6 +3120,17 @@ if grep -q '## 平行協作與 stewardship' "$PJS_CLAUDE/references/dossier.md" 
     && grep -q 'active_item_contract' "$PJS_CLAUDE/references/workflow.md"; then
     ok "project shared workflow 區分 dossier steward 與 isolated worker"
 else bad "project shared workflow 缺 stewardship／worker STOP 契約"; fi
+if grep -q 'BLOCKED.*PREPARED.*TRANSFERRED' "$PJS_CLAUDE/references/workflow.md" \
+    && grep -q 'portable-knowledge' "$PJS_CLAUDE/references/workflow.md" \
+    && grep -q 'canonical handover endpoint' "$PJS_CLAUDE/references/workflow.md" \
+    && grep -q '所有 active items' "$PJS_CLAUDE/references/workflow.md" \
+    && grep -q 'in-flight.*未整合' "$PJS_CLAUDE/references/workflow.md" \
+    && grep -q 'conditional pending values' "$PJS_CLAUDE/references/workflow.md" \
+    && grep -q 'remote-visible ancestry' "$PJS_CLAUDE/references/log-workflow.md" \
+    && grep -q 'authorization.*不.*移交' "$PJS_CLAUDE/references/workflow.md" \
+    && grep -q 'Scenario 23' "$PJS_CLAUDE/references/pressure-tests.md"; then
+    ok "project transfer 有 portable-knowledge hard gate 與原子 stewardship 狀態機"
+else bad "project transfer 缺 BLOCKED/PREPARED/TRANSFERRED、可攜知識或原子切換契約"; fi
 project_spec_sig="\$project spec"
 project_transfer_sig="\$project transfer"
 ready4quit_sig="\$ready4quit"
@@ -3165,6 +3185,11 @@ if grep -q 'handoff invocation 本身不授權編輯' "$HFS_CLAUDE/evals.md" \
         "$HFS_CLAUDE/references/workflow.md"; then
     ok "handoff 續寫 oracle 不把 durable-doc repo mutation 當隱性授權"
 else bad "handoff 續寫 workflow／eval 仍可能未授權改 repo"; fi
+if grep -q 'H14 — cross-host' "$HFS_CLAUDE/evals.md" \
+    && grep -q 'Memory availability' "$HFS_CLAUDE/references/workflow.md" \
+    && grep -q 'authorization.*不得.*carry' "$HFS_CLAUDE/references/workflow.md"; then
+    ok "handoff 不以 machine-local memory/checkpoint 承擔 project transfer 或授權延續"
+else bad "handoff 缺 memory-independent cross-host／authorization 邊界"; fi
 
 HFS_HOME="$TMP/handoff-store-home"
 mkdir -p "$HFS_HOME"
@@ -3230,9 +3255,18 @@ if ! rg -q 'TaskOutput|TaskList|CronList|ScheduleWakeup|scratchpad|~/.claude|~/.
 else bad "ready4quit shared core 混入 runtime-private evidence surface 或安裝路徑"; fi
 if grep -q 'Codex 無 skill baseline' "$RQS_CLAUDE/evals.md" \
     && grep -q '不得改用 handoff/checkpoint workflow' "$RQS_CLAUDE/evals.md" \
-    && grep -q 'target repo contract 指定的 project authority' "$RQS_CLAUDE/references/workflow.md"; then
+    && grep -q 'target repo contract 指定的' "$RQS_CLAUDE/references/workflow.md" \
+    && grep -q 'project authority。只有目前 actor' "$RQS_CLAUDE/references/workflow.md"; then
     ok "ready4quit portable behavior oracle 與 authority routing 已落地"
 else bad "ready4quit portable eval 或 authority routing contract 缺失"; fi
+if grep -q 'Q7 — memory 開關矩陣' "$RQS_CLAUDE/evals.md" \
+    && grep -q 'instruction promotion candidate' "$RQS_CLAUDE/references/workflow.md" \
+    && grep -q '未升格候選就是 concrete residue' "$RQS_CLAUDE/references/workflow.md" \
+    && grep -q 'disabled/unavailable.*skipped' "$RQS_CLAUDE/references/workflow.md" \
+    && grep -q 'explicit retain request.*residue' "$RQS_CLAUDE/references/workflow.md" \
+    && grep -q 'generated state' "$RQS_CODEX/SKILL.md"; then
+    ok "ready4quit authority routing 不受 memory toggle／private store 影響"
+else bad "ready4quit 缺 memory-independent promotion／skip／residue 契約"; fi
 
 echo "▶ 13. handoff-anchor.sh 錨點驗證與生命週期判定"
 HA_SCRIPT="$ROOT/claude/skills/handoff/scripts/handoff-anchor.sh"

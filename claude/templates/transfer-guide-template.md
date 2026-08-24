@@ -11,6 +11,11 @@ Credentials 一律分離:一切 secrets / tokens / 連線字串放獨立檔(如 
 
 > 目的:讓 <接手者> 能自行建立完整環境、通過 QA、正式接手 owner。
 > 移交人:<name>|接手者:<name>|目標日:YYYY-MM-DD
+> Recorded preparation state:`BLOCKED` / `PREPARED`（事件記錄，不得手填 `TRANSFERRED`）
+> Current steward:<actor>|Next steward:<actor 或 未指名>
+> Canonical handover endpoint:<repo contract 指定；未指定則 canonical remote default branch>
+> Effective condition:包含本記錄與完整 active-item mapping 的 transfer commit 已到達上述 endpoint；此前 current steward 仍有 authority
+> Effective transfer state:由 remote-visible endpoint ancestry 推導；condition 未成立為 `PREPARED`，成立即為 `TRANSFERRED`
 
 ---
 
@@ -33,6 +38,16 @@ Credentials 一律分離:一切 secrets / tokens / 連線字串放獨立檔(如 
 - **必讀**:`STATUS.md`(active state)、`CLAUDE.md`(慣例)、`README.md`(安裝)；adopted repo 另以 `scripts/doc-governance.py find '決策 死路 技術債'` 定位 history/backlog
 - **正在進行 / 未完成**:<指向 STATUS.md 進行中章節>
 
+## 1.1 Portable-knowledge audit
+
+- [ ] fresh clone 能只靠 repo instruction／README／runbook 找到 setup、tests、active state 與 history
+- [ ] current steward 已知的 private-only project decision／dead end／progress／blocker 已 promotion 到既有 repo authority
+- [ ] safety／Git／cross-runtime stable preference 已列為 instruction promotion candidate，不塞 project dossier 或 private-memory pointer
+- [ ] 未掃描、未依賴另一 runtime private memory；memory on/off 不作 readiness 證據
+- [ ] explicit retain request／必要 project fact 若無合法 sink，已列 known residue 並維持 `BLOCKED`
+- [ ] 每個 active writer 的 in-flight work 已由 steward 驗證並整合，或已有 durable abandonment decision；沒有只留在 feature branch／worktree 的工作
+- **Known residue**:<none 或逐筆 fact + 缺少的 sink>
+
 ## 2. 環境建置
 
 <!-- 目標:接手者不需要移交人在場就能跑起來;每步附驗證指令 -->
@@ -54,9 +69,24 @@ Credentials 一律分離:一切 secrets / tokens / 連線字串放獨立檔(如 
 ## 4. 合併與 owner 切換
 
 1. QA 產出以 <commit / patch / PR> 形式交付,由 <移交人> review 後 merge(依 D6)
-2. Repo 權限調整:<接手者升 admin / transfer;移交人降權或留顧問>
-3. 排程 / cron / 部署權限清點:<列出誰家機器上有什麼會繼續跑>
-4. adopted repo 用 `record-path --type decision` 追加 owner 移交的 `D-*` record；legacy repo 才寫入既有 STATUS 決策落點
+2. Pending active-item mapping（所有 active items 都必須列）：
+
+   | Work item | Current writer/workspace | Next writer/workspace | Write Scope（保留） | First next step（更新） |
+   |---|---|---|---|---|
+   | <slug> | <actor / branch> | <next actor / 獨立 branch；原未分派則 unassigned:slug / unassigned> | <scope> | <action> |
+
+   原已分派項目的 next workspace 不得沿用舊 writer workspace 或臨時 transfer branch；未選定可持續使用的
+   workspace 時保持 `BLOCKED`。
+
+3. Current steward 以 project Log 將上表、所有 `Dossier Steward` 欄位與 conditional owner `D-*` record
+   收進**同一 transfer commit**；不得分批切換。Local commit／feature push／open PR 仍是 `PREPARED`。
+4. 只有 remote-visible ancestry 證明該 commit 已到 Canonical handover endpoint，狀態才是 `TRANSFERRED`；
+   在此之前 next steward 不寫 shared dossier。
+   Checkout 內即使已顯示 next actor，仍只是 conditional pending value；所有 authority gate 都要定位 conditional
+   owner record 所在 commit、fetch endpoint 並驗 ancestry，不能只讀 `STATUS.md` 字面值。
+5. Repo 權限調整:<接手者升 admin / transfer;移交人降權或留顧問>（本 workflow 不代做）
+6. 排程 / cron / 部署權限清點:<列出誰家機器上有什麼會繼續跑>
+7. Authorization 不移交：push／PR／merge／deploy／message 每個 outward action 都由執行當下的使用者指令重新取得。
 
 ## 5. 已知風險與求助路徑
 
