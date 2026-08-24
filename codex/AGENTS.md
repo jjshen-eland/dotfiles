@@ -35,6 +35,7 @@ conventions defer to whatever the repo itself mandates. Where a repo has no cont
 - Record durable decisions, dead ends, and milestones at event time, not reconstructed at shipping time. With parallel workers, report the fact immediately to the steward; the steward is the sole writer to shared history.
 - The steward integrates verified worker commits with `git cherry-pick` on a feature integration branch, never with a merge commit. Remove completed items from active state, write milestones to the repo's existing history store, and pass its documentation audit before declaring integration complete.
 - Ownership transfer requires explicit user direction or a handoff from the current steward, followed by a durable-state update before the new steward writes. A checkpoint or handoff artifact is evidence, never a lock or authority to mutate the repository.
+- **Runtime-local memory is a non-authoritative cache, never a prerequisite.** Safety/Git rules, cross-runtime agreements, project facts/state, cross-host continuity, and action authorization must not exist only there. Route shared behavior to native instructions and project facts/state to the repo's adopted authority; whether any runtime memory is on, off, unavailable, or differently configured must not change correctness, safety, or transfer readiness. Authorization never survives a session or ownership transfer.
 
 
 ### Fallback conventions — this repo's own convention wins where it has one

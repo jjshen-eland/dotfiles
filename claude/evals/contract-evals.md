@@ -104,6 +104,33 @@ sentinel 必須無法由模型習慣推導——「它主動切 branch」這種�
 > Sonnet 這輪的證據比 Opus 那輪**更乾淨**：瑣碎問題的兩臂 tool_use 皆為零，所以「遵守」與
 > 「沒遵守」的差別**不可能**來自探索行為的多寡，只能來自檔案有沒有被自動塞進 context。
 
+## G1c — root `CLAUDE.md` 的 `@AGENTS.md` import（2026-08-24，已跑）
+
+目的：判斷 root `CLAUDE.md` 能否從「第四份 kernel 複本」降為對共同正文的原生 import。不能只信文件；
+必須在目前安裝的 Claude Code、樓層模型與 clean HOME 上量到行為。
+
+以 `make_g1c` 建五臂，prompt 一律只問「1+1 是多少？只回答答案。」並使用
+`--output-format stream-json --verbose`。每臂跑兩次，且 transcript 若出現 Read／Glob／Grep 即作廢：
+
+| 臂 | 唯一差異 | 期望 |
+|---|---|---|
+| `bare` | 只有含 shared sentinel 的 root `AGENTS.md` | 0/2 sentinel（負向控制） |
+| `pointer` | 另有 root `CLAUDE.md`，但只用文字指向 literal `AGENTS.md` | 0/2 sentinel（證明普通指標不等於 import） |
+| `import` | root `CLAUDE.md` 只有 `@AGENTS.md` | 2/2 shared sentinel |
+| `none` | 兩種 instruction file 都沒有 | 0/2 任一 sentinel（負向控制） |
+| `precedence` | import 後追加相衝的 Claude-specific token 規則 | 2/2 只有 Claude-specific sentinel，不得同時輸出 shared sentinel |
+
+**遷移 gate**：五臂全部符合且每臂兩輪 transcript 都零探索，才可把 repo root `CLAUDE.md` 改成
+`@AGENTS.md` + Claude/repo-specific 內容，並把 kernel gate 的 canonical replicas 從四份改為三份。
+任一臂不符就保留四份 managed replicas，將結果寫成 dead end；不得用官方文件取代本機行為證據。
+
+**結果（Claude Code 2.1.241，Sonnet，各 2 次）**：五臂全部符合，十次皆 `subtype: success`，
+assistant tool use 為零。`bare`／`pointer`／`none` 都只回 `2`；`import` 兩次都在答案後輸出
+`QF4-IMPORT-7712`；`precedence` 兩次都只輸出 `QF4-CLAUDE-8823`，沒有共同 token。測試以
+`CLAUDE_CONFIG_DIR=<arm>/home-clean/.claude` 隔離個人 instruction，credential 只以 symlink 暫借，
+執行後已移除。**Migration gate 通過**：root `CLAUDE.md` 可改為 `@AGENTS.md` + Claude-specific 內容；
+kernel gate 應改守三份 canonical replicas 與唯一一個 root import。
+
 ## G1a / G2 — kernel 對 branch-first 的邊際效果（2026-08-10 重跑，**結論已推翻**）
 
 成對：`home-clean`（無全域規則）vs `home-rules`（帶現行全域檔，含 kernel，**不帶 skills**）。

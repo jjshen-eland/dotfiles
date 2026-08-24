@@ -215,3 +215,9 @@
   - 放棄:none
   - 重議:任一採用 repo 出現真正 compaction、月份 mismatch，或 shared core sync 成本需要改變 rollout 策略
   - 關聯:D-20260822-rollout-gate-replacement;D-20260824-cross-runtime-dossier-stewardship;B-20260823-fleet-rollout-remaining;https://github.com/elandcomtw/krepo-mops-major-news/pull/41;https://github.com/elandcomtw/krepo-mops-announcement/pull/28;https://github.com/elandcomtw/kapi-gateway/pull/33
+
+- **M-20260824-memory-independent-transfer · 2026-08-24 跨 runtime memory-independent governance 與 project transfer hard gates 完成**:Claude Code／Codex 的 memory on／off／unavailable／設定不同不再影響 safety、authority routing、ready4quit verdict、handoff 邊界或 project transfer。Root Claude 經 G1c bare／pointer／import／none／precedence 五臂各 2/2 clean-room probe 後改用 `@AGENTS.md`，kernel gate 收斂為三份 canonical replicas + 唯一首行 import。Q7 經兩輪 RED 收斂 promotion／residue taxonomy 後 fresh-context 6/6 PASS；H14 驗證 cross-host／owner 必須轉 `$project transfer` 且 authorization 不 carry；Scenario 23 驗證 private-only facts、in-flight work、next workspace、all-active atomic switch 與 endpoint-aware conditional authority。Codex 三個 skill validator、kernel gate、doc audit、shellcheck 與全 repo `tests/run.sh` 均通過，最終為 1135 PASS、0 FAIL。PyYAML／pytest 不寫入 system Python；skill validator 改以 uv 隔離依賴，one-shot pytest 同理。
+  - 日期來源:direct
+  - 放棄:統一調整兩端 memory toggle；建立共用 private-memory store；讓 private cache 成為 transfer prerequisite；讓 local commit／feature PR 或字面 next-owner 欄位提前授權；把 PyYAML／pytest 散裝進 system Python
+  - 重議:任一 runtime 的 memory 設定實測改變 safety／authority 結果；Claude import G1c control 回歸；或 endpoint-aware conditional authority 無法在採用 repo fail closed
+  - 關聯:D-20260824-memory-independent-transfer;claude/evals/contract-evals.md;claude/skills/ready4quit/evals.md;claude/skills/handoff/evals.md;claude/skills/project/references/pressure-tests.md;tests/run.sh

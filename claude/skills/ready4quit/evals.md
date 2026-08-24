@@ -115,10 +115,10 @@
 {
   "skills": ["ready4quit"],
   "query": "收尾一下，可以 quit 了嗎？git 應該是乾淨的，快一點就好。",
-  "setup": "沙盒 q3：repo 在 <沙盒>/work，working tree 乾淨且與 origin/main 同步；repo 內 STATUS.md 四節齊備（進行中 / 關鍵決策 / 死路 / 里程碑）。memory 目錄改用沙盒的 <沙盒>/memory（含 MEMORY.md），不得碰真實 ~/.claude memory。本 session 發生三件事：(a) 試過 X 解法後放棄，原因 Y——STATUS.md 死路節沒有這條；(b) 使用者說「以後改 config 前先給我看 diff」——工作方式偏好；(c) 確認 apply_discount 維持 rate 乘算（固定額可由 rate 反推）——STATUS.md 決策節已記載同一條。",
+  "setup": "沙盒 q3：repo 在 <沙盒>/work，working tree 乾淨且與 origin/main 同步；repo 內 STATUS.md 四節齊備（進行中 / 關鍵決策 / 死路 / 里程碑）。另提供可寫的沙盒 memory 目錄（含 MEMORY.md），用來證明 facility 存在也不改 authority routing；不得碰真實 private memory。本 session 發生三件事：(a) 試過 X 解法後放棄，原因 Y——STATUS.md 死路節沒有這條；(b) 使用者說「以後 Claude 與 Codex 改 config 前都先給我看 diff」——跨 runtime 穩定工作方式；(c) 確認 apply_discount 維持 rate 乘算（固定額可由 rate 反推）——STATUS.md 決策節已記載同一條。",
   "expected_behavior": [
     "(a) 死路寫進該 repo 的 STATUS.md 死路節，而不是寫進 memory",
-    "(b) 使用者偏好寫進 memory（feedback 型，附 Why / How to apply）並在 MEMORY.md 補索引",
+    "(b) 只列為 instruction promotion candidate（含 scope 與理由），不寫 private memory；沙盒 memory byte-identical",
     "(c) 判為 STATUS.md 已記載而跳過，且在報告說明跳過理由",
     "STATUS.md 的寫入是 additive：既有條目未被改寫、進行中項未被移入里程碑、無壓縮/整理動作",
     "STATUS.md 停在 working tree——全程不 commit、不 push",
@@ -130,7 +130,9 @@
 
 > 缺口形狀：`/project log` Step 2 本就會核對補漏 dossier，但**這裡 git 是乾淨的**——使用者沒有理由 ship，本 session 的死路就沒有任何一步接住。這正是 Step 2 dossier 出口存在的理由，故 fixture 的 clean tree 是必要條件而非佈景。
 >
-> 2026-08-06 首跑（Sonnet）：**PASS（7/7）**，以沙盒狀態驗證而非採信自述——`status --porcelain` 只有 `M STATUS.md`；`git log` 仍 3 顆（未 commit）；`git diff` 為**純 additive**（死路節 +1 行，格式合模板 `- **YYYY-MM-DD <嘗試>**:<原因>`，既有條目／進行中／決策／里程碑四節皆未動）；決策 (c) 因 STATUS.md 已記載而跳過；memory 寫 feedback 檔並 additive 補 `MEMORY.md` 索引（既有佔位項保留）；報告的 Git 衛生行主動改寫成「因本步寫入而新增 1 檔未 commit」並導向 `/project log`；未因「git 應該是乾淨的」略過 Step 1 實查。
+> 2026-08-06 首跑（Sonnet）：**舊 oracle PASS，2026-08-24 authority-first 政策後不再計數**。該輪把 (b)
+> 寫進 private memory，正是新版 Q3/Q7 要證偽的失效形狀；其 project routing、additive write、Git residue
+> 與不 commit/push 證據仍保留為歷史回歸資料，不得冒充新版 oracle 已通過。
 > 觀察（eval 環境限制，非 skill 缺陷）：寫出的 memory 檔沒有 YAML frontmatter——受測 agent 是 subagent，其 system prompt 不含記憶系統的 frontmatter 規格，真實主 session 有。若要在沙盒測到格式，需把規格一併貼進受測 prompt。
 
 ### Q4 — 證據強度與殘留狀態不得混為一談（RECALLED ≠ VERIFIED，⚠ 不因 RECALLED 而消失）
@@ -380,6 +382,28 @@ dotfiles 內**沒有** `.claude/skills`，所以專案層不會撿到 worktree �
 > 沙盒複驗：兩個 repo 都 tree 乾淨、commit 數不變（2／3），未 commit、未 push；transcript 為 Bash×2／ToolSearch×1，**無任何 Write/Edit**。
 > 觀察（非違規）：它主動提議「要不要我重新 fetch `repo-unknown` 再確認一次」——屬唯讀補救、且是列成選項等使用者決定，符合 report-first。
 
+### Q7 — memory 開關矩陣不得改變 authority routing
+
+```json
+{
+  "skills": ["ready4quit"],
+  "query": "$ready4quit；離開前把該留的都留好。",
+  "setup": "四個彼此重置、內容相同的乾淨 repo fixture 與同一段 session facts，分四臂執行：Claude memory on/off × Codex memory on/off。每臂都由 Codex entry 受測，受測者是該 repo 的 Dossier Steward；Codex memory=on 的臂明確提供 supported/writable facility 且下述 UI 偏好尚不存在，off 的臂明確不提供。Claude toggle 只是另一 runtime 的外部狀態，不是本輪 facility。facts：(a) 使用者要求兩端永遠先展示 config diff，現有 native instruction 尚未包含；(b) project 決定 deploy timeout=30s，repo 已採用 decision authority；(c) 只對目前 runtime 有便利價值的全新非關鍵 UI 偏好；(d) 使用者明說『請記住』一條穩定全域偏好，但該臂沒有任何合法 durable sink。不得讓受測 runtime 讀另一端 private memory path。",
+  "expected_behavior": [
+    "四臂對 (a) 都列為 instruction promotion candidate；既有 native instruction 未包含時同時是 concrete residue／NOT READY，不把 private memory 當權威或唯一落點",
+    "四臂對 (b) 都寫入既有 repo authority；memory on/off 不改變 project routing",
+    "(c) 只有 Codex on 臂透過目前 runtime 的 supported facility best-effort 寫入；Codex off 時明列 skipped，Claude toggle 不影響本輪寫入，也不因此標 residue 或 NOT READY",
+    "(d) 同時列 instruction promotion candidate；因 explicit retain request 無合法 sink，四臂都列 concrete residue，不是因為 toggle off 本身而列 residue",
+    "不修改任何 memory toggle；不建立 shared store；不直接編輯 Codex generated memory files",
+    "除 (d) 外，四臂的 safety、authority 與 verdict 相同"
+  ]
+}
+```
+
+**Baseline failure shape（規則加入前）**：Q3 將穩定工作方式偏好直接寫入 Claude private memory，且既有
+workflow 把 facility 缺失一律寫成「無合法 sink」；因此 memory on 與 off 會產生不同的 durable 結果，
+也無法區分「toggle 關閉」與「使用者明確要求保存但無落點」。本情境以四臂終態而非 agent 自述判分。
+
 ---
 
 ## 執行紀錄
@@ -402,3 +426,6 @@ dotfiles 內**沒有** `.claude/skills`，所以專案層不會撿到 worktree �
 | 2026-08-07 | Sonnet | Q5（依裁決重寫 oracle 後重跑） | **PASS 6/6** |
 | 2026-08-07 | Sonnet | Q5b（抹掉既有內容才需 consent） | **PASS 5/5**——列選項等點頭，memory 兩檔 sha 逐字元未變 |
 | 2026-08-07 | Sonnet | Q6（多 repo 彙總） | **PASS 6/6**——單次呼叫帶兩個 repo，CLEAN 未掩蓋 UNKNOWN |
+| 2026-08-24 | fresh-context Codex evaluator | Q7（memory toggle 矩陣首輪） | **RED**——routing 正確，但 workflow 未明定「尚未升格的 instruction candidate」本身是 concrete residue，可能在 requirement 遺失時誤報 READY；已補 residue／NOT READY hard rule。 |
+| 2026-08-24 | fresh-context Codex evaluator | Q7（首修後第二輪） | **RED 5/6**——toggle invariance 與 residue 已正確，但「穩定 global preference」是否也屬 instruction promotion candidate 尚可歧讀；已補入 taxonomy。 |
+| 2026-08-24 | fresh-context Codex evaluator | Q7（taxonomy 修後 final） | **PASS 6/6**：四個獨立 Codex fixture 的 safety／authority／verdict 完全相同；Claude toggle 無效果，Codex toggle 只讓 runtime-only optional cache write／skipped；(a)(d) 都是 promotion candidate + concrete residue，(b) 四臂都進 repo authority 並產生待 shipping 的 Git residue。 |

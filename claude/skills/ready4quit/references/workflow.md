@@ -11,13 +11,15 @@
 
 Runtime adapter 必須提供 runtime label、exit wording、skill directory、durable-memory availability，以及目前
 真正可用的 async／schedule evidence surface。**另一個 runtime 的 private path 或工具不是 fallback。**
+Memory facility 只影響非關鍵 cache 是否可寫；不得改 memory toggle，也不得讓 on／off／unavailable 改變
+authority routing、safety verdict 或工作是否可跨 runtime 延續。
 
 ## Critical — mutation boundary
 
 第一次收尾 pass 可做的 mutation 只有「寫入正確既有 authority、且不抹掉既有內容」的 additive flush：
 
-- 可直接做：新增 user memory；對同主題 memory 純附加；向 target repo 已存在的 canonical history／decision／
-  dead-end／backlog authority 追加新 record。逐筆報告寫了什麼與落點。
+- 可直接做：向 target repo 已存在的 canonical history／decision／dead-end／backlog authority 追加新 record；
+  對**只具 runtime-local 便利價值且非關鍵**的 cache 新增或純附加。逐筆報告寫了什麼與落點。
 - 先報告、等明確同意：kill／cancel background 或 schedule；刪除 memory；任何會抹掉、推翻、搬移或重排
   既有內容的修改；其他 destructive／outward action。
 - 即使使用者同意也不在本流程做：commit、push、開 PR、merge；改寫／整理既有 project history，或替 active／
@@ -75,28 +77,44 @@ Helper 的 aggregate verdict 採 residue-priority：同一 repo 可能同時是 
 
 ## 2. Durable knowledge flush
 
-掃描本 session 才出現、未持久化且對未來有價值的 facts。先分類，再讀既有 authority 判斷是否已記：
+掃描本 session 才出現、未持久化且對未來有價值的 facts。先按**權威需求**分類；memory availability
+不得參與分類：
 
-- user／feedback（跨專案工作偏好、使用者糾正；feedback 記 Why／How to apply）→ runtime 提供的 durable user memory。
-- project decision／dead end／milestone／known gap／active state → target repo contract 指定的 project authority。
-- reference → 依適用範圍走 project authority 或 user memory。
+- safety／Git 規則、使用者要求兩個 runtime 都遵守的穩定工作方式、明確要求保存的穩定 global preference，
+  或跨專案糾正 → **instruction promotion candidate**。
+  只在報告列出候選、適用 scope 與理由；ready4quit 不自行改 always-on instruction，也不先寫 private memory
+  假裝已升格。若既有 native instruction 尚未包含它，這筆未升格候選就是 concrete residue，標 `⚠` 並使
+  verdict 為 `NOT READY`；只有讀過 authority、確認已存在才可跳過。
+- project decision／dead end／milestone／known gap／active state／跨主機延續所需 facts → target repo contract 指定的
+  project authority。只有目前 actor 是合法 steward 且 repo 已有 sink 才 additive 寫入；否則列 concrete residue。
+- 只對目前 runtime 有便利價值、遺失不影響 safety／governance／project continuity 的偏好或 reference → optional
+  runtime cache。有 supported facility 時 best-effort 新增／純附加；**disabled/unavailable → `skipped`**，不是 residue。
+- 使用者本輪明確提出「記住／保存」的 **explicit retain request**，卻沒有合法 instruction、repo authority 或
+  supported runtime cache sink → **`residue`**。必須列出未保存內容與缺少的 sink；不能因無設施假裝已 flush。
+- 一次性、可由 repo/code 推導且沒有未來價值 → 不保存，報告 `discarded` 或略述理由。
 
 對每個 target repo，先讀 root contract 與最接近改動位置的 contract；若 repo 規定文檔搜尋 router，先用它定位。
 依 repo 現行 schema 寫入，不固定假設 `STATUS.md`，也不把 generated doc 當 authority。沒有 canonical sink 就不新建；
 報告 fact 與缺少的接收點。
 
-User memory 只有在目前 runtime 確實提供 facility 與格式時才能寫。寫前比對既有項：
+Optional runtime cache 只有在目前 runtime 確實提供 facility、允許本 session contribute 且格式已知時才能寫。
+不得為本流程切換 global／project／chat memory 設定。寫前比對既有項：
 
 - 完全相同 → 跳過並報告已存在。
 - 同主題新增資訊 → 純附加到既有項，索引不得新增重複列。
 - 新主題 → 新增一項並補既有索引。
 - 新資訊會推翻／抹掉舊內容 → 不寫相反的新項；列出 proposed change 等明確同意。
 
+Codex local memory files 是 generated state，不是本流程的直接編輯 surface；只有 runtime 明確提供的 supported
+facility 才算 cache sink。Claude Code 也只使用當下提供的 facility，不猜 private storage path。
+
 Project records 同樣 additive only：已有同一事實就跳過；新增 record 可寫 working tree，但不 commit。不得刪 active/backlog、
 改寫 history 或把 plan 標成完成。任何 repo-side flush 都會新增 Git residue，最終 Git 行必須納入該檔與「尚未 ship」；
 可由本輪已做的寫入直接證明，不必把 helper 的底層指令再跑一遍。
 
-若沒有候選，明說「本 session 無新增 durable-memory／project-record 候選」，不要靜默略過。
+**Memory disabled/unavailable 本身不是 residue。** 殘留必須指向一筆被要求保存或為正確延續所必要、卻沒有
+合法 authority 的具體 fact。若沒有候選，明說「本 session 無新增 instruction／project／optional-cache 候選」，
+不要靜默略過。
 
 ## 3. Async／schedule reconciliation
 
@@ -137,7 +155,8 @@ Ready4Quit report (<runtime>):
   Verdict: ...
 ```
 
-另列：已做的 additive writes、因已存在而跳過的 facts、缺少合法 sink 的 candidates、待明確同意的 destructive/outward
+另列：instruction promotion candidates、已做的 additive writes、`skipped`／`discarded` facts、因已存在而跳過的
+facts、explicit retain request 或必要 project fact 的 unsunk residue、待明確同意的 destructive/outward
 options，以及每個 Git residue 的 `Next actions`。有 Git `⚠` 卻沒有這一行，報告即不完整。不要讓使用者必須從
 過程訊息拼湊結論。
 

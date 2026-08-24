@@ -29,6 +29,7 @@
 - Record durable decisions, dead ends, and milestones at event time, not reconstructed at shipping time. With parallel workers, report the fact immediately to the steward; the steward is the sole writer to shared history.
 - The steward integrates verified worker commits with `git cherry-pick` on a feature integration branch, never with a merge commit. Remove completed items from active state, write milestones to the repo's existing history store, and pass its documentation audit before declaring integration complete.
 - Ownership transfer requires explicit user direction or a handoff from the current steward, followed by a durable-state update before the new steward writes. A checkpoint or handoff artifact is evidence, never a lock or authority to mutate the repository.
+- **Runtime-local memory is a non-authoritative cache, never a prerequisite.** Safety/Git rules, cross-runtime agreements, project facts/state, cross-host continuity, and action authorization must not exist only there. Route shared behavior to native instructions and project facts/state to the repo's adopted authority; whether any runtime memory is on, off, unavailable, or differently configured must not change correctness, safety, or transfer readiness. Authorization never survives a session or ownership transfer.
 
 
 ### Fallback conventions — this repo's own convention wins where it has one
@@ -67,10 +68,10 @@
 重建指令；沒有重建指令的一律當作不可信。
 
 **Rules are stated in exactly one place.** If a rule is needed elsewhere, point at it; do not restate it.
-**The sole exception is a rule that must be in always-on context AND whose readers load different files**
-（Claude 自動載入 `CLAUDE.md`、Codex 讀 `AGENTS.md`）—— a pointer cannot work there, because a rule that
-was never loaded never fires. Keep such replicas short, and verify them by machine check where the cost of
-drift is real; the kernel block is the managed instance of this pattern. Everything else points.
+When always-on readers load different files, prefer a runtime-native import whose expansion has a clean-room behavior
+eval; a textual pointer is not an import and cannot make an unloaded rule fire. If no verified import exists, keep the
+necessary replicas short and machine-check drift. The kernel block plus root Claude import is the managed instance of
+this pattern. Everything else points.
 
 ## Working discipline
 
@@ -91,8 +92,7 @@ drift is real; the kernel block is the managed instance of this pattern. Everyth
 - **測試**：`./tests/run.sh`，**以 exit code 判綠紅**（接 pipeline 會吃掉失敗）。
   改動 `scripts/`、setup 腳本、skill 腳本後必跑；改動任何 `.md` 的節名或搬動權威內容後同樣要跑
   （交叉引用 gate 掃全 repo 的 md）。
-  這三行在 root `CLAUDE.md`「測試」另有一份——**這是上面 always-on 例外條款的實例**：
-  Codex 只讀本檔、Claude 只自動載入 `CLAUDE.md`，指標對兩者其中之一必然落空。
+  Root `CLAUDE.md` 以原生 import 載入本檔，不再複製這三行；G1c clean-room 守 import 行為。
   各 gate 的判準、反例與設計理由（**放寬判準前必讀**）見 `docs/testing-contract.md`。
 - **本 repo 的額外約束**：`~/.dotfiles` 同時是多台機器的部署來源，`scripts/` 底下的改動會經
   `dotsync` / `brewup` 散佈出去。散佈類變更的前提是**變更已進 `origin/main`**——本地 branch 未 push

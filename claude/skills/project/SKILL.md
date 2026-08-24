@@ -3,7 +3,7 @@ name: project
 description: "Project state, history & ship — 三模式：spec（開工：active contract）、log（收尾：history/backlog/active 同步、commit、push/PR）、transfer（移交完整度）。Use for /project, uap, ship, 提交, 推上去, 開工 spec, or project transfer. Branches first before commits; never pushes without current authorization and never merges without an explicit merge instruction."
 user-invocable: true
 disable-model-invocation: true
-argument-hint: "[--spec|--log|--transfer] [--merge|--pr|--no-pr|--bypass-merge] [repo|.] [./module...]"
+argument-hint: "[--spec|--log|--transfer] [to=<actor>] [--merge|--pr|--no-pr|--bypass-merge] [repo|.] [./module...]"
 allowed-tools: Bash, Read, Glob, Grep, Edit, Write, AskUserQuestion
 ---
 

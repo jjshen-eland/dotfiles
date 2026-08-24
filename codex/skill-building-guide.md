@@ -64,7 +64,9 @@ Evals 是 source of truth。Skill review 的 blocking line 是「agent 照做是
 依序執行：
 
 1. 實跑新增或修改的 scripts，包含正常、錯誤與 destructive gate 路徑。
-2. 執行 `$skill-creator/scripts/quick_validate.py <skill-dir>`。
+2. 用隔離依賴執行 validator：
+   `uv run --no-project --with pyyaml python ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py <skill-dir>`。
+   不要假設 system Python 已安裝 PyYAML，也不要為此污染全域 Python。
 3. 執行 skill 自己的 behavior evals 與 repo tests。
 4. 檢查 `git diff`，確認沒有 placeholder、重複規則、無關檔案或 stale metadata。
 

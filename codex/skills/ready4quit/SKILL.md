@@ -11,8 +11,9 @@ description: "End-of-session pre-quit flush for Codex. Use only when the user ex
    canonical Claude tree 的 shared links。從 worktree 測試時必須使用 worktree 這份，不得跳去全域安裝副本。
 2. 使用以下 Codex adapter facts：
    - runtime label：`Codex`；exit wording：結束目前 session。
-   - durable user memory：只在目前 runtime 明確提供 durable-memory facility 時使用；不要假設 Claude 的
-     private memory path，也不要自行建立一套。
+   - durable user memory：Codex local memory files 是 **generated state**，不得直接編輯。只在目前 runtime
+     明確提供 supported facility 時交付 optional cache；不要假設 Claude private path、建立 shared store，
+     或切換 memory settings。
    - background/subagent：用目前可用的 authoritative agent status、已知 yielded exec session 與完成通知；
      不掃 OS process table，也不把 log/output artifact 當 liveness oracle。沒有可枚舉介面就標 `PARTIAL`。
    - schedule/automation：只用目前 runtime 實際提供的 authoritative listing；沒有就標 `PARTIAL`，

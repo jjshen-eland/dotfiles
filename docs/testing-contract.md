@@ -94,12 +94,16 @@ evals 於 2026-08-08 補入四個 gate——**納入時它零 findings**。便�
 
 掃描器：`tests/kernel-gate.py`（判準與輸出契約以該檔檔頭為準）。
 
-kernel 必須在**四處**逐字存在：`AGENTS.md`（工具中立入口）、root `CLAUDE.md`（Claude 唯一會
-自動載入的）、`claude/CLAUDE.md`（全域 Claude 部署來源）、`codex/AGENTS.md`（全域 Codex 部署來源）。
-純指標方案已被實測證偽——2026-08-10 clean-room：Claude Code 自動載入 root `CLAUDE.md`、
-**不**自動載入 root `AGENTS.md`（後者只在 agent 剛好探索 repo 時才被 `cat` 到）。
+kernel 必須在**三個 canonical 來源**逐字存在：`AGENTS.md`（工具中立 repo 入口）、
+`claude/CLAUDE.md`（全域 Claude 部署來源）、`codex/AGENTS.md`（全域 Codex 部署來源）。Root
+`CLAUDE.md` 不再複製 block，而必須以唯一一行 `@AGENTS.md` 開頭，再附 Claude-specific facts。
 
-四份自足的代價是複本會漂移，而「same fact stated in N places」是 skill-building-guide 明列的
+這不是普通指標。2026-08-24 G1c clean-room 五臂、Sonnet 各 2 次：bare `AGENTS.md`、文字指標與 none
+都 0/2；原生 import 2/2；import 後相衝的 Claude-specific 規則 2/2 勝出；十次 transcript 都零探索。
+因此 gate 同時守 import 唯一性、首行順序與 root `CLAUDE.md` 不得再帶 managed blocks。若產品行為回歸，
+先讓 G1c 變紅並記 dead end，不可靜默恢復或刪除 replicas。
+
+三份自足的代價是複本會漂移，而「same fact stated in N places」是 skill-building-guide 明列的
 red flag。**這支 gate 就是把那個代價換成機檢**：漂移即紅。除逐字比對外另驗——
 
 - 檔名寫死：漏改會找不到檔而判紅，比靜默略過安全。
@@ -108,10 +112,10 @@ red flag。**這支 gate 就是把那個代價換成機檢**：漂移即紅。�
   地方，漂移就回來了。
 - portable block 只准在 `AGENTS.md`，且不得巢狀於 kernel 之內（兩者必須並列）。
 - **可攜性**：契約檔不得含 `~/.dotfiles`、`~/.claude`、`/Users/` 等私人路徑——clone 下來就要生效。
-- route block 只放在 repo-resident 的 `AGENTS.md`／`CLAUDE.md`：全域規則服務未採用
-  doc-governance 的 repo，不能假設該執行檔存在。兩份必須逐字相同、至少保留 heading 與一條規則，
-  且規則必須含 `doc-find` 或 `doc-governance.py find` 可執行入口，不能退化成人工 pointer；全域部署來源
-  若出現 route block 也會判紅。portable block 同理只准存在於 repo-resident `AGENTS.md`。
+- route block 只放在 repo-resident `AGENTS.md`，由 root `CLAUDE.md` import 一起載入；全域規則服務未採用
+  doc-governance 的 repo，不能假設該執行檔存在。它至少保留 heading 與一條含 `doc-find` 或
+  `doc-governance.py find` 的可執行規則，不能退化成人工 pointer；全域部署來源或 root `CLAUDE.md`
+  若另複製 managed block 會判紅。portable block 同理只准存在於 `AGENTS.md`。
 - kernel／route／portable 三個 managed block 都會被複製到其他 repo，因此共用私人路徑與跨檔指標的
   可攜性檢查。掃描器以封閉的 finding code 集合列舉所有 blocking 分支；RED fixtures 的實際輸出
   必須覆蓋每一碼，新增分支卻沒新增可證偽 fixture 時 meta-test 會紅。

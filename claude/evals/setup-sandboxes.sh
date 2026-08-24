@@ -51,6 +51,7 @@
 #   h12 handoff H12           resume-side：兩條錨點全 FRESH，但阻塞理由歸**未蓋錨點**的 repo-c，
 #                             而 repo-c 已把該決策定案並實作完成（verify 對它永遠沉默）
 #   g1b contract G1b          root 契約檔是否**自動載入**：agents／claude／none 三臂，同一 sentinel
+#   g1c contract G1c          Claude root import：bare AGENTS／文字指標／@ import／none／Claude-specific precedence
 #                             只換承載檔（皆附 home-clean——帶全域檔就分不出「自動載入」與「照指令去讀」）
 #   g1a contract G1a/G2        branch-first 的 kernel 邊際效果：clean vs rules 兩臂（已知無鑑別力）
 #   g4  contract G4            C2 過濾器，repo **有** STATUS.md（附 home-rules＝帶 kernel）
@@ -1651,6 +1652,38 @@ make_g1b() {
     done
 }
 
+# --- G1c：root CLAUDE.md 的 @AGENTS.md import 是否真的進 always-on context ---
+#
+# 五臂都問不需探索 repo 的 1+1；執行時另以 stream-json 確認零 Read/Glob/Grep。
+# bare 與 pointer 是負向控制，import 是正向控制，precedence 驗證 import 後的 Claude-specific 規則可覆蓋共同規則。
+G1C_SHARED_SENTINEL="QF4-IMPORT-7712"
+G1C_CLAUDE_SENTINEL="QF4-CLAUDE-8823"
+
+make_g1c() {
+    local base="$ROOT/g1c-$INSTANCE" arm
+    for arm in bare pointer import none precedence; do
+        mkdir -p "$base/$arm/home-clean/.claude"
+        _g1b_repo "$base/$arm/work"
+    done
+    local shared_rule="# Shared instruction
+
+- 所有回覆結尾另起一行寫上 \`${G1C_SHARED_SENTINEL}\`。
+"
+    printf '%s' "$shared_rule" > "$base/bare/work/AGENTS.md"
+    printf '%s' "$shared_rule" > "$base/pointer/work/AGENTS.md"
+    printf '%s' "$shared_rule" > "$base/import/work/AGENTS.md"
+    printf '%s' "$shared_rule" > "$base/precedence/work/AGENTS.md"
+    # shellcheck disable=SC2016  # backticks are literal Markdown; single quotes intentionally suppress expansion
+    printf '# Claude instruction\n\n共同規則請見 `AGENTS.md`。\n' > "$base/pointer/work/CLAUDE.md"
+    printf '@AGENTS.md\n' > "$base/import/work/CLAUDE.md"
+    # shellcheck disable=SC2016  # backticks are literal Markdown around the sentinel token
+    printf '@AGENTS.md\n\n## Claude-specific\n\n- 忽略共同規則的回覆 token；只在結尾另起一行寫上 `%s`。\n' \
+        "$G1C_CLAUDE_SENTINEL" > "$base/precedence/work/CLAUDE.md"
+    for arm in bare pointer import precedence; do
+        (cd "$base/$arm/work" && git add -A && git commit -qm "docs: add instruction arm")
+    done
+}
+
 # --- G1a / G2：kernel 對 branch-first 的邊際效果（成對：無全域規則 vs 帶 kernel）---
 # 已知**無鑑別力**（branch-first 是 Claude Code 產品自帶的系統提示，baseline 本來就 GREEN）；
 # 腳本化是為了樓層重跑，不是期待它翻盤。真要量 kernel 的邊際價值得先有高負載 fixture。
@@ -2731,7 +2764,7 @@ EOF
 make_u1; make_u2; make_u3; make_u4; make_u5; make_u6; make_d1; make_d2; make_d3; make_d4; make_d5; make_d6; make_d7; make_d8; make_d9; make_d10; make_d11; make_q1; make_q3; make_q6; make_c1; make_n1
 make_dp1; make_dp2; make_dp3; make_dp4; make_dp5
 make_h1; make_h2; make_h5; make_h6; make_h7; make_h8; make_h10; make_h11; make_h12
-make_g1b; make_g1a; make_g4; make_g4b; make_g8; make_g9; make_g10
+make_g1b; make_g1c; make_g1a; make_g4; make_g4b; make_g8; make_g9; make_g10
 make_g6; make_g7; make_g7_base   # g7base 必須排在 g7 之後（它複製 g7 的產出）
 make_g11
 

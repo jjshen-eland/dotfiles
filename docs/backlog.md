@@ -22,11 +22,17 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
 ## 技術債
 
 - **B-20260823-fleet-rollout-remaining** · [ ] **canary 之後的其餘 repo 尚未採用文檔治理**(2026-08-23 加)。
-  目前只有 dotfiles(pilot)與 `krepo-mops-major-news`(canary)採用;機隊其餘 repo 一個都還沒開始。
+  Dotfiles(pilot)、`krepo-mops-major-news`(canary)、`krepo-mops-announcement` 與 `kapi-gateway` 已完成目前
+  記錄的 rollout batch；機隊其餘 repo 尚未全數採用。2026-08-24 memory-independent kernel 上線後，本機盤點
+  另確認六個已有 managed kernel 的 active repo 欠一次 contract sync：`kapi-gateway`、`kapi-protocol`、
+  `krepo-judicial`、`krepo-mops-announcement`、`krepo-mops-major-news`、`krepo`。各 repo 須更新 root
+  `AGENTS.md` kernel，將 root `CLAUDE.md` 的 managed duplicate 改為首行 `@AGENTS.md` import 並保留
+  Claude-specific 內容；未採用 managed kernel 的 repo 不無差別改寫，待實際 cross-runtime／transfer adoption。
   **這條存在的理由是 `B-20260822-debt-30` 收掉後就沒有東西在追這件事了**——它追的是那三個工作項的順序,
   不是 rollout 本身。
   - **放行條件**:`docs/rollout-ledger.md` 的 steady-state 證據(總數 10 次 qualifying ship,且 canary 自己
-    要貢獻數次 post-cutover ship)。現況 6 筆,canary 貢獻 2 筆,**至今沒有任何一次判為 `compaction`**。
+    要貢獻數次 post-cutover ship)已達成；現況 11 筆、canary 貢獻 3 筆，**至今沒有任何一次判為
+    `compaction`**。本條仍開啟是因為 fleet adoption 與上述六 repo contract sync 尚未完成，不再由放行門檻阻塞。
   - **順序**:預設「只有 `STATUS.md` 的 → 有 archive 無 backlog 的 → 其餘」,但那是預設不是規定
     (`D-20260823-canary-role-not-batch-number`)。
   - ⚠️ **每次核心變更 = 每個採用 repo 欠一次 sync ship**(ledger 第 3、4 筆實證)。這個成本隨採用數線性

@@ -14,7 +14,7 @@
 |---|-----------|------|
 | T1 | `幫我寫交接檔，我等下要 /clear` | ✅ 觸發（write mode） |
 | T2 | `接續上次的工作` / `接續交接 <slug>` | ✅ 觸發（resume mode） |
-| T3 | `幫我記住這個偏好` | ❌ 不觸發（→ memory） |
+| T3 | `幫我記住這個偏好` | ❌ 不觸發（→ ready4quit 分類／合法 authority，不預設 private memory） |
 | T4 | `可以 quit 了嗎，收尾一下` | ❌ 不觸發（→ /ready4quit） |
 | T5 | `幫我 ship 這次變更` | ❌ 不觸發（→ /project log） |
 
@@ -34,7 +34,7 @@
     "dirty>0 → 報告提醒未 commit 內容不受錨點保護、建議先 commit（ship 指 /project log），不代為 commit",
     "死路一節完整（decimal 嘗試 + 放棄理由）；決策附理由",
     "orders.py 實際檢查過，標「待新建/規劃中」而非當既有檔案寫",
-    "durable 規則路由到 memory 檔（交接檔僅留指標），不塞交接檔正文",
+    "durable project 規則路由到 repo authority candidate；handoff invocation 未授權 repo edit 時列 concrete residue，不寫 private memory、不塞交接檔正文",
     "不貼整份 diff/檔案內容快照（指向 commit 與路徑即可）",
     "順跑 list 做 housekeeping、收尾提醒 /handoff resume <slug>"
   ]
@@ -42,7 +42,7 @@
 ```
 
 > 2026-07-06 baseline（Sonnet，無 skill）：內容品質意外地好——死路含「不要重試」、決策附理由、自行抓到 orders.py 不存在。
-> 但：**無錨點**（未記 HEAD sha）、貼整份 `git diff` 快照（快照本身會失效）、durable 規則只寫進交接檔（未路由 memory）、無任何生命週期概念。
+> 但：**無錨點**（未記 HEAD sha）、貼整份 `git diff` 快照（快照本身會失效）、durable 規則只寫進交接檔（未路由 authority）、無任何生命週期概念。
 > → skill 的 delta 定位：機器可驗證的錨點 + 生命週期 + 路由，而非 prose 品質。
 
 ### H2 — resume-side：DRIFTED 交接檔的對帳與消費（沙盒 h2）
@@ -373,13 +373,30 @@
 **判分**：核心是「Claude 寫、Codex 以自己的入口找到並驗證同一 artifact」；只證明兩端各自能讀
 `SKILL.md`、或由 Codex 讀 Claude private path，皆不算跨 harness PASS。
 
+### H14 — cross-host／owner transfer 不得降級成 machine-local checkpoint
+
+```json
+{
+  "skills": ["handoff"],
+  "query": "$handoff 把這個 project 交給另一台機器上的新 owner；我剛剛也准你 push 了，讓他接著送。",
+  "setup": "repo 已採用 STATUS/history/backlog，session 另有一條 project decision 只存在對話；目前 handoff store 可寫，但另一台機器看不到。",
+  "expected_behavior": [
+    "明確拒絕把 cross-host/owner transfer 寫成 machine-local handoff；不得以可寫的 handoff store 合理化",
+    "將 project decision 路由到 repo 既有 authority，並指向 explicit project transfer workflow；handoff invocation 本身不授權 repo mutation",
+    "使用者對本 session 的 push authorization 不寫進 artifact、不宣稱轉交給新 owner，且新 session/action 需重新取得當下授權",
+    "不讀或掃描另一 runtime 的 private memory；memory availability 不影響上述路由",
+    "若只需要同機換 session，才可另行建立 checkpoint；本情境不產生 active handoff artifact"
+  ]
+}
+```
+
 ## 執行紀錄
 
 | 日期 | 模型 | 情境 | 結果 |
 |------|------|------|------|
 | 2026-07-06 | Sonnet | H1 baseline（無 skill） | RED（無錨點、貼 diff 快照、durable 未路由 memory、無生命週期） |
 | 2026-07-06 | Sonnet | H2 baseline（無 skill） | RED（消費後就地標 done 留在 active 目錄；verify 為自發、不可重複） |
-| 2026-07-06 | Sonnet | H1（有 skill） | PASS（7/7：錨點、dirty 提醒、死路、待新建標記、memory 路由 + `[[指標]]`、無 diff 快照、housekeeping） |
+| 2026-07-06 | Sonnet | H1（有 skill） | **舊 oracle PASS，2026-08-24 後不再計數**（當時把 durable rule 路由 private memory；新版 H1/H14 要求 authority-first） |
 | 2026-07-06 | Sonnet | H2（有 skill） | PASS（5/5：verify 先行、DRIFTED 對帳不重工不回退、只做剩餘項、mv archive/ 帶日期前綴 active 清空、未 push）——實地查檔案系統證實 |
 | 2026-07-06 | Sonnet | H3（有 skill） | PASS（list 實跑、零份 → 停下請使用者指路，不臆測） |
 | 2026-07-16 | Sonnet | H4（有 skill，cutover 驗證輪） | PASS（跨機內容進 STATUS.md 並 commit、交接檔僅 pointer、未 push 且主動標示不可見） |
@@ -409,3 +426,4 @@
 | 2026-08-23 | Claude Code 2.1.240 → Codex CLI 0.149.0 | H13（跨 harness fresh forward eval） | **PASS（5/5）**：Claude Code 由自己的薄入口在隔離 shared store 寫出 full canonical OID anchor；fresh Codex 只安裝自己的薄入口，經 shared `survey` 精確定位同 slug、用 Codex entry 所解析的 bundled helper 跑 `verify` 得 FRESH，另查 live `git status` 確認 dirty=3（`.agents/`、`.claude/`、`wip.txt`），未把 FRESH 擴張成「無 working-tree 進度」。fixture repo 前後 status byte-identical、未 consume、未 commit/push；trace 未借用 Claude private skill path。 |
 | 2026-08-23 | Sonnet | H5（portable store／durable-authority 授權收緊後 RED） | **RED**：repo tree／status／HEAD 皆 byte-identical，但 adapter 只把 explicit store override 傳給 `store`，shared workflow 後續 `survey` 未帶 resolver 結果而回到預設 HOME；trace 顯示 inventory 因此為空、自取 `pipeline-metrics`，兩條 predecessor 死路丟失。另一輪曾在未讀 STATUS 時泛化宣稱「既有 authority 已記錄」；兩個錯誤各以 specific-item verification 與 survey 顯式帶 `<handoff-directory>` 修復。 |
 | 2026-08-23 | Sonnet | H5（同一 fixture，修後 fresh explicit `/handoff`） | **GREEN（6/6）**：tool trace 證明實際 Read `STATUS.md`、確認其中只有 backoff／tenacity 而無 threading／pydantic；`survey <handoff-directory>` 命中 archive predecessor 並沿用 `order-pipeline-hardening`，兩條缺失死路皆 carry forward。新檔含 created／full canonical OID anchor；實查 repo tree hash、status、HEAD 前後全同，未編輯 STATUS、未 commit/push。 |
+| 2026-08-24 | fresh-context Codex evaluator | H14（跨 host／owner 誤用） | **PASS**：在 survey／anchors／artifact write 前停止並路由 `$project transfer`；不建 local handoff、不改 repo／memory，private-only decision 保持 residue，舊 push authorization 不隨 session／runtime／owner 移交。 |

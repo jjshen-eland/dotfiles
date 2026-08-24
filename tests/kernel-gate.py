@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 """kernel-gate.py — agent contract 的 managed block 完整性掃描器。
 
-為何需要它：契約的 kernel 必須在**四處**逐字存在——repo 根 `AGENTS.md`（工具中立入口）、
-root `CLAUDE.md`（**Claude 唯一會自動載入的**，2026-08-10 G1b 實測）、`claude/CLAUDE.md`
-（部署為全域 Claude 規則）、`codex/AGENTS.md`（部署為全域 Codex 指引）。四份都得自足：純指標方案（「去讀 ./AGENTS.md」）已被實測證偽
-——規則不在 always-on context 就不生效（claude/skills/handoff/evals.md 的 H6 首跑，
-同一輪 repo-a 的 commit 落在 main、repo-b 才開 branch，因為規則只存在於延遲載入的檔案裡）。
+為何需要它：契約的 kernel 必須在**三處**逐字存在——repo 根 `AGENTS.md`（工具中立入口）、
+`claude/CLAUDE.md`（部署為全域 Claude 規則）、`codex/AGENTS.md`（部署為全域 Codex 指引）。root
+`CLAUDE.md` 必須以唯一一行 `@AGENTS.md` 開頭，讓 Claude Code 原生展開 repo 共同正文，再附加
+Claude-specific facts。普通文字指標不算 import；2026-08-24 G1c clean-room 五臂各 2/2、零探索驗證。
 
-四份自足的代價是複本會漂移，而 skill-building-guide 明列「same fact stated in N places」
+三份自足的代價是複本會漂移，而 skill-building-guide 明列「same fact stated in N places」
 是 red flag。**這支 gate 就是把那個代價換成機檢**：漂移即紅。形狀同 xref-gate——把原本
 只靠散文維持的不變式變成機械守門。
 
-repo-resident 的 `AGENTS.md` 與 `CLAUDE.md` 另帶一份逐字相同的 route block：它必須保留
+repo-resident 的 `AGENTS.md` 另帶 route block：它必須保留
 `doc-find`／`doc-governance.py find` 這類可執行路由，不能退化成人工 pointer。route 與 kernel、
 portable 同樣會被複製到其他 repo，因此三個 managed block 共用可攜性檢查。
 
@@ -32,19 +31,14 @@ import os
 import re
 import sys
 
-# 帶 kernel block 的四個檔——名字寫死是刻意的：漏改會讓 gate 找不到檔而判紅，比靜默略過安全。
-# 四個角色：repo 契約入口（AGENTS.md）／Claude 唯一自動載入的 repo 檔（CLAUDE.md）／
-# Claude 全域部署來源（claude/CLAUDE.md）／Codex 全域部署來源（codex/AGENTS.md）。
-#
-# root CLAUDE.md 為什麼也要有一份：2026-08-10 實測，Claude Code **自動載入 root CLAUDE.md、
-# 但不自動載入 root AGENTS.md**（後者只在 agent 剛好探索 repo 時才被 cat 到）。只放在
-# AGENTS.md 的話，「修個 typo 並 commit」這類任務整輪都不會讀到契約。
-KERNEL_FILES = ("AGENTS.md", "CLAUDE.md", "claude/CLAUDE.md", "codex/AGENTS.md")
+# 帶 kernel block 的三個 canonical 檔——名字寫死是刻意的：漏改會讓 gate 找不到檔而判紅。
+KERNEL_FILES = ("AGENTS.md", "claude/CLAUDE.md", "codex/AGENTS.md")
+ROOT_CLAUDE_FILE = "CLAUDE.md"
 
 # 只有契約檔帶 portable block（權威矩陣 + working discipline）——那層不進全域檔，
 # 因為全域檔服務所有 repo、不該替別的 repo 宣告它的文件權威。
 PORTABLE_FILE = "AGENTS.md"
-ROUTE_FILES = ("AGENTS.md", "CLAUDE.md")
+ROUTE_FILES = ("AGENTS.md",)
 
 MIN_RULE_LINES = 8   # safety floor 6 + fallback conventions 2
 MIN_ROUTE_LINES = 2  # heading + executable route contract; blocks equal to "x" are hollow
@@ -67,7 +61,9 @@ FINDING_CODES = (
     "KERNEL_FILE_MISSING", "KERNEL_MARKER_COUNT", "KERNEL_MARKER_ORDER",
     "KERNEL_CANARY_OUTSIDE", "KERNEL_MIN_RULES", "KERNEL_REQUIRED_RULE", "KERNEL_DRIFT",
     "ROUTE_MARKER_COUNT", "ROUTE_MARKER_ORDER", "ROUTE_EMPTY",
-    "ROUTE_MIN_RULES", "ROUTE_EXECUTABLE", "ROUTE_DRIFT", "ROUTE_MISPLACED",
+    "ROUTE_MIN_RULES", "ROUTE_EXECUTABLE", "ROUTE_MISPLACED",
+    "ROOT_CLAUDE_FILE_MISSING", "ROOT_CLAUDE_IMPORT_COUNT", "ROOT_CLAUDE_IMPORT_ORDER",
+    "ROOT_CLAUDE_MANAGED_BLOCK",
     "PORTABLE_FILE_MISSING", "PORTABLE_MARKER_COUNT", "PORTABLE_MARKER_ORDER",
     "PORTABLE_EMPTY", "PORTABLE_NESTED_KERNEL", "PORTABLE_MISPLACED",
     "PORTABILITY_PRIVATE", "PORTABILITY_XREF",
@@ -111,11 +107,26 @@ def scan(root):
     findings = []
     bodies = {}
 
+    try:
+        root_claude = read(root, ROOT_CLAUDE_FILE)
+    except FileNotFoundError:
+        findings.append(finding("ROOT_CLAUDE_FILE_MISSING", "%s: 檔案不存在——Claude 無法 import repo 契約" % ROOT_CLAUDE_FILE))
+    else:
+        imports = re.findall(r"(?m)^\s*@AGENTS\.md\s*$", root_claude)
+        if len(imports) != 1:
+            findings.append(finding("ROOT_CLAUDE_IMPORT_COUNT", "%s: @AGENTS.md import 必須恰好一行（實際 %d）"
+                                    % (ROOT_CLAUDE_FILE, len(imports))))
+        first = next((line.strip() for line in root_claude.splitlines() if line.strip()), "")
+        if first != "@AGENTS.md":
+            findings.append(finding("ROOT_CLAUDE_IMPORT_ORDER", "%s: 第一個非空白行必須是 @AGENTS.md" % ROOT_CLAUDE_FILE))
+        if any(marker_re(name, "start").search(root_claude) for name in ("kernel", "route", "portable")):
+            findings.append(finding("ROOT_CLAUDE_MANAGED_BLOCK", "%s: import 後不得再複製 managed block" % ROOT_CLAUDE_FILE))
+
     for rel in KERNEL_FILES:
         try:
             text = read(root, rel)
         except FileNotFoundError:
-            findings.append(finding("KERNEL_FILE_MISSING", "%s: 檔案不存在——kernel 需要在四處逐字存在（見檔頭：兩份全域部署來源 + 兩份 repo-resident）" % rel))
+            findings.append(finding("KERNEL_FILE_MISSING", "%s: 檔案不存在——kernel 需要在三個 canonical 來源逐字存在" % rel))
             continue
         body, errs = extract(text, "kernel")
         findings.extend("%s: %s" % (rel, e) for e in errs)
@@ -132,7 +143,7 @@ def scan(root):
                                 % (rel, canary)))
 
     if len(bodies) == len(KERNEL_FILES):
-        # 條目數下限：四份都缺 block 時「空 == 空」會通過，這條是防那個假綠的關鍵
+        # 條目數下限：三份都缺 block 時「空 == 空」會通過，這條是防那個假綠的關鍵
         rules = [ln for ln in bodies[KERNEL_FILES[0]].splitlines() if ln.startswith("- ")]
         if len(rules) < MIN_RULE_LINES:
             findings.append(finding("KERNEL_MIN_RULES", "kernel block 只有 %d 條規則行（<%d）——內容被掏空？"
@@ -165,9 +176,6 @@ def scan(root):
             if not any(token in route_body for token in ('doc-find', 'doc-governance.py find')):
                 findings.append(finding("ROUTE_EXECUTABLE", "%s: route block 缺 executable route 規則行" % rel))
             route_bodies[rel] = route_body
-    if len(route_bodies) == len(ROUTE_FILES) and route_bodies[ROUTE_FILES[0]] != route_bodies[ROUTE_FILES[1]]:
-        findings.append(finding("ROUTE_DRIFT", "%s 的 doc-governance route block 與 %s 不是逐字相同——複本已漂移"
-                        % (ROUTE_FILES[1], ROUTE_FILES[0])))
     for rel in sorted(set(KERNEL_FILES) - set(ROUTE_FILES)):
         try:
             text = read(root, rel)
