@@ -27,7 +27,9 @@ D-20260822-rollout-gate-replacement；逐 repo 採用程序見 docs/doc-governan
 ## 計數狀態
 
 - 目標：10 次 qualifying ship，且 canary repo 自己必須貢獻數次 post-cutover ship。
-- 已記錄：8 次。
+- 已記錄：11 次。
+- ✅ 放行門檻已達成：總數 ≥10，且 canary `krepo-mops-major-news` 已貢獻 3 次 post-cutover ship；
+  11 筆至今沒有任何一次判為 `compaction`。
 - ⚠️ 採用 commit `9d3e891` 之後、本 ledger 建立之前，dotfiles 已有 2 次 ship（PR 124、125）。兩者的
   first-audit 結果與人工介入分類**無法事後重建**，因此不計入 — 計數從本檔建立後的下一次 ship 起算。
 
@@ -112,3 +114,31 @@ D-20260822-rollout-gate-replacement；逐 repo 採用程序見 docs/doc-governan
   - **人工介入**：`none`。
   - **final audit**：rc=0，`tests/run.sh` PASS=1098 FAIL=0，title-free ratchet 6/10 未動。
   - **surface bytes**：`document-governance.md` +2 行（治理面內），其餘變更不在治理面。
+
+- **krepo-mops-major-news · `chore/cross-runtime-dossier-rollout` · 2026-08-24**
+  - **lifecycle 操作**：既有 canary 的增量升級——同步 shared kernel／trusted core，新增 root `AGENTS.md`、
+    opt in coordination schema，保留兩項 active state 的原意並統一 steward。✅ **canary 的第三筆
+    post-cutover ship**。
+  - **first audit**：rc=0。
+  - **人工介入**：`none`。
+  - **final audit**：rc=0；Ruff 全綠，`uv run pytest` 682 passed、18 skipped。
+  - **surface bytes**：54,339 → 61,267（上限 65,536，未動）。
+
+- **krepo-mops-announcement · `chore/cross-runtime-dossier-rollout` · 2026-08-24**
+  - **lifecycle 操作**：**cutover ship**——從 legacy STATUS 採用 repo-local cross-runtime dossier governance；
+    33 個來源單位遷入 active／backlog／event-time history，兩份既有 plan 凍結為 legacy。
+  - **first audit**：`FINDINGS × 26`（`--shadow` 基線）。
+  - **人工介入**：`lifecycle`。依 migration manifest 完成 33/33 搬移，只修正兩個搬移後失效的 pointer；
+    **沒有遺失、重複或內容壓縮**。
+  - **final audit**：rc=0；Ruff 全綠，`uv run pytest` 488 passed、22 skipped。
+  - **surface bytes**：n/a（新採用；該 repo 治理面 61,385／65,536）。
+
+- **kapi-gateway · `chore/cross-runtime-dossier-rollout` · 2026-08-24**
+  - **lifecycle 操作**：**cutover ship**——從 legacy STATUS 採用 repo-local cross-runtime dossier governance；
+    40 個來源單位遷入 active／backlog／event-time history，六份既有 plan 凍結為 legacy。
+  - **first audit**：不完整 adoption surface 的 bootstrap probe 為 `BROKEN`，未產生 partial cutover；完整
+    surface 的第一次 `--shadow` 為 `FINDINGS × 20`。
+  - **人工介入**：`lifecycle`。依 migration manifest 完成 40/40 搬移，沒有遺失、重複或內容漂移；
+    **沒有壓縮既有內容**。
+  - **final audit**：rc=0；Ruff 全綠，`uv run pytest` 205 passed。
+  - **surface bytes**：n/a（新採用；該 repo 治理面 61,976／65,536）。

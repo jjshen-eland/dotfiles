@@ -209,3 +209,9 @@
   - 放棄:維護兩套 runtime-specific dossier 規則；只寫 steward prose 不做 schema 機檢；只宣告支援平行而不跑真實雙 CLI；讓 steward 以 merge commit 收斂 worker
   - 重議:active schema 出現實際 scope race 而需要 overlap parser／lease；任一 runtime 無法載入 managed kernel 或 shared workflow；canary 暴露無法以 optional schema 平滑採用的 legacy shape
   - 關聯:D-20260824-cross-runtime-dossier-stewardship;claude/evals/contract-evals.md;tests/run.sh
+
+- **M-20260824-cross-runtime-dossier-rollout-batch · 2026-08-24 三個 repo 完成 cross-runtime dossier rollout，steady-state gate 達標**:`krepo-mops-major-news` 以增量方式升級既有 canary，`krepo-mops-announcement` 與 `kapi-gateway` 由 legacy dossier 完整 cutover；三者都載入 byte-identical trusted core 與雙 runtime stewardship contract，target repo 的 audit、Ruff、完整 pytest 與 migration／增量驗證全部通過。PR 分別為 `elandcomtw/krepo-mops-major-news#41`、`elandcomtw/krepo-mops-announcement#28`、`elandcomtw/kapi-gateway#33`。rollout ledger 由 8 增至 11 筆，canary 自身累積 3 筆 post-cutover ship，且至今沒有 `compaction`，故 `D-20260822-rollout-gate-replacement` 的 10 筆 steady-state 放行門檻成立；fleet 仍有未 rollout repo，`B-20260823-fleet-rollout-remaining` 保持開啟。
+  - 日期來源:direct
+  - 放棄:none
+  - 重議:任一採用 repo 出現真正 compaction、月份 mismatch，或 shared core sync 成本需要改變 rollout 策略
+  - 關聯:D-20260822-rollout-gate-replacement;D-20260824-cross-runtime-dossier-stewardship;B-20260823-fleet-rollout-remaining;https://github.com/elandcomtw/krepo-mops-major-news/pull/41;https://github.com/elandcomtw/krepo-mops-announcement/pull/28;https://github.com/elandcomtw/kapi-gateway/pull/33

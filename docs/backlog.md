@@ -5,7 +5,7 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
 
 # Backlog
 
-待辦清單:技術債與已知缺口(更新日期:2026-08-22)
+待辦清單:技術債與已知缺口(更新日期:2026-08-24)
 
 > **為什麼與 `STATUS.md`／history 分家**：三者生命週期不同。STATUS 只留 active／paused；history
 > event 發生後 append-only；backlog 只留未結案狀態，直到做掉或明確放棄才會消失。
@@ -187,6 +187,15 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   擅自擴大範圍,才補程序+RED eval
 
 ## 已知缺口
+
+- **B-20260824-remote-human-contributor-path** · **單一 Dossier Steward 模型尚未定義跨機器真人
+  contributor 的 commit 傳遞路徑**(2026-08-24 發現)。`D-20260824-cross-runtime-dossier-stewardship`
+  的 v1 只實證同機 Claude／Codex worker：非 steward 不改 shared dossier、不 push，交 semantic commit
+  給 steward cherry-pick；但真人同事在另一台機器時，若不能 push 專屬 feature branch，就沒有自然的
+  commit 交換媒介。未決：是否新增受限 remote-contributor path（只推專屬 branch／開 PR、禁止改 shared
+  dossier 與自行 merge、PR 附 Dossier delta，由 steward 補 canonical state），以及它與既有 branch
+  protection、scope ownership、`project transfer` 後協作如何進 behavior eval。**在新決策與 RED oracle
+  出現前，不把這個候選路徑當成已生效規則。**
 
 - **B-20260813-gap-01** · **codex reviewer 跑得動測試、但跑不完**(2026-08-13 C1 實測):PR #94 的 profile 解決了「建不了 cache」
   (events 實查真跑了三次),但 sandbox 內 `PASS=956` vs 主機 `983`,伴隨 `cloned an empty repository`
