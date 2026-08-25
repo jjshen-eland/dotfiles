@@ -3087,6 +3087,13 @@ if grep -q 'references/workflow.md' "$PJS_CLAUDE/SKILL.md" \
     && [ -f "$PJS_CODEX/references/workflow.md" ]; then
     ok "project 兩個入口都載入 shared workflow"
 else bad "project 入口未共同指向 shared workflow"; fi
+project_step0="$(sed -n '/^### 多 Repo 偵測（無 repo 引數時）/,/^## Step 1：/p' "$PJS_CLAUDE/references/log-workflow.md")"
+if grep -q 'Scenario 25 — 多 repo 確認可直接選全部偵測結果' "$PJS_CLAUDE/references/pressure-tests.md" \
+    && grep -q '全部偵測到的 repos（建議）' <<< "$project_step0" \
+    && grep -q '同一次 Project invocation' <<< "$project_step0" \
+    && grep -q '不得要求重新輸入' <<< "$project_step0"; then
+    ok "project 多 repo Step 0 明列全選路徑且不重建 invocation"
+else bad "project 多 repo Step 0 未把『全部偵測到』做成可直接續行的確認選項"; fi
 pjs_codex_frontmatter="$(awk 'NR == 1 { next } /^---$/ { exit } { print }' "$PJS_CODEX/SKILL.md")"
 if ! grep -Eq '^(user-invocable|disable-model-invocation|argument-hint|allowed-tools|context|agent):' <<< "$pjs_codex_frontmatter"; then
     ok "Codex project frontmatter 無 Claude Code 專屬欄位"

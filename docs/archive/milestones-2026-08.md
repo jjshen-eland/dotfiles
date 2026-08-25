@@ -227,3 +227,9 @@
   - 放棄:prose-only exact-match gate；自然語言身份確認；讓 `as=` 代理 agent workline；把真實帳號寫進測試 fixture
   - 重議:出現 legitimate cross-runtime resume、multi-steward active state 或 transfer conditional owner 無法由既有 state machine fail closed 表示的 behavior eval
   - 關聯:D-20260824-project-steward-authority;X-20260824-project-identity-claim-authority;claude/skills/project/references/pressure-tests.md;tests/run.sh
+
+- **M-20260825-project-multi-repo-scope · 2026-08-25 Project 多 repo 確認可直接選全部偵測結果**:Scenario 25 固定本次 observed RED：Step 0 已列出三個 repo，agent 卻要求重新以明確 paths 叫用 Project。Shared workflow 現在把全部／只處理指定／補充其他做成三種互斥路徑，全部為建議項；選取後在同一次 invocation 鎖定既有集合並沿用合併偵測輸出，不重建 normalized arguments，也不擴張 authority／shipping 授權。兩次隔離 Codex forward eval 分別驗過初始選項呈現與「選全部」後直接鎖定三個 repo，沒有要求重叫用或補 paths；Codex skill validator、doc-governance ship audit 與全 repo `tests/run.sh` 均通過，最終為 1151 PASS、0 FAIL。
+  - 日期來源:direct
+  - 放棄:要求使用者逐 repo 重叫用；掃描 `~/Projects/` 取代 session 集合；為改善 scope UX 而放寬 stewardship authority
+  - 重議:任一 runtime 的 user-input primitive 無法表達三條互斥路徑，或新的多 repo eval 再次重建 invocation／重跑相同 detection
+  - 關聯:claude/skills/project/references/log-workflow.md;claude/skills/project/references/pressure-tests.md;tests/run.sh

@@ -114,13 +114,20 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
 2. **單一呼叫**確認全部 repo 狀態：`<project-scripts>/ship-state.sh <repo1> <repo2> ...`（先把
    `<project-scripts>` 展開為 shared workflow 所解析的絕對路徑；default branch 偵測、三點/兩點變更集、
    upstream 邊界、protection 判定全在腳本內）。Step 1 直接沿用同一份輸出，**不重跑**。
-3. 展示清單等使用者確認（ok / 只看 X / 還有 Y）：
+3. 展示清單並明列三種互斥確認路徑；第一項是預設建議，不把 `ok` 的語意藏在自由回答裡：
    ```
    本次涉及 2 個 repo：
      1. krepo（領先 default 2 commit）
      2. pilot-api（3 檔未提交）
-   一起 ship？或需要調整？
+   - 全部偵測到的 repos（建議）：處理上列完整集合
+   - 只處理指定 repos：從上列集合收窄
+   - 補充其他 repos：解析並加入漏列的 repo
    ```
+   使用者選「全部偵測到」後，在**同一次 Project invocation** 鎖定剛展示的集合並直接進 Step 1，沿用
+   第 2 項的 `ship-state.sh` 輸出；不得要求重新輸入 `/project`／`$project`、逐一補 repo paths 或重跑相同
+   detection。範圍回覆只決定 repo 集合，不寫回 normalized invocation arguments，也不授予 `as=`／`resume=`、
+   shipping authorization 或任何 STOP 豁免。選「只處理指定」時才過濾既有集合；選「補充其他」時才用
+   `resolve` 解析新增 repo 並補取其狀態。
 4. context 被壓縮 → 以 pwd 的 repo 為底讓使用者補充；使用者指定的 repo 即使無變更也納入。
 5. 全部 repo 既無領先 default 的 commit 又無 working tree 變更 → **勿直接結束**：先逐 repo 依 Step 1 第 2 項的 **docs-only mode** 判定（session 有已 ship 變更的 repo 仍納入，跑文檔同步）。git 無變更**且** session 記憶亦無已 ship 工作 → 才告知並結束。
 6. **單一 repo → 跳過此步，直接 Step 1。**
