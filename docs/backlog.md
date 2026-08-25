@@ -56,20 +56,29 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   - **觸發條件**：跨帳號操作變成常態、或同一個症狀再查錯方向一次。屆時傾向做成
     **唯讀提示**（進錯帳號時警告，不自動切），先驗證偵測那半是否可靠。
 
-- **B-20260823-fleet-rollout-remaining** · [ ] **canary 之後的其餘 repo 尚未採用文檔治理**(2026-08-23 加)。
-  Dotfiles(pilot)、`krepo-mops-major-news`(canary)、`krepo-mops-announcement` 與 `kapi-gateway` 已完成目前
-  記錄的 rollout batch；機隊其餘 repo 尚未全數採用。2026-08-24 memory-independent kernel 上線後，本機盤點
-  另確認六個已有 managed kernel 的 active repo 欠一次 contract sync：`kapi-gateway`、`kapi-protocol`、
-  `krepo-judicial`、`krepo-mops-announcement`、`krepo-mops-major-news`、`krepo`。各 repo 須更新 root
-  `AGENTS.md` kernel，將 root `CLAUDE.md` 的 managed duplicate 改為首行 `@AGENTS.md` import 並保留
-  Claude-specific 內容；未採用 managed kernel 的 repo 不無差別改寫，待實際 cross-runtime／transfer adoption。
-  **這條存在的理由是 `B-20260822-debt-30` 收掉後就沒有東西在追這件事了**——它追的是那三個工作項的順序,
-  不是 rollout 本身。
+- **B-20260823-fleet-rollout-remaining** · [ ] **fleet 核心曾經同步，但 dotfiles 的核心之後又動了，收尾要重驗一次**
+  (2026-08-23 加；2026-08-25 依遠端與 clean-clone 證據校正；2026-09-07 補上兩顆 audit 修正的下落並重新界定關閉條件)。
+  Dotfiles(pilot)及七個 target repo:`krepo`、`krepo-common`、`krepo-mops-major-news`、
+  `krepo-mops-announcement`、`krepo-judicial`、`kapi-protocol`、`kapi-gateway` 的 remote `main`
+  **在 2026-08-25 當時**都已採用 repo-local governance;trusted scanner、`docs/document-governance.md`
+  與 kernel／route／portable managed blocks 和 dotfiles source byte-identical，root `CLAUDE.md` 皆以
+  首個非空白行 `@AGENTS.md` 載入，七個 `audit --ship` 均為 rc=0。
+  - **2026-08-25 找到的兩個 repo-local 缺口**:`krepo` 的文檔把 host fact／遺失 plan 導向 runtime-private
+    memory（commit `d0854bf`）;`krepo-common` 缺 contract regression gate（commit `c60f817`）。
+    **2026-09-07 查到的下落**:那兩顆 SHA 至今不被任何 branch 包含、只剩 dangling object，但**內容其後
+    已以不同 SHA 進入各自 `origin/main`**——兩個 repo 的 `tests/test_agent_contract.py` 都在，`krepo`
+    的 root contract 也已把 runtime-local memory 降為 optional cache。⇒ **原始的「尚未到 canonical
+    endpoint」阻塞已解除。**
+  - ⚠️ **但關閉條件不能就此成立,因為 2026-08-25 之後 dotfiles 的 trusted core 又動過**:
+    `M-20260907-doc-governance-silent-config-gaps` 改了 `scripts/doc-governance.py`（新增 plan_dir／
+    history_paths 涵蓋檢查、dead-glob 豁免、actor key 形狀驗證）。該檔是**逐 byte vendored** 進七個
+    repo 的，所以 2026-08-25 那次的 byte-identical 結論**已經過期,不能沿用**——這正是本條下方
+    「每次核心變更 = 每個採用 repo 欠一次 sync ship」那行講的成本，這次是它的實例。
+  - **關閉條件**:重跑一次七 repo 的核對——remote SHA、trusted core／managed blocks 逐 byte 比對、
+    各自的 `audit --ship` 與 contract tests;**新 core 散佈完成後**才寫 `M-*` 並移除本條。
   - **放行條件**:`docs/rollout-ledger.md` 的 steady-state 證據(總數 10 次 qualifying ship,且 canary 自己
     要貢獻數次 post-cutover ship)已達成；現況 11 筆、canary 貢獻 3 筆，**至今沒有任何一次判為
-    `compaction`**。本條仍開啟是因為 fleet adoption 與上述六 repo contract sync 尚未完成，不再由放行門檻阻塞。
-  - **順序**:預設「只有 `STATUS.md` 的 → 有 archive 無 backlog 的 → 其餘」,但那是預設不是規定
-    (`D-20260823-canary-role-not-batch-number`)。
+    `compaction`**；本條不再由放行門檻或 adoption 阻塞（剩下的是上面那條關閉條件）。
   - ⚠️ **每次核心變更 = 每個採用 repo 欠一次 sync ship**(ledger 第 3、4 筆實證)。這個成本隨採用數線性
     成長,決定「要不要再加一條核心規則」時要把它擺上檯面。
   - ⚠️ 2026-08-22 量 ranking 用的 20 條 title-free query,只有 dotfiles 那 10 條進了
