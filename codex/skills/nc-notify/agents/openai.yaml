@@ -1,0 +1,4 @@
+interface:
+  display_name: "NC Notify"
+  short_description: "Add safe lifecycle notifications to jobs"
+  default_prompt: "Use $nc-notify to add safe lifecycle notifications to this scheduled or background job."

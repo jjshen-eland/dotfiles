@@ -385,6 +385,21 @@ invocation token。
 必須保留仍失敗的 root-cause evidence、標成 containment-only／blocked 並揭露 residual risk；不得因事故
 窄路徑轉綠就宣稱 repair complete。Codex UI metadata、雙端 description 與這個 completion gate 必須同時可達。
 
+## 12g. nc-notify portable lifecycle gate
+
+Claude Code／Codex 各保留薄入口，並以 nested symlink 共用單一 `references/workflow.md`；eval oracle
+只留 canonical Claude tree。兩端 description 必須相同，Codex adapter 不得帶 Claude Code 專屬
+frontmatter，shared workflow 也不得依賴 runtime 私有工具、使用者 home 下的 schema 文件或 machine-local
+memory。
+
+行為 RED 來自 fresh Codex 在 local-only cron fixture 完成 backfill、tests 與排程設定，卻把「不可 live
+送通知」解讀成完全不做通知 lifecycle。GREEN 因此必須在程式碼內建立 start／done／fail，並以 local
+fake/mock 證明缺設定、transport error、timeout 或非成功 response 都只影響通知旁路，不改變主工作的
+success／failure；fake error 必須刻意回顯 secret，證明 warning 不會因插入 raw exception／response 而
+外洩，不能用不含 secret 的例外製造 false assurance。長任務 progress 只採用 fixture 的可信訊號。Static gate 只守 packaging、metadata 與
+oracle 可達性；並保留 fallback 的 HTTP POST／Bearer wire compatibility fact，避免兩端各自猜測 auth
+scheme。這些 static checks 不能取代兩個 runtime 對相同 fixture 的 fresh forward eval。
+
 ## 13. handoff-anchor.sh 錨點驗證與生命週期判定
 
 ### `anchors` 是全有或全無

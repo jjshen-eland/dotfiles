@@ -257,3 +257,9 @@
   - 放棄:繼續 prose ratchet；Codex native spawn/wait；單一或 partial reviewer 補位；兩端各自重組 reviewer prompt；launcher 寫 temp／repo telemetry；只比 HEAD/porcelain status；timeout 只殺 broker PID
   - 重議:Codex 提供可機械驗證且 live GREEN 的 spawn-before-wait primitive；一般 parent runtime 禁止 nested app-server；shared prompt或 schema 無法同時供兩端使用；或 fresh failure fixture 再出現 orphan、scope drift、mutation／partial synthesis
   - 關聯:D-20260825-deep-plan-empty-wait;D-20260825-portable-skill-authoring-default;X-20260825-deep-plan-duplicate-port;claude/skills/deep-plan/evals.md;codex/skills/deep-plan/scripts/launch-reviewers.py;tests/run.sh
+
+- **M-20260826-portable-nc-notify · 2026-08-26 Claude Code／Codex 共用 nc-notify skill 完成**:`nc-notify` 已拆成 runtime-neutral shared workflow、Claude Code／Codex 雙薄入口、nested references symlink 與 Codex UI metadata，eval oracle 只留 canonical tree。Fresh Codex 無 skill baseline 完成 backfill/tests/cron 卻完全缺 start/done/fail，確認行為價值；Claude Code N1 以 10/10 local mocks 通過 lifecycle、HTTP/serialization failure isolation，Codex 首輪 6/6 綠卻被 fresh reviewer 的 secret-bearing exception probe 揭露 warning 洩漏。Oracle 收緊後 fresh Codex 先重現 1/1 RED，再以只記 exception class 的最小修正通過 targeted＋完整 7/7，reviewer closure PASS。兩端 read-only probe 亦一致回報 POST/JSON/Bearer authority 與未授權動作；全程無 live send、cron/deploy、credentials 或 Git shipping。雙 validator、doc audit、diff check 與全 repo `tests/run.sh` 均通過，最終為 1208 PASS、0 FAIL。
+  - 日期來源:direct
+  - 放棄:接受首輪「測試全綠」而不做 secret-bearing review；只靠 static packaging gate；複製 runtime-specific core；以私人 schema 路徑或 live service 作相容性前提
+  - 重議:nested resource linkage 在任一 runtime 失效；Notification Center wire contract 改變；或新的 forward fixture 再出現 lifecycle／secret-safe failure evidence 分歧
+  - 關聯:D-20260826-portable-nc-notify;D-20260825-portable-skill-authoring-default;claude/skills/nc-notify/evals.md;tests/run.sh
