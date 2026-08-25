@@ -975,3 +975,9 @@
   - 放棄:只靠 prose 要求 actor exact match；把「我是 owner」視為身份驗證；讓 runtime session 自行改標成 human／owner；建立長效 impersonation token；把真實 incident 識別寫進 portable oracle
   - 重議:runtime 能提供可機械驗證且跨 session 穩定的 signed delegation primitive；或 adopted repo 的 actor schema 出現無法由 current branch／active workspace 表示的合法 workline
   - 關聯:D-20260824-cross-runtime-dossier-stewardship;D-20260824-memory-independent-transfer;X-20260824-project-identity-claim-authority;claude/skills/project/references/pressure-tests.md;claude/skills/project/scripts/steward-authority.py
+
+- **D-20260825-project-prompt-bound-authority-recovery · 2026-08-25 Project 以 snapshot-bound 確認修復唯一 authority STOP**:保留 `D-20260824-project-steward-authority` 的 initial fail-closed gate，但不再要求使用者記住並重打 `as=`、`resume=` 或另一輪 Spec。Helper initial STOP 只對唯一 human steward、唯一 same-runtime steward、或可受控重建的零 steward local candidate 輸出 exact recovery classification；Project 隨即以結構化工具或精確編號選項綁定 repo、actor、HEAD、candidate 與 action。緊接回答只延續同一 logical invocation，確認後用 distinct `prompt-bound-*` provenance 與 full OID 重驗；snapshot 漂移、cross-runtime、multiple steward、transfer ambiguity 或其他 STOP 不提供捷徑。零 steward 路徑必須先建立 active contract，並由新 steward 重建尚未送出的 candidate。這份 recovery decision 與 normalized arguments 分離，不改 durable ownership、不授予額外 endpoint、不跨 invocation／session 保存。
+  - 日期來源:direct
+  - 放棄:維持只能回報可複製命令的 STOP（仍把內部 token 成本丟給使用者）；接受任意「我是 owner」自然語言（無 prompt／snapshot binding）；讓 helper initial classification 自動 PASS；把一次確認存進 memory 或沿用到其他 repo／endpoint；零 steward 只補 STATUS 就原樣 ship 越界 candidate
+  - 重議:runtime 提供可驗證且跨 harness 一致的 signed delegation primitive，可取代 prompt-bound confirmed provenance；或 behavior eval 證明 multi-repo grouping 無法在任一 runtime 的 user-input 限制內安全表達
+  - 關聯:D-20260824-project-steward-authority;X-20260824-project-identity-claim-authority;claude/skills/project/references/pressure-tests.md;claude/skills/project/scripts/steward-authority.py;tests/run.sh

@@ -167,9 +167,14 @@ def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description="Resolve Project Log steward authority")
     result.add_argument("--root", required=True)
     result.add_argument("--runtime", required=True, choices=("claude", "codex"))
-    result.add_argument("--resume-actor")
-    result.add_argument("--as-human", dest="as_human")
+    authority = result.add_mutually_exclusive_group()
+    authority.add_argument("--resume-actor")
+    authority.add_argument("--as-human", dest="as_human")
+    authority.add_argument("--confirmed-resume-actor")
+    authority.add_argument("--confirmed-human")
+    authority.add_argument("--confirmed-new-steward")
     result.add_argument("--commit")
+    result.add_argument("--expected-head")
     return result
 
 
@@ -177,6 +182,15 @@ def main() -> int:
     args = parser().parse_args()
     root = Path(args.root).expanduser().resolve()
     try:
+        confirmed = (
+            args.confirmed_resume_actor
+            or args.confirmed_human
+            or args.confirmed_new_steward
+        )
+        if confirmed and not args.expected_head:
+            return fail("prompt-bound confirmation requires --expected-head")
+        if args.confirmed_new_steward and not args.commit:
+            return fail("--confirmed-new-steward requires --commit")
         if not root.is_dir() or git(root, "rev-parse", "--show-toplevel") != str(root):
             return fail(f"not a repository root: {root}")
         config_path = root / ".doc-governance.json"
@@ -200,14 +214,35 @@ def main() -> int:
             if items:
                 steward_source = "commit-parent-active-state"
         branch = git(root, "branch", "--show-current")
+        head = git(root, "rev-parse", "HEAD")
+        candidate = git(root, "rev-parse", f"{args.commit}^{{commit}}") if args.commit else None
+        if args.expected_head:
+            expected_head = git(root, "rev-parse", f"{args.expected_head}^{{commit}}")
+            if args.expected_head != expected_head:
+                return fail("--expected-head must be a full commit object ID")
+            if expected_head != head:
+                print(f"repository-head: {head}")
+                print(f"expected-head: {expected_head}")
+                print("authority-source: stale-prompt-snapshot")
+                print("recovery-kind: none")
+                print("verdict: STOP")
+                return 1
 
-        if args.resume_actor and args.as_human:
-            return fail("--resume-actor and --as-human are mutually exclusive")
-        if args.resume_actor:
-            validate_actor(args.resume_actor, "resume actor")
-            if not args.resume_actor.startswith(f"{args.runtime}:"):
+        resume_actor = (
+            args.resume_actor or args.confirmed_resume_actor or args.confirmed_new_steward
+        )
+        human_actor = args.as_human or args.confirmed_human
+        if resume_actor:
+            validate_actor(resume_actor, "resume actor")
+            if not resume_actor.startswith(f"{args.runtime}:"):
                 return fail("resume actor must use the same runtime prefix")
-            executor, executor_source = args.resume_actor, "explicit-same-runtime-resume"
+            if args.confirmed_new_steward:
+                executor_source = "prompt-bound-new-workline-confirmation"
+            elif args.confirmed_resume_actor:
+                executor_source = "prompt-bound-same-runtime-resume"
+            else:
+                executor_source = "explicit-same-runtime-resume"
+            executor = resume_actor
         else:
             executor, executor_source = derived_actor(args.runtime, branch, items)
         validate_actor(executor, "executor actor")
@@ -216,26 +251,36 @@ def main() -> int:
         for steward in stewards:
             validate_actor(steward, "durable steward")
         if not stewards:
-            if args.as_human or args.resume_actor:
+            if human_actor or resume_actor:
                 print(f"executor-actor: {executor}")
+                print(f"repository-head: {head}")
                 print("durable-steward: none")
                 print("durable-steward-source: none")
                 print("authority-source: unverifiable-explicit-actor")
+                print("recovery-kind: none")
                 for path in surfaces:
                     print(f"candidate-shared-surface: {path}")
+                if candidate:
+                    print(f"candidate-commit: {candidate}")
                 print("verdict: STOP")
                 return 1
             if surfaces:
                 print(f"executor-actor: {executor}")
+                print(f"repository-head: {head}")
                 print("durable-steward: none")
                 print("durable-steward-source: none")
                 print("authority-actor: none")
                 print("authority-source: no-durable-steward-for-shared-surface")
+                print("recovery-kind: confirm-create-active-contract")
+                print(f"recovery-actor: {executor}")
                 for path in surfaces:
                     print(f"candidate-shared-surface: {path}")
+                if candidate:
+                    print(f"candidate-commit: {candidate}")
                 print("verdict: STOP")
                 return 1
             print(f"executor-actor: {executor}")
+            print(f"repository-head: {head}")
             print("durable-steward: none")
             print("durable-steward-source: none")
             print("authority-actor: none")
@@ -244,33 +289,48 @@ def main() -> int:
             return 0
         if len(stewards) != 1:
             print(f"executor-actor: {executor}")
+            print(f"repository-head: {head}")
             print(f"durable-steward: {','.join(stewards)}")
             print("authority-source: non-uniform-durable-state")
+            print("recovery-kind: none")
             print("verdict: STOP")
             return 1
 
         steward = stewards[0]
-        if args.as_human:
-            validate_actor(args.as_human, "human delegation actor")
-            if not args.as_human.startswith(HUMAN_PREFIXES):
+        if human_actor:
+            validate_actor(human_actor, "human delegation actor")
+            if not human_actor.startswith(HUMAN_PREFIXES):
                 return fail("--as-human accepts only human: or owner: steward actors")
-            authority_actor = args.as_human
-            authority_source = "explicit-bounded-human-delegation"
+            authority_actor = human_actor
+            authority_source = (
+                "prompt-bound-human-delegation"
+                if args.confirmed_human
+                else "explicit-bounded-human-delegation"
+            )
         else:
             authority_actor = executor
-            authority_source = (
-                "explicit-same-runtime-resume" if args.resume_actor else executor_source
-            )
+            authority_source = executor_source
 
         print(f"executor-actor: {executor}")
+        print(f"repository-head: {head}")
         print(f"durable-steward: {steward}")
         print(f"durable-steward-source: {steward_source}")
         print(f"authority-actor: {authority_actor}")
         print(f"authority-source: {authority_source}")
         for path in surfaces:
             print(f"candidate-shared-surface: {path}")
+        if candidate:
+            print(f"candidate-commit: {candidate}")
 
         if authority_actor != steward:
+            if steward.startswith(HUMAN_PREFIXES):
+                print("recovery-kind: confirm-human-delegation")
+                print(f"recovery-actor: {steward}")
+            elif steward.startswith(f"{args.runtime}:"):
+                print("recovery-kind: confirm-same-runtime-resume")
+                print(f"recovery-actor: {steward}")
+            else:
+                print("recovery-kind: none")
             print("verdict: STOP")
             return 1
         print("verdict: PASS")

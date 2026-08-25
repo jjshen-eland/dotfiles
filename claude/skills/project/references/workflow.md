@@ -24,27 +24,34 @@ normalized invocation arguments 的第一個 token 分派模式，其餘 token �
 
 入口固定提供 runtime actor prefix（Claude Code=`claude`；Codex=`codex`）。任何 agent session 都不得因
 Git author、GitHub login、同 runtime、private memory 或使用者普通自然語言身分宣稱而改成另一 actor。
-只有 normalized invocation arguments 裡的兩個結構化 control token能改 authority resolution：
+一般路徑只有 normalized invocation arguments 裡的兩個結構化 control token 能改 authority resolution：
 
 - `resume=<runtime:workline>`：恢復 exact durable workline；值必須是入口提供的 same runtime prefix。
 - `as=<human-or-owner>`：只接受 `human:*`／legacy `owner:*`，代表本輪 explicit bounded human delegation；
   不改 durable steward、不 carry 到下一輪、不能代理 `claude:*`／`codex:*`。
 
-「我是 repo owner」「我就是 maintainer」等 ordinary identity claim is not delegation，也不是 resume／transfer。
-若使用者要在前一輪 STOP 後補 authority，必須重新明確叫用 project 並把 `resume=` 或 `as=` 寫進新的
-invocation arguments；不要從普通對話自行補 token。
+「我是 repo owner」「我就是 maintainer」等 ordinary identity claim is not delegation，也不是 resume／transfer；
+不要從普通對話自行補 token。唯一不需重建 invocation 的 recovery，是 helper 本輪先以 STOP 揭露唯一 exact
+actor 與 snapshot，Project 隨即提出綁定該 repo／actor／action 的確認題，使用者直接選擇後以
+`prompt-bound-*` provenance 重驗。這個 recovery decision 與 normalized invocation arguments 分開，不改 durable
+owner、不 carry 到下一輪或 session，也不授予 invocation 原本沒有的 shipping endpoint。
 
 在任何 adopted active-state mutation、commit 或 shipping 前執行：
 
 ```sh
 python3 "<project-scripts>/steward-authority.py" --root "$repo" --runtime <runtime> \
-  [--resume-actor <resume-value> | --as-human <as-value>] [--commit <worker-commit>]
+  [--resume-actor <resume-value> | --as-human <as-value> | \
+   --confirmed-resume-actor <actor> | --confirmed-human <actor> | --confirmed-new-steward <actor>] \
+  [--commit <worker-commit>] [--expected-head <full-oid>]
 ```
 
 exit 0 且 `verdict: PASS`／`NOT_APPLICABLE` 才能繼續；exit 1 是 policy STOP；exit 2 是 helper／repo BROKEN。
 若存在 PREPARED transfer／conditional owner evidence，先依 Transfer state machine 解出 effective durable steward，
 不可讓本 helper 取代 remote-visible ancestry gate。每次報告保留 helper 的 executor actor、durable steward、
-authority actor、authority source 四行；`--merge` 等 endpoint 說法不參與 authority 計算。
+authority actor、authority source 四行；`--merge` 等 endpoint 說法不參與 authority 計算。Initial STOP 若含
+`recovery-kind`，只是一個可詢問的 deterministic classification，不是放行；confirmed flag 只能在 Project 已
+提出 exact prompt 且收到其緊接回答後使用。Log 的完整 prompt／revalidation 契約見
+`log-workflow.md`「Prompt-bound authority recovery」。
 
 ## Spec 模式
 
@@ -151,7 +158,9 @@ Transfer state 是 `BLOCKED → PREPARED → TRANSFERRED`：
 
 ## Runtime adapter
 
-- 需要使用者回答時，使用目前 runtime 的 user-input primitive；若不可用，輸出精簡文字選項並 STOP。
+- 需要使用者回答時，使用目前 runtime 的 user-input primitive；若不可用，輸出精簡文字編號選項並暫停當前
+  turn。使用者緊接著的直接選項回答延續同一 logical Project invocation；自由文字身分宣稱或其他工作後的
+  回答不算，必須重新偵測。
 - Claude Code 的顯式形式是 `/project ...`；Codex 是 `$project ...`。說法表只解讀 invocation arguments
   與本輪使用者明說的 endpoint，不把 runtime 的 skill sigil 當授權。
 - Shell、git 與 gh 行為完全相同。可照抄 helper command 必須由 scripts 自己輸出其實際絕對路徑。

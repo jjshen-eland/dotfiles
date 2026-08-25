@@ -177,7 +177,7 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
    先依 transfer workflow 定位該 record 所在 commit、fetch canonical endpoint 並驗 remote-visible ancestry；
    未抵達時 active fields 中的 next actor 只是 pending value，effective authority 仍取 guide 的 current steward，
    查不到證據就 STOP。接著用 shared workflow 的 `steward-authority.py` 跑 ordinary gate，runtime prefix 只能
-   由入口提供；`resume=`／`as=` 只能來自 normalized invocation arguments。ordinary identity claim is not delegation；
+   由入口提供；initial call 的 `resume=`／`as=` 只能來自 normalized invocation arguments。ordinary identity claim is not delegation；
    「我是 owner」、Git author、GitHub login 或同 runtime 都不得改 helper 的 executor actor。
    若啟用 `active_item_contract`，helper 的 authority actor 必須等於所有 active items 的 durable steward，
    才能進入 shared dossier／commit／shipping 流程。`resume=` must use the same runtime prefix and exact actor；
@@ -190,7 +190,9 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
    commit 或由合法 steward 在本輪 Step 2 受控重建。不要把本輪稍後由合法 steward 新建的 dossier commit
    倒填成 `--commit` candidate，否則會把合法 history write 誤報成 worker delta。NEVER 把呼叫 Log 當 ownership transfer。
    若 current active items 已在 candidate 中被移除，helper 只可從 candidate parent 的 STATUS 恢復 steward；
-   current／parent 都沒有 durable steward 而 candidate 觸碰 shared surface 時 STOP，先用 Spec 建立 work item。
+   current／parent 都沒有 durable steward 而 candidate 觸碰 shared surface 時，initial helper 必須 STOP；只有符合
+   下節 guided recovery 的 exact local candidate 才能在同一 logical invocation 先走 Spec subflow，否則仍要求
+   先建立 work item。
    唯一特例是 repo 已有 `$project transfer` 產生的 `PREPARED` pending transfer，且依上述 ancestry gate 判定目前
    actor 仍是其中記錄的
    current steward：先重跑 portable-knowledge／recipient／endpoint gates，再在本輪 Step 3 的**同一顆 transfer
@@ -221,6 +223,48 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
 - 相關 `docs/plans/*.md`（存在時）。
 - 所有更動文檔頂部的 `updated` 日期改為今天（YYYY-MM-DD；STATUS.md 的對應欄位名為「更新日期」）。
 - normalized invocation arguments 中（mode 與 repo token 之後的）module path → 限縮文檔掃描範圍。
+
+## Prompt-bound authority recovery
+
+這是 Step 2 initial helper `verdict: STOP` 的窄 recovery，不是第三種 actor credential，也不改任何 shipping
+說法。先凍結每個 repo 的 canonical root、`repository-head`、`candidate-commit`（若有）、`recovery-kind` 與
+`recovery-actor`；helper 沒輸出 exact classification 就沒有確認捷徑。
+
+只有下列三類可出題：
+
+- `confirm-human-delegation`：唯一 durable steward 是 exact `human:*`／`owner:*`。
+- `confirm-same-runtime-resume`：唯一 durable steward 與入口 runtime prefix 相同。
+- `confirm-create-active-contract`：current／candidate parent 都無 steward，candidate 與 HEAD 是同一顆完整 OID、
+  working tree clean、candidate 尚未 push／開 PR，且變更目的與 write scope 足以先寫 active contract。任何一項
+  不明就不提供選項。
+
+PREPARED transfer、cross-runtime actor、multiple／conflicting stewards、scope mismatch、stale candidate、doc／review／
+CI STOP 不可用本節修復。`candidate-shared-surface:` 也是獨立 gate：human／same-runtime 確認只取得 steward
+authority，仍須由該 steward 重建越界內容；零 steward 路徑則要在 prompt 明列「建立 active contract，重建這顆
+尚未送出的 local candidate，再繼續」，不能只補 STATUS 後原樣 ship。
+
+詢問時逐 repo 顯示 exact actor、snapshot、將執行的 action 與後果。多 repo 的所有修復都符合上列條件時，優先
+合併成一題：`套用列出的精確修復並繼續（建議）`／`停止，不修改`；若 runtime user-input primitive 有題數上限，
+不要把同類 repo 拆成逐一 token 題。primitive 不可用時，輸出相同的精確編號選項並暫停；使用者對緊接著的
+該題直接回答選項，就在同一個 logical Project invocation 續行，不得要求重新輸入 `$project`。取消時零 mutation。
+
+確認後先重驗 root、HEAD、candidate、working tree 與 remote/PR 狀態，再用 initial output 的 full OID 重跑 helper：
+
+```sh
+# 選一個與 recovery-kind 對應的 confirmed flag
+python3 "<project-scripts>/steward-authority.py" --root "$repo" --runtime <runtime> \
+  [--confirmed-human <actor> | --confirmed-resume-actor <actor> | --confirmed-new-steward <actor>] \
+  [--commit <full-candidate-oid>] --expected-head <full-head-oid>
+```
+
+零 steward 路徑要先執行 Spec subflow，以 `recovery-actor` 建 exact writer／steward；若需重寫 candidate 才能讓
+shared surfaces 成為 steward-authored content，該 history rewrite 必須已在剛才的 action 中明說且只限那顆
+unshipped candidate，完成後以新的 full OID 重驗。Helper 只有 exit 0 且 source 分別為
+`prompt-bound-human-delegation`、`prompt-bound-same-runtime-resume` 或 `prompt-bound-new-workline-confirmation` 才能續行。
+
+Prompt-bound decision 與 normalized invocation arguments 分開，不寫入 memory 或 dossier；它不得授予額外 endpoint。
+也不得套到未列出的 repo／actor／candidate，或 carry 到下一輪／session。普通「我是 owner」、
+不同題的回答、自由文字近義詞或 snapshot 改變後的舊回答，一律重新跑 initial helper。
 
 ## Step 3：Adaptive 提交
 

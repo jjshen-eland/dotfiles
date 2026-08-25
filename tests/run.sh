@@ -3167,6 +3167,10 @@ else bad "steward gate actor／steward／authority evidence 不完整"; fi
 if grep -q '^candidate-shared-surface: docs/archive/milestones-2026-08.md$' <<< "$psg_out"; then
     ok "steward gate 揭露 worker commit 越界 milestone surface"
 else bad "steward gate 未揭露 worker 的 shared-surface 越界"; fi
+if grep -q '^recovery-kind: confirm-human-delegation$' <<< "$psg_out" \
+    && grep -q '^recovery-actor: owner:repo-maintainer$' <<< "$psg_out"; then
+    ok "steward gate 對唯一 human steward 提供 deterministic guided recovery"
+else bad "steward gate 未分類可確認的 human delegation recovery"; fi
 
 psg_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --as-human owner:repo-maintainer --commit "$psg_commit" 2>"$PSG/err")"
 psg_rc=$?
@@ -3176,6 +3180,23 @@ if grep -q '^authority-actor: owner:repo-maintainer$' <<< "$psg_out" \
     && grep -q '^verdict: PASS$' <<< "$psg_out"; then
     ok "steward gate 保留 runtime executor 並以 bounded human delegation 放行"
 else bad "steward gate human delegation evidence 不完整"; fi
+psg_head="$(git -C "$PSG/repo" rev-parse HEAD)"
+psg_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --confirmed-human owner:repo-maintainer --commit "$psg_commit" --expected-head "$psg_head" 2>"$PSG/err")"
+assert_rc "steward gate：prompt-bound exact human confirmation → PASS" 0 $?
+if grep -q '^authority-source: prompt-bound-human-delegation$' <<< "$psg_out" \
+    && grep -q "^repository-head: $psg_head$" <<< "$psg_out" \
+    && grep -q "^candidate-commit: $psg_commit$" <<< "$psg_out"; then
+    ok "steward gate human confirmation 綁定 full HEAD／candidate snapshot"
+else bad "steward gate human confirmation 缺 prompt-bound provenance 或 snapshot"; fi
+psg_stale_head="$(git -C "$PSG/repo" rev-parse HEAD^)"
+python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --confirmed-human owner:repo-maintainer --expected-head "$psg_stale_head" >"$PSG/stale.out" 2>"$PSG/err"
+assert_rc "steward gate：prompt snapshot stale → STOP" 1 $?
+if grep -q '^authority-source: stale-prompt-snapshot$' "$PSG/stale.out" \
+    && grep -q '^recovery-kind: none$' "$PSG/stale.out"; then
+    ok "steward gate 不沿用 stale prompt confirmation"
+else bad "steward gate stale prompt 未 fail closed"; fi
+python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --confirmed-human owner:repo-maintainer >/dev/null 2>&1
+assert_rc "steward gate：prompt-bound flag 缺 exact snapshot → usage error" 2 $?
 
 python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --as-human owner:someone-else >/dev/null 2>&1
 assert_rc "steward gate：human delegation actor 非 durable steward → STOP" 1 $?
@@ -3185,6 +3206,12 @@ python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --resume-actor ow
 assert_rc "steward gate：resume= 不得冒充 human actor" 2 $?
 
 sed -i.bak 's/owner:repo-maintainer/codex:cross-runtime-dossier-rollout/' "$PSG/repo/STATUS.md" && rm -f "$PSG/repo/STATUS.md.bak"
+psg_resume_prompt_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --commit "$psg_commit" 2>"$PSG/err")"
+assert_rc "steward gate：same-runtime steward 未確認前仍 STOP" 1 $?
+if grep -q '^recovery-kind: confirm-same-runtime-resume$' <<< "$psg_resume_prompt_out" \
+    && grep -q '^recovery-actor: codex:cross-runtime-dossier-rollout$' <<< "$psg_resume_prompt_out"; then
+    ok "steward gate 對唯一 same-runtime steward 提供 deterministic guided recovery"
+else bad "steward gate 未分類可確認的 same-runtime resume recovery"; fi
 psg_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --resume-actor codex:cross-runtime-dossier-rollout 2>"$PSG/err")"
 psg_rc=$?
 assert_rc "steward gate：same-runtime exact workline resume → PASS" 0 "$psg_rc"
@@ -3192,6 +3219,18 @@ if grep -q '^executor-actor: codex:cross-runtime-dossier-rollout$' <<< "$psg_out
     && grep -q '^authority-source: explicit-same-runtime-resume$' <<< "$psg_out"; then
     ok "steward gate resume evidence 精確指向 durable workline"
 else bad "steward gate resume evidence 不完整"; fi
+psg_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --confirmed-resume-actor codex:cross-runtime-dossier-rollout --expected-head "$psg_head" 2>"$PSG/err")"
+assert_rc "steward gate：prompt-bound same-runtime confirmation → PASS" 0 $?
+if grep -q '^authority-source: prompt-bound-same-runtime-resume$' <<< "$psg_out"; then
+    ok "steward gate same-runtime confirmation 使用獨立 provenance"
+else bad "steward gate same-runtime confirmation provenance 不完整"; fi
+sed -i.bak 's/codex:cross-runtime-dossier-rollout/claude:foreign-workline/' "$PSG/repo/STATUS.md" && rm -f "$PSG/repo/STATUS.md.bak"
+psg_cross_runtime_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --commit "$psg_commit" 2>"$PSG/err")"
+assert_rc "steward gate：cross-runtime steward mismatch → STOP" 1 $?
+if grep -q '^recovery-kind: none$' <<< "$psg_cross_runtime_out" \
+    && ! grep -q '^recovery-actor:' <<< "$psg_cross_runtime_out"; then
+    ok "steward gate 不為 cross-runtime actor 提供 guided takeover"
+else bad "steward gate 不得把 cross-runtime mismatch 分類成可確認 recovery"; fi
 
 PSG_EMPTY="$TMP/project-steward-empty"
 mkdir -p "$PSG_EMPTY/repo/docs/archive"
@@ -3213,6 +3252,27 @@ if grep -q '^authority-source: no-durable-steward-for-shared-surface$' <<< "$psg
     && grep -q '^candidate-shared-surface: docs/archive/milestones-2026-08.md$' <<< "$psg_empty_out"; then
     ok "steward gate 不把零 active item 當成 shared-history 免責"
 else bad "steward gate 未攔下無 durable steward 的 shared history"; fi
+if grep -q '^recovery-kind: confirm-create-active-contract$' <<< "$psg_empty_out" \
+    && grep -q '^recovery-actor: codex:no-steward-history$' <<< "$psg_empty_out"; then
+    ok "steward gate 對零 steward 的明確 shared candidate 提供 Spec recovery"
+else bad "steward gate 未分類可確認的 active-contract recovery"; fi
+psg_empty_head="$(git -C "$PSG_EMPTY/repo" rev-parse HEAD)"
+printf '%s\n' '# Status' '' '## 進行中' '' '### Adopt local candidate' '' '- **Writer**：codex:no-steward-history' '- **Workspace**：branch=docs/no-steward-history' '- **Write Scope**：docs/archive/' '- **Dossier Steward**：codex:no-steward-history' '' '## 暫停中' > "$PSG_EMPTY/repo/STATUS.md"
+psg_empty_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG_EMPTY/repo" --runtime codex --confirmed-new-steward codex:no-steward-history --commit "$psg_empty_head" --expected-head "$psg_empty_head" 2>"$PSG_EMPTY/err")"
+assert_rc "steward gate：Spec subflow 後 prompt-bound new steward → PASS" 0 $?
+if grep -q '^authority-source: prompt-bound-new-workline-confirmation$' <<< "$psg_empty_out" \
+    && grep -q '^durable-steward: codex:no-steward-history$' <<< "$psg_empty_out"; then
+    ok "steward gate 新 workline confirmation 只在 durable contract 落地後放行"
+else bad "steward gate new-workline confirmation 未重驗 durable contract"; fi
+
+project_authority_recovery="$(sed -n '/^## Prompt-bound authority recovery/,/^## /p' "$PJS_CLAUDE/references/log-workflow.md")"
+if grep -q 'Scenario 26 — 可安全修復的 authority STOP 改用綁定式確認續行' "$PJS_CLAUDE/references/pressure-tests.md" \
+    && grep -q 'normalized invocation arguments' <<< "$project_authority_recovery" \
+    && grep -q '同一個 logical Project invocation' <<< "$project_authority_recovery" \
+    && grep -q '取消.*零 mutation' <<< "$project_authority_recovery" \
+    && grep -q '不得授予.*endpoint' <<< "$project_authority_recovery"; then
+    ok "project authority recovery 以 prompt-bound 選項續行且不擴張授權"
+else bad "project authority recovery 尚未形成可確認、可取消且不重建 invocation 的契約"; fi
 
 PSG_PARENT="$TMP/project-steward-parent"
 mkdir -p "$PSG_PARENT/repo/docs/archive"
