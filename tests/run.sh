@@ -17,6 +17,7 @@
 #  10. review-state.sh（deep-review skill script）scope-priority / round / branch-first / continuity 判定
 #  11. portable review-scope range / historical guidance / autofix gate
 #  12. repo-review 薄殼 packaging（evals 不進 runtime context）
+# 12f. root-cause-first skill 跨 Claude Code／Codex 共用 evidence gate
 #  13. handoff-anchor.sh（handoff skill script）錨點驗證與生命週期判定（含 consume 消費歸檔）
 #  14. codex-runtime-hygiene.sh（deep-review skill script）孤兒偵測 / 誤殺防護 / exit 契約
 #  15. ensure-rc-source.sh 幂等補 source shell/functions.sh 行
@@ -744,6 +745,33 @@ if grep -q 'uv run --no-project --with pyyaml python' "$ROOT/codex/skill-buildin
     ok "skill validator 以 uv 隔離 PyYAML，不依賴 system Python"
 else
     bad "skill validator 指令仍會因 system Python 缺 PyYAML 而失敗"
+fi
+portable_skill_contract="$ROOT/docs/skill-portability.md"
+if [ -f "$portable_skill_contract" ] \
+    && grep -q 'docs/skill-portability.md' "$ROOT/codex/skill-building-guide.md" \
+    && grep -q 'docs/skill-portability.md' "$ROOT/claude/skill-building-guide.md"; then
+    ok "Claude Code／Codex authoring guide 共用單一 portable skill contract"
+else
+    bad "雙 harness authoring guide 未載入同一份 portable skill contract"
+fi
+if [ -f "$portable_skill_contract" ] \
+    && grep -q 'Portable by default' "$portable_skill_contract" \
+    && grep -q 'doc-governance.py find' "$portable_skill_contract" \
+    && grep -q 'resolve.*symlink' "$portable_skill_contract" \
+    && grep -q 'supersed' "$portable_skill_contract" \
+    && grep -q 'Claude Code.*Codex' "$portable_skill_contract" \
+    && grep -q 'shared.*core' "$portable_skill_contract"; then
+    ok "portable skill contract 守新建雙入口與 existing-skill migration preflight"
+else
+    bad "portable skill contract 缺新建預設、歷史／symlink preflight 或 topology 取代 gate"
+fi
+if grep -q 'any repo-local skill' "$ROOT/AGENTS.md" \
+    && grep -q 'any repo-local skill' "$ROOT/codex/AGENTS.md" \
+    && grep -q 'docs/skill-portability.md' "$ROOT/AGENTS.md" \
+    && grep -q 'canonical source.*claude/skills.*codex/skills' "$ROOT/codex/AGENTS.md"; then
+    ok "Codex always-on authoring trigger 涵蓋任一 canonical tree 的 repo-local skill"
+else
+    bad "Codex always-on trigger 仍可能把 claude/skills canonical source 誤判成非 Codex authoring"
 fi
 
 echo "▶ 2. bash -n 語法 gate"
@@ -2974,24 +3002,293 @@ if [ ! -e "$RRS_CODEX/scripts/review-context.sh" ] \
     && [ ! -e "$RRS_CODEX/references/reviewer-brief.md" ]; then
     ok "repo-review 舊獨立 helper 與 brief 已退役"
 else bad "repo-review 仍殘留第二套 runtime contract"; fi
-echo "▶ 12b. deep-plan skill 跨 Claude Code／Codex 共用封裝"
+echo "▶ 12b. deep-plan 雙薄入口與共用 workflow"
 DPS_CLAUDE="$ROOT/claude/skills/deep-plan"
 DPS_CODEX="$ROOT/codex/skills/deep-plan"
-if [ -L "$DPS_CODEX" ] && [ "$DPS_CODEX" -ef "$DPS_CLAUDE" ]; then
-    ok "deep-plan 兩個 runtime 指向同一份 skill"
-else bad "deep-plan 未以單一 source of truth 部署"; fi
-if [ -f "$DPS_CODEX/SKILL.md" ] && [ -f "$DPS_CODEX/agents/openai.yaml" ]; then
-    ok "Codex 可從共用 target 讀到 SKILL.md 與 metadata"
-else bad "Codex deep-plan 共用封裝不完整"; fi
-dps_frontmatter="$(awk 'NR == 1 { next } /^---$/ { exit } { print }' "$DPS_CLAUDE/SKILL.md")"
-if ! grep -Eq '^(user-invocable|argument-hint|allowed-tools|context|agent):' <<< "$dps_frontmatter"; then
-    ok "deep-plan 共用 frontmatter 無 Claude Code 專屬欄位"
-else bad "deep-plan 共用 frontmatter 混入 runtime 專屬欄位"; fi
-if grep -q 'fork_turns: "none"' "$DPS_CLAUDE/SKILL.md" \
-    && grep -q 'Claude Code：每次建立新的' "$DPS_CLAUDE/SKILL.md" \
-    && grep -q 'spawn reviewer_a.*spawn reviewer_b.*wait_agent' "$DPS_CLAUDE/SKILL.md"; then
-    ok "deep-plan 明列兩個 runtime 的 fresh-context adapter"
-else bad "deep-plan 缺少雙 runtime fresh-context contract"; fi
+if [ -f "$DPS_CLAUDE/SKILL.md" ] && [ -f "$DPS_CODEX/SKILL.md" ] \
+    && [ ! -L "$DPS_CLAUDE" ] && [ ! -L "$DPS_CODEX" ]; then
+    ok "deep-plan 兩個 runtime 各有薄入口"
+else bad "deep-plan runtime entry 缺漏或仍是 whole-directory symlink"; fi
+if [ -L "$DPS_CODEX/references" ] \
+    && [ "$DPS_CODEX/references/workflow.md" -ef "$DPS_CLAUDE/references/workflow.md" ] \
+    && [ "$DPS_CODEX/references/planner-brief.md" -ef "$DPS_CLAUDE/references/planner-brief.md" ] \
+    && [ "$DPS_CODEX/references/reviewer-prompt.txt" -ef "$DPS_CLAUDE/references/reviewer-prompt.txt" ] \
+    && [ "$DPS_CODEX/references/criteria-impact-prompt.txt" -ef "$DPS_CLAUDE/references/criteria-impact-prompt.txt" ]; then
+    ok "deep-plan workflow、brief 與 reviewer prompts 是單一 portable core"
+else bad "deep-plan shared references 分叉或未正確路由"; fi
+dps_claude_frontmatter="$(awk 'NR == 1 { next } /^---$/ { exit } { print }' "$DPS_CLAUDE/SKILL.md")"
+dps_codex_frontmatter="$(awk 'NR == 1 { next } /^---$/ { exit } { print }' "$DPS_CODEX/SKILL.md")"
+dps_claude_description="$(grep '^description:' <<< "$dps_claude_frontmatter")"
+dps_codex_description="$(grep '^description:' <<< "$dps_codex_frontmatter")"
+if [ "$dps_claude_description" = "$dps_codex_description" ] \
+    && ! grep -Eq '^(user-invocable|argument-hint|allowed-tools|context|agent):' <<< "$dps_claude_frontmatter$dps_codex_frontmatter"; then
+    ok "deep-plan 雙入口 description 一致且 frontmatter portable"
+else bad "deep-plan 雙入口 frontmatter 漂移或混入專屬欄位"; fi
+dps_claude_lines="$(wc -l < "$DPS_CLAUDE/SKILL.md" | tr -d ' ')"
+dps_codex_lines="$(wc -l < "$DPS_CODEX/SKILL.md" | tr -d ' ')"
+if [ "$dps_claude_lines" -le 30 ] && [ "$dps_codex_lines" -le 30 ] \
+    && grep -q 'references/workflow.md' "$DPS_CLAUDE/SKILL.md" \
+    && grep -q 'references/workflow.md' "$DPS_CODEX/SKILL.md"; then
+    ok "deep-plan runtime entries 保持薄殼並路由 shared workflow"
+else bad "deep-plan runtime entry 過厚或未載入 shared workflow"; fi
+# shellcheck disable=SC2016 # literal Markdown backticks／$deep-plan tokens below
+if grep -q 'background `Agent`' "$DPS_CLAUDE/SKILL.md" \
+    && ! grep -Eq 'launch-reviewers|spawn_agent|wait_agent|fork_turns' "$DPS_CLAUDE/SKILL.md" \
+    && grep -q 'scripts/launch-reviewers.py' "$DPS_CODEX/SKILL.md" \
+    && grep -q 'stdout manifest says `ok: true`' "$DPS_CODEX/SKILL.md" \
+    && ! grep -Eq 'spawn_agent|wait_agent|fork_turns|background `Agent`|SendMessage' "$DPS_CODEX/SKILL.md"; then
+    ok "deep-plan runtime tool contracts 保持分離"
+else bad "deep-plan runtime adapter 漂移或互相污染"; fi
+# shellcheck disable=SC2016 # literal $deep-plan in metadata
+if ! grep -Eq 'spawn_agent|wait_agent|fork_turns|SendMessage|Claude Code|Codex' "$DPS_CLAUDE/references/workflow.md" \
+    && [ ! -e "$DPS_CODEX/evals.md" ] \
+    && grep -q 'Use \$deep-plan' "$DPS_CODEX/agents/openai.yaml"; then
+    ok "deep-plan shared core 無 runtime 私有工具，eval 與 UI metadata 各安其位"
+else bad "deep-plan shared core 污染、eval 重複或 Codex metadata 缺漏"; fi
+if grep -q 'receiver_thread_ids=\[\]' "$DPS_CLAUDE/evals.md" \
+    && grep -q 'P17 — Codex deterministic launcher' "$DPS_CLAUDE/evals.md" \
+    && ! grep -Eq 'fork_turns|spawn_agent|wait_agent' "$DPS_CLAUDE/evals.md" \
+    && grep -q '恰好收到 N 份可歸因' "$DPS_CLAUDE/SKILL.md" \
+    && [ -x "$DPS_CODEX/scripts/launch-reviewers.py" ] \
+    && [ -f "$DPS_CODEX/assets/reviewer-output.schema.json" ]; then
+    ok "deep-plan empty-wait RED oracle 與 deterministic launcher 已接線"
+else bad "deep-plan 缺少 empty-wait oracle、launcher 或 output schema"; fi
+if grep -q 'subprocess.Popen' "$DPS_CODEX/scripts/launch-reviewers.py" \
+    && grep -q 'stdin=subprocess.PIPE' "$DPS_CODEX/scripts/launch-reviewers.py" \
+    && grep -q 'stdout=subprocess.PIPE' "$DPS_CODEX/scripts/launch-reviewers.py" \
+    && grep -q '"read-only"' "$DPS_CODEX/scripts/launch-reviewers.py" \
+    && grep -q '"--ephemeral"' "$DPS_CODEX/scripts/launch-reviewers.py" \
+    && grep -q '"--output-schema"' "$DPS_CODEX/scripts/launch-reviewers.py" \
+    && grep -q 'reviewer-prompt.txt' "$DPS_CODEX/scripts/launch-reviewers.py" \
+    && ! grep -q 'Do not invoke any skill' "$DPS_CODEX/scripts/launch-reviewers.py" \
+    && grep -q 'start_new_session=os.name == "posix"' "$DPS_CODEX/scripts/launch-reviewers.py" \
+    && grep -q '"SIGHUP", "SIGQUIT"' "$DPS_CODEX/scripts/launch-reviewers.py" \
+    && grep -q '"--ignore-rules"' "$DPS_CODEX/scripts/launch-reviewers.py" \
+    && ! grep -Eq 'shell *= *True|tempfile|mkdtemp|NamedTemporary' "$DPS_CODEX/scripts/launch-reviewers.py"; then
+    ok "deep-plan Codex launcher 使用 argv＋in-memory pipes、process tree cleanup 與 repo policy"
+else bad "deep-plan Codex launcher transport 或 child isolation contract 漂移"; fi
+
+dps_fixture="$TMP/deep-plan-launcher"
+git init -q -b test/deep-plan "$dps_fixture"
+mkdir -p "$dps_fixture/docs/plans"
+cat > "$dps_fixture/docs/plans/plan.md" <<'PLAN'
+# Plan
+
+Status: unimplemented.
+PLAN
+(cd "$dps_fixture" && "${GITC[@]}" add docs/plans/plan.md && "${GITC[@]}" commit -qm "docs: add plan")
+cat > "$TMP/deep-plan-codex-stub" <<'PY'
+#!/usr/bin/env python3
+import json
+import os
+from pathlib import Path
+import sys
+import time
+
+prompt = sys.stdin.read()
+if mutate_path := os.environ.get("DEEP_PLAN_STUB_MUTATE_FILE"):
+    Path(mutate_path).write_text("after\n", encoding="utf-8")
+required_prompt_text = [
+    "把計畫對現況、歷史、相依與完成判定的宣稱逐一拿回 repo 查證。",
+    "依語意找相依，不只比對字串。",
+    "可唯讀查檔、搜尋、檢查歷史及執行不改變狀態的診斷。",
+]
+if not all(text in prompt for text in required_prompt_text):
+    sys.exit(8)
+if "Do not invoke any skill" in prompt or "spawn or wait" in prompt:
+    sys.exit(7)
+criteria_text = "這份計畫正在改變一組判準。"
+if os.environ.get("DEEP_PLAN_STUB_REQUIRE_CRITERIA") and criteria_text not in prompt:
+    sys.exit(9)
+if os.environ.get("DEEP_PLAN_STUB_FORBID_CRITERIA") and criteria_text in prompt:
+    sys.exit(10)
+time.sleep(0.1)
+print(json.dumps({"type": "thread.started", "thread_id": f"stub-{os.getpid()}"}))
+if os.environ.get("DEEP_PLAN_STUB_INVALID"):
+    review = {"invalid": True}
+else:
+    review = {
+        "findings": [{
+            "issue": "fixture finding",
+            "layer": "verifiable",
+            "severity": "blocker",
+            "evidence": ["docs/plans/plan.md:1"],
+        }],
+        "verified_claims": ["plan exists"],
+        "unverified_claims": [],
+        "recommendation": "do_not_start",
+    }
+print(json.dumps({
+    "type": "item.completed",
+    "item": {"type": "agent_message", "text": json.dumps(review)},
+}))
+PY
+chmod +x "$TMP/deep-plan-codex-stub"
+dps_launch_out="$(DEEP_PLAN_STUB_FORBID_CRITERIA=1 "$DPS_CODEX/scripts/launch-reviewers.py" \
+    --plan "$dps_fixture/docs/plans/plan.md" \
+    --repo "$dps_fixture" \
+    --brief "$DPS_CODEX/references/planner-brief.md" \
+    --schema "$DPS_CODEX/assets/reviewer-output.schema.json" \
+    --codex-bin "$TMP/deep-plan-codex-stub" \
+    --timeout-seconds 5)"
+dps_launch_rc=$?
+if [ "$dps_launch_rc" -eq 0 ] \
+    && grep -q '"ok":true' <<< "$dps_launch_out" \
+    && grep -q '"all_running_after_dispatch":true' <<< "$dps_launch_out" \
+    && [ "$(grep -o 'stub-[0-9]*' <<< "$dps_launch_out" | sort -u | wc -l | tr -d ' ')" -eq 2 ] \
+    && [ -z "$(git -C "$dps_fixture" status --porcelain=v1)" ]; then
+    ok "deep-plan launcher 建立兩個 attributed reviewers 並保持 target repo 不變"
+else bad "deep-plan launcher normal fixture 未滿足 parallel／fresh／read-only oracle"; fi
+cp "$dps_fixture/docs/plans/plan.md" "$TMP/deep-plan-scratch.md"
+dps_criteria_out="$(DEEP_PLAN_STUB_REQUIRE_CRITERIA=1 "$DPS_CODEX/scripts/launch-reviewers.py" \
+    --plan "$TMP/deep-plan-scratch.md" \
+    --repo "$dps_fixture" \
+    --brief "$DPS_CODEX/references/planner-brief.md" \
+    --schema "$DPS_CODEX/assets/reviewer-output.schema.json" \
+    --codex-bin "$TMP/deep-plan-codex-stub" \
+    --criteria-impact-review \
+    --timeout-seconds 5)"
+dps_criteria_rc=$?
+if [ "$dps_criteria_rc" -eq 0 ] \
+    && grep -q '"ok":true' <<< "$dps_criteria_out" \
+    && grep -q '"criteria_impact_review":true' <<< "$dps_criteria_out"; then
+    ok "deep-plan launcher 支援 repo 外 scratch plan 並保留判準類 impact-grid prompt"
+else bad "deep-plan launcher 遺失 scratch artifact 或判準類 reviewer contract"; fi
+dps_invalid_out="$(DEEP_PLAN_STUB_INVALID=1 "$DPS_CODEX/scripts/launch-reviewers.py" \
+    --plan "$dps_fixture/docs/plans/plan.md" \
+    --repo "$dps_fixture" \
+    --brief "$DPS_CODEX/references/planner-brief.md" \
+    --schema "$DPS_CODEX/assets/reviewer-output.schema.json" \
+    --codex-bin "$TMP/deep-plan-codex-stub" \
+    --timeout-seconds 5)"
+dps_invalid_rc=$?
+if [ "$dps_invalid_rc" -eq 1 ] && grep -q '"ok":false' <<< "$dps_invalid_out"; then
+    ok "deep-plan launcher 對 schema-invalid reviewer set fail closed"
+else bad "deep-plan launcher 接受 schema-invalid reviewer output"; fi
+dps_guard_out="$(DEEP_PLAN_REVIEWER_PROCESS=1 "$DPS_CODEX/scripts/launch-reviewers.py" \
+    --plan "$dps_fixture/docs/plans/plan.md" \
+    --repo "$dps_fixture" \
+    --brief "$DPS_CODEX/references/planner-brief.md" \
+    --schema "$DPS_CODEX/assets/reviewer-output.schema.json" \
+    --codex-bin "$TMP/deep-plan-codex-stub")"
+dps_guard_rc=$?
+if [ "$dps_guard_rc" -eq 2 ] && grep -q 'nested deep-plan reviewer launch is forbidden' <<< "$dps_guard_out"; then
+    ok "deep-plan launcher 阻止 reviewer process 遞迴啟動"
+else bad "deep-plan launcher recursion guard 失效"; fi
+bad_plan_target="$TMP/deep-plan"$'\n'"injected.md"
+cp "$dps_fixture/docs/plans/plan.md" "$bad_plan_target"
+ln -s "$bad_plan_target" "$TMP/deep-plan-safe-link.md"
+dps_control_out="$("$DPS_CODEX/scripts/launch-reviewers.py" \
+    --plan "$TMP/deep-plan-safe-link.md" \
+    --repo "$dps_fixture" \
+    --brief "$DPS_CODEX/references/planner-brief.md" \
+    --schema "$DPS_CODEX/assets/reviewer-output.schema.json" \
+    --codex-bin "$TMP/deep-plan-codex-stub")"
+dps_control_rc=$?
+if [ "$dps_control_rc" -eq 2 ] \
+    && grep -q 'resolved plan path contains a forbidden control character' <<< "$dps_control_out"; then
+    ok "deep-plan launcher 對 symlink 解析後的 control-character path fail closed"
+else bad "deep-plan launcher 接受 canonical path prompt injection"; fi
+dps_relative_out="$("$DPS_CODEX/scripts/launch-reviewers.py" \
+    --plan docs/plans/plan.md \
+    --repo "$dps_fixture" \
+    --brief "$DPS_CODEX/references/planner-brief.md" \
+    --schema "$DPS_CODEX/assets/reviewer-output.schema.json" \
+    --codex-bin "$TMP/deep-plan-codex-stub")"
+dps_relative_rc=$?
+if [ "$dps_relative_rc" -eq 2 ] && grep -q 'plan path must be absolute' <<< "$dps_relative_out"; then
+    ok "deep-plan launcher 拒絕 cwd-relative artifact，避免靜默審錯 scope"
+else bad "deep-plan launcher 接受 relative artifact path"; fi
+echo "stable" > "$dps_fixture/evidence.txt"
+(cd "$dps_fixture" && "${GITC[@]}" add evidence.txt && "${GITC[@]}" commit -qm "test: add evidence")
+echo "before" > "$dps_fixture/evidence.txt"
+dps_mutation_out="$(DEEP_PLAN_STUB_MUTATE_FILE="$dps_fixture/evidence.txt" \
+    "$DPS_CODEX/scripts/launch-reviewers.py" \
+    --plan "$dps_fixture/docs/plans/plan.md" \
+    --repo "$dps_fixture" \
+    --brief "$DPS_CODEX/references/planner-brief.md" \
+    --schema "$DPS_CODEX/assets/reviewer-output.schema.json" \
+    --codex-bin "$TMP/deep-plan-codex-stub" \
+    --timeout-seconds 5)"
+dps_mutation_rc=$?
+if [ "$dps_mutation_rc" -eq 1 ] \
+    && grep -q '"ok":false' <<< "$dps_mutation_out" \
+    && grep -q '"content_sha256"' <<< "$dps_mutation_out"; then
+    ok "deep-plan launcher 以 content fingerprint 抓到 status 字串不變的 dirty-file mutation"
+else bad "deep-plan launcher 只比 HEAD/status，漏掉 dirty evidence drift"; fi
+mkdir -p "$TMP/deep-plan-descendant-pids"
+cat > "$TMP/deep-plan-hanging-stub" <<'PY'
+#!/usr/bin/env python3
+import os
+from pathlib import Path
+import subprocess
+import sys
+import time
+
+child = subprocess.Popen(
+    [sys.executable, "-c", "import time; time.sleep(60)"],
+    stdout=sys.stdout,
+    stderr=sys.stderr,
+)
+pid_dir = Path(os.environ["DEEP_PLAN_DESCENDANT_PID_DIR"])
+(pid_dir / f"{os.getpid()}.pid").write_text(str(child.pid), encoding="utf-8")
+time.sleep(60)
+PY
+chmod +x "$TMP/deep-plan-hanging-stub"
+dps_timeout_out="$(DEEP_PLAN_DESCENDANT_PID_DIR="$TMP/deep-plan-descendant-pids" \
+    "$DPS_CODEX/scripts/launch-reviewers.py" \
+    --plan "$dps_fixture/docs/plans/plan.md" \
+    --repo "$dps_fixture" \
+    --brief "$DPS_CODEX/references/planner-brief.md" \
+    --schema "$DPS_CODEX/assets/reviewer-output.schema.json" \
+    --codex-bin "$TMP/deep-plan-hanging-stub" \
+    --timeout-seconds 1)"
+dps_timeout_rc=$?
+dps_descendant_count="$(find "$TMP/deep-plan-descendant-pids" -name '*.pid' -type f | wc -l | tr -d ' ')"
+dps_descendants_alive=0
+for pid_file in "$TMP/deep-plan-descendant-pids"/*.pid; do
+    descendant_pid="$(< "$pid_file")"
+    if kill -0 "$descendant_pid" 2>/dev/null; then
+        dps_descendants_alive=$((dps_descendants_alive + 1))
+    fi
+done
+if [ "$dps_timeout_rc" -eq 1 ] \
+    && grep -q '"ok":false' <<< "$dps_timeout_out" \
+    && [ "$dps_descendant_count" -eq 2 ] \
+    && [ "$dps_descendants_alive" -eq 0 ]; then
+    ok "deep-plan launcher timeout 會收掉 reviewer process tree，不留持 pipe descendant"
+else bad "deep-plan launcher timeout 未完整 fail closed 或留下 descendant"; fi
+mkdir -p "$TMP/deep-plan-signal-pids"
+DEEP_PLAN_DESCENDANT_PID_DIR="$TMP/deep-plan-signal-pids" \
+    "$DPS_CODEX/scripts/launch-reviewers.py" \
+    --plan "$dps_fixture/docs/plans/plan.md" \
+    --repo "$dps_fixture" \
+    --brief "$DPS_CODEX/references/planner-brief.md" \
+    --schema "$DPS_CODEX/assets/reviewer-output.schema.json" \
+    --codex-bin "$TMP/deep-plan-hanging-stub" \
+    --timeout-seconds 30 > "$TMP/deep-plan-signal.out" &
+dps_signal_launcher_pid=$!
+for _ in {1..50}; do
+    dps_signal_pid_count="$(find "$TMP/deep-plan-signal-pids" -name '*.pid' -type f | wc -l | tr -d ' ')"
+    [ "$dps_signal_pid_count" -eq 2 ] && break
+    sleep 0.1
+done
+kill -HUP "$dps_signal_launcher_pid"
+wait "$dps_signal_launcher_pid"
+dps_signal_rc=$?
+dps_signal_descendants_alive=0
+for pid_file in "$TMP/deep-plan-signal-pids"/*.pid; do
+    descendant_pid="$(< "$pid_file")"
+    if kill -0 "$descendant_pid" 2>/dev/null; then
+        dps_signal_descendants_alive=$((dps_signal_descendants_alive + 1))
+    fi
+done
+if [ "$dps_signal_rc" -eq 1 ] \
+    && grep -q '"ok":false' "$TMP/deep-plan-signal.out" \
+    && [ "$dps_signal_pid_count" -eq 2 ] \
+    && [ "$dps_signal_descendants_alive" -eq 0 ]; then
+    ok "deep-plan launcher 收到 SIGHUP 會收掉 reviewer process tree"
+else bad "deep-plan launcher signal cleanup 未 fail closed 或留下 descendant"; fi
 
 echo "▶ 12bb. deep-review skill 跨 Claude Code／Codex 共用核心"
 DRS_CLAUDE="$ROOT/claude/skills/deep-review"
@@ -3443,6 +3740,46 @@ if grep -q 'Q7 — memory 開關矩陣' "$RQS_CLAUDE/evals.md" \
     && grep -q 'generated state' "$RQS_CODEX/SKILL.md"; then
     ok "ready4quit authority routing 不受 memory toggle／private store 影響"
 else bad "ready4quit 缺 memory-independent promotion／skip／residue 契約"; fi
+
+echo "▶ 12f. root-cause-first skill 跨 Claude Code／Codex 共用 evidence gate"
+RCF_CLAUDE="$ROOT/claude/skills/root-cause-first"
+RCF_CODEX="$ROOT/codex/skills/root-cause-first"
+if [ -f "$RCF_CLAUDE/SKILL.md" ] && [ -f "$RCF_CODEX/SKILL.md" ] \
+    && [ -L "$RCF_CODEX/references" ] \
+    && [ "$RCF_CODEX/references/workflow.md" -ef "$RCF_CLAUDE/references/workflow.md" ]; then
+    ok "root-cause-first 雙薄入口共用 canonical workflow"
+else bad "root-cause-first 跨 runtime 封裝未共用 workflow"; fi
+if [ ! -e "$RCF_CODEX/evals.md" ] \
+    && ! rg -q 'defense-in-depth|root-cause-tracing' "$RCF_CLAUDE/SKILL.md" "$RCF_CODEX/SKILL.md" \
+    && grep -q '^Portable compatibility pointer only\.' "$RCF_CLAUDE/references/defense-in-depth.md" \
+    && grep -q '^Portable compatibility pointer only\.' "$RCF_CLAUDE/references/root-cause-tracing.md"; then
+    ok "root-cause-first eval 單一來源且舊 method reference 內容已退場"
+else bad "root-cause-first 複製 eval、載入舊 reference 或殘留舊 method 內容"; fi
+rcf_claude_description="$(sed -n 's/^description: //p' "$RCF_CLAUDE/SKILL.md")"
+rcf_codex_description="$(sed -n 's/^description: //p' "$RCF_CODEX/SKILL.md")"
+if [ -n "$rcf_claude_description" ] \
+    && [ "$rcf_claude_description" = "$rcf_codex_description" ]; then
+    ok "root-cause-first 雙端 description 語意入口一致"
+else bad "root-cause-first 雙端 description 漂移"; fi
+rcf_codex_frontmatter="$(awk 'NR == 1 { next } /^---$/ { exit } { print }' "$RCF_CODEX/SKILL.md")"
+if ! grep -Eq '^(user-invocable|disable-model-invocation|argument-hint|allowed-tools|context|agent):' \
+    <<< "$rcf_codex_frontmatter"; then
+    ok "Codex root-cause-first frontmatter 無 Claude Code 專屬欄位"
+else bad "Codex root-cause-first frontmatter 混入 Claude Code 專屬欄位"; fi
+# These are intentional literal runtime-private tokens.
+# shellcheck disable=SC2088
+if ! rg -q '~/.claude|~/.codex|CLAUDE_SKILL_DIR|TaskOutput|spawn_agent' \
+    "$RCF_CLAUDE/references/workflow.md"; then
+    ok "root-cause-first shared workflow runtime-neutral"
+else bad "root-cause-first shared workflow 洩漏 runtime-private surface"; fi
+# shellcheck disable=SC2016
+rcf_sig='$root-cause-first'
+if grep -qF "$rcf_sig" "$RCF_CODEX/agents/openai.yaml" \
+    && grep -q 'CONTAINMENT ONLY' "$RCF_CLAUDE/references/workflow.md" \
+    && grep -q 'No false completion' "$RCF_CLAUDE/references/workflow.md" \
+    && grep -q '完整 suite 仍 1/6 失敗' "$RCF_CLAUDE/evals.md"; then
+    ok "root-cause-first UI metadata、pressure RED 與 completion gate 已接線"
+else bad "root-cause-first portable behavior contract 缺失"; fi
 
 echo "▶ 13. handoff-anchor.sh 錨點驗證與生命週期判定"
 HA_SCRIPT="$ROOT/claude/skills/handoff/scripts/handoff-anchor.sh"
@@ -5904,6 +6241,44 @@ out="$(python3 "$CQS" "$CQS_DIR/two.jsonl" 2>&1)"
 assert_rc "JSONL 載入 → exit 0" 0 $?
 cqs_grep "JSONL 兩筆都讀到" "$out" 'records=2'
 
+# F1 目錄輸入：爬蟲常以「每筆一個 JSON object」落地，c1 behavior fixture
+# 也是這個形狀。目錄／glob 必須將每個 object 當成一筆記錄，不可要求每檔另包 array。
+mkdir -p "$CQS_DIR/object-dir"
+python3 - "$CQS_DIR/object-dir" <<'PY'
+import json, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+for i, source in enumerate(("large", "large", "small"), 1):
+    (root / f"doc{i}.json").write_text(json.dumps({
+        "id": f"doc{i}",
+        "source": source,
+        "content": f"單筆 JSON 文件 {i}" + "內容段落" * 40,
+    }, ensure_ascii=False))
+PY
+out="$(python3 "$CQS" "$CQS_DIR/object-dir" 2>&1)"
+assert_rc "目錄內單筆 JSON objects → exit 0" 0 $?
+cqs_grep "目錄內三筆 objects 全數載入" "$out" 'records=3'
+cqs_grep "目錄輸入保留 per-source 分群" "$out" 'source: small records=1'
+
+# C1 行為 oracle：noise 是共用的兩行 nav，第三行已進入每篇不同的正文。
+# 偵測不可因固定取三行而把這個小來源 80% 的前綴問題洗掉。
+mkdir -p "$CQS_DIR/per-source-dir"
+python3 - "$CQS_DIR/per-source-dir" <<'PY'
+import json, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+nav = "[首頁](/) > [新聞中心](/news)\n[分享到 Facebook](/share) [分享到 Line](/line)\n"
+for i in range(15):
+    payload = {"id": f"main-{i}", "source": "main",
+               "content": f"主來源文件 {i}。" + "充實正文" * 60}
+    (root / f"main-{i}.json").write_text(json.dumps(payload, ensure_ascii=False))
+for i in range(5):
+    payload = {"id": f"special-{i}", "source": "special-report",
+               "content": (nav if i < 4 else "") + f"專題報導 {i}。" + "獨立正文" * 40}
+    (root / f"special-{i}.json").write_text(json.dumps(payload, ensure_ascii=False))
+PY
+out="$(python3 "$CQS" "$CQS_DIR/per-source-dir" 2>&1)"
+assert_rc "共用兩行前綴 fixture → exit 0" 0 $?
+cqs_grep "小來源 80% 共用 nav 前綴未被全域稀釋" "$out" 'check-4a@special-report:'
+
 # R2 迴歸：壞 SQLite → 乾淨錯誤，不噴 traceback
 echo 'garbage' > "$CQS_DIR/fake.db"
 err="$(python3 "$CQS" "$CQS_DIR/fake.db" 2>&1 >/dev/null)"
@@ -5981,6 +6356,22 @@ cqs_grep "4e 命中附 sample 取例" "$out" 'check-4e: html-tag docs=1 pct=5.0%
 cqs_grep "4g 欄位冗餘附 sample 取例" "$out" 'check-4g: field-redundancy docs=1/1 pct=100.0% sample="'
 cqs_grep "per-source 達門檻行（newsB 4b 40%）" "$out" 'check-4b@newsB: pct=40.0%'
 cqs_grep "dup 非首筆不入開頭區分度（85%→100%）" "$out" 'check-4h: opening-uniqueness=100.0%'
+
+# R5 迴歸：4h-opening 會進 ledger，就必須由 engine 自己附 deterministic sample；
+# agent 不得為了補證據自行從來源挑例。
+python3 - "$CQS_DIR/opening-evidence.json" <<'PY'
+import json, sys
+shared = "共同樣板開頭" * 20
+records = [
+    {"id": f"opening-{i}", "source": "opening-source",
+     "content": shared + f"第{i}篇的獨立尾段" + "正文" * 20}
+    for i in range(4)
+]
+json.dump(records, open(sys.argv[1], "w"), ensure_ascii=False)
+PY
+out="$(python3 "$CQS" "$CQS_DIR/opening-evidence.json" 2>&1)"
+assert_rc "低開頭區分度 fixture → exit 0" 0 $?
+cqs_grep "4h-opening 命中附 deterministic sample" "$out" 'check-4h: opening-uniqueness=25.0% sample="'
 
 # R4 迴歸：豁免註記統一——RAG 項豁免也要留 0 分帳目行，不靜默
 out="$(python3 "$CQS" "$CQS_DIR/small.json" --exempt 4g-redundancy 2>&1)"
@@ -6117,6 +6508,36 @@ if [ "${longest_label:-999}" -le 200 ]; then
     ok "來源顯示標籤有界（≤200 bytes）"
 else
     bad "來源顯示標籤無上限（實測 ${longest_label} bytes）"
+fi
+
+# portable packaging：雙薄入口共用同一 workflow / deterministic engine，
+# 但不複製 eval oracle，也不把 runtime 私有路徑漏進核心。
+CQS_CODEX="$ROOT/codex/skills/check-crawl-quality"
+CQS_CLAUDE="$ROOT/claude/skills/check-crawl-quality"
+if [ -L "$CQS_CODEX/references" ] && [ "$CQS_CODEX/references/workflow.md" -ef "$CQS_CLAUDE/references/workflow.md" ]; then
+    ok "crawl-quality Codex references 共用 canonical inode"
+else
+    bad "crawl-quality Codex references 未共用 canonical inode"
+fi
+if [ -L "$CQS_CODEX/scripts" ] && [ "$CQS_CODEX/scripts/crawl-quality-scan.py" -ef "$CQS_CLAUDE/scripts/crawl-quality-scan.py" ]; then
+    ok "crawl-quality Codex engine 共用 canonical inode"
+else
+    bad "crawl-quality Codex engine 未共用 canonical inode"
+fi
+if [ ! -e "$CQS_CODEX/evals.md" ]; then ok "crawl-quality eval oracle 只留 canonical tree"; else bad "Codex adapter 複製了 eval oracle"; fi
+# These patterns intentionally assert that literal runtime tokens stay out.
+# shellcheck disable=SC2016,SC2088
+if grep -Eq '~/(\.claude|\.codex)|CLAUDE_SKILL_DIR|\$ARGUMENTS' "$CQS_CLAUDE/references/workflow.md"; then
+    bad "crawl-quality shared workflow 洩漏 runtime 私有路徑／參數"
+else
+    ok "crawl-quality shared workflow runtime-neutral"
+fi
+# shellcheck disable=SC2016
+if grep -q 'references/workflow.md' "$CQS_CODEX/SKILL.md" \
+   && grep -q '\$check-crawl-quality' "$CQS_CODEX/agents/openai.yaml"; then
+    ok "crawl-quality Codex adapter 與 UI metadata 已接線"
+else
+    bad "crawl-quality Codex adapter 或 UI metadata 未接線"
 fi
 
 echo "▶ 22. brewup / sysup / brewfix（rc alias 抽成腳本後的三個入口）"

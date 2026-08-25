@@ -1,0 +1,4 @@
+interface:
+  display_name: "Root Cause First"
+  short_description: "Diagnose failures before applying fixes"
+  default_prompt: "Use $root-cause-first to diagnose this failure from evidence before proposing a fix."

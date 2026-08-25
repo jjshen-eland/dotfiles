@@ -129,6 +129,13 @@ red flag。**這支 gate 就是把那個代價換成機檢**：漂移即紅。�
 守搬遷後的 skill 指標、xref wrapper exit contract、adopted／legacy template 分流、doc STOP 與 G7 fixture
 fail-closed。這些依賴端用字與核心實作不同，不能靠一般 xref pattern 完整覆蓋。
 
+Skill authoring 的跨 runtime 規則只存在 `docs/skill-portability.md`；Claude Code／Codex 兩份 guide 都必須
+在開工前要求完整讀取它，不得各自複製 portable workflow。Gate 至少守住 portable-by-default、existing-skill
+先查 history 並解析 symlink/canonical source、topology 變更需 superseding evidence，以及 shared core＋雙薄入口。
+這條 RED 來自已完成 portable 的 deep-plan 因實體放在 `claude/skills/` 被誤判成 Claude 舊版，再次 clean-room
+重寫；原決策其實可由既有 doc-governance route 第一輪直接命中。Root repo route 與 Codex always-on authoring
+trigger 也必須涵蓋 any repo-local skill，不得把 `claude/skills/**` 的 canonical source 排除在 preflight 外。
+
 ## 2. bash -n 語法 gate
 
 涵蓋範圍同第 1 節。
@@ -343,6 +350,41 @@ Claude canonical source inode 相同。Eval oracle 只存在 canonical Claude tr
 doc-governance 的 `skill-eval` class 也不得要求 Codex adapter 另放一份。`SKILL.md` 只路由 runtime
 entry，不複製核心。
 
+## 12b. deep-plan portable orchestration gate
+
+Claude Code／Codex 各保留薄 runtime entry，並以 nested symlink 解析到同一份 workflow 與 reviewer brief；
+兩個入口的 description 必須一致，tool binding 不得互相污染，shared core 也不得出現任一 runtime 私有工具。
+Fresh-reviewer gate 的 RED 來自 Codex 在零 recorded spawn result、零 reviewer ID、零 capacity refusal evidence
+時直接呼叫 empty wait；inline、hard-contract 與薄 native adapter 都未改變行為。因此 Codex 不再由 model 自選
+collaboration tool ordering，而以 deterministic launcher 一次建立整輪 reviewers。Launcher 必須用 argv 與
+in-memory stdin/stdout pipes（不可要求 parent sandbox 寫 temp），固定 child 為 structured、ephemeral、read-only，
+關閉 nested multi-agent／skill discovery，並隔離可能讓命令繞過 sandbox 的 user/project execpolicy rules。Manifest
+必須證明同 prompt hash、不同 thread IDs、同時存活、完整 result set，以及每個 repo 的 HEAD/status/content
+fingerprint 與 plan/brief/schema hashes 不變；partial failure、schema failure、遞迴或 mutation 一律 fail closed。
+所有 artifact/repo inputs 都必須是 absolute，raw 與 symlink-resolved path 都拒絕控制字元；timeout／signal
+（至少 SIGINT／SIGTERM／SIGHUP／SIGQUIT）必須收掉整棵 reviewer process tree，不能留下持有 stdout pipe 的 descendant。
+Claude round 同樣 fail closed：必須恰有 N 份可歸因的完整 results；Agent error、partial、缺 section 或 finding
+欄位缺漏都不得進 synthesis。Eval oracle 不得殘留 Codex 已退役的 `fork_turns`／spawn／wait backend。
+Shared workflow 判定為放行／攔下判準類計畫時，Codex adapter 必須用顯式 flag 讓 launcher 加入同一份
+impact-grid reviewer 要求；其他計畫不得誤加。Repo 外 scratch plan 仍是合法 artifact，不得被 launcher 拒絕。
+兩端 reviewer prompt 必須由同一份 `references/reviewer-prompt.txt` 產生；除 path 與 shared criteria prompt
+placeholder 外不得重組、縮短或加入 runtime/tool 指令，P14 oracle 也不得殘留退役的 Codex spawn/wait backend。
+
+Static gate 只守 packaging 與 failure contract；live GREEN 還需要 parent exact-query 先呼叫 launcher、整段沒有
+collab wait，且兩份 reviewer output 都能命中 fixture oracle。Headless parent sandbox 若禁止 nested Codex app-server，
+允許明確 fail closed，但那是 capability boundary，不可宣稱完成 review；一般 runtime forward 必須另外 GREEN。
+
+## 12f. root-cause-first portable evidence gate
+
+Claude Code／Codex 各保留薄入口，並以 nested symlink 共用單一 `references/workflow.md`；eval oracle
+只留 canonical Claude tree。舊 method-specific reference 內容必須退場；原 tracked path 在未提交 lifecycle
+保留為不被 adapter 載入的 compatibility pointer。Shared workflow 不得出現 runtime 私有路徑、工具或
+invocation token。
+
+行為守門以實測 pressure RED 為準：定位到 root cause 後，若 scope／authority 只允許 containment，
+必須保留仍失敗的 root-cause evidence、標成 containment-only／blocked 並揭露 residual risk；不得因事故
+窄路徑轉綠就宣稱 repair complete。Codex UI metadata、雙端 description 與這個 completion gate 必須同時可達。
+
 ## 13. handoff-anchor.sh 錨點驗證與生命週期判定
 
 ### `anchors` 是全有或全無
@@ -445,7 +487,16 @@ cycle 續跑計數。**squash base 由 subject 掃描求得**：自 HEAD 往回�
 
 ## 21. crawl-quality-scan.py 確定性掃描與扣分帳目
 
-用 python fixture 對準扣分表。
+用 python fixture 對準扣分表。目錄內每檔一筆的 JSON object 必須當成合法
+corpus 輸入；共用 nav 只有兩行、第三行已進入各篇正文時，小來源的高比例前綴仍必須被
+per-source evidence 抓到，不可被全域比例或固定三行前綴稀釋。
+任何會進 ledger 的 `4h-opening` 命中必須由 engine 自己附 deterministic sample；agent
+不得為了完成「no example, no finding」而自行從來源挑例。
+
+Portable packaging 使用 Claude Code／Codex 雙薄入口，`references/workflow.md` 與
+`scripts/crawl-quality-scan.py` 必須指向 canonical Claude tree 的同一 inode；eval oracle 只保留在
+canonical tree。Shared workflow 不得出現 runtime 私有 home path、Claude argument token 或
+resource-root 變數；Codex adapter 只負責 invocation input、skill directory 與 UI metadata。
 
 ## review-residue（Step 4 squash 出題依據）
 

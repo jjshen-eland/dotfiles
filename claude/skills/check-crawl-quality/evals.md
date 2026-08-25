@@ -17,6 +17,45 @@
 
 ## B. Functional tests
 
+## Portable behavior oracle (2026-08-25)
+
+這組 oracle 只驗可觀察行為，不指定 runtime 工具名、命令模板、檔案組織或 scanner
+內部方法。Claude Code 與 Codex 必須使用同一份 deterministic evidence，報告措辭可不同。
+
+### P1 — 無 skill Codex baseline（RED）
+
+- 請求：對 c1 的 120 筆多來源新聞 fixture 給量化評分、主要問題、來源摘要與建議。
+- 實測失敗：fresh Codex 手寫分析腳本，自行建立 37/100 評分、metadata 完整性比重、
+  數字正規化去重與入庫門檻。它有抓到 `special-report` 的 8/10 nav noise，但數字不是
+  corpus 契約的 deterministic evidence，且新增了使用者未要求的品質維度。
+- GREEN：只引用 bundled engine 的 counts、ledger、scores 與 verdict；小來源前綴必須被報告；
+  不發明新分數或 gate；資料及 repo tree 維持不變。
+
+### P2 — 雙 runtime parity
+
+同一份 c1 fixture 分別交給 fresh Claude Code 與 fresh Codex：
+
+- 兩者的 records／sampled、per-source 命中、ledger、scores、verdict 與 override 終態一致。
+- 兩者都覆核 prefix 分類、引用具體範例，並將建議指向 cleaning pipeline 而不是直接改資料。
+- 任一 `check-error:` 都導致 partial，不得宣稱該面向乾淨。
+- 資料內容、git status 與 HEAD 全程不變。
+
+2026-08-25 fresh forward 結果：
+
+- Codex 第一輪因 engine 的 `4h-opening` 無 sample，自行 spot-check 原文補 finding 證據；這個 RED
+  促成 engine-emitted deterministic sample 與「spot-check 只限分類」契約。修後另開 fresh evaluator，
+  取得 records=120、sampled=120、special-report 4a=80%、clean=90、rag=75、composite=84，
+  四項 findings 全引用 engine sample，三個來源均進 per-source 摘要，來源 aggregate digest 前後一致。
+- Claude Code 真實 `/check-crawl-quality` forward eval 得到相同 records／sampled、per-source 命中、
+  ledger、scores 與 verdict；四項 findings 皆引用 engine sample，三個來源均進摘要，來源內容 digest
+  前後同為 `67f323fc6af687ed519799c1ac93d804294eeba9`。一次執行先因 US$0.50 client-side budget
+  上限中止，調高單次上限後同情境完成；budget cap 不是實際費用證據。
+
+### P3 — loud failure
+
+對 corrupt corpus、空資料、無正文欄位或無效 override，雙 runtime 都必須回報 engine 的失敗終態並停止；
+不得用目測、省略旗標或手動打分繼續。
+
 ### C1 — per-source 抓出被全域稀釋的 boilerplate（腳本驅動）
 
 > RED 事實（2026-07-04 Haiku 實測）：檢查行為正確，但**扣分算術由 model 手執行**、
@@ -66,3 +105,6 @@
 |------|------|------|------|
 | 2026-07-04 | Haiku | C1 | PASS（評分算術偏鬆——本 RED 促成 2026-07-21 腳本下沉） |
 | 2026-07-21 | — | C1/C2 | 算術面由 tests/run.sh 第 21 節行為測試釘死（RED→GREEN）；agent 導航面（invoke 腳本、覆核分類、不手調）實戰 GREEN 待下次沙盒實跑 |
+| 2026-08-25 | fresh Codex（無 skill） | P1 | RED：自行發明 37/100、metadata 維度與入庫 gates |
+| 2026-08-25 | fresh Codex（portable skill） | P2 | PASS：最終 fresh round 與 engine evidence 一致，來源唯讀 |
+| 2026-08-25 | Claude Code 2.1.245 | P2 | PASS：真實 slash-skill forward eval 與 Codex 同終態；另記一次 budget-cap abort |

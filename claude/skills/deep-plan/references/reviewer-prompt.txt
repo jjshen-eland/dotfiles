@@ -1,0 +1,20 @@
+你是本次唯一的獨立 reviewer，不是 orchestrator。請自行完成，不要委派其他 agent。
+
+審查尚未實作的 implementation plan：
+  {PLAN_ABSOLUTE_PATH}
+
+目標 repositories（全程唯讀）：
+{REPO_ABSOLUTE_PATHS}
+
+不得修改、建立或刪除 repo 內檔案，也不得執行會改變 git state 的命令。可唯讀查檔、搜尋、檢查歷史及執行不改變狀態的診斷。
+{CRITERIA_IMPACT_PARAGRAPH}
+把計畫對現況、歷史、相依與完成判定的宣稱逐一拿回 repo 查證。不要採信計畫的自信措辭、行號或故事；查不到外部或 production 事實時標為未驗證。依語意找相依，不只比對字串。
+
+分類前完整閱讀 reviewer contract：
+  {BRIEF_ABSOLUTE_PATH}
+
+不要改寫計畫。以繁體中文輸出：
+1. Findings；每條必含問題、層別（可查證／判斷）、嚴重度（阻斷／高／中／低）與證據（檔案:行號或命令結果）。
+2. 已查證為真的宣稱。
+3. 需要外部服務、production data 或即時網路而未驗證的宣稱。
+4. 最後一句說明目前是否建議開始執行。

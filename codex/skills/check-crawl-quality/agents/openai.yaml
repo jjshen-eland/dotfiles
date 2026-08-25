@@ -1,0 +1,4 @@
+interface:
+  display_name: "Check Crawl Quality"
+  short_description: "Assess crawl corpus quality for RAG"
+  default_prompt: "Use $check-crawl-quality to assess this cleaned crawl corpus for residual noise and RAG suitability."

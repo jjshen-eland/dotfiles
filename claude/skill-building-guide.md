@@ -1,5 +1,8 @@
 # Claude Skill 建立指南（摘要）
 
+建立或修改任何 repo-local skill 前，先完整讀取 [`docs/skill-portability.md`](../docs/skill-portability.md)。
+新 skill 預設同時支援 Claude Code 與 Codex；本檔只補 Claude-specific authoring／validation，不另複製跨 runtime 規則。
+
 > **來源**（三份；通用撰寫規則以 2 為準，Claude Code 執行面以 3 為準）：
 > 1. Anthropic "The Complete Guide to Building Skills for Claude"（PDF，2026-01-29 發布，至 2026-07 查核無新版）
 >    - 原始 PDF：`~/Projects/Documents/The-Complete-Guide-to-Building-Skill-for-Claude.pdf`（工作機路徑；本機不存在時略過，逕以下方線上文件為準）

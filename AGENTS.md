@@ -89,6 +89,8 @@ this pattern. Everything else points.
 
 <!-- 安裝到其他 repo 時，這一節整段重填；上面三個 managed block 由工具維護，不要手改 -->
 
+- **Skill authoring route**：建立或修改 any repo-local skill 前，先讀當前 runtime 的 authoring guide 與
+  `docs/skill-portability.md`；規則不因 canonical source 位於哪個 runtime tree 而失效。
 - **測試**：`./tests/run.sh`，**以 exit code 判綠紅**（接 pipeline 會吃掉失敗）。
   改動 `scripts/`、setup 腳本、skill 腳本後必跑；改動任何 `.md` 的節名或搬動權威內容後同樣要跑
   （交叉引用 gate 掃全 repo 的 md）。
