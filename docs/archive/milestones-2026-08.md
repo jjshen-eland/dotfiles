@@ -299,3 +299,9 @@
   - 放棄:全域 never approval；resume 自動沿用舊 session 授權；把 outward／destructive action 混入 batch；先 consume 再詢問
   - 重議:Codex project trust/config layering 改變；native scoped authorization 可取代 prose gate；或 H15／G12 出現回歸
   - 關聯:D-20260830-codex-trusted-approval-flow;X-20260830-handoff-resume-unbounded;claude/skills/handoff/evals.md;claude/evals/contract-evals.md;codex/AGENTS.md;tests/run.sh
+
+- **M-20260825-fleet-governance-audit · 2026-08-25 fleet 文檔治理與 memory-independent surface 稽核完成**:以 GitHub `origin/main` SHA 核對 dotfiles 與七個 target repo 均無 checkout 落後；七份 trusted scanner／治理指南及 kernel／route／portable blocks 逐 byte 相同，root Claude native import 與七個 ship audit 全綠。稽核另找到兩個 repo-local 缺口:`krepo` 的 private-memory／遺失 plan 路由，以及 `krepo-common` 缺 contract regression gate;已分別完成 semantic commit `d0854bf`、`c60f817`，RED／mutation、完整 suite 與 `git clone --no-local` 驗證皆通過。因未取得 push／PR 授權，兩顆 commit **當日**仍在本地 feature branch，`B-20260823-fleet-rollout-remaining` 已校正但保持開啟，不把 local completion 冒充 canonical rollout。⚠️ **本記錄當日寫成但未 ship，branch 停在本地 13 天，2026-09-07 才送出**;補記當時無法得知的後續:那兩顆 SHA 至今不被任何 branch 包含（僅存為 dangling object，各 repo gc 後即消失），但**兩者的內容其後已以不同 SHA 進入各自 `origin/main`**——兩個 repo 的 `tests/test_agent_contract.py` 皆已存在，`krepo` 的 root contract 也已把 runtime-local memory 降為 optional cache。七 repo 的 trusted core／managed blocks 與 audit **未重驗**，故 backlog 條目維持開啟。
+  - 日期來源:direct
+  - 放棄:在 target commit 尚未到 `origin/main` 前關閉 backlog;建立 shared private-memory store;以舊 dotfiles backlog 敘述取代遠端 SHA 與 repo-local audit;2026-09-07 補送時把已達成的部分逕行結案（七 repo 重驗未做，結案等於用舊證據冒充新狀態）
+  - 重議:七 repo 的 trusted core／managed blocks 與 audit 重驗完成，即可關閉 `B-20260823-fleet-rollout-remaining`;或任一 target repo 的 trusted core／managed block 再次漂移
+  - 關聯:B-20260823-fleet-rollout-remaining;M-20260824-memory-independent-transfer;krepo:d0854bf;krepo-common:c60f817
