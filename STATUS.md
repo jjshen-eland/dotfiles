@@ -12,19 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### Portable nc-notify skill ⟳
-
-- **Writer**：codex:portable-nc-notify
-- **Workspace**：branch=feat/portable-nc-notify
-- **Write Scope**：STATUS.md, claude/skills/nc-notify/, codex/skills/nc-notify/, docs/archive/decisions-2026-08.md, docs/archive/milestones-2026-08.md, docs/testing-contract.md, tests/run.sh
-- **Dossier Steward**：codex:portable-nc-notify
-- **Context**：既有 Claude Code `nc-notify` 仍是單 runtime 入口，且舊範例會將 raw transport exception 寫入 warning；本輪已用 fresh 雙 runtime fixture 發現並修正 lifecycle 及 secret-safe evidence 差異，現需依 Project recovery 將尚未送出的 candidate 重建在正式 active contract 之後。
-- **Goal**：讓 Claude Code 與 Codex 共用單一 runtime-neutral `nc-notify` lifecycle workflow 與 behavior oracle，並在可驗證的 steward authority 下完成 shipping。
-- **Acceptance Criteria**：雙端薄 adapter 共用 canonical workflow；start/done/fail、failure isolation、可信 progress 與 secret-safe warning 在 fresh Claude Code／Codex eval 終態一致；雙 validator、doc audit、clean-clone 全測試與 candidate authority 全部通過；最終以 PR rebase merge 進入 `main`。
-- **Constraints**：不傳送 live 通知、不寫 credentials、不執行或部署 cron；不複製 runtime-specific core；shared history 只由本 work item 的 Dossier Steward 重建。
-- **進度**：實作與 fresh behavior eval 已完成；正在重建未 push 的 local candidate，補齊 candidate-parent authority evidence。
-- **下一步**：以本 active contract 為 parent 重建 candidate，移除完成項，重跑 steward／doc／test gates，然後接續 `$project --merge`。
-- **關聯**：D-20260825-portable-skill-authoring-default;D-20260826-portable-nc-notify;M-20260826-portable-nc-notify
+（目前無進行中項目。）
 
 ---
 

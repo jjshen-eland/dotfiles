@@ -1005,3 +1005,9 @@
   - 放棄:只寫 archive 而不改 authoring dispatch；在兩份 guide 複製 portable 規則；用目錄名判 ownership；讓 clean-room agent 兼任 migration inventory；新 Codex skill 預設 Codex-only；因沉沒 token 接受沒有 RED 的 replacement
   - 重議:任一 harness 無法載入共同 contract；雙端 blind authoring 再產生單入口／重複 core；或 repo 採用可機械宣告 canonical topology 的 manifest，可取代 history＋symlink preflight
   - 關聯:X-20260825-deep-plan-duplicate-port;D-20260825-deep-plan-empty-wait;docs/skill-portability.md;AGENTS.md;codex/AGENTS.md;tests/run.sh
+
+- **D-20260826-portable-nc-notify · 2026-08-26 nc-notify 採雙薄入口、單一 lifecycle workflow 與 secret-safe failure evidence**:Claude Code `/nc-notify` 與 Codex `$nc-notify` 各只正規化 skill directory／integration input，共用 canonical workflow 與單一 eval oracle。排程與無人值守工作必須有 start／done／fail；progress 只使用可信訊號，通知永遠是旁路，缺設定、timeout、非成功 response 或 serialization 都不得改變主結果。Repo 無完整契約時採明列的 POST／JSON／Bearer 最小 wire contract，不依賴私人 schema 路徑；plan/review 唯讀，live 通知、部署、credentials 與 Git shipping 均不因 skill 隱含授權。Fresh review 證明「exception 不含 key」的 mock 會製造 false assurance，因此 warning 不得插入 raw exception／response／header／payload，只保留安全的 class/status，oracle 必須用 secret-bearing fake。
+  - 日期來源:direct
+  - 放棄:直接複製 Claude 舊正文給 Codex；維護兩份 workflow/eval；依賴單一工作機的完整 schema 文件；讓各 runtime 自猜 auth scheme；以 live send 驗證；把 raw exception text 當可接受的診斷證據；只測不含 secret 的 transport error
+  - 重議:Notification Center 的最小 wire contract 改變；任一 runtime 無法追蹤 nested reference symlink；或新的雙 runtime behavior eval 再出現 lifecycle、failure isolation、secret handling 或授權終態分歧
+  - 關聯:D-20260825-portable-skill-authoring-default;claude/skills/nc-notify/evals.md;claude/skills/nc-notify/references/workflow.md;tests/run.sh

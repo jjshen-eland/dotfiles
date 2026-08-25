@@ -18,6 +18,7 @@
 #  11. portable review-scope range / historical guidance / autofix gate
 #  12. repo-review 薄殼 packaging（evals 不進 runtime context）
 # 12f. root-cause-first skill 跨 Claude Code／Codex 共用 evidence gate
+# 12g. nc-notify skill 跨 Claude Code／Codex 共用 lifecycle contract
 #  13. handoff-anchor.sh（handoff skill script）錨點驗證與生命週期判定（含 consume 消費歸檔）
 #  14. codex-runtime-hygiene.sh（deep-review skill script）孤兒偵測 / 誤殺防護 / exit 契約
 #  15. ensure-rc-source.sh 幂等補 source shell/functions.sh 行
@@ -3780,6 +3781,49 @@ if grep -qF "$rcf_sig" "$RCF_CODEX/agents/openai.yaml" \
     && grep -q '完整 suite 仍 1/6 失敗' "$RCF_CLAUDE/evals.md"; then
     ok "root-cause-first UI metadata、pressure RED 與 completion gate 已接線"
 else bad "root-cause-first portable behavior contract 缺失"; fi
+
+echo "▶ 12g. nc-notify skill 跨 Claude Code／Codex 共用 lifecycle contract"
+NCN_CLAUDE="$ROOT/claude/skills/nc-notify"
+NCN_CODEX="$ROOT/codex/skills/nc-notify"
+if [ -f "$NCN_CLAUDE/SKILL.md" ] && [ -f "$NCN_CODEX/SKILL.md" ] \
+    && [ -L "$NCN_CODEX/references" ] \
+    && [ "$NCN_CODEX/references/workflow.md" -ef "$NCN_CLAUDE/references/workflow.md" ]; then
+    ok "nc-notify 雙薄入口共用 canonical workflow"
+else bad "nc-notify 跨 runtime 封裝未共用 workflow"; fi
+if [ ! -e "$NCN_CODEX/evals.md" ]; then
+    ok "nc-notify eval oracle 只留 canonical tree"
+else bad "nc-notify Codex adapter 複製了 eval oracle"; fi
+ncn_claude_description="$(sed -n 's/^description: //p' "$NCN_CLAUDE/SKILL.md")"
+ncn_codex_description="$(sed -n 's/^description: //p' "$NCN_CODEX/SKILL.md" 2>/dev/null)"
+if [ -n "$ncn_claude_description" ] \
+    && [ "$ncn_claude_description" = "$ncn_codex_description" ]; then
+    ok "nc-notify 雙端 description 語意入口一致"
+else bad "nc-notify 雙端 description 漂移"; fi
+ncn_codex_frontmatter="$(awk 'NR == 1 { next } /^---$/ { exit } { print }' "$NCN_CODEX/SKILL.md" 2>/dev/null)"
+if ! grep -Eq '^(user-invocable|disable-model-invocation|argument-hint|allowed-tools|context|agent):' \
+    <<< "$ncn_codex_frontmatter"; then
+    ok "Codex nc-notify frontmatter 無 Claude Code 專屬欄位"
+else bad "Codex nc-notify frontmatter 混入 Claude Code 專屬欄位"; fi
+# These patterns intentionally assert that literal runtime/private paths stay out.
+# shellcheck disable=SC2088
+if [ -f "$NCN_CLAUDE/references/workflow.md" ] \
+    && ! rg -q '~/.claude|~/.codex|CLAUDE_SKILL_DIR|TaskOutput|spawn_agent|~/Projects/' \
+        "$NCN_CLAUDE/references/workflow.md"; then
+    ok "nc-notify shared workflow runtime-neutral 且不依賴私人 schema 路徑"
+else bad "nc-notify shared workflow 洩漏 runtime-private surface 或私人 schema 路徑"; fi
+# shellcheck disable=SC2016
+ncn_sig='$nc-notify'
+if grep -qF "$ncn_sig" "$NCN_CODEX/agents/openai.yaml" 2>/dev/null \
+    && grep -q 'Portable behavior oracle' "$NCN_CLAUDE/evals.md" \
+    && grep -q 'failure isolation' "$NCN_CLAUDE/evals.md"; then
+    ok "nc-notify UI metadata 與 portable behavior oracle 已接線"
+else bad "nc-notify metadata 或 portable behavior oracle 缺失"; fi
+# Markdown backticks are part of the literal contract.
+# shellcheck disable=SC2016
+if grep -q 'HTTP `POST`' "$NCN_CLAUDE/references/workflow.md" \
+    && grep -q 'Authorization: Bearer' "$NCN_CLAUDE/references/workflow.md"; then
+    ok "nc-notify fallback wire contract 不留給 runtime 自行猜測"
+else bad "nc-notify fallback wire contract 缺失"; fi
 
 echo "▶ 13. handoff-anchor.sh 錨點驗證與生命週期判定"
 HA_SCRIPT="$ROOT/claude/skills/handoff/scripts/handoff-anchor.sh"
