@@ -45,6 +45,9 @@ steward，不代表任何 Claude／Codex session 自動取得該 actor。Runtime
 - `as=<human-or-owner>` 是使用者在**本次新的 explicit project invocation arguments** 對 human steward 的
   bounded execution delegation。值必須 exact match 所有 active items 的 durable steward，只涵蓋本輪
   Project mutation／shipping，下一輪自動失效，也不把 executor 寫成 owner。
+- Helper 已先 STOP 並揭露唯一 exact actor 時，使用者也可回答 Project 緊接提出、綁定 repo／actor／snapshot／
+  action 的 recovery 選項；這是獨立的 prompt-bound decision，不是把自然語言補寫回 `as=`／`resume=`。確認後
+  必須以 dedicated `prompt-bound-*` authority source 重跑 helper，且同樣只活在該 logical invocation。
 - 普通自然語言「我是某人」、Git author、GitHub login、同 runtime 或名稱相似都不是 resume／delegation
   credential。Agent session 不得把自己重新標成 `human:*`／`owner:*`。
 
@@ -53,6 +56,9 @@ steward，不代表任何 Claude／Codex session 自動取得該 actor。Runtime
 若 current STATUS 已因完成而沒有 active item，但入口正在評估一顆同時移除該 item 的 candidate commit，
 可從 candidate parent 的 STATUS 恢復 durable steward evidence；current 與 parent 都沒有 steward 時，candidate
 不得寫 history／backlog／transfer／shared plan，必須先用 Spec 建立 work item，不能把「零 active」當免 steward。
+Log 可在 helper 對 exact local candidate 分類為 `confirm-create-active-contract` 後，讓使用者以 recovery 選項授權
+同一 logical invocation 的 Spec subflow；這仍要在任何後續 shared write 前建立 contract，且既有越界 candidate
+必須由新 steward 受控重建，不能因補了 STATUS 就原樣 ship。
 
 Steward 是 shared `STATUS.md`、backlog、history shards 與 shared plan 的唯一 writer。其他 writer 必須在
 不同 branch/worktree 與不重疊 scope 內工作，不改上述 shared surfaces、不 push，完成後建立符合 repo

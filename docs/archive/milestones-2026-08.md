@@ -233,3 +233,9 @@
   - 放棄:要求使用者逐 repo 重叫用；掃描 `~/Projects/` 取代 session 集合；為改善 scope UX 而放寬 stewardship authority
   - 重議:任一 runtime 的 user-input primitive 無法表達三條互斥路徑，或新的多 repo eval 再次重建 invocation／重跑相同 detection
   - 關聯:claude/skills/project/references/log-workflow.md;claude/skills/project/references/pressure-tests.md;tests/run.sh
+
+- **M-20260825-project-guided-authority-recovery · 2026-08-25 Project authority recovery 改為確認選項續行**:Scenario 26 先重現 human delegation、same-runtime resume 與零 steward candidate 必須手抄 `as=`／`resume=`／另跑 Spec 的摩擦；production helper initial call 仍 STOP，但會對三種唯一安全形狀輸出 exact recovery kind／actor／HEAD／candidate。Shared Claude／Codex workflow 現在優先用結構化確認，工具不可用時顯示可直接回答的編號選項；確認後以 dedicated `prompt-bound-*` provenance 和 full OID 重驗，同一 logical invocation 可續行而不重建命令。Fixtures 同時驗過 ordinary identity prose 不放行、stale snapshot STOP、cross-runtime 無 recovery、零 steward 必須先有 durable contract，以及確認不擴張 endpoint。Codex skill validator、py_compile、diff check 與全 repo `tests/run.sh` 均通過，最終為 1167 PASS、0 FAIL。
+  - 日期來源:direct
+  - 放棄:要求使用者複製完整 recovery invocation；把自然語言身份宣稱當 prompt confirmation；讓 helper initial classification 自動 PASS；讓確認跨 repo／snapshot／session carry；零 steward 補 STATUS 後不重建越界 candidate
+  - 重議:結構化 user-input primitive 無法呈現 multi-repo exact action；或實地 recovery 再要求使用者重組 actor token／Project invocation
+  - 關聯:D-20260825-project-prompt-bound-authority-recovery;D-20260824-project-steward-authority;X-20260824-project-identity-claim-authority;claude/skills/project/references/pressure-tests.md;tests/run.sh
