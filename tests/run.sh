@@ -19,6 +19,7 @@
 #  12. repo-review 薄殼 packaging（evals 不進 runtime context）
 # 12f. root-cause-first skill 跨 Claude Code／Codex 共用 evidence gate
 # 12g. nc-notify skill 跨 Claude Code／Codex 共用 lifecycle contract
+# 12h. send-mail skill 跨 Claude Code／Codex 共用 recipient-authority contract
 #  13. handoff-anchor.sh（handoff skill script）錨點驗證與生命週期判定（含 consume 消費歸檔）
 #  14. codex-runtime-hygiene.sh（deep-review skill script）孤兒偵測 / 誤殺防護 / exit 契約
 #  15. ensure-rc-source.sh 幂等補 source shell/functions.sh 行
@@ -3824,6 +3825,54 @@ if grep -q 'HTTP `POST`' "$NCN_CLAUDE/references/workflow.md" \
     && grep -q 'Authorization: Bearer' "$NCN_CLAUDE/references/workflow.md"; then
     ok "nc-notify fallback wire contract 不留給 runtime 自行猜測"
 else bad "nc-notify fallback wire contract 缺失"; fi
+
+echo "▶ 12h. send-mail skill 跨 Claude Code／Codex 共用 recipient-authority contract"
+SM_CLAUDE="$ROOT/claude/skills/send-mail"
+SM_CODEX="$ROOT/codex/skills/send-mail"
+if [ -f "$SM_CLAUDE/SKILL.md" ] && [ -f "$SM_CODEX/SKILL.md" ] \
+    && [ -L "$SM_CODEX/references" ] \
+    && [ "$SM_CODEX/references/workflow.md" -ef "$SM_CLAUDE/references/workflow.md" ]; then
+    ok "send-mail 雙薄入口共用 canonical workflow"
+else bad "send-mail 跨 runtime 封裝未共用 workflow"; fi
+if [ ! -e "$SM_CODEX/evals.md" ]; then
+    ok "send-mail eval oracle 只留 canonical tree"
+else bad "send-mail Codex adapter 複製了 eval oracle"; fi
+sm_claude_description="$(sed -n 's/^description: //p' "$SM_CLAUDE/SKILL.md")"
+sm_codex_description="$(sed -n 's/^description: //p' "$SM_CODEX/SKILL.md" 2>/dev/null)"
+if [ -n "$sm_claude_description" ] \
+    && [ "$sm_claude_description" = "$sm_codex_description" ]; then
+    ok "send-mail 雙端 description 語意入口一致"
+else bad "send-mail 雙端 description 漂移"; fi
+sm_codex_frontmatter="$(awk 'NR == 1 { next } /^---$/ { exit } { print }' "$SM_CODEX/SKILL.md" 2>/dev/null)"
+if ! grep -Eq '^(user-invocable|disable-model-invocation|argument-hint|allowed-tools|context|agent):' \
+    <<< "$sm_codex_frontmatter"; then
+    ok "Codex send-mail frontmatter 無 Claude Code 專屬欄位"
+else bad "Codex send-mail frontmatter 混入 Claude Code 專屬欄位"; fi
+# These patterns intentionally assert that literal runtime/private paths stay out.
+# shellcheck disable=SC2088
+if [ -f "$SM_CLAUDE/references/workflow.md" ] \
+    && ! rg -q '~/.claude|~/.codex|CLAUDE_SKILL_DIR|TaskOutput|spawn_agent|~/Projects/' \
+        "$SM_CLAUDE/references/workflow.md"; then
+    ok "send-mail shared workflow runtime-neutral"
+else bad "send-mail shared workflow 洩漏 runtime-private surface"; fi
+# shellcheck disable=SC2016
+sm_sig='$send-mail'
+if grep -qF "$sm_sig" "$SM_CODEX/agents/openai.yaml" 2>/dev/null \
+    && grep -q 'Portable behavior oracle' "$SM_CLAUDE/evals.md" \
+    && grep -q 'ambient identity' "$SM_CLAUDE/evals.md"; then
+    ok "send-mail UI metadata 與 hostile-identity oracle 已接線"
+else bad "send-mail metadata 或 portable behavior oracle 缺失"; fi
+if grep -q 'jjshen@eland.com.tw' "$SM_CLAUDE/references/workflow.md" \
+    && grep -q "NEVER use \`# userEmail\`" "$SM_CLAUDE/references/workflow.md" \
+    && grep -q 'One explicit send request permits at most one delivery attempt' \
+        "$SM_CLAUDE/references/workflow.md"; then
+    ok "send-mail recipient authority 與 one-attempt safety contract 可達"
+else bad "send-mail recipient authority 或 one-attempt contract 缺失"; fi
+if grep -q '172.17.1.143' "$SM_CLAUDE/references/workflow.md" \
+    && grep -q "port \`25\`" "$SM_CLAUDE/references/workflow.md" \
+    && grep -q '不需要 authentication' "$SM_CLAUDE/references/workflow.md"; then
+    ok "send-mail fallback relay facts 不留給 runtime 自行猜測"
+else bad "send-mail fallback relay facts 缺失"; fi
 
 echo "▶ 13. handoff-anchor.sh 錨點驗證與生命週期判定"
 HA_SCRIPT="$ROOT/claude/skills/handoff/scripts/handoff-anchor.sh"
