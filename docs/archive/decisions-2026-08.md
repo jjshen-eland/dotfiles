@@ -1011,3 +1011,9 @@
   - 放棄:直接複製 Claude 舊正文給 Codex；維護兩份 workflow/eval；依賴單一工作機的完整 schema 文件；讓各 runtime 自猜 auth scheme；以 live send 驗證；把 raw exception text 當可接受的診斷證據；只測不含 secret 的 transport error
   - 重議:Notification Center 的最小 wire contract 改變；任一 runtime 無法追蹤 nested reference symlink；或新的雙 runtime behavior eval 再出現 lifecycle、failure isolation、secret handling 或授權終態分歧
   - 關聯:D-20260825-portable-skill-authoring-default;claude/skills/nc-notify/evals.md;claude/skills/nc-notify/references/workflow.md;tests/run.sh
+
+- **D-20260826-portable-send-mail · 2026-08-26 send-mail 採雙薄入口、單一 delivery workflow 與明確 recipient／sender authority**:Claude Code `/send-mail` 與 Codex `$send-mail` 各只正規化 delivery input 與 skill directory，共用 canonical workflow 與單一 eval oracle。Literal address 只有在使用者明確指定為收件人時才優先；正文、引用、範例、署名、否定語境、`# userEmail`、runtime memory 與 Git/account identity 都不是 recipient authority，first-person／未指定收件人固定解析為 `jjshen@eland.com.tw`，無法解析的人名／角色在 attempt 前詢問。Sender 先收斂 repo guidance／mail client 已採用的合法 identities，候選衝突就零 attempt；沒有候選才以固定 Git-root／task fallback 與 normalization 產生 `@eland.com.tw` identity。一次明確 send 最多一次 attempt；plain／HTML 都須可讀，failure diagnostics 不回顯 raw secret-bearing evidence，success 只報 transport accepted。Relay fallback 只承諾已確認的 internal host／port／no-auth facts，其餘 transport policy 保持 unknown。
+  - 日期來源:direct
+  - 放棄:把請求內任何 email address 都當 recipient；讓 ambient `# userEmail` 覆寫 first-person default；讓 Claude／Codex 各自選 repo 或 task sender；repo/client sender 衝突時自行猜 precedence；複製兩份 workflow／eval；用 live SMTP 或 credentials 驗證；把 fake accepted 說成 inbox delivery
+  - 重議:預設 mailbox、organization sender domain 或 relay interface facts 改變；任一 runtime 無法追蹤 nested resource symlink；或新的 hostile-identity／sender-conflict behavior eval 再出現跨 runtime 分歧
+  - 關聯:D-20260825-portable-skill-authoring-default;claude/skills/send-mail/evals.md;claude/skills/send-mail/references/workflow.md;tests/run.sh

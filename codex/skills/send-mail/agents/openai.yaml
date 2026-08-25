@@ -1,0 +1,4 @@
+interface:
+  display_name: "Send Mail"
+  short_description: "Send reports safely through internal email"
+  default_prompt: "Use $send-mail to email this report to me safely."

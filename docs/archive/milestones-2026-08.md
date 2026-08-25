@@ -263,3 +263,9 @@
   - 放棄:接受首輪「測試全綠」而不做 secret-bearing review；只靠 static packaging gate；複製 runtime-specific core；以私人 schema 路徑或 live service 作相容性前提
   - 重議:nested resource linkage 在任一 runtime 失效；Notification Center wire contract 改變；或新的 forward fixture 再出現 lifecycle／secret-safe failure evidence 分歧
   - 關聯:D-20260826-portable-nc-notify;D-20260825-portable-skill-authoring-default;claude/skills/nc-notify/evals.md;tests/run.sh
+
+- **M-20260826-portable-send-mail · 2026-08-26 Claude Code／Codex 共用 send-mail skill 完成**:`send-mail` 已收斂為 runtime-neutral shared delivery workflow、Claude Code／Codex 雙薄入口、nested references symlink 與 Codex UI metadata，eval oracle 只留 canonical tree。Fresh Codex 無 skill baseline 明知 ambient `contractor@example.net` 可能 stale，仍把它當成「寄給我」的收件人完成 local fake delivery；有 skill 後唯一 fake attempt 改寄 `jjshen@eland.com.tw`，plain／HTML 皆可讀，只回報 local transport accepted。Claude Code read-only probe 得到相同 first-person authority；兩端 literal／unresolved role／negative-trigger、正文 address、否定 address 與 deterministic sender probes 全部等價。Fresh reviewer 另找出「任何 literal address 都算 recipient」與 sender 推導歧義；oracle 先補反例後，shared core 最小修正並經三輪窄重審 CLOSED。Sender authority conflict probe 兩端皆解析 recipient、零 attempt 並停止。全程沒有 live SMTP、network relay、credentials 或 Git shipping；雙 validator、diff check 與全 repo `tests/run.sh` 均通過，最終為 1216 PASS、0 FAIL。
+  - 日期來源:direct
+  - 放棄:只驗 happy-path first-person；接受兩端自行命名 sender；忽略正文／否定語境中的 address；以 live relay 取代 inert fake；只靠 static packaging gate
+  - 重議:nested reference linkage 在任一 runtime 失效；預設 recipient／sender／relay contract 改變；或 fresh cross-runtime eval 再出現 recipient authority、sender conflict、attempt count 或 terminal truth 分歧
+  - 關聯:D-20260826-portable-send-mail;D-20260825-portable-skill-authoring-default;claude/skills/send-mail/evals.md;tests/run.sh
