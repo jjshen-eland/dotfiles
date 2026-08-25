@@ -2,6 +2,9 @@
 
 本檔只記錄這套 dotfiles 的 Codex authoring policy 與發布流程。OpenAI 的通用規格由 system `$skill-creator` 與當下官方文件負責；不要複製全文到 repo。
 
+建立或修改任何 repo-local skill 前，先完整讀取 [`docs/skill-portability.md`](../docs/skill-portability.md)。
+新 skill 預設同時支援 Claude Code 與 Codex；本檔只補 Codex-specific authoring／validation，不另複製跨 runtime 規則。
+
 ## 何時使用 skill
 
 先選擇最小且正確的持久化層級：

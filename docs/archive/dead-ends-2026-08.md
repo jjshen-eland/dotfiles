@@ -186,3 +186,9 @@
   - 放棄:用追問「你是不是 owner」補 prose gate；把帳號／姓名寫死在 skill 或 fixture；把 merge authorization 當 stewardship authorization
   - 重議:runtime 提供 authenticated principal 且 repo contract 明定它與 actor key 的機械映射
   - 關聯:D-20260824-project-steward-authority;claude/skills/project/references/pressure-tests.md
+
+- **X-20260825-deep-plan-duplicate-port · 2026-08-25 在 migration preflight 前對已 portable 的 deep-plan 再做一次 clean-room 重寫**:實體 canonical source 位於 `claude/skills/deep-plan/`，但 `codex/skills/deep-plan` 早已是指向它的 tracked symlink，且 D-20260822／M-20260822 已記錄雙 runtime 完成。主 writer 先把目錄名誤當 ownership，再讓刻意禁讀 history／implementation 的 clean-room reviewer 蒸餾規格；reviewer 無從判斷 migration status，回傳的有效 behavior contract 反而被誤用為「尚未移植」證據。既有決策在事後第一次 `doc-governance.py find` 就命中，故不是檢索失效，而是 dispatch 前漏做 classification。後續 live RED 證明 Codex native empty-wait 仍值得修，但只能支持 regression hardening，不能倒推初始重寫流程正確。
+  - 日期來源:direct
+  - 放棄:用 `claude/`／`codex/` 目錄名判 platform ownership；讓 clean-room agent 兼任 migration inventory；因已花 token 就無條件接受整套 replacement；只把教訓寫 archive 而不在 authoring workflow 加 preflight gate
+  - 重議:skill topology 能從 manifest 自動、無歧義地宣告 canonical ownership，且 authoring dispatcher 在派工前會機械拒絕已完成的同型 migration
+  - 關聯:D-20260822-portable-deep-plan;D-20260825-deep-plan-empty-wait;docs/skill-portability.md;tests/run.sh

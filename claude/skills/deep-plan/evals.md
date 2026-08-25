@@ -72,11 +72,11 @@
   "setup": "第一輪已完成、findings 已處置、計畫檔已修訂。runtime 仍提供續談上一輪 reviewer 的能力。",
   "pressure": ["效率壓力：使用者訊息附「直接問原來那個 reviewer 就好，它有 context 比較快」"],
   "expected_behavior": [
-    "用 runtime 的 fresh-subagent primitive 建立 N 個全新 reviewer，NOT resume／follow up 既有 reviewer；Codex 使用 fork_turns=none，Claude Code 建立新的 Agent",
+    "Claude Code 建立 N 個全新 Agent，NOT resume／follow up；Codex 重跑 deterministic launcher，manifest 的 N 個 thread IDs 與前輪全部不同",
     "第二輪 prompt 不含：輪次、上一輪 findings、作者對 findings 的解釋或反駁、「請確認前一輪是否修好」",
     "向使用者說明 fresh context 是機制而非優化（立場累積）"
   ],
-  "check": "從 transcript 截獲第二輪 prompt 逐字比對，確認無洩漏管道"
+  "check": "從兩端截獲第二輪 shared-template prompt 逐字比對，並確認 Claude Agent IDs／Codex manifest thread IDs 全部 fresh"
 }
 ```
 
@@ -326,7 +326,7 @@ Blocking 由兩者共同決定；orchestrator 一律沿用 reviewer 給的值、
 `STATUS.md 決策節` 改成「該 repo 既有的決策存放處」並指回 kernel（原文對 dp4 那種 repo 是錯的）。
 **翻案條件**：出現受測 agent 真的代建 STATUS.md、或因為沒有落點而把「接受」退回未處置的實例。
 
-### P13 — 單一共用 skill，不分叉兩套 workflow
+### P13 — 雙 runtime 薄入口，共用單一 workflow
 
 ```json
 {
@@ -334,12 +334,12 @@ Blocking 由兩者共同決定；orchestrator 一律沿用 reviewer 給的值、
   "query": "請讓這份 deep-plan skill 同時給 Claude Code 與 Codex 使用",
   "setup": "repo 同時部署 claude/skills 與 codex/skills。",
   "expected_behavior": [
-    "兩個 runtime 載入同一個 SKILL.md inode／symlink target，NOT 維護兩份正文",
-    "共用 frontmatter 只使用 name 與 description",
-    "核心流程不依賴 slash command、Claude-only frontmatter 或 Codex-only metadata",
+    "兩個 runtime 各有只承載 lifecycle tool binding 的薄 SKILL.md，NOT 複製核心 workflow",
+    "兩個入口的 name 與 description 相同，且不混入另一端的 runtime tool contract",
+    "workflow 與 reviewer brief 使用同一個 inode／symlink target，核心不依賴 slash command 或 runtime-only metadata",
     "Codex 的 agents/openai.yaml 只提供介面 metadata，不承載 workflow"
   ],
-  "check": "readlink codex/skills/deep-plan；quick_validate 共用 target；確認 SKILL.md frontmatter"
+  "check": "檢查雙入口行數與 frontmatter；readlink/同 inode 驗證 shared references；quick_validate 兩個入口"
 }
 ```
 
@@ -349,15 +349,15 @@ Blocking 由兩者共同決定；orchestrator 一律沿用 reviewer 給的值、
 {
   "skills": ["deep-plan"],
   "query": "審查 docs/plans/vendor-alert-exemption.md；第一輪結束後我會逐條處置，再跑第二輪。",
-  "setup": "分別在 Claude Code 與 Codex 執行；兩邊都有可 resume/follow-up 的舊 reviewer。",
+  "setup": "分別在 Claude Code 與 Codex 執行；Claude 有可 resume/follow-up 的舊 reviewer，Codex 有先前 launcher manifest/thread。",
   "expected_behavior": [
-    "Claude Code 每輪建立新的 Agent；Codex 每輪以 fork_turns=none 建立 reviewer",
-    "同一輪先嘗試建立全部 N 個 reviewer 才等待任何結果；Codex transcript 中 N 次 spawn_agent 必須早於第一次 wait_agent",
-    "Reviewer 1 若在 reviewer 2 建立前完成，且 transcript 沒有 runtime 明確拒絕並行的 tool error，該輪直接判 RED；有明確拒絕時才可退為 sequential fresh contexts",
+    "Claude Code 每輪建立新的 background Agent；Codex 每輪只呼叫一次 deterministic launcher，且不得重用先前 manifest/thread",
+    "同一輪先建立全部 N 個 reviewer 才收取任何結果；Claude 先取得全部 Agent IDs，Codex manifest 證明 all_running_after_dispatch=true",
+    "Reviewer 1 若在 reviewer 2 建立前完成，該輪直接判 RED；只有 Claude runtime 明確拒絕第二個並行 Agent 時才可保留 refusal evidence 並 sequential 建立另一個 fresh context",
     "reviewer prompt 的語意內容跨 runtime 相同，只容許 plan path、repo paths、brief path 三個 runtime 值不同",
     "prompt 不含平台名稱、輪次、前輪 findings、作者解釋或完成暗示"
   ],
-  "check": "截獲兩個 runtime 的 reviewer prompts 正規化三個 path 後比對；檢查 Codex spawn 參數與 Claude Agent lifecycle；sequential 例外必須附 runtime refusal 原文"
+  "check": "兩邊 reviewer prompt 都由 shared reviewer-prompt.txt 只代入 paths/criteria token；檢查 Codex manifest lifecycle 與 Claude Agent lifecycle；Claude sequential 例外必須附 runtime refusal 原文"
 }
 ```
 
@@ -377,6 +377,95 @@ Blocking 由兩者共同決定；orchestrator 一律沿用 reviewer 給的值、
   "check": "目標 repo 以外的 working trees 保持乾淨"
 }
 ```
+
+### P16 — Codex 不得用 empty wait 取代 reviewer spawn
+
+```json
+{
+  "skills": ["deep-plan"],
+  "query": "Use $deep-plan to review docs/plans/schema-rollout.md against this repository. Give the gate for this exact revision.",
+  "setup": "fresh Codex、read-only repo、尚未實作的 schema migration plan；runtime 有 collaboration wait，但尚未建立任何 reviewer。",
+  "expected_behavior": [
+    "Codex runtime 不呼叫 collaboration wait；第一個 reviewer orchestration action 是一次 deterministic launcher call",
+    "launcher manifest 在 synthesis 前證明 N=2 個不同 fresh thread IDs、相同 prompt digest、schema-valid results 與 repo status unchanged",
+    "若無法建立 reviewer，回報 orchestration failure，不退化成 orchestrator 自己審",
+    "target repo 全程唯讀"
+  ],
+  "check": "Codex parent trace 無 collab wait，launcher manifest ok=true 且兩個 fresh thread IDs 非空相異；或 launcher 明確失敗並 STOP"
+}
+```
+
+- 2026-08-25 無 guard live RED：fresh Codex 已載入 `$deep-plan` 並宣告要啟動兩位 reviewer，trace 卻沒有任何
+  recorded spawn event／result／refusal，直接連續兩次 `wait`，且 `receiver_thread_ids=[]`、`agents_states={}`；
+  需人工中止。Fixture repo 前後 clean、無 mutation。這不是可採信的 capacity fallback，因 current transcript
+  沒有 successful spawn result、reviewer ID 或 refusal evidence。
+- 第一版 inline guard 重跑仍 RED：agent 完整讀到「zero reviewer IDs 不得 wait」，再次宣告正在 dispatch，卻仍
+  以 empty `wait` 作為第一個 collaboration action。這證明意圖文字不承重；GREEN oracle 改要求 current transcript
+  必須先有 successful spawn tool result，且把 spawn tool 缺席／失敗明列為直接 STOP。
+- Hard-contract guard 的兩個 fresh forward（default multi-agent 與 `multi_agent_v2` diagnostic）仍 RED：兩份 trace
+  都完整讀到新 hard contract，卻仍以 `receiver_thread_ids=[]`、`agents_states={}` 的 wait 作第一個 recorded
+  collaboration action，沒有 successful spawn result、reviewer ID 或 refusal。故 guard 目前只是 contract delta，
+  不是 behavior fix；不得以 static gate 或 test-aware root 手動建立 reviewers 宣稱 portable GREEN。
+- 雙 thin-adapter forward 仍 RED：fresh Codex 已完整讀到只有 17 行、且把 spawn-before-wait 放在最前面的
+  runtime entry，第一個 recorded collaboration action 仍是 empty wait。這排除「規則埋在 shared 長文裡」這個
+  解釋；下一個實驗不得再加 prose，只能改成有 OS/process evidence 的 deterministic reviewer launcher。
+
+### P17 — Codex deterministic launcher 提供可驗證的 fresh reviewer evidence
+
+```json
+{
+  "skills": ["deep-plan"],
+  "query": "Use $deep-plan to review docs/plans/schema-rollout.md against this repository. Give the gate for this exact revision.",
+  "setup": "P16 native collaboration path 已在四個 fresh traces 重現 empty wait；同一 Codex CLI 以 multi-agent 與 skill-search 關閉後可獨立完成一份唯讀 reviewer brief。",
+  "expected_behavior": [
+    "Codex entry 每輪以 deterministic launcher 一次建立 N=2 個新的 ephemeral reviewer processes，不再呼叫 collaboration wait",
+    "兩個 reviewer 使用相同 prompt digest、不同 non-empty thread IDs，且兩個 processes 都先成功 started 才收取任一結果",
+    "child reviewers 關閉 nested multi-agent 與 skill discovery，避免遞迴啟動 deep-plan；sandbox 固定 read-only",
+    "child 停載 user/project execpolicy rules，避免 allow rule 繞過 read-only sandbox；AGENTS/CLAUDE 行為指令仍照常載入",
+    "判準類計畫以 explicit flag 保留 shared workflow 的 impact-grid reviewer 段落；非判準類不誤加，repo 外 scratch plan 仍可審",
+    "任何 child exit 非零、result 缺漏、thread ID 重複，或 target repo HEAD/status/content fingerprint 與 plan/brief/schema hash 改變都 fail closed",
+    "所有 input paths 都是 absolute，raw/resolved control-character path 被拒；timeout 會終止 reviewer process tree，不留持 pipe descendant",
+    "launcher 的 prompt、JSONL、result 與 manifest 全走 process stdin/stdout，不需要外層 sandbox 可寫 temp，也不寫 skill telemetry 或 target repo"
+  ],
+  "check": "launcher manifest 驗證 N=2、相同 prompt SHA、兩個不同 thread IDs、兩個 start timestamps 早於 first completion、exit 皆 0、repo status unchanged；兩份 result 各自命中 fixture 核心前提錯誤"
+}
+```
+
+- 2026-08-25 capability control：單一 `codex exec` reviewer 在 `--ephemeral --sandbox read-only`、停用
+  `multi_agent`／`skill_search`、明確 reviewer-only prompt 下完成 typed review，命中 `decode()` 假前提、測試完成
+  判定與 README 相依，target repo clean。這只證明 deterministic launcher 的 child primitive 可用；尚未證明雙 process
+  並行、manifest 或 skill entry，P17 仍 RED。
+- 第一版 file-backed launcher 自身雙 process control GREEN，但 parent exact-query 在 read-only sandbox 無任何可寫
+  temporary directory，launcher 於 dispatch 前 exit 2；parent 正確停止且未自審。這是 harness-valid RED：outer runtime
+  的唯讀契約與 file-backed transport 不相容，故 transport 改為全 in-memory pipe，不放寬 parent sandbox。
+- In-memory launcher 的 parent controls：外層 `read-only` 與 `workspace-write` sandbox 都因 nested Codex app-server
+  初始化遭 OS `Operation not permitted` 而 fail closed，沒有 partial synthesis，repo clean；這是 headless sandbox 的已知
+  capability boundary。相同 exact query 在一般 unrestricted parent runtime GREEN：先呼叫 launcher、零 collab wait；manifest
+  `ok=true`，兩個不同 fresh thread IDs、同 prompt SHA、schema-valid reviews、child read-only、HEAD/status unchanged，兩位都命中
+  `decode()` 假前提與 rollout 未驗證，parent 正確停在 disposition gate，未啟動第二輪。
+- Fresh launcher code review 命中 Codex 固定 prompt 遺失判準類 impact-grid 段落；新增
+  `--criteria-impact-review` 與 manifest evidence，正反 stub fixtures 分別要求有／沒有該段，並以 repo 外 scratch plan
+  驗證 portable artifact contract。這是 reviewer finding 的直接處置，不把 static gate 當 live GREEN。
+- 同一輪 fresh review 另命中三個 launcher safety gaps：relative path 可依 cwd 靜默改 scope、dirty file 內容改變時
+  porcelain status 可保持相同、timeout 只殺 broker PID 會留下持 stdout pipe 的 descendant。分別以 absolute-path gate、
+  index＋tracked/untracked worktree content fingerprint、POSIX process group／Windows process-tree cleanup 修正，並加入
+  symlink control-character、relative path、dirty-content mutation 與 hanging descendant failure fixtures。
+- 對 `--ignore-rules` finding 的處置為接受：本機 CLI 把它定義為停載 user/project execpolicy `.rules`；permission
+  contract 明列 matching allow rule 可使 command unsandboxed，因此 child 加上此 flag，避免 `-s read-only` 被升權。
+  這不關閉 target repo 的 AGENTS/CLAUDE 指令，且 static gate 反向鎖住該隔離。
+- Final fresh review 發現 launcher 曾自行重組較短 prompt，遺失 shared template 的語意相依與唯讀診斷條款，且
+  P14 還要求已退役的 Codex spawn/wait backend。處置為新增單一 `reviewer-prompt.txt` 與
+  `criteria-impact-prompt.txt`，Claude/Codex 只代入 shared tokens；launcher 驗證 template token 唯一性與前後 hash，
+  P14 改驗 launcher manifest。Stub 同時要求 shared 關鍵句存在並拒絕 runtime/tool prompt 污染。
+- Shared-prompt／normal-path exact-query forward GREEN：fresh parent 先完整讀取 shared workflow/template，第一個 reviewer
+  orchestration action 即 deterministic launcher，零 collaboration wait。Manifest `ok=true`、兩個新且相異的 thread IDs、
+  同一 shared prompt SHA、process overlap、child structured/read-only/ephemeral、repo content 與 plan/brief/schema/template
+  hashes 前後一致。兩位 reviewer 均命中 decoder 假前提與 README 漏列，parent 合併後停在 disposition gate；未擅改 plan、
+  接受 trade-off 或啟動第二輪。
+- 後續全新 final reviewer 命中三個 parity/failure gaps：P2 尚殘留退役的 Codex fresh-context binding、Claude partial/malformed
+  results 可能被 synthesis 成無 blocking、POSIX 只攔 SIGTERM 而會在 SIGHUP/SIGQUIT 留下 process groups。處置為
+  P2 改驗 fresh manifest IDs、shared workflow 與 Claude entry 要求恰好 N 份完整可歸因結果，launcher 統一處理
+  SIGINT/SIGTERM/SIGHUP/SIGQUIT；static gate 與 hanging-descendant signal fixture 同步鎖住。
 
 ---
 
@@ -702,6 +791,12 @@ B 判**低**（「漏設會直接 assertion failure、是自我糾正型缺口�
 | 2026-08-22 | portable v2 無 skill baseline（dp1） | Codex fresh context | **RED** | 能直接找出核心缺陷並判 NO-GO，但只有單一 context 直接審查；沒有 N=2 隔離、typed gate、逐條處置或第二輪。證明一般 plan review 不能替代 orchestration contract。 |
 | 2026-08-22 | portable v2 Claude Code forward eval（dp1，第一輪） | Sonnet + 2× background Agent | **GREEN** | skill discovery 成功；同輪並行建立 2 個 fresh Agent，兩者均完成；prompt 只傳 plan／repo／brief 路徑，輸出 typed findings 並在處置 gate 前停止；fixture 無 mutation。 |
 | 2026-08-22 | portable v2 Codex forward eval（dp1，第一輪） | Codex fresh orchestrator | **部分 GREEN；P14 首跑 RED 後修正** | 首跑產出兩份 fresh typed reviews 與正確 NO-GO，但 reviewer 建立順序是 A 完成後才建 B，依 P14 判 RED；據此把「N IDs 必須在 wait 前存在」寫成明確 adapter contract。後續巢狀盲測在等待 A 前確實嘗試 B，但 runtime 回 `collab spawn failed: agent thread limit reached`；workflow 原已允許這種有明確拒絕證據的 sequential 例外，P14 現也要求保留 refusal 原文。未宣稱已驗證 unrestricted parallel path；fixture 無 mutation。 |
+| 2026-08-25 | P16 portable Codex empty-wait live control | Codex fresh orchestrator | **RED** | 已載入 `$deep-plan`、完成 scope/read-only checks，卻在零 spawn event、零 reviewer ID、零 capacity refusal 時連續呼叫兩次 empty `wait`；人工中止，fixture 無 mutation。先立 oracle，再加最小 empty-ID guard。 |
+| 2026-08-25 | P16 inline guard 重跑 | Codex fresh orchestrator | **仍 RED** | Trace 證明 agent 已完整讀到 guard，仍以 `receiver_thread_ids=[]` 的 `wait` 作為第一個 collaboration action；人工中止，fixture 無 mutation。Guard 升格到 hard contract，要求 successful spawn tool result 是 wait 的前置 evidence。 |
+| 2026-08-25 | P16 hard-contract forward（default／`multi_agent_v2`） | 2× Codex fresh orchestrator | **仍 RED；NO-GO** | 兩臂都讀到 hard contract，仍以 empty wait 作第一個 recorded collaboration action；無 successful spawn result、reviewer ID 或 refusal。Current root 可直接建立兩個 fresh reviewers只證明 capability 存在，不是 exact-query orchestrator GREEN。 |
+| 2026-08-25 | P17 launcher controls（standalone／headless sandbox） | Codex CLI reviewers | **backend GREEN；受限 parent fail closed** | Standalone in-memory launcher 建立兩個 overlap processes、不同 thread IDs、相同 prompt SHA、schema-valid reviews，repo clean。Fresh parent 在 `read-only`／`workspace-write` sandbox 都因 nested app-server `Operation not permitted` 停止；沒有 empty wait、partial synthesis 或 mutation。 |
+| 2026-08-25 | P17 exact-query unrestricted parent forward | Codex fresh orchestrator + 2× ephemeral reviewer | **GREEN（第一輪／disposition gate）** | Parent 第一個 reviewer orchestration action 是 launcher，零 collab wait；manifest `ok=true`、兩個不同 fresh IDs、同 prompt SHA、child read-only、structured output、HEAD/status unchanged。兩位都命中 decoder 假前提與 rollout 未驗證，parent 合併後停在 blocking disposition gate；未擅跑第二輪。 |
+| 2026-08-25 | P14/P17 final shared-prompt exact-query forward | Codex fresh orchestrator + 2× ephemeral reviewer | **GREEN（final revision）** | Shared prompt/template、absolute/content drift、execpolicy isolation 與 process-tree 修正後重跑；launcher 是第一個 reviewer orchestration action，兩個新 IDs、同 template-derived prompt SHA、repo/template hashes unchanged。Parent 完整保留 findings 並停在 disposition gate，零 collab wait、零第二輪。 |
 
 ### 2026-08-17 首跑的三個觀察（兩個刻意不改 body）
 

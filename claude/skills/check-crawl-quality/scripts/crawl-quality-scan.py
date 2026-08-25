@@ -51,7 +51,7 @@ SAMPLE_TIERS = [          # (總筆數上限, 抽樣數)；None = 全量
 ]
 MIN_PER_SOURCE = 20       # 每來源保底樣本——低於此 per-source 分析失去意義
 
-PREFIX_LINES = 3          # 前綴取每筆前 3 行：nav 殘留常見長度，再長就進入正文
+PREFIX_LINES = 3          # 前綴最多取前 3 行；正文早於第 3 行分歧時仍要保留共用的較短 nav
 PREFIX_MIN_PCT = 10       # 前綴出現率 > 10% 才成 cluster（低於此屬偶然雷同）
 PREFIX_FULLDOC_RATIO = 0.9  # 前綴長度 ≥ 內容 90% = 整篇重複，歸 4b 不歸 4a
 FINGERPRINT_LEN = 200     # 4b 指紋長度：前 200 字元足以分辨，全長 hash 對近似重複過敏
@@ -209,7 +209,7 @@ def detect_content_field(dicts, override):
              f"可用欄位：{', '.join(keys)}——用 --content-field 指定")
 
 
-def load_json_file(path):
+def load_json_file(path, content_field=None):
     try:
         with open(path, encoding="utf-8-sig") as f:  # utf-8-sig：容忍 BOM
             if Path(path).suffix == ".jsonl":
@@ -222,11 +222,16 @@ def load_json_file(path):
             if head == "[" or head == "{":
                 data = json.load(f)
                 if isinstance(data, dict):
-                    lists = [v for v in data.values() if isinstance(v, list)]
-                    if len(lists) == 1:
-                        data = lists[0]
+                    content_candidates = ([content_field] if content_field else []) + CONTENT_FIELD_CANDIDATES
+                    if any(isinstance(data.get(key), str) for key in content_candidates):
+                        data = [data]  # 爬蟲常見：每個 JSON 檔就是一筆記錄
                     else:
-                        die_data(f"{path}: JSON dict 無法定位記錄陣列")
+                        lists = [v for v in data.values() if isinstance(v, list)]
+                        if len(lists) == 1:
+                            data = lists[0]
+                        else:
+                            # 保留原 dict 供全資料集的欄位偵測產出可用欄位診斷。
+                            data = [data]
                 if not isinstance(data, list):
                     die_data(f"{path}: JSON 頂層不是陣列")
                 return [d for d in data if isinstance(d, dict)]
@@ -323,7 +328,7 @@ def load_records(target, content_field, source_field):
     raws, text_recs, itype = [], [], "json"
     for f in files:
         if f.suffix in (".json", ".jsonl"):
-            raws += load_json_file(f)
+            raws += load_json_file(f, content_field)
         elif f.suffix == ".csv":
             try:
                 with open(f, encoding="utf-8-sig") as fh:
@@ -433,13 +438,22 @@ def first_lines(content, n):
 def detect_clusters(sampled):
     """4a：共享前綴 cluster。回傳 [{id, key, docs(list), heuristic}]（排序固定）。"""
     groups = {}
+    source_totals = {}
     for r in sampled:
-        key = "\n".join(first_lines(r["content"], PREFIX_LINES))
-        if key.strip():
-            groups.setdefault(key, []).append(r)
+        source_totals[r["source"]] = source_totals.get(r["source"], 0) + 1
+        for line_count in range(1, PREFIX_LINES + 1):
+            key = "\n".join(first_lines(r["content"], line_count))
+            if key.strip():
+                groups.setdefault(key, []).append(r)
     clusters = []
     for key, docs in groups.items():
-        if pct(len(docs), len(sampled)) <= PREFIX_MIN_PCT:
+        source_hits = {}
+        for doc in docs:
+            source_hits[doc["source"]] = source_hits.get(doc["source"], 0) + 1
+        global_hit = pct(len(docs), len(sampled)) > PREFIX_MIN_PCT
+        source_hit = any(pct(count, source_totals[source]) > PREFIX_MIN_PCT
+                         for source, count in source_hits.items())
+        if not global_hit and not source_hit:
             continue
         avg_len = sum(len(d["content"]) for d in docs) / len(docs)
         if len(key) >= PREFIX_FULLDOC_RATIO * avg_len:
@@ -455,6 +469,15 @@ def detect_clusters(sampled):
         else:
             heuristic = "noise"
         clusters.append({"key": key, "docs": docs, "heuristic": heuristic})
+    # 同一批文件會同時形成 1/2/3 行候選；只保留最長的可觀察共享前綴，
+    # 否則同一現象會曝光成多個需要人工分類的 cluster。
+    longest_by_docs = {}
+    for cluster in clusters:
+        doc_ids = tuple(d["id"] for d in cluster["docs"])
+        current = longest_by_docs.get(doc_ids)
+        if current is None or len(cluster["key"]) > len(current["key"]):
+            longest_by_docs[doc_ids] = cluster
+    clusters = list(longest_by_docs.values())
     clusters.sort(key=lambda c: (-len(c["docs"]), c["key"]))
     for i, c in enumerate(clusters):
         c["id"] = f"p{i + 1}"
@@ -473,7 +496,7 @@ def check_all(sampled, clusters, classify):
             f["errors"].append((check_id, f"{type(e).__name__}: {e}"))
 
     cluster_class = {c["id"]: classify.get(c["id"], c["heuristic"]) for c in clusters}
-    prefix_keys = [c["key"] for c in clusters]
+    prefix_keys = sorted((c["key"] for c in clusters), key=len, reverse=True)
 
     def strip_prefix(content):
         for k in prefix_keys:
@@ -803,7 +826,17 @@ def main():
               f'pct={fpct(pct(len(red_docs), len(red_base_docs)))} sample="{fmt_samples(red_docs)}"')
     else:
         print("check-4g: field-redundancy SKIP（無獨立 metadata 欄位）")
-    print(f'check-4h: opening-uniqueness={fpct(f.get("opening_uniq", 100.0))}')
+    opening_uniq = f.get("opening_uniq", 100.0)
+    opening_sample = ""
+    if opening_uniq < H_OPENING_WARN:
+        opening_groups = {}
+        for record, opening in f.get("openings", []):
+            opening_groups.setdefault(opening, []).append(record)
+        if opening_groups:
+            _, example_docs = sorted(opening_groups.items(),
+                                     key=lambda item: (-len(item[1]), item[0]))[0]
+            opening_sample = f' sample="{fmt_samples(example_docs)}"'
+    print(f'check-4h: opening-uniqueness={fpct(opening_uniq)}{opening_sample}')
     for key, label in (("undersize", "undersize"), ("oversize", "oversize")):
         rs = f.get(key, [])
         tail = f' sample="{fmt_samples(rs)}"' if rs else ""
