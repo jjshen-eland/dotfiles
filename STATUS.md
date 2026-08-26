@@ -12,7 +12,19 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-（目前無進行中項目。）
+### project watch transport error（#150）
+
+- **Writer**：`codex:project-watch-transport-error`
+- **Workspace**：`branch=fix/project-watch-transport-error`
+- **Write Scope**：`claude/skills/project/references/pressure-tests.md`、`claude/skills/project/references/ship-paths.md`、`docs/archive/milestones-2026-08.md`、`tests/run.sh`
+- **Dossier Steward**：`codex:project-watch-transport-error`
+- **Context**：`gh pr checks --required --watch` 的 exit 1 可能是 API／transport failure，但既有展開規則只列 check failure 與 no-checks。
+- **Goal**：讓 watch 結果以 non-watch recheck 定案，並把 query failure 保持為未知、fail closed。
+- **Acceptance Criteria**：三路 exit-1 分流、Scenario 29 RED→GREEN、雙 runtime shared core、validator／audit／完整 tests 全綠。
+- **Constraints**：不以 `statusCheckRollup` 補判、不無界 retry、不把 query failure 報成失敗或全綠。
+- **進度**：實作與驗證完成；正以 prompt-bound recovery 重建尚未 push 的 shipping candidate。
+- **下一步**：提交本 active contract，再提交完成變更與 milestone，重驗 authority 後走 PR／merge。
+- **關聯**：GitHub #150；`M-20260826-project-watch-transport-error`；`X-20260815-ci-rollup-jq`。
 
 ---
 
