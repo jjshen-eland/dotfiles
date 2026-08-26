@@ -12,19 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### Project Spec shipping invocation 提示 ⟳
-
-- **Writer**：codex:project-spec-shipping-hints
-- **Workspace**：branch=fix/project-spec-shipping-hints
-- **Write Scope**：STATUS.md, claude/skills/project/references/pressure-tests.md, claude/skills/project/references/workflow.md, docs/archive/milestones-2026-08.md, tests/run.sh
-- **Dossier Steward**：codex:project-spec-shipping-hints
-- **Context**：Project Spec 成功後只顯示含 `resume=` 的 Log invocation，使用者難以分辨 short-form 合法性、endpoint authorization 與 durable workline binding。
-- **Goal**：讓 Claude／Codex Project adapter 在 helper 精確證明 branch／workspace actor 時同列短版與明確版，其他 authority 形狀維持 fail closed。
-- **Acceptance Criteria**：Scenario 27 與 blocking gate 覆蓋雙 runtime sigil、舊授權不 carry、BROKEN／無 recovery／scope mismatch 不繞過；skill validator、doc audit 與全 repo tests 通過。
-- **Constraints**：維持 portable shared core；提示本身不授權 shipping；不放寬既有 recovery 或 STOP。
-- **進度**：實作與驗證完成，正在以受控 history rebuild 建立可驗證的 steward-authored completion candidate。
-- **下一步**：提交本 active contract，重建 completion commit，重驗 authority 後繼續本輪 `$project --merge`。
-- **關聯**：GitHub #148;D-20260824-project-steward-authority;D-20260825-project-prompt-bound-authority-recovery
+（目前無進行中項目。）
 
 ---
 

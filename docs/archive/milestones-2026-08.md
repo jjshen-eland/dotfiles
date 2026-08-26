@@ -269,3 +269,9 @@
   - 放棄:只驗 happy-path first-person；接受兩端自行命名 sender；忽略正文／否定語境中的 address；以 live relay 取代 inert fake；只靠 static packaging gate
   - 重議:nested reference linkage 在任一 runtime 失效；預設 recipient／sender／relay contract 改變；或 fresh cross-runtime eval 再出現 recipient authority、sender conflict、attempt count 或 terminal truth 分歧
   - 關聯:D-20260826-portable-send-mail;D-20260825-portable-skill-authoring-default;claude/skills/send-mail/evals.md;tests/run.sh
+
+- **M-20260826-project-spec-shipping-hints · 2026-08-26 Project Spec 收尾提供安全的雙 invocation 提示**:Scenario 27 固定 #148 的 observed RED：Spec 成功後只顯示含 `resume=` 的完整 Log invocation，讓短版合法性與 endpoint／workline 兩種 authority 難以分辨。Shared workflow 現在於 active contract 寫入後，用不帶 actor control token 的 helper 重驗；只有 exact `active-writer-workspace-match` PASS 才同列 runtime 正確 sigil 的短版與 `resume=` 明確版，否則只在 exact resume 可驗證時顯示明確版或沿用既有 recovery／STOP。提示明定 endpoint 必須由新的 explicit Log invocation 授權、舊授權不 carry，且 BROKEN、無 recovery、scope mismatch、stale、cross-runtime 與 conflicting steward 都不新增捷徑。Codex skill validator、doc-governance ship audit、diff check 與 Scenario 27 blocking gate 均通過；portable topology 未變。
+  - 日期來源:direct
+  - 放棄:永遠只顯示完整 `resume=` 形式；只憑 branch 名推導 short form；讓提示或上一輪 `--merge` 冒充新的 endpoint authorization；為兩個 adapter 複製 workflow
+  - 重議:任一 runtime 無法用正確 sigil 送出完整 invocation option；或新的 behavior eval 顯示 post-Spec helper 不能可靠區分 short-form safety
+  - 關聯:GitHub #148;D-20260824-project-steward-authority;D-20260825-project-prompt-bound-authority-recovery;claude/skills/project/references/pressure-tests.md;tests/run.sh

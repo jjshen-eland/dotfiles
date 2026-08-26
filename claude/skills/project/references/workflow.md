@@ -73,6 +73,41 @@ authority actor、authority source 四行；`--merge` 等 endpoint 說法不參�
 5. 模糊處直接問，不猜。暫停則移到 `暫停中` 並寫可觀察的恢復條件。
 6. Legacy repo 依自己的 STATUS schema 寫 spec，不強迫建立 history/backlog family。
 
+### Spec 成功後的 Log invocation 提示
+
+Spec 寫入與必要驗證成功後，若下一步要 commit、push、開 PR 或 merge，必須由使用者輸入**新的 explicit
+Project Log invocation**。上一輪或本輪 Spec 的 endpoint authorization 都不 carry；提示命令本身也不是授權，
+只有使用者實際送出的新 invocation 才是。Endpoint flag 取自使用者為下一步明確選定的終點，依
+`ship-paths.md` 說法表正規化；未選定就不得自行預填。下例以使用者已選定 merge 為例。
+
+對 same-runtime durable workline，在寫入 active contract 後重新執行一次上節 helper，且刻意**不帶任何
+`resume=`、`as=` 或 confirmed flag**。只有 exit 0、`verdict: PASS`、executor actor 與 durable steward exact
+match，且 `authority-source: active-writer-workspace-match` 全部成立，才同時顯示短版與明確版：
+
+```text
+下一步請擇一輸入：
+
+短版：
+$project --merge
+
+明確版：
+$project --merge resume=<exact-actor>
+```
+
+Claude Code adapter 將上述兩行的 `$project` 換成 `/project`，所以對應為 `/project --merge` 與
+`/project --merge resume=<exact-actor>`；actor 的 runtime prefix 也必須與入口一致。若使用 runtime UI 選項，
+每個 option value 必須送出完整的 `$project ...`／`/project ...` invocation；只回傳編號或顯示標籤不算新的
+explicit invocation。
+
+提示旁清楚說明：endpoint flag（本例 `--merge`）授權**這次新 Log invocation**的 endpoint；
+`resume=<exact-actor>` 只精確綁定 durable workline，不新增、繼承或擴大 shipping authority。短版只適用於
+仍在 helper 已驗證的 branch／workspace；明確版適合跨 turn、切過 branch或需要消除 actor 歧義時。
+
+若不帶 control token 的 post-Spec helper 未達上述 exact PASS，絕不顯示短版。只有再以 exact same-runtime
+durable actor 執行 `--resume-actor <exact-actor>` 得到 PASS 時，才可單獨顯示含 `resume=<exact-actor>` 的明確版；
+否則沿用既有 recovery／STOP。Repository authority `BROKEN`、`recovery-kind: none`、scope mismatch、stale
+snapshot、cross-runtime 或 conflicting stewards 都不得因本提示新增確認或繞過選項。
+
 ## Log 模式
 
 **執行前必須完整讀取 [log-workflow.md](log-workflow.md)，並逐步照做。** 該檔包含 checklist、
