@@ -12,7 +12,19 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-（目前無進行中項目。）
+### project 空 repo bootstrap default（#153）
+
+- **Writer**：`codex:project-bootstrap-default`
+- **Workspace**：`branch=fix/project-bootstrap-default`
+- **Write Scope**：`STATUS.md`、`claude/skills/project/scripts/ship-state.sh`、`claude/skills/project/scripts/bootstrap-baseline.sh`、`claude/skills/project/references/`、`tests/run.sh`、`docs/archive/milestones-2026-08.md`
+- **Dossier Steward**：`codex:project-bootstrap-default`
+- **Context**：空 remote 的 bootstrap 目前直接推目前 branch；HEAD 在 feature 且本地無 intended-default 時會把 feature 名設成 GitHub default。
+- **Goal**：以 provider-agnostic evidence 解析 intended default 與 creation policy，缺 baseline 時用確認型 UX 取得明示 boundary，bootstrap 後再重新偵測一般 ship 狀態。
+- **Acceptance Criteria**：feature HEAD 不再取得 bootstrap push 指令；main／非 main、ruleset 無／有／不可見、creation check deadlock、首次 `--merge` 與雙 runtime eval 皆 fail closed 或走安全 baseline；validator／audit／完整 tests 全綠。
+- **Constraints**：不硬編碼 org、ruleset、property 或 check 名；不猜 baseline commit、不繞過 required checks、不無界等待、不改 portable topology。
+- **進度**：實作與驗證完成；regression RED 已轉綠，1242 tests、雙 runtime packaging、三臂 fresh-context forward 與 elandcomtw read-only probe 均通過。
+- **下一步**：使用者明確叫用 Project Log 後，提交本批、同步 milestone 並依指定 endpoint ship；進 `origin/main` 後關閉 #153。
+- **關聯**：GitHub #153；`D-20260825-portable-skill-authoring-default`；2026-07-22 bootstrap milestone。
 
 ---
 
