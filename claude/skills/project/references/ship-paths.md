@@ -39,12 +39,30 @@ git -C <repo> symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null   # 如 
 
 ## Bootstrap：全新空 repo 的第一次 ship
 
-**唯一觸發來源**：`ship-state.sh` 印 `verdict: BOOTSTRAP`（腳本以 `git ls-remote --heads` **實測**遠端零 branch，不是推測）。任何其他來源——使用者說「這是新 repo」、上一輪對話的授權、你自己的推論——都**不構成** bootstrap。
+**唯一觸發來源**：`ship-state.sh` 印 `verdict: BOOTSTRAP`。遠端零 branch 只是第一個必要條件；腳本還會驗
+intended default、local baseline ancestry 與 effective creation policy。任何其他來源——使用者說「這是新
+repo」、上一輪對話的授權、你自己的推論——都**不構成** bootstrap。
 
-為什麼此處是例外：遠端還沒有 default branch，**沒有 default 可保護、也沒有別人的工作可破壞**。而 GitHub 以**第一個被 push 的 branch** 為 default branch——此時照 branch-first 開 `feat/xxx` 再推，遠端 default 就變成 `feat/xxx`（事後只能人工進 repo settings 改）。故 bootstrap 這一次：branch-first 不適用，推本地 default 名建立 baseline。
+為什麼此處是例外：遠端還沒有 default branch，**沒有既有 default 可走 PR**。而 GitHub 以**第一個被 push
+的 branch** 為 default branch；因此不能把「remote 空」解成「目前 HEAD 可推」，只能推 target authority 指向的
+intended default。GitHub adapter 取 repository metadata 與 `rules/branches/<intended>` 的 effective rules；
+provider 不支援、403、schema 不明、creation restriction，或 required check/workflow 未豁免 create 都 STOP。
+先讀 target root contract；它與 provider metadata 衝突時先 STOP，以確認型問題列出兩個來源與 branch，使用者
+選定後才把答案傳給 `ship-state.sh --bootstrap-default <name> <repo>`。該 flag 是當輪 explicit evidence，
+不是讓 agent 靜默覆蓋 metadata 的 escape hatch。
+
+若 intended-default local ref 不存在，Project 必須用 runtime user-input primitive 提出確認型選項，第一項是安全預設：
+
+1. 暫停並先整理 baseline。
+2. 以畫面列出的目前 HEAD full SHA 作 baseline（明說：全部現有內容會直接成為初始 default）。
+3. 指定畫面列出的 ancestor commit/ref；沒有候選才收自由輸入。
+
+只有當輪回答能選 baseline；不得從 `init.defaultBranch`、branch 名慣例或上一輪回答補值。選定後照抄
+`bootstrap-baseline.sh <repo> <intended-default> <commit/ref>`；它只建立 local ref、不切 branch、不 push。
+隨即以 `ship-state.sh --bootstrap-default <intended-default> <repo>` 重跑；仍只有它能發出 `BOOTSTRAP`。
 
 ```bash
-# 1. 照抄 ship-state.sh 的 bootstrap-cmd（repo / remote / branch 已填好）
+# 1. 照抄 ship-state.sh 的 bootstrap-cmd（repo / remote / intended-default 已填好）
 git -C <repo> push -u origin <local-default>
 # 2. baseline 建立後重跑偵測：BOOTSTRAP 應已消失，protection / branch-first 回到正常判定
 <project-scripts>/ship-state.sh <repo>
@@ -52,7 +70,8 @@ git -C <repo> push -u origin <local-default>
 
 - **仍走 Step 4 硬 gate**：摘要須明列「此 push 將決定遠端 default branch = `<branch>`」再等確認。
 - **The exemption covers exactly this one push — creating the baseline.** It expires the moment the baseline exists; every later commit goes through a feature branch, rules unchanged. The script stops printing the verdict on its own, so re-check it — never carry the exemption forward from memory or from an earlier turn's authorization.
-- 拿到的是 `verdict: STOP`（遠端有 branch／`ls-remote` 失敗／detached HEAD）→ **NOT bootstrap**：照訊息處理（先 `git fetch`、修網路、或切到具名 branch），**絕不**改推 default branch。
+- 拿到的是 `verdict: STOP`（遠端有 branch、authority／policy／baseline 不完整、`ls-remote` 失敗、detached
+  HEAD）→ **NOT bootstrap**：照訊息或確認選項處理，**絕不**改推目前 branch。
 
 ## Branch protection 偵測
 
@@ -278,8 +297,14 @@ gh pr checks <PR-number|URL> -R "$repo_slug" --required
 ⚠️ **exit 1 有三個可觀察成因，必須把 exit code 與輸出一起分流**：
 
 1. 輸出明確列出標為 failed 的 check row → required check 失敗。
-2. 輸出是 exact `no checks reported on the '<branch>' branch` → 這個 repo 沒有 required check；阻擋與
-   check 無關，**當成「全綠」走 protection 那列**，不是測試失敗。
+2. 輸出是 exact `no checks reported on the '<branch>' branch` → 先重跑 `ship-state.sh <repo>` 取得新的
+   `required-policy:`，不得只看 PR 空輸出：
+   - `required-policy: none` → 確認沒有 effective required checks，阻擋與 check 無關，當成「全綠」走
+     protection 那列。
+   - `required-policy: REQUIRED` → policy 宣告的 context/workflow 尚未出現；再做**一次** non-watch checks
+     query，仍是 no-checks 就判 `UNOBSERVED` 並 STOP。這可能是 workflow trigger／enrollment deadlock；不進
+     `--watch`（沒有 check object 可 watch）、不 `--admin`、不替 target repo 改 CI。
+   - `required-policy: UNKNOWN` → policy 不可見，STOP；不得把 403／provider gap 當成 none。
 3. 兩者皆非，且末尾是 GraphQL／GitHub API／network 錯誤（例如 `Post "https://api.github.com/graphql":
    ... operation timed out`），或輸出根本無法產生 check verdict → 這是 transport／API 的 **query failure**。
    它**既不是 required check 失敗，也不代表全綠**；不得 merge 或 `--admin`。
@@ -297,7 +322,8 @@ repo，前一種誤讀會捏造不存在的壞 check；對 transport error，後
 | `BLOCKED` ＋ checks **exit 8** | **CI 還在跑，不是 protection 擋** | **等它跑完再 merge**（見下方等待策略） | **一樣等**——`--admin` 在此繞過的是還沒跑完的測試，不是規則 |
 | `BLOCKED` ＋ checks **其他非零，且列出了失敗的 check** | required check 失敗 | 停，回報是哪個 check 失敗 | **一樣停**——繞過等於把沒通過測試的變更送進 default |
 | `BLOCKED` ＋ authoritative non-watch checks 是 **query／transport failure**，沒有 failed row、也不是 exact `no checks reported` | check 狀態不確定 | 停，回報查詢錯誤；不得猜失敗或全綠 | **一樣停**——`--admin` 不得繞過未知狀態 |
-| `BLOCKED` ＋ checks **exit 0**，或 **`no checks reported`**（見上方 ⚠️） | protection 真的擋（缺 review／其他規則），與 check 無關 | **停**，回報並告知可用「bypass merge」 | 加 `--admin` 重試 |
+| `BLOCKED` ＋ checks **exit 0**，或 **`no checks reported` + required-policy none**（見上方 ⚠️） | protection 真的擋（缺 review／其他規則），與 check 無關 | **停**，回報並告知可用「bypass merge」 | 加 `--admin` 重試 |
+| `BLOCKED` ＋ **required-policy REQUIRED** 但 no checks reported | required context/workflow 尚未產生（UNOBSERVED） | 一次 non-watch 重查仍缺就停 | **一樣停**——沒有測試結果可 bypass |
 | `DIRTY` | 有衝突 | 停，回報 | **一樣停**——`--admin` 不解決衝突 |
 | `BEHIND` | base 落後、protection 要求最新 | 停，回報 | **一樣停**——該做的是更新 branch，不是繞過 |
 | `DRAFT` | 這是 draft PR，本來就不能 merge | 停，問「要我先 `gh pr ready` 轉正式嗎」——**不自行轉** | 一樣停——`--admin` 不能 merge draft |

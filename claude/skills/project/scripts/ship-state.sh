@@ -3,16 +3,17 @@
 # ship-state.sh — /project log Step 0/1 的 ship 狀態偵測（單次呼叫、多 repo、唯讀）
 #
 # 用法：
-#   ship-state.sh <repo-path>...          # 逐 repo ship 狀態偵測
-#   ship-state.sh resolve <token>         # Step 0 repo-token 判定（單一 token）
+#   ship-state.sh <repo-path>...                    # 逐 repo ship 狀態偵測
+#   ship-state.sh --bootstrap-default <name> <repo> # 已由 contract／當輪確認明示空 repo 的 intended default
+#   ship-state.sh resolve <token>                   # Step 0 repo-token 判定（單一 token）
 #
 # 逐 repo 輸出：branch / remotes / default / 變更集（files-vs-default 三點、
 # commits-ahead 兩點、working-tree porcelain）/ misplaced（誤 commit 在本地
 # default，附 branch-first-cmd 供照抄）/ dossier 偵測（STATUS.md 衛生，門檻
 # 單一來源在本腳本）/ review-residue（review 迭代痕跡與可照抄的 squash 指令，Step 4 出題依據）/
 # protection verdict / ship-path / branch-first。default 定位
-# 不到時改印 bootstrap 判定（遠端零 branch → BOOTSTRAP + 可照抄 push 指令；遠端有
-# branch → STOP，見 detect_bootstrap）。
+# 不到時改印 bootstrap 判定（遠端零 branch 後仍須解析 intended default、baseline ancestry
+# 與 effective creation policy；全部可驗才 BOOTSTRAP，否則 STOP，見 detect_bootstrap）。
 #
 # resolve 輸出單行 verdict（照 verdict 走，勿重新詮釋）：
 #   resolve: REPO <toplevel>   token 解析為 repo 根（兩端 realpath 正規化後相等；'.' 恆為
@@ -29,11 +30,9 @@
 #
 # 設計原則：
 # - 唯讀。不 commit、不 switch——mutation 一律留給 skill 流程（branch-first
-#   搬移、提交、push 都在 Step 1/3/5 由 model 依 Critical gate 執行）。**不 fetch**——
-#   碰網路的例外有二，都是 ls-remote（唯讀、不改任何本地 ref），且都在「本地狀態根本
-#   分辨不出來」的地方：① default 定位不到時的 bootstrap 判定（見 detect_bootstrap）；
-#   ② squash-merged 的 remote 行核對（見 detect_squash_merged_branches——該段本來就要
-#   打 gh，故不是新增網路依賴）。
+#   搬移、提交、push 都在 Step 1/3/5 由 model 依 Critical gate 執行）。**不 fetch**；網路
+#   讀取只用不改 local ref 的 `ls-remote` 與 gh API：default 定位不到時驗 remote 空狀態、
+#   intended default／effective rules，以及 normal protection／required-policy 與 merged PR evidence。
 # - protection 判定封裝於此（classic + ruleset，邏輯解說見 references/ship-paths.md，
 #   本腳本為可執行權威）。Unknown = protected 直接印在輸出裡，不留給 model 重新詮釋。
 #
@@ -65,8 +64,25 @@ DOSSIER_SECTIONS_TOP_N=6     # 各節佔比只列前 N 大——超標時要的�
 DOSSIER_TARGET_PCT=85        # 收斂建議目標＝門檻的百分比。壓到「剛好低於門檻」等於下次 ship 必再觸發（krepo #33 收到 23,920/24,576、隔天加兩條決策就再越線）——留餘裕才是一次做完
 
 if [ $# -eq 0 ]; then
-    echo "用法：$0 <repo-path>... | resolve <token>" >&2
+    echo "用法：$0 <repo-path>... | --bootstrap-default <name> <repo> | resolve <token>" >&2
     exit 2
+fi
+
+# 空 repo 的 explicit intended-default 只允許單 repo：多 repo 共用一個 override 很容易把
+# 某 repo 的 policy 套到另一個 repo。這個值只能由 shared workflow 在讀過 target contract，
+# 或收到當輪確認型問題的回答後傳入；它不是 ambient config，也不從 init.defaultBranch 猜。
+bootstrap_default_override=""
+if [ "$1" = "--bootstrap-default" ]; then
+    if [ $# -ne 3 ]; then
+        echo "用法：$0 --bootstrap-default <name> <repo>" >&2
+        exit 2
+    fi
+    bootstrap_default_override="$2"
+    if ! git check-ref-format --branch "$bootstrap_default_override" >/dev/null 2>&1; then
+        echo "用法錯誤：intended default '${bootstrap_default_override}' 不是合法 branch 名" >&2
+        exit 2
+    fi
+    shift 2
 fi
 
 # --- resolve 子指令（Step 0 repo-token 判定）---
@@ -160,7 +176,9 @@ detect_default_branch() {
 # 本函式再也不會印 BOOTSTRAP、branch-first 恢復 REQUIRED。豁免作用域由此機制界定，
 # 不靠 agent 記憶（實證失效模式：初始匯入的 push 授權被延伸到後續 commit）。
 detect_bootstrap() {
-    local repo="$1" remote="$2" branch="$3" toplevel="$4" heads rc n
+    local repo="$1" remote="$2" branch="$3" toplevel="$4" explicit_default="$5"
+    local heads rc n slug url advertised intended source rules rules_rc enc
+    local creation_blockers required_creation_blockers rules_n baseline
     heads="$(git -C "$repo" ls-remote --heads "$remote" 2>&1)"
     rc=$?
     if [ "$rc" -ne 0 ]; then
@@ -176,14 +194,102 @@ detect_bootstrap() {
         return
     fi
     echo "remote-heads: 0（遠端無任何 branch）"
-    if [ "$branch" = "DETACHED" ]; then
-        echo "verdict: STOP（遠端雖空，但 HEAD detached、無 branch 名可當 baseline——先 switch 到具名 branch）"
+
+    # GitHub 的 defaultBranchRef 在空 repo 沒有 ref 可回；REST repository metadata 仍會
+    # 提供預設名稱。先用 gh 綁定 repo，失敗才從 github.com remote URL 解析；local path、
+    # GitLab/GHE 等 provider 不冒充 GitHub adapter。
+    slug="$( (cd "$repo" && "$GH_BIN" repo view --json nameWithOwner -q .nameWithOwner) 2>/dev/null)" || slug=""
+    if [ -z "$slug" ]; then
+        url="$(git -C "$repo" remote get-url "$remote" 2>/dev/null)"
+        case "$url" in
+            git@github.com:*|ssh://git@github.com/*|https://github.com/*)
+                slug="$(printf '%s' "$url" | sed -E 's#^(git@github\.com:|ssh://git@github\.com/|https://github\.com/)##; s#\.git$##')" ;;
+        esac
+    fi
+    case "$slug" in
+        */*) ;;
+        *)
+            echo "bootstrap-default: UNKNOWN（無 GitHub repo metadata adapter，且未能驗證 provider repo identity）"
+            echo "verdict: STOP（遠端雖空，但 intended default／effective creation policy 不可驗證；請由 target contract 或確認型問題明示 default，並使用支援的 provider adapter）"
+            return ;;
+    esac
+
+    advertised="$("$GH_BIN" api "repos/$slug" --jq .default_branch 2>/dev/null)" || advertised=""
+    [ "$advertised" = "null" ] && advertised=""
+    if [ -n "$explicit_default" ]; then
+        intended="$explicit_default"
+        source="explicit-contract-or-user"
+        if [ -n "$advertised" ] && [ "$advertised" != "$intended" ]; then
+            echo "bootstrap-default-conflict: remote-metadata=${advertised} explicit=${intended}（已由當輪 explicit authority 解決；Step 4 必須揭露）"
+        fi
+    elif [ -n "$advertised" ]; then
+        intended="$advertised"
+        source="github-repository-metadata"
+    else
+        echo "bootstrap-default: UNKNOWN（GitHub repository metadata 未提供 default_branch）"
+        echo "verdict: STOP（遠端雖空，但 intended default 無 authority；用確認型問題取得明示名稱，不猜 main/master 或目前 HEAD）"
         return
     fi
+    if ! git check-ref-format --branch "$intended" >/dev/null 2>&1; then
+        echo "bootstrap-default: INVALID（${intended} 不是合法 branch 名；source=${source}）"
+        echo "verdict: STOP（provider／contract metadata 無效，不得 bootstrap）"
+        return
+    fi
+    echo "bootstrap-default: ${intended}（source=${source}）"
+
+    # Get-rules-for-a-branch 會彙整所有 active repo/org rules，且 branch 不必已存在。
+    # 空 repo 在 push 前先讀 creation gate；不可見或 schema 不可解析一律 fail closed。
+    enc="${intended//\//%2F}"
+    rules="$("$GH_BIN" api "repos/$slug/rules/branches/${enc}?per_page=100" 2>&1)"
+    rules_rc=$?
+    if [ "$rules_rc" -ne 0 ]; then
+        echo "bootstrap-policy: UNKNOWN（effective rules query 失敗 rc=${rules_rc}：$(printf '%s' "$rules" | head -1)）"
+        echo "verdict: STOP（creation policy 不可見；不試推、不把 API 失敗當無 ruleset）"
+        return
+    fi
+    if ! command -v jq >/dev/null 2>&1 || ! printf '%s' "$rules" | jq -e 'type == "array"' >/dev/null 2>&1; then
+        echo "bootstrap-policy: UNKNOWN（effective rules JSON 無法解析）"
+        echo "verdict: STOP（creation policy schema 不可驗證）"
+        return
+    fi
+    rules_n="$(printf '%s' "$rules" | jq 'length')"
+    creation_blockers="$(printf '%s' "$rules" | jq '[.[] | select(.type == "creation")] | length')"
+    required_creation_blockers="$(printf '%s' "$rules" | jq '[.[] | select((.type == "required_status_checks" or .type == "workflows") and (.parameters.do_not_enforce_on_create != true))] | length')"
+    if [ "$creation_blockers" -gt 0 ] || [ "$required_creation_blockers" -gt 0 ]; then
+        echo "bootstrap-policy: BLOCKED（effective-rules=${rules_n}; creation-restrictions=${creation_blockers}; required-check/workflow-on-create=${required_creation_blockers}）"
+        printf '%s' "$rules" | jq -r '.[] | select(.type == "creation" or ((.type == "required_status_checks" or .type == "workflows") and (.parameters.do_not_enforce_on_create != true))) | "  rule: \(.type) source=\(.ruleset_source_type // "?"):\(.ruleset_source // "?")"'
+        echo "verdict: STOP（baseline 尚不存在，creation-required check/workflow 無可先產生的 target ref；交由 target policy owner 處理，不 watch、不 --admin）"
+        return
+    fi
+    echo "bootstrap-policy: CLEAR（effective-rules=${rules_n}；無 creation blocker，或 required checks/workflows 明示豁免 create）"
+
+    if ! git -C "$repo" show-ref --verify --quiet "refs/heads/$intended"; then
+        echo "bootstrap-baseline: NEEDS_CONFIRMATION（本地 refs/heads/${intended} 不存在；目前 HEAD=${branch}）"
+        echo "bootstrap-options: 暫停並整理 baseline（預設）｜明示目前 HEAD commit 為 baseline｜指定另一個 HEAD ancestor commit/ref"
+        echo "verdict: STOP（remote 雖空，但 baseline boundary 未明示；不得把目前 feature HEAD 自動升成 default）"
+        return
+    fi
+    baseline="$(git -C "$repo" rev-parse "refs/heads/$intended^{commit}" 2>/dev/null)" || baseline=""
+    if [ -z "$baseline" ]; then
+        echo "bootstrap-baseline: INVALID（refs/heads/${intended} 無法解析為 commit）"
+        echo "verdict: STOP（baseline evidence 無效）"
+        return
+    fi
+    if [ "$branch" = "DETACHED" ]; then
+        echo "bootstrap-baseline: ${baseline}（local=${intended}）"
+        echo "verdict: STOP（遠端雖空，但 HEAD detached；先 switch 到具名 branch，勿在 detached 狀態 ship）"
+        return
+    fi
+    if ! git -C "$repo" merge-base --is-ancestor "$baseline" HEAD; then
+        echo "bootstrap-baseline: INVALID（${intended}@${baseline} 不是目前 HEAD 的 ancestor）"
+        echo "verdict: STOP（default baseline 與目前工作線無可驗證 ancestry；交回使用者）"
+        return
+    fi
+    echo "bootstrap-baseline: READY（${intended}@${baseline}；目前 HEAD=${branch}）"
     echo "verdict: BOOTSTRAP（全新空 repo 的第一次 ship：遠端尚無 default branch，故無 default 可保護、branch-first 在此不適用）"
-    echo "bootstrap-note: 首推的 branch 將成為遠端 default branch —— 推 '${branch}' 即以它為 default（事後只能人工進 repo settings 改），Step 4 摘要須向使用者標明"
+    echo "bootstrap-note: 首推的 branch 將成為遠端 default branch —— 只推已驗證的 intended default '${intended}'，不推目前 feature HEAD 名；Step 4 摘要須標明 baseline SHA"
     echo "bootstrap-scope: 豁免僅涵蓋下面這一次 push（建立 baseline）。baseline 一存在，本 verdict 即不再出現、branch-first 與 never-push-default 全數恢復——後續 commit 一律走 feature branch"
-    echo "bootstrap-cmd: git -C $(shq "$toplevel") push -u $(shq "$remote") $(shq "$branch")"
+    echo "bootstrap-cmd: git -C $(shq "$toplevel") push -u $(shq "$remote") $(shq "$intended")"
 }
 
 # protection 判定（classic + ruleset；判定順序見 ship-paths.md）
@@ -223,6 +329,65 @@ detect_protection() {
         echo "protection: UNKNOWN（classic Not Found，gh 帳號可能無權讀 protection；viewerPermission=${perm:-?}，注意身分分離）→ treat as PROTECTED"
     else
         echo "protection: UNKNOWN（無法分辨：403/網路/其他）→ treat as PROTECTED"
+    fi
+}
+
+# Effective required-check/workflow evidence for the normal PR/merge phase. This is separate from
+# protection's coarse PR-path verdict: merge handling must distinguish "no required policy" from
+# "policy requires a context that never appeared". Names and sources are data, never hard-coded.
+detect_required_policy() {
+    local repo="$1" remote="$2" default="$3" slug enc rules rules_rc classic classic_rc
+    local contexts workflows classic_contexts unknown_layers visibility
+    if ! command -v "$GH_BIN" >/dev/null 2>&1; then
+        echo "required-policy: UNKNOWN（gh 不可用）"
+        return
+    fi
+    slug="$( (cd "$repo" && "$GH_BIN" repo view --json nameWithOwner -q .nameWithOwner) 2>/dev/null)" || slug=""
+    if [ -z "$slug" ]; then
+        slug="$(git -C "$repo" remote get-url "$remote" 2>/dev/null \
+            | sed -E 's#^(git@[^:]+:|ssh://[^/]+/|https?://[^/]+/)##; s#\.git$##')"
+    fi
+    case "$slug" in
+        */*) ;;
+        *) echo "required-policy: UNKNOWN（無法解析 provider repo identity）"; return ;;
+    esac
+    enc="${default//\//%2F}"
+    unknown_layers=0
+
+    classic="$("$GH_BIN" api "repos/$slug/branches/$enc/protection" 2>&1)"
+    classic_rc=$?
+    classic_contexts=""
+    if [ "$classic_rc" -eq 0 ]; then
+        if command -v jq >/dev/null 2>&1 && printf '%s' "$classic" | jq -e 'type == "object"' >/dev/null 2>&1; then
+            classic_contexts="$(printf '%s' "$classic" | jq -r '[.required_status_checks.contexts[]?, .required_status_checks.checks[]?.context] | unique | join(",")')"
+        else
+            unknown_layers=$((unknown_layers + 1))
+        fi
+    elif ! printf '%s' "$classic" | grep -q "Branch not protected"; then
+        unknown_layers=$((unknown_layers + 1))
+    fi
+
+    rules="$("$GH_BIN" api "repos/$slug/rules/branches/${enc}?per_page=100" 2>&1)"
+    rules_rc=$?
+    contexts=""
+    workflows=""
+    if [ "$rules_rc" -eq 0 ] && command -v jq >/dev/null 2>&1 \
+        && printf '%s' "$rules" | jq -e 'type == "array"' >/dev/null 2>&1; then
+        contexts="$(printf '%s' "$rules" | jq -r '[.[] | select(.type == "required_status_checks") | .parameters.required_status_checks[]?.context] | unique | join(",")')"
+        workflows="$(printf '%s' "$rules" | jq -r '[.[] | select(.type == "workflows") | .parameters.workflows[]? | ((.path // "?") + "@" + (.ref // .sha // "?"))] | unique | join(",")')"
+    else
+        unknown_layers=$((unknown_layers + 1))
+    fi
+
+    contexts="$(printf '%s\n%s\n' "$classic_contexts" "$contexts" | awk 'NF' | tr ',' '\n' | sort -u | paste -sd, -)"
+    if [ -n "$contexts" ] || [ -n "$workflows" ]; then
+        visibility="complete"
+        [ "$unknown_layers" -eq 0 ] || visibility="partial"
+        echo "required-policy: REQUIRED（contexts=${contexts:-none}; workflows=${workflows:-none}; visibility=${visibility}）"
+    elif [ "$unknown_layers" -gt 0 ]; then
+        echo "required-policy: UNKNOWN（classic/ruleset policy 有 ${unknown_layers} 個不可見或不可解析 layer）"
+    else
+        echo "required-policy: none（effective rules 無 required status check/workflow）"
     fi
 }
 
@@ -1082,7 +1247,7 @@ check_repo() {
         fi
         # doc-governance:no-default-stop:end
         # 全新空 repo？兩種 default: NONE 的處置相反，交由 detect_bootstrap 實測遠端分辨
-        detect_bootstrap "$repo" "$remote" "$branch" "$toplevel"
+        detect_bootstrap "$repo" "$remote" "$branch" "$toplevel" "$bootstrap_default_override"
         return 0
     fi
     echo "default: $default"
@@ -1153,6 +1318,7 @@ check_repo() {
     local prot
     prot="$(detect_protection "$repo" "$remote" "$default")"
     echo "$prot"
+    detect_required_policy "$repo" "$remote" "$default"
     case "$prot" in
         # 無保護**仍預設 PR**（見 `../references/log-workflow.md`「Step 1：逐 repo 狀態 + 流程偵測（先於任何 commit）」）。
         # 直推 feature branch 是 escape hatch，需使用者明說不用 PR——故此處印 PR，

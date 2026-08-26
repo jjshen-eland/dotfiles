@@ -287,3 +287,9 @@
   - 放棄:把 bare exit 1 一律當 failing test；沿用 watch 最後一屏猜全綠；只重查 `mergeStateStatus`；用無界 retry 或 `statusCheckRollup` 補判
   - 重議:`gh pr checks` 改變 exit／輸出契約，或新的 live incident 無法由 failed row、exact no-checks、query failure 三類 fail closed 表示
   - 關聯:GitHub #150;M-20260826-project-retired-steward-gate;X-20260815-ci-rollup-jq;claude/skills/project/references/ship-paths.md;claude/skills/project/references/pressure-tests.md;tests/run.sh
+
+- **M-20260826-project-bootstrap-default-safe · 2026-08-26 Project 空 repo bootstrap default 安全化完成**:Scenario 30 固定 #153 的 observed RED：remote 零 branch、HEAD 在 feature 且 local intended-default 不存在時，舊 `ship-state.sh` 會把 feature branch 直接首推成 GitHub default。Shared Claude／Codex workflow 現在從 target contract／provider metadata 解析 intended default，衝突時以確認型 UX 重驗；缺 baseline 時只列安全暫停、目前 HEAD full SHA 與可驗 ancestor，不自行選 commit。Bootstrap 只推已驗證 intended-default ref，先檢查 creation restrictions 與 effective required checks/workflows，完成後強制重新偵測 normal PR／policy 狀態；一般 PR merge 也會把 classic protection 與 effective ruleset 的 required policy 聚合，required context 未出現時以 `UNOBSERVED` STOP。無 ruleset、repo／org ruleset、非 `main` default、metadata 不可見與首次 `--merge` 等 behavior eval 均 fail closed 或走安全 baseline；雙 runtime packaging、三臂 fresh-context forward、elandcomtw read-only probes、validator、doc audit、shellcheck 與全 repo tests 全綠，最終 1242 PASS／0 FAIL。
+  - 日期來源:direct
+  - 放棄:把 `main`、org／ruleset／property／check 名硬編碼進 shared core；讓 remote 零 branch 自動授權 push HEAD；猜 baseline commit；沿用 bootstrap 前 policy snapshot；用無界等待或 `--admin` 繞過未產生的 required check
+  - 重議:provider API 無法提供 intended-default／effective creation policy 的可驗 evidence；新 provider 需要 adapter；或新的 live bootstrap incident 無法由 authority、baseline、creation policy、post-bootstrap re-detection 四階段 fail closed 表示
+  - 關聯:GitHub #153;D-20260825-portable-skill-authoring-default;claude/skills/project/references/pressure-tests.md;claude/skills/project/references/ship-paths.md;tests/run.sh
