@@ -272,10 +272,22 @@ gh pr view <PR-number|URL> -R "$repo_slug" --json mergeStateStatus,mergeable -q 
 ```bash
 # --required 只看 protection 實際在意的 check
 gh pr checks <PR-number|URL> -R "$repo_slug" --required
-# exit 0 = required check 全綠｜exit 8 = 還有 pending｜其他非零 = 有 check 失敗（或查詢失敗）
+# exit 0 = required check 全綠｜exit 8 = 還有 pending｜其他非零 = 看輸出分辨失敗、無 required check、query／transport failure
 ```
 
-⚠️ **exit 1 有兩個意思，必須看輸出才分得開**（2026-08-15 實戰撞到）：真的有 check 失敗會列出那些 check；而**這個 repo 根本沒有 required check** 時，輸出是 `no checks reported on the '<branch>' branch`、**exit 同樣是 1**。後者代表阻擋與 check 無關 → **當成「全綠」走第三列**（protection 的其他規則），不是「測試失敗」。**Never read a bare exit 1 as a failing test** —— 對「有 required review、沒有 CI」的 repo，那個誤讀會把「缺 approval」報成「哪個 check 壞了」，而使用者根本找不到那個 check。
+⚠️ **exit 1 有三個可觀察成因，必須把 exit code 與輸出一起分流**：
+
+1. 輸出明確列出標為 failed 的 check row → required check 失敗。
+2. 輸出是 exact `no checks reported on the '<branch>' branch` → 這個 repo 沒有 required check；阻擋與
+   check 無關，**當成「全綠」走 protection 那列**，不是測試失敗。
+3. 兩者皆非，且末尾是 GraphQL／GitHub API／network 錯誤（例如 `Post "https://api.github.com/graphql":
+   ... operation timed out`），或輸出根本無法產生 check verdict → 這是 transport／API 的 **query failure**。
+   它**既不是 required check 失敗，也不代表全綠**；不得 merge 或 `--admin`。
+
+第三類最多重跑一次相同的 **non-watch** `gh pr checks ... --required`。若那次仍無法取得 verdict，STOP 並回報
+實際錯誤，不做無界 retry。若第三類正是從下方 `--watch` 返回，該次 mandatory non-watch recheck 已經是這一次，
+失敗就停。**Never read a bare exit 1 as a failing test or a green result** —— 對「有 required review、沒有 CI」的
+repo，前一種誤讀會捏造不存在的壞 check；對 transport error，後一種誤讀會讓未知狀態的變更提前進 default。
 
 判準吃 **exit code**，不要自己數 `statusCheckRollup`——rollup 單筆沒有 `isRequired` 欄位（分不出必要與非必要：非必要 check 還在跑會讓你空等、非必要 check 失敗會讓你誤停）、同名 check 會有多筆（被取代的 workflow run 仍留在清單裡）、且它混了 check run 與 legacy commit status 兩種型別（後者用 `state`/`context`，拿 `status != "COMPLETED"` 去篩對它恆真）。`gh pr checks` 已把這三件事正規化。
 
@@ -284,6 +296,7 @@ gh pr checks <PR-number|URL> -R "$repo_slug" --required
 | `CLEAN` / `HAS_HOOKS` / `UNSTABLE` | 沒有硬性阻擋（`UNSTABLE` = **非必要** check 有問題，protection 不在意——與上面 `--required` 是同一判準的兩面） | 直接 merge | 直接 merge（`--admin` 用不到） |
 | `BLOCKED` ＋ checks **exit 8** | **CI 還在跑，不是 protection 擋** | **等它跑完再 merge**（見下方等待策略） | **一樣等**——`--admin` 在此繞過的是還沒跑完的測試，不是規則 |
 | `BLOCKED` ＋ checks **其他非零，且列出了失敗的 check** | required check 失敗 | 停，回報是哪個 check 失敗 | **一樣停**——繞過等於把沒通過測試的變更送進 default |
+| `BLOCKED` ＋ authoritative non-watch checks 是 **query／transport failure**，沒有 failed row、也不是 exact `no checks reported` | check 狀態不確定 | 停，回報查詢錯誤；不得猜失敗或全綠 | **一樣停**——`--admin` 不得繞過未知狀態 |
 | `BLOCKED` ＋ checks **exit 0**，或 **`no checks reported`**（見上方 ⚠️） | protection 真的擋（缺 review／其他規則），與 check 無關 | **停**，回報並告知可用「bypass merge」 | 加 `--admin` 重試 |
 | `DIRTY` | 有衝突 | 停，回報 | **一樣停**——`--admin` 不解決衝突 |
 | `BEHIND` | base 落後、protection 要求最新 | 停，回報 | **一樣停**——該做的是更新 branch，不是繞過 |
@@ -295,9 +308,14 @@ gh pr checks <PR-number|URL> -R "$repo_slug" --required
 - **`BLOCKED` ＋ CI 還在跑時的等待策略**（`--watch` 自己輪詢，不要手寫迴圈）：
   ```bash
   gh pr checks <PR-number|URL> -R "$repo_slug" --required --watch --interval 15 --fail-fast
-  # 回來之後重查一次狀態再決定 merge——判準看 check，不看上一次 merge 失敗沒有
+  # --watch 的 exit 只代表 poller 如何返回，不是 authoritative check verdict；回來後固定用 non-watch 重查一次
+  gh pr checks <PR-number|URL> -R "$repo_slug" --required
+  # 上一行取得明確 verdict 後才重查 merge 狀態——判準看新的 check 結果，不看上一次 merge 失敗沒有
   gh pr view <PR-number|URL> -R "$repo_slug" --json mergeStateStatus -q .mergeStateStatus
   ```
+  - **`--watch` 是 poller，不是 check-state authority。** 不論 watch 以 0、1、8 或其他 code 返回，都要跑上面的
+    一次 non-watch recheck，並以它的 exit code ＋輸出分流。若 recheck 是 query／transport failure，STOP；不要
+    沿用 watch 最後一屏、不要只看新的 `mergeStateStatus`，也不要再 retry。
   - **刻意不封頂**：跑到 check 收斂為止。agent 全程在場、使用者隨時可中斷，那就是上限。
   - **NEVER wrap the wait in `timeout` / `gtimeout`.** Neither exists on macOS, and `command not found` is exit 127 — the whole wait silently never runs while the exit code still reads like a pass. 需要停就中斷，不要引入 `timeout`。
   - **NEVER re-run `gh pr merge` while waiting.** 這正是本節標題那條「不做失敗就 retry」的具體化：判準是 check 狀態，不是上一次 merge 失敗與否；重試只是多一次 API 呼叫，還把「還是被擋」的假訊號餵回自己。

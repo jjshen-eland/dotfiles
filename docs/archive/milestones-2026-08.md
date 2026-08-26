@@ -281,3 +281,9 @@
   - 放棄:在各 repo 加 completed actor denylist；用字串時效、Git identity、最近 runtime 或 session-local memory 猜 actor 存活；ordinary Log 收到 `to=` 就直接換 steward；新增 deterministic helper 來重複模型已能從 frozen active contracts 完成的有界枚舉
   - 重議:實地 multi-repo Log 無法可靠凍結完整 repo set／post-completion view；新的 behavior eval 出現 partial lifecycle mutation；或 active contract 規模使人工枚舉需要 deterministic manifest helper
   - 關聯:GitHub #149;D-20260824-cross-runtime-dossier-stewardship;D-20260824-memory-independent-transfer;M-20260824-project-steward-authority;claude/skills/project/references/pressure-tests.md;tests/run.sh
+
+- **M-20260826-project-watch-transport-error · 2026-08-26 Project checks watch transport failure 分流完成**:Scenario 29 把 #150 的真實 GraphQL timeout 固定為 RED：舊 shared shipping 規則的短註解提到 query failure，展開規則卻宣稱 exit 1 只有 failed check 與 no required checks 兩類，watch 返回後也只重查 merge state。現行 Claude／Codex shared core 將 exit 1 機械分成明確 failed row、exact `no checks reported`、以及無 verdict 的 API／transport query failure；第三類既不報失敗也不當全綠，最多一次 non-watch recheck，仍不確定即 STOP。`--watch` 明定只是一個 poller，每次返回後都由 non-watch `gh pr checks --required` 作權威。三個 fresh-context arms 分別驗過 timeout、`unit-tests fail` 與 no-checks 終態；Codex validator、doc-governance ship audit、diff check 與全 repo tests 全綠，最終 1219 PASS／0 FAIL。
+  - 日期來源:direct
+  - 放棄:把 bare exit 1 一律當 failing test；沿用 watch 最後一屏猜全綠；只重查 `mergeStateStatus`；用無界 retry 或 `statusCheckRollup` 補判
+  - 重議:`gh pr checks` 改變 exit／輸出契約，或新的 live incident 無法由 failed row、exact no-checks、query failure 三類 fail closed 表示
+  - 關聯:GitHub #150;M-20260826-project-retired-steward-gate;X-20260815-ci-rollup-jq;claude/skills/project/references/ship-paths.md;claude/skills/project/references/pressure-tests.md;tests/run.sh
