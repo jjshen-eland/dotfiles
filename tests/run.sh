@@ -3573,6 +3573,20 @@ if grep -q 'Scenario 26 — 可安全修復的 authority STOP 改用綁定式確
     ok "project authority recovery 以 prompt-bound 選項續行且不擴張授權"
 else bad "project authority recovery 尚未形成可確認、可取消且不重建 invocation 的契約"; fi
 
+project_spec_completion="$(sed -n '/^### Spec 成功後的 Log invocation 提示/,/^## /p' "$PJS_CLAUDE/references/workflow.md")"
+if grep -q 'Scenario 27 — Spec 收尾同時提示短版與 exact resume 明確版' "$PJS_CLAUDE/references/pressure-tests.md" \
+    && grep -q '不帶任何' <<< "$project_spec_completion" \
+    && grep -q 'resume=.*as=' <<< "$project_spec_completion" \
+    && grep -q 'active-writer-workspace-match' <<< "$project_spec_completion" \
+    && grep -qF "\$project --merge" <<< "$project_spec_completion" \
+    && grep -qF '/project --merge' <<< "$project_spec_completion" \
+    && grep -q 'resume=<exact-actor>' <<< "$project_spec_completion" \
+    && grep -q 'endpoint authorization' <<< "$project_spec_completion" \
+    && grep -q '不 carry' <<< "$project_spec_completion" \
+    && grep -q 'BROKEN.*recovery-kind.*scope mismatch' <<< "$project_spec_completion"; then
+    ok "project Spec 收尾只在 helper 精確證明時同列短版與 resume 明確版"
+else bad "project Spec 收尾未安全區分短版 invocation、workline binding 與新 endpoint 授權"; fi
+
 PSG_PARENT="$TMP/project-steward-parent"
 mkdir -p "$PSG_PARENT/repo/docs/archive"
 git init -q -b main "$PSG_PARENT/repo"
