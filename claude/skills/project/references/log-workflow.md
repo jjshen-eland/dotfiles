@@ -208,6 +208,35 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
    exit 2 是 BROKEN。兩種非零都設定 doc STOP，但繼續收集其餘摘要。**這是 adopted repo 唯一 doc verdict；
    NEVER 再跑 legacy dossier/backlog detector 來覆蓋它。**
 
+### Runtime steward retirement gate
+
+這個 gate 只處理 **durable runtime workline 結案**：本輪 authority helper 已證明 exact
+`claude:*`／`codex:*` actor，且本輪 completion milestone 明確結束該 actor 的 workline、將移除它自己的
+completed active item。一般 milestone、只完成其中一項工作或單純結束 invocation 都不代表 actor 死亡；
+`owner:*`／`human:*` 是 durable steward，也不因某次 runtime invocation 結束而套用本 gate。
+
+在寫 completion milestone、移除任何 completed item 或做其他 completion mutation **之前**：
+
+1. 凍結 Step 0 鎖定的完整 repo set；不得只看 control repo，也不得在 gate 後縮小集合。逐 repo 讀 adopted
+   config 與所有 active contracts，列出 repo、item、Writer、Workspace、Dossier Steward。只存在 config 或
+   scanner 其中之一仍是 BROKEN；legacy repo 不臆造 active-item schema。
+2. 建立不落盤的 post-completion view：只扣除本輪已有 acceptance evidence、確定要結案的 items，其他 active
+   items 原樣保留。枚舉其中 `Dossier Steward` 仍等於 retiring actor 的每一筆；不要用 milestone slug、字串
+   時效、Git identity、最近出現的 runtime 或 session-local memory 猜 actor／successor。
+3. 零筆 dead reference 才可照常進行 Step 2 mutation。若仍有任何一筆，先 STOP：不寫 milestone、不移除 item、
+   不 commit／push／merge，並逐 repo／item 回報 ownership transfer blocker。
+4. Blocker 只能由使用者明示 successor 後走既有 Transfer state machine 解決。`to=` 出現在 ordinary Log 不會把
+   本 invocation 偷換成 Transfer，也不會自行產生 PREPARED evidence；尚未 PREPARED 時，回報需由 current
+   steward 另行明確叫用 `$project transfer ... to=<exact-actor>`／`/project transfer ... to=<exact-actor>`。
+   不得自動 fallback 到 `owner:*`、另一 runtime、最近 actor 或 `unassigned`。
+5. 已有可驗證 PREPARED transfer 時，先以完整 locked set 重跑 portable-knowledge、recipient、active-item
+   mapping、conditional owner 與 endpoint gates。由原 steward 在每個受影響 repo 的同一受控 lifecycle commit
+   寫入 conditional owner record、completion milestone，並原子更新**所有 remaining active items**的 steward／
+   writer／workspace／next step；multi-repo batch 在所有 candidate commits 與 audits 都通過前一律視為未完成。
+6. Step 3 前再從 candidate trees 枚舉一次完整 locked set。任何 active item 仍指向 retiring actor、任一 repo
+   未納入、successor 不一致、mapping／audit 失敗或 endpoint evidence 不成立，都維持 STOP／PREPARED，
+   **不得宣告 workline 完成**；不得以部分 repo 已更新作為 completion evidence。
+
 **Legacy repo**（兩個 adoption 檔都無）：沿用 `ship-state.sh` 印出的 `dossier:`／`dossier-flag:`／
 `dossier-sections:`／`backlog-flag:`。逐 flag 照訊息處置；簽章不符或 backlog 缺必要章節就 STOP。
 `dossier: NONE` 只在摘要建議建立，不自動回填。只有一個 adoption 檔存在時是 BROKEN，不得走本段。

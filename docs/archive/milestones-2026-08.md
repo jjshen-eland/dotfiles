@@ -275,3 +275,9 @@
   - 放棄:永遠只顯示完整 `resume=` 形式；只憑 branch 名推導 short form；讓提示或上一輪 `--merge` 冒充新的 endpoint authorization；為兩個 adapter 複製 workflow
   - 重議:任一 runtime 無法用正確 sigil 送出完整 invocation option；或新的 behavior eval 顯示 post-Spec helper 不能可靠區分 short-form safety
   - 關聯:GitHub #148;D-20260824-project-steward-authority;D-20260825-project-prompt-bound-authority-recovery;claude/skills/project/references/pressure-tests.md;tests/run.sh
+
+- **M-20260826-project-retired-steward-gate · 2026-08-26 Project Log 阻止已結案 runtime steward 成為 active dead reference**:Scenario 28 先把 #149 固定為 1217 PASS／1 FAIL：control repo 可寫 completion milestone 並移除 workline item，卻未盤點三個 target repo 仍以同一 runtime actor 作 steward。Shared Log workflow 現在於任何 completion mutation 前凍結完整 Step 0 repo set、建立不落盤 post-completion view 並枚舉 dead references；只對 exact `claude:*`／`codex:*` workline retirement 生效，`owner:*`／`human:*` 與單純 invocation 結束不誤擋。殘留 reference 且無 successor 時零 mutation STOP；明示 successor 仍須先走 PREPARED transfer，由原 steward 在受控 lifecycle commits 原子更新所有 remaining active items，完整 batch 與 audits 通過前不得宣告完成。三個 fresh-context arms 驗過無 successor、durable owner control、`to=` 但未 PREPARED；Codex validator、Claude frontmatter／portable linkage repo gates、doc-governance ship audit、diff check 與全 repo tests 全綠，最終 1218 PASS／0 FAIL。
+  - 日期來源:direct
+  - 放棄:在各 repo 加 completed actor denylist；用字串時效、Git identity、最近 runtime 或 session-local memory 猜 actor 存活；ordinary Log 收到 `to=` 就直接換 steward；新增 deterministic helper 來重複模型已能從 frozen active contracts 完成的有界枚舉
+  - 重議:實地 multi-repo Log 無法可靠凍結完整 repo set／post-completion view；新的 behavior eval 出現 partial lifecycle mutation；或 active contract 規模使人工枚舉需要 deterministic manifest helper
+  - 關聯:GitHub #149;D-20260824-cross-runtime-dossier-stewardship;D-20260824-memory-independent-transfer;M-20260824-project-steward-authority;claude/skills/project/references/pressure-tests.md;tests/run.sh
