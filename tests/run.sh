@@ -3622,6 +3622,15 @@ if grep -q 'Scenario 28 — runtime steward workline 結案不得留下 active d
     && grep -q '不得宣告.*完成' <<< "$project_retired_steward_gate"; then
     ok "project Log 在 runtime steward workline 結案前消除跨 repo dead references"
 else bad "project Log 仍可能讓已結案 runtime actor 留在 active steward contract"; fi
+project_check_routing="$(sed -n '/^### merge 受阻時的分流/,/^## PR title/p' "$PJS_CLAUDE/references/ship-paths.md")"
+if grep -q 'Scenario 29 — checks watch 的 transport failure 不得冒充 check verdict' "$PJS_CLAUDE/references/pressure-tests.md" \
+    && grep -q 'exit 1 有三個' <<< "$project_check_routing" \
+    && grep -q 'transport.*API.*query failure' <<< "$project_check_routing" \
+    && grep -q 'non-watch' <<< "$project_check_routing" \
+    && grep -q '既不.*失敗.*也不.*全綠' <<< "$project_check_routing" \
+    && grep -q '\-\-watch.*poller' <<< "$project_check_routing"; then
+    ok "project checks watch 將 transport failure 分流為不確定並用 non-watch recheck 定案"
+else bad "project checks watch 仍可能把 transport failure 誤當 required-check verdict"; fi
 if grep -q 'BLOCKED.*PREPARED.*TRANSFERRED' "$PJS_CLAUDE/references/workflow.md" \
     && grep -q 'portable-knowledge' "$PJS_CLAUDE/references/workflow.md" \
     && grep -q 'canonical handover endpoint' "$PJS_CLAUDE/references/workflow.md" \
