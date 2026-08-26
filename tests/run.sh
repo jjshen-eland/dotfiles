@@ -3609,6 +3609,19 @@ if grep -q '^durable-steward: codex:integration$' <<< "$psg_parent_out" \
     && grep -q '^verdict: PASS$' <<< "$psg_parent_out"; then
     ok "steward gate 保留 completed-item 跨 session shipping liveness"
 else bad "steward gate 無法從 candidate parent 恢復 completed-item steward"; fi
+project_retired_steward_gate="$(sed -n '/^### Runtime steward retirement gate/,/^## /p' "$PJS_CLAUDE/references/log-workflow.md")"
+if grep -q 'Scenario 28 — runtime steward workline 結案不得留下 active dead reference' "$PJS_CLAUDE/references/pressure-tests.md" \
+    && grep -q 'Step 0.*完整.*repo' <<< "$project_retired_steward_gate" \
+    && grep -q 'completion milestone.*移除' <<< "$project_retired_steward_gate" \
+    && grep -q 'claude:\*.*codex:\*' <<< "$project_retired_steward_gate" \
+    && grep -q 'owner:\*.*human:\*' <<< "$project_retired_steward_gate" \
+    && grep -q '明示 successor' <<< "$project_retired_steward_gate" \
+    && grep -q 'PREPARED' <<< "$project_retired_steward_gate" \
+    && grep -q '所有.*active items' <<< "$project_retired_steward_gate" \
+    && grep -q '同一.*lifecycle commit' <<< "$project_retired_steward_gate" \
+    && grep -q '不得宣告.*完成' <<< "$project_retired_steward_gate"; then
+    ok "project Log 在 runtime steward workline 結案前消除跨 repo dead references"
+else bad "project Log 仍可能讓已結案 runtime actor 留在 active steward contract"; fi
 if grep -q 'BLOCKED.*PREPARED.*TRANSFERRED' "$PJS_CLAUDE/references/workflow.md" \
     && grep -q 'portable-knowledge' "$PJS_CLAUDE/references/workflow.md" \
     && grep -q 'canonical handover endpoint' "$PJS_CLAUDE/references/workflow.md" \

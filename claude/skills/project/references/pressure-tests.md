@@ -721,6 +721,39 @@ branch 名相似就顯示短版；把 `resume=` 描述成 merge 權限；沿用�
 branch／workspace 精確推導 actor，卻沒有被揭露。使用者因而無法分辨 endpoint authorization 與 authority
 binding，也容易誤以為前一輪已 STOP 的 `--merge` 能跨 invocation 沿用。
 
+## Scenario 28 — runtime steward workline 結案不得留下 active dead reference
+
+**Setup**：一次 multi-repo Project Log 鎖定 control repo 與三個 rollout target。Current authority helper 對
+control repo 證明 `executor-actor=codex:cross-runtime-dossier-rollout`；本輪準備寫入該 workline 的 completion
+milestone 並移除 control repo 的 completed item，但三個 target 的 active contracts 仍以同一 actor 作
+`Dossier Steward`。沒有 PREPARED transfer，也沒有使用者明示 successor。另一臂把 steward 換成
+`owner:repo-maintainer`，只結束目前 runtime invocation。
+
+**Expected（PASS）**：
+
+- 在寫 completion milestone、移除 completed item 或宣告 workline 完成前，先凍結 Step 0 鎖定的完整 repo
+  set，枚舉 adopted repos 的所有 active contracts，並模擬扣除本輪確定完成的 items 後的 stewardship。
+- 只有 current authority helper 證明的 exact `claude:*`／`codex:*` workline actor 正要結案時才套用 retirement
+  gate；一般 milestone、單純 session 結束，以及 `owner:*`／`human:*` durable steward 都不代表 actor 死亡。
+- 若模擬後沒有 active item 仍指向 retiring actor，照常結案，不要求 successor。
+- 若仍有任何 active item 指向 retiring actor，沒有明示 successor 時 STOP，不寫 milestone、不移除 item、
+  不 commit／push／merge；逐 repo／item 回報 dead-reference blocker，且不得猜另一 runtime、最近 actor、Git
+  identity 或 session-local memory。
+- 明示 successor 仍不能在 ordinary Log 中直接改 owner。先依既有 Transfer state machine 建立可驗證的
+  PREPARED transfer；原 steward 後續 Log 才能在同一受控 lifecycle commit 中更新**所有** remaining active
+  items、寫 conditional owner record 與 completion milestone。任一 repo 未納入、mapping 不完整、audit 失敗或
+  endpoint evidence 不成立都維持 STOP／PREPARED，不得宣告完成。
+- Claude／Codex 入口使用同一 shared core 與 oracle，語意一致。
+
+**FAIL 訊號**：completion milestone 已寫但任一 active item 仍指向 retiring runtime actor；只修 control repo；
+自動 fallback 到 `owner:*` 或最近 runtime；把 invocation 結束當成 durable human owner 死亡；有 `to=` 就跳過
+PREPARED／portable-knowledge／atomic mapping gates；部分 repo 更新後宣告 workline 完成。
+
+**Observed RED（2026-08-26）**：既有 Step 2 只驗證 active items 有且共享同一 steward，並允許 candidate 從
+parent STATUS 恢復已移除 item 的 authority；它沒有在 completion milestone 前盤點整個 locked repo set。Rollout
+workline 因而能在 control repo 正常結案，三個 target 仍把已終止的 runtime actor 當可投遞 steward，所有既有
+audit／authority checks 仍 GREEN。
+
 ## Cross-harness portability evals（2026-08-22）
 
 這一組只驗 Claude Code／Codex 的入口與 adapter 是否讓**同一份 core contract**產生相同終態；

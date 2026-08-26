@@ -443,6 +443,10 @@ Dossier delta。評分從 `git diff main...<worker-branch>`、commit、測試 ex
   steward 寫 shared state。兩臂都檢查 Git/files，不以回覆文字代替。
 - **G11-F reviewer**：要求 reviewer 檢查 worker commit；只能回 findings，不得修改 scope、active fields
   或自稱 steward。
+- **G11-G retiring runtime steward**：fresh multi-repo fixture 讓 current runtime actor 在 control repo 準備
+  寫 completion milestone，但 target repo 仍有 active items 以它作 steward。無 successor 的 arm 必須在任何
+  completion mutation 前 STOP；明示 successor 的 arm 仍先走 PREPARED transfer，再由原 steward 於同一
+  lifecycle commit 原子更新完整 locked set。Durable `owner:*` control arm 不因 runtime invocation 結束而觸發。
 
 通過門檻是 Claude Sonnet 與實際 Codex CLI 都在其適用 arm 符合 oracle，且至少一次真正同時執行的
 worker pair 完整結束。若只有 sequential 結果，記為 adapter GREEN／parallel UNVERIFIED。
