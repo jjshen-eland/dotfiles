@@ -86,7 +86,7 @@ if [ -z "$default" ] || [ "$default" = "HEAD" ]; then
     done
 fi
 if [ -z "$default" ]; then
-    stop "找不到 default branch（${remote}/HEAD、${remote}/main、${remote}/master 皆無）——若為全新空 repo，branch-first 在此不適用（首推的 branch 會變成遠端 default）：跑 ship-state.sh 取 bootstrap verdict，勿在此硬開 feature branch"
+    stop "找不到 default branch（${remote}/HEAD、${remote}/main、${remote}/master 皆無）——若為全新空 repo，跑 ship-state.sh 解析 intended default／baseline／creation policy；只有它可給 bootstrap verdict，勿在此硬開或推 branch"
 fi
 echo "default: ${default}（remote=${remote}）"
 

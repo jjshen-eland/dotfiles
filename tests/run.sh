@@ -1237,6 +1237,7 @@ assert_rc "多 repo：全部 CLEAN → exit 0" 0 "$mrepo_rc"
 
 echo "▶ 9. ship-state.sh 偵測與 protection 判定"
 SS_SCRIPT="$ROOT/claude/skills/project/scripts/ship-state.sh"
+BS_BASELINE_SCRIPT="$ROOT/claude/skills/project/scripts/bootstrap-baseline.sh"
 
 # gh stub 三態：PROTECTED / OPEN(404 Branch not protected) / Not Found(身分分離)
 make_gh_stub() {  # <path> <protection行為: protected|open|notfound>
@@ -1246,6 +1247,7 @@ make_gh_stub() {  # <path> <protection行為: protected|open|notfound>
 case "\$*" in
     *nameWithOwner*) echo "acme/widget" ;;
     *viewerPermission*) echo "READ" ;;
+    *"api repos/acme/widget --jq .default_branch"*) echo "main" ;;
     *"/protection"*)
         case "$mode" in
             protected) echo '{"required_status_checks":{}}'; exit 0 ;;
@@ -1260,6 +1262,44 @@ STUB
 make_gh_stub "$TMP/gh-protected" protected
 make_gh_stub "$TMP/gh-open" open
 make_gh_stub "$TMP/gh-notfound" notfound
+
+# bootstrap 專用 gh stub：default metadata 與 effective rules 分開控制，證明 shared
+# 判準不依賴 org／ruleset／property 名稱。
+make_bootstrap_gh_stub() {  # <path> <default> <rules-mode:none|required|required-exempt|creation|unreadable>
+    local default="$2" rules_mode="$3"
+    cat > "$1" <<STUB
+#!/usr/bin/env bash
+case "\$*" in
+    *nameWithOwner*) echo "example/portable-repo" ;;
+    *"api repos/example/portable-repo --jq .default_branch"*) echo "$default" ;;
+    *"/protection"*) echo "gh: Branch not protected (HTTP 404)"; exit 1 ;;
+    *"rules/branches"*)
+        case "$rules_mode" in
+            none) echo '[]' ;;
+            required) echo '[{"type":"required_status_checks","ruleset_source_type":"Organization","ruleset_source":"example","parameters":{"do_not_enforce_on_create":false,"required_status_checks":[{"context":"portable-ci"}]}}]' ;;
+            required-exempt) echo '[{"type":"required_status_checks","ruleset_source_type":"Repository","ruleset_source":"example/portable-repo","parameters":{"do_not_enforce_on_create":true,"required_status_checks":[{"context":"portable-ci"}]}}]' ;;
+            creation) echo '[{"type":"creation","ruleset_source_type":"Organization","ruleset_source":"example"}]' ;;
+            unreadable) echo 'gh: Resource not accessible (HTTP 403)' >&2; exit 1 ;;
+        esac ;;
+esac
+STUB
+    chmod +x "$1"
+}
+make_bootstrap_gh_stub "$TMP/gh-bs-trunk" trunk none
+make_bootstrap_gh_stub "$TMP/gh-bs-required" main required
+make_bootstrap_gh_stub "$TMP/gh-bs-required-exempt" main required-exempt
+make_bootstrap_gh_stub "$TMP/gh-bs-creation" main creation
+make_bootstrap_gh_stub "$TMP/gh-bs-unreadable" main unreadable
+
+cat > "$TMP/gh-classic-required" <<'STUB'
+#!/usr/bin/env bash
+case "$*" in
+    *nameWithOwner*) echo "example/classic-repo" ;;
+    *"/protection"*) echo '{"required_status_checks":{"strict":true,"contexts":["classic-ci"],"checks":[{"context":"classic-ci","app_id":null}]}}' ;;
+    *"rules/branches"*) echo '[]' ;;
+esac
+STUB
+chmod +x "$TMP/gh-classic-required"
 
 # fixture：bare origin + clone，feature branch 上 1 commit、tree clean
 git init --bare -q "$TMP/ss-origin.git"
@@ -1283,6 +1323,22 @@ if echo "$out" | grep -q "protection: OPEN" && echo "$out" | grep -q "ship-path:
     && ! echo "$out" | grep -q "ship-path: DIRECT-PUSH"; then
     ok "stub open → OPEN 但 ship-path 仍為 PR（直推降為 escape hatch）"
 else bad "stub open 判定錯誤"; fi
+if grep -q "required-policy: none" <<< "$out"; then
+    ok "無 effective required rules → required-policy none"
+else bad "無 ruleset 未輸出 required-policy none（${out}）"; fi
+
+out="$(SHIP_STATE_GH="$TMP/gh-bs-required" "$SS_SCRIPT" "$TMP/ss-work")"
+if grep -q "required-policy: REQUIRED" <<< "$out" && grep -q "portable-ci" <<< "$out"; then
+    ok "effective required context 以 provider-neutral evidence 輸出"
+else bad "required context 未進 ship-state evidence（${out}）"; fi
+out="$(SHIP_STATE_GH="$TMP/gh-classic-required" "$SS_SCRIPT" "$TMP/ss-work")"
+if grep -q "required-policy: REQUIRED" <<< "$out" && grep -q "classic-ci" <<< "$out"; then
+    ok "classic branch protection required context 併入 required-policy"
+else bad "classic required context 被 ruleset-only 查詢漏掉（${out}）"; fi
+out="$(SHIP_STATE_GH="$TMP/gh-bs-unreadable" "$SS_SCRIPT" "$TMP/ss-work")"
+if grep -q "required-policy: UNKNOWN" <<< "$out"; then
+    ok "required policy 403／不可見 → UNKNOWN"
+else bad "required policy 不可見被冒充 none（${out}）"; fi
 
 out="$(SHIP_STATE_GH="$TMP/gh-notfound" "$SS_SCRIPT" "$TMP/ss-work")"
 if echo "$out" | grep -q "protection: UNKNOWN" && echo "$out" | grep -q "treat as PROTECTED" \
@@ -2212,6 +2268,21 @@ else bad "STOP 訊息仍只說「確認名字是否正確」，把人導向錯�
 # branch 但本地定位不到 → 絕不可推（推了就把 feature branch 變成遠端 default）。
 # 本區塊釘死「分辨得出來」與「baseline 建立後豁免自動失效」。
 
+# 情境 0（#153 regression）：遠端零 branch + HEAD 在 feature + 本地沒有 intended-default
+# → 遠端為空不是把 feature 升成 default 的充分證據。必須 STOP，且不可輸出 push feature。
+git init --bare -q "$TMP/bs-feature-origin.git"
+git init -q -b refactor/initial-import "$TMP/bs-feature-work"
+(cd "$TMP/bs-feature-work" \
+    && echo hi > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
+    && git remote add origin "$TMP/bs-feature-origin.git")
+out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/bs-feature-work")"
+if echo "$out" | grep -q "verdict: STOP" && ! echo "$out" | grep -q "bootstrap-cmd:"; then
+    ok "空 remote + feature HEAD + 無 intended-default → STOP 且不輸出 bootstrap push"
+else bad "空 remote 把 feature HEAD 當 default bootstrap（${out}）"; fi
+if echo "$out" | grep -q "baseline"; then
+    ok "missing intended-default STOP 揭露 baseline evidence 缺口"
+else bad "missing intended-default STOP 未說明 baseline 缺口（${out}）"; fi
+
 # 情境 1：遠端零 branch + 本地 main 有 commit → BOOTSTRAP
 git init --bare -q "$TMP/bs-origin.git"
 git init -q -b main "$TMP/bs-work"
@@ -2225,6 +2296,102 @@ if echo "$out" | grep -q "remote-heads: 0"; then ok "BOOTSTRAP 附遠端 branch 
 if echo "$out" | grep -qF "push -u 'origin' 'main'"; then ok "BOOTSTRAP 附可照抄 push 指令（remote/branch 均已 quote）"; else bad "BOOTSTRAP 缺 bootstrap-cmd"; fi
 if echo "$out" | grep -q "bootstrap-note:.*default branch"; then ok "BOOTSTRAP 標明首推將決定遠端 default"; else bad "BOOTSTRAP 未標明 default 後果"; fi
 if echo "$out" | grep -q "bootstrap-scope:"; then ok "BOOTSTRAP 標明豁免作用域（防授權蔓延）"; else bad "BOOTSTRAP 缺 scope 行（授權會蔓延到後續 commit）"; fi
+
+# 非 main intended default + HEAD 在 feature，但 local trunk 是 ancestor → 推 trunk，不推 feature。
+git init --bare -q "$TMP/bs-nonmain-origin.git"
+git init -q -b trunk "$TMP/bs-nonmain-work"
+(cd "$TMP/bs-nonmain-work" \
+    && echo base > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
+    && git switch -qc feat/import && echo feature >> f.txt && "${GITC[@]}" commit -qam feature \
+    && git remote add origin "$TMP/bs-nonmain-origin.git")
+out="$(SHIP_STATE_GH="$TMP/gh-bs-trunk" "$SS_SCRIPT" "$TMP/bs-nonmain-work")"
+if grep -qF "bootstrap-default: trunk" <<< "$out" \
+    && grep -qF "push -u 'origin' 'trunk'" <<< "$out" \
+    && ! grep -qF "push -u 'origin' 'feat/import'" <<< "$out"; then
+    ok "非 main metadata + feature HEAD → bootstrap intended trunk"
+else bad "非 main bootstrap 未鎖定 intended default（${out}）"; fi
+
+# explicit contract／當輪確認可選非 metadata branch；輸出必須揭露衝突，不能默默覆蓋。
+(cd "$TMP/bs-nonmain-work" && git branch release trunk)
+out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" --bootstrap-default release "$TMP/bs-nonmain-work")"
+if grep -q "bootstrap-default-conflict:" <<< "$out" \
+    && grep -qF "push -u 'origin' 'release'" <<< "$out"; then
+    ok "explicit intended default 解決 metadata 衝突並揭露 evidence"
+else bad "explicit default 未安全處理 metadata 衝突（${out}）"; fi
+
+# creation policy：required check/workflow 若不豁免 create，空 repo 沒有可先產生 status 的
+# target ref → deterministic deadlock STOP；明示豁免 create 才可 bootstrap。
+out="$(SHIP_STATE_GH="$TMP/gh-bs-required" "$SS_SCRIPT" "$TMP/bs-work")"
+if grep -q "bootstrap-policy: BLOCKED" <<< "$out" \
+    && grep -q "required-check/workflow-on-create=1" <<< "$out" \
+    && ! grep -q "bootstrap-cmd:" <<< "$out"; then
+    ok "required check enforced on create → policy deadlock STOP"
+else bad "creation-required check 未阻止 bootstrap（${out}）"; fi
+out="$(SHIP_STATE_GH="$TMP/gh-bs-required-exempt" "$SS_SCRIPT" "$TMP/bs-work")"
+if grep -q "bootstrap-policy: CLEAR" <<< "$out" && grep -q "verdict: BOOTSTRAP" <<< "$out"; then
+    ok "required check 明示 exempt on create → 可建立 baseline"
+else bad "creation-exempt required check 誤擋 bootstrap（${out}）"; fi
+out="$(SHIP_STATE_GH="$TMP/gh-bs-creation" "$SS_SCRIPT" "$TMP/bs-work")"
+if grep -q "creation-restrictions=1" <<< "$out" && grep -q "verdict: STOP" <<< "$out"; then
+    ok "effective creation restriction → STOP，不假設有 bypass"
+else bad "creation restriction 未 fail closed（${out}）"; fi
+out="$(SHIP_STATE_GH="$TMP/gh-bs-unreadable" "$SS_SCRIPT" "$TMP/bs-work")"
+if grep -q "bootstrap-policy: UNKNOWN" <<< "$out" && grep -q "verdict: STOP" <<< "$out"; then
+    ok "effective policy 403／不可見 → UNKNOWN STOP"
+else bad "不可見 policy 被當成無 ruleset（${out}）"; fi
+
+# 使用者在確認型 UX 選定 baseline 後，專用 helper 只建立 local intended-default ref；
+# 不 push、不切 branch、不碰 working tree。接著重跑 ship-state 才能取得 bootstrap-cmd。
+before_branch="$(git -C "$TMP/bs-feature-work" branch --show-current)"
+before_porcelain="$(git -C "$TMP/bs-feature-work" status --porcelain)"
+selected_head="$(git -C "$TMP/bs-feature-work" rev-parse HEAD)"
+out="$("$BS_BASELINE_SCRIPT" "$TMP/bs-feature-work" main "$selected_head" 2>&1)"; bs_rc=$?
+assert_rc "明示 HEAD baseline → helper exit 0" 0 "$bs_rc"
+if git -C "$TMP/bs-feature-work" show-ref --verify -q refs/heads/main \
+    && [ "$(git -C "$TMP/bs-feature-work" rev-parse main)" = "$selected_head" ]; then
+    ok "baseline helper 建立 intended-default ref 指向明示 SHA"
+else bad "baseline helper 未建立正確 local default（${out}）"; fi
+assert_eq "baseline helper 不切換目前 feature branch" "$before_branch" "$(git -C "$TMP/bs-feature-work" branch --show-current)"
+assert_eq "baseline helper 不碰 working tree" "$before_porcelain" "$(git -C "$TMP/bs-feature-work" status --porcelain)"
+if ! git -C "$TMP/bs-feature-origin.git" show-ref --verify -q refs/heads/main; then
+    ok "baseline helper 不 push remote"
+else bad "baseline helper 越權 push remote"; fi
+out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/bs-feature-work")"
+if grep -q "bootstrap-baseline: READY" <<< "$out" \
+    && grep -qF "push -u 'origin' 'main'" <<< "$out"; then
+    ok "明示 baseline 準備後重跑 detection → 只推 intended default"
+else bad "baseline preparation 後未取得安全 bootstrap（${out}）"; fi
+
+# helper failure paths：non-ancestor、remote 已非空與既有 ref 指向不同 SHA 都要零 mutation STOP。
+git init -q -b side "$TMP/bs-side"
+(cd "$TMP/bs-side" && echo side > side && "${GITC[@]}" add side && "${GITC[@]}" commit -qm side)
+side_sha="$(git -C "$TMP/bs-side" rev-parse HEAD)"
+git -C "$TMP/bs-feature-work" fetch -q "$TMP/bs-side" "$side_sha"
+out="$("$BS_BASELINE_SCRIPT" "$TMP/bs-feature-work" trunk "$side_sha" 2>&1)"; bs_rc=$?
+if [ "$bs_rc" -ne 0 ] && grep -q "verdict: STOP" <<< "$out" \
+    && ! git -C "$TMP/bs-feature-work" show-ref --verify -q refs/heads/trunk; then
+    ok "non-ancestor baseline → STOP 且不建立 ref"
+else bad "non-ancestor baseline 未保持零 mutation（${out}）"; fi
+out="$("$BS_BASELINE_SCRIPT" "$TMP/bs-feature-work" option-injection --help 2>&1)"; bs_rc=$?
+if [ "$bs_rc" -ne 0 ] && grep -q "verdict: STOP" <<< "$out" \
+    && ! git -C "$TMP/bs-feature-work" show-ref --verify -q refs/heads/option-injection; then
+    ok "baseline candidate option injection → STOP 且不建立 ref"
+else bad "baseline candidate 被 rev-parse 當 option（${out}）"; fi
+(cd "$TMP/bs-feature-work" \
+    && echo later >> f.txt && "${GITC[@]}" commit -qam later \
+    && git branch conflict main)
+conflict_candidate="$(git -C "$TMP/bs-feature-work" rev-parse HEAD)"
+out="$("$BS_BASELINE_SCRIPT" "$TMP/bs-feature-work" conflict "$conflict_candidate" 2>&1)"; bs_rc=$?
+if [ "$bs_rc" -ne 0 ] && grep -q "verdict: STOP" <<< "$out" \
+    && [ "$(git -C "$TMP/bs-feature-work" rev-parse conflict)" = "$selected_head" ]; then
+    ok "既有 default ref 指向不同 SHA → STOP 且不改 ref"
+else bad "既有 ref conflict 被覆寫（${out}）"; fi
+(cd "$TMP/bs-feature-work" && git push -qu origin refactor/initial-import)
+out="$("$BS_BASELINE_SCRIPT" "$TMP/bs-feature-work" race HEAD 2>&1)"; bs_rc=$?
+if [ "$bs_rc" -ne 0 ] && grep -q "remote-heads: 1" <<< "$out" \
+    && ! git -C "$TMP/bs-feature-work" show-ref --verify -q refs/heads/race; then
+    ok "確認後 remote 已被先推 → helper 重新檢查並零 mutation STOP"
+else bad "remote race 未被 helper 擋下（${out}）"; fi
 
 # 情境 2：遠端零 branch + detached HEAD → 不可 bootstrap（無 branch 名可當 default）
 (cd "$TMP/bs-work" && git checkout -q --detach)
@@ -3631,6 +3798,19 @@ if grep -q 'Scenario 29 — checks watch 的 transport failure 不得冒充 chec
     && grep -q '\-\-watch.*poller' <<< "$project_check_routing"; then
     ok "project checks watch 將 transport failure 分流為不確定並用 non-watch recheck 定案"
 else bad "project checks watch 仍可能把 transport failure 誤當 required-check verdict"; fi
+project_bootstrap_contract="$(sed -n '/^## Bootstrap：/,/^## Branch protection/p' "$PJS_CLAUDE/references/ship-paths.md")"
+if grep -q 'Scenario 30 — 空 repo 首次 merge 不得把 feature branch 升成 default' "$PJS_CLAUDE/references/pressure-tests.md" \
+    && grep -q 'bootstrap-baseline.sh' <<< "$project_bootstrap_contract" \
+    && grep -q 'ship-state.sh --bootstrap-default' <<< "$project_bootstrap_contract" \
+    && grep -q '第一項是安全預設' <<< "$project_bootstrap_contract" \
+    && grep -q '暫停並先整理 baseline' <<< "$project_bootstrap_contract" \
+    && grep -q '目前 HEAD full SHA' <<< "$project_bootstrap_contract" \
+    && grep -q 'required-policy: REQUIRED' <<< "$project_check_routing" \
+    && grep -q 'UNOBSERVED' <<< "$project_check_routing" \
+    && grep -q '沒有 check object 可 watch' <<< "$project_check_routing" \
+    && grep -q '重新取得.*required-policy' "$PJS_CLAUDE/references/log-workflow.md"; then
+    ok "project 空 repo bootstrap 採確認型 baseline UX、effective policy 與 post-push re-detection"
+else bad "project 空 repo bootstrap contract 未完整接上 #153 state machine"; fi
 if grep -q 'BLOCKED.*PREPARED.*TRANSFERRED' "$PJS_CLAUDE/references/workflow.md" \
     && grep -q 'portable-knowledge' "$PJS_CLAUDE/references/workflow.md" \
     && grep -q 'canonical handover endpoint' "$PJS_CLAUDE/references/workflow.md" \
