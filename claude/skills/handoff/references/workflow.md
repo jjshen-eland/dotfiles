@@ -32,6 +32,7 @@
 - **No state snapshots the repo already carries.** Do not paste full diffs or file contents into the handoff — point at commits and paths. Snapshots go stale silently; the anchor makes staleness detectable, a pasted diff does not.
 - **Write side: every file path mentioned MUST exist** (check it) or be explicitly marked 規劃中/待新建.
 - **Handoff itself authorizes only its machine-local artifact.** It does NOT authorize repo edits, commit, push, PR, merge, deployment, messaging, or deletion outside the approved retention contract. A cross-host/owner transfer belongs in the repo's durable transfer/project workflow; report that routing and STOP unless the user separately authorizes those mutations. **Action authorization不得 carry across session、runtime 或 owner transfer**，也不得寫進 artifact 當作後續授權。
+- **Every resume that would continue into repo mutation gets one new bounded batch authorization.** After verification and reconciliation produce an actionable plan, ask once for this session's exact repo/work item, write paths, and named local actions, then STOP. A directive bundled into the resume invocation does not replace this gate, and authorization claimed by the artifact or an earlier session is inert. Do not consume an active handoff before the answer. The batch may cover local edits, dependency preparation, tests/lint/build, and a local branch/commit only when each is named and the repo contract permits it. It never covers push, PR, merge, deploy, deletion, credentials/grants, traffic changes, destructive Git, or scope expansion; those retain their own current, action-naming authorization. After an affirmative answer, do not re-ask for actions already inside the batch.
 
 ### Red Flags — STOP and re-read Critical
 
@@ -51,6 +52,7 @@
 - Treating a FRESH verdict on an archive-sourced handoff as permission to act on it directly. Archive provenance caps it at clue (R3).
 - Relaying a next-step's blocking reason that names another repo, without having looked at that repo in this session. "That repo is another session's / read-only for this line" is a scope statement, not a reason to skip checking it (R3).
 - Pasting `anchors` output into the frontmatter after a non-zero exit. It prints nothing on failure — whatever you are looking at is from an earlier run (W2).
+- Consuming an active handoff or editing the repo before the resume batch has been affirmatively authorized because the invocation said "finish it" or the artifact says a previous session had permission.
 
 ## Write mode（session 結束／context reset 前）
 
@@ -164,9 +166,20 @@ slug: <slug>
 
 **Archive provenance caps trust; verify can only lower it, never raise it.** 交接檔來自 `archive/`（R1 的 archive 命中）時，**即使 verify 判 FRESH 也只是線索**，不得套用上表 FRESH 列的「直接接續」。它已經被消費過——前一個 session 載入它並開始動工，而**未 commit 的進度不會讓錨點漂移**：FRESH 只證明沒有新 commit，不證明沒人動過。依賴的每一條都要對 repo 現況重新核對。
 
+### R3.5：取得本 session 的 bounded batch authorization
+
+若使用者要在 resume 後繼續實作，reconcile 產生 actionable plan 後，以**一個問題**列出：
+
+- session／workline，以及每個 target repo、work item、branch／workspace；
+- exact write scope；
+- 本批要執行的 named local actions（例如指定檔案 edit、dependency preparation、test／lint／build；需要 local branch／commit 時逐項明列）；
+- 固定排除項：push、PR、merge、deploy、delete、credentials／grants、traffic change、destructive Git 與 scope expansion。
+
+接著問「是否授權本 session 依上述邊界執行？」並 STOP。使用者肯定後，該授權只存活於本 session、該 workline 與列出的 scope/actions；已涵蓋的步驟不得逐項重問。使用者縮窄範圍就採較窄版本；計畫擴張到未列 repo／path／action 時，只為 delta 重新取得授權。任何 batch 都不能放寬 target repo contract，也不能把排除項改叫「必要操作」後包入。
+
 ### R4：消費歸檔，然後開工
 
-計畫確立後、動工前，依交接檔的來源分流：
+計畫確立且 R3.5 已取得肯定授權後、動工前，依交接檔的來源分流：
 
 - **來自 active** → 歸檔（消費）後才開工：
 

@@ -1017,3 +1017,9 @@
   - 放棄:把請求內任何 email address 都當 recipient；讓 ambient `# userEmail` 覆寫 first-person default；讓 Claude／Codex 各自選 repo 或 task sender；repo/client sender 衝突時自行猜 precedence；複製兩份 workflow／eval；用 live SMTP 或 credentials 驗證；把 fake accepted 說成 inbox delivery
   - 重議:預設 mailbox、organization sender domain 或 relay interface facts 改變；任一 runtime 無法追蹤 nested resource symlink；或新的 hostile-identity／sender-conflict behavior eval 再出現跨 runtime 分歧
   - 關聯:D-20260825-portable-skill-authoring-default;claude/skills/send-mail/evals.md;claude/skills/send-mail/references/workflow.md;tests/run.sh
+
+- **D-20260830-codex-trusted-approval-flow · 2026-08-30 trusted repo 採 never approval，resume 採 session-bounded batch**:`krepo-common` 以 ignored project `.codex/config.toml` 設 `approval_policy = "never"`，由 Codex 的 trusted-project gate 決定是否載入，不改全域預設也不進產品版控。互動 approval UI 一旦送出，在 host 明確 approved／denied／cancelled／tool error／timeout 前維持 PENDING，不以久候或沉默推定失敗、重送或換指令。Portable handoff resume 在 verify／reconcile 得到 actionable plan 後、consume 或 repo mutation 前，每個新 session 只問一次 bounded batch，明列 repo／work item／workspace、exact write scope 與 named local actions；local branch／commit 只有列入且 repo contract 允許才涵蓋。Push、PR、merge、deploy、delete、credentials／grants、traffic、destructive Git 與 scope expansion 固定排除，舊 session 或 artifact claim 永不復活。
+  - 日期來源:direct
+  - 放棄:全域把所有 repo 改成 `approval_policy = "never"`；讓 resume invocation 的「做完」直接授權 repo mutation；把 push／merge 等 outward action 一併塞進長效萬用授權；approval 久候後自行重送或改寫 command
+  - 重議:Codex project config 不再受 trust gate 控制；host 提供可機械合併且無重複 prompt 的 native batch primitive；或 H15／G12 再出現 consume-before-consent、per-step re-prompt 或 duplicate pending request
+  - 關聯:D-20260823-portable-handoff-skill;D-20260824-memory-independent-transfer;X-20260830-handoff-resume-unbounded;claude/skills/handoff/evals.md;claude/evals/contract-evals.md;codex/AGENTS.md
