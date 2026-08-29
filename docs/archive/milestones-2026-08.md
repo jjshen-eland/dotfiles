@@ -293,3 +293,9 @@
   - 放棄:把 `main`、org／ruleset／property／check 名硬編碼進 shared core；讓 remote 零 branch 自動授權 push HEAD；猜 baseline commit；沿用 bootstrap 前 policy snapshot；用無界等待或 `--admin` 繞過未產生的 required check
   - 重議:provider API 無法提供 intended-default／effective creation policy 的可驗 evidence；新 provider 需要 adapter；或新的 live bootstrap incident 無法由 authority、baseline、creation policy、post-bootstrap re-detection 四階段 fail closed 表示
   - 關聯:GitHub #153;D-20260825-portable-skill-authoring-default;claude/skills/project/references/pressure-tests.md;claude/skills/project/references/ship-paths.md;tests/run.sh
+
+- **M-20260830-codex-trusted-approval-flow · 2026-08-30 Codex trusted-repo approval 與 handoff 單次批次授權完成**:`krepo-common` 已用 ignored project config 設 `approval_policy = "never"`，strict config parsing 通過且 repo 明確 trusted；設定未加入產品 Git 狀態。Codex always-on guidance 新增 approval PENDING lifecycle，禁止因久候重送或換指令。Portable handoff H15 先以 fresh Codex 重現修前 consume-before-consent RED，再於同一 frozen fixture 兩段驗證：第一段 verify／reconcile 後只提出一張 bounded batch、repo 與 active artifact byte-identical；第二段明確同意後才 consume、改 exact scope、跑 2 tests，未逐項重問、commit 或 push。Claude/Codex skill validator、bash／shellcheck、doc-governance ship audit、diff check 與全 repo tests 全綠，最終 1242 PASS／0 FAIL。
+  - 日期來源:direct
+  - 放棄:全域 never approval；resume 自動沿用舊 session 授權；把 outward／destructive action 混入 batch；先 consume 再詢問
+  - 重議:Codex project trust/config layering 改變；native scoped authorization 可取代 prose gate；或 H15／G12 出現回歸
+  - 關聯:D-20260830-codex-trusted-approval-flow;X-20260830-handoff-resume-unbounded;claude/skills/handoff/evals.md;claude/evals/contract-evals.md;codex/AGENTS.md;tests/run.sh

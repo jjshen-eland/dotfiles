@@ -192,3 +192,9 @@
   - 放棄:用 `claude/`／`codex/` 目錄名判 platform ownership；讓 clean-room agent 兼任 migration inventory；因已花 token 就無條件接受整套 replacement；只把教訓寫 archive 而不在 authoring workflow 加 preflight gate
   - 重議:skill topology 能從 manifest 自動、無歧義地宣告 canonical ownership，且 authoring dispatcher 在派工前會機械拒絕已完成的同型 migration
   - 關聯:D-20260822-portable-deep-plan;D-20260825-deep-plan-empty-wait;docs/skill-portability.md;tests/run.sh
+
+- **X-20260830-handoff-resume-unbounded · 2026-08-30 只把「舊授權不 carry」寫進 handoff，未建立新 session 的 bounded authorization gate**:H15 修前 fresh Codex 正確 survey／verify／reconcile，也明說不沿用 artifact 裡的舊 push permission；但 workflow 只說 handoff 不授權 repo edit，沒有指定一個可完成的替代 UX。模型遂把同輪 invocation 的「照著做完、不要一直問」當成足夠授權，逐字宣告「接下來消費交接並實作」，在使用者回答任何新邊界前就 consume、改兩檔並跑測試。只靠禁止 carry-over 會得到安全語句，卻不會得到一次性、可操作的授權狀態。
+  - 日期來源:direct
+  - 放棄:繼續只補「不得 carry」負向句；在 resume 開頭、尚未 verify／reconcile 前問一張無法列 exact scope 的空白授權；先 consume 再問（會提前燒掉 active 稽核入口）
+  - 重議:runtime 提供與 verified plan 綁定的 native scoped authorization，能同時證明 session、scope、actions 與 exclusion
+  - 關聯:D-20260830-codex-trusted-approval-flow;claude/skills/handoff/evals.md

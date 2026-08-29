@@ -7,6 +7,11 @@
 - Treat behavior evals as the oracle. Add instructions only for observed failures or required safety contracts; do not chase prose completeness.
 - Do not vendor OpenAI skill-building documentation. Fetch current official documentation only when a product-sensitive detail is unresolved.
 
+## Interactive approval lifecycle
+
+- After an approval UI has been emitted, treat that request as **PENDING** until the host returns an explicit approved, denied, cancelled, tool-error, or timeout result. Elapsed wall time, user silence, and lack of progress output are never evidence that the request failed.
+- While an approval request is pending, do not retry it, rewrite the command to trigger a replacement prompt, research a workaround, or report the action as failed. Resume only from the host's terminal result or new user direction; never create two live approval requests for the same action.
+
 ## Repo contract precedence
 
 Before starting work in any repo, look for a root `AGENTS.md` (then `CLAUDE.md`) — **if present, it is that
