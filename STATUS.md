@@ -6,13 +6,36 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 # STATUS.md
 
-個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-08-26)
+個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-08-30)
 
 ---
 
 ## 進行中
 
-（目前無進行中項目。）
+### W-20260830-codex-trusted-approval-flow
+
+- **Writer**: `codex:codex-trusted-approval-flow`
+- **Workspace**: `branch=chore/codex-trusted-approval-flow`
+- **Write Scope**: `STATUS.md`, `codex/AGENTS.md`, `claude/evals/README.md`,
+  `claude/evals/contract-evals.md`, `claude/evals/setup-sandboxes.sh`,
+  `claude/skills/handoff/evals.md`, `claude/skills/handoff/references/workflow.md`,
+  `docs/archive/dead-ends-2026-08.md`, `docs/archive/decisions-2026-08.md`,
+  `docs/archive/milestones-2026-08.md`
+- **Dossier Steward**: `codex:codex-trusted-approval-flow`
+- **Context**: Codex approval UI 久候時曾被読成操作失敗而重送；handoff resume 也缺少一個可完成、
+  不逐步重問且不延續舊 session 授權的替代流程。
+- **Goal**: trusted repo 使用 local never-approval 設定；always-on guidance 固定 pending lifecycle；
+  handoff resume 在 verify／reconcile 後只取得一次 session-bounded batch authorization。
+- **Acceptance Criteria**:
+  1. G12 與 H15 behavior eval 分別重現 duplicate pending request 與 consume-before-consent 的 RED。
+  2. 修後 H15 第一段零 repo／artifact mutation，第二段只在明確同意後 consume 並執行 exact scope。
+  3. Claude／Codex validator、shellcheck、doc-governance ship audit 與完整 `./tests/run.sh` 全綠。
+- **Constraints**: project-local `approval_policy = "never"` 不進產品 repo 版控；bounded batch 永不涵蓋
+  push、PR、merge、deploy、delete、credentials／grants、traffic、destructive Git 或 scope expansion。
+- **Progress**: 實作與 behavior eval 已完成，完整測試 `PASS=1242 FAIL=0`；待以 Project Log 完成 commit／PR／merge。
+- **Next Step**: 由 current steward 重建 candidate commit，重跑 authority／doc audit 後依明示 `--merge` 送出。
+- **關聯**: D-20260830-codex-trusted-approval-flow;X-20260830-handoff-resume-unbounded;
+  M-20260830-codex-trusted-approval-flow
 
 ---
 
