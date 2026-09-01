@@ -12,13 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### Container network collision safety
-
-- **Writer**: `codex:container-network-collision-safety`
-- **Workspace**: `branch=fix/container-network-collision-safety`
-- **Write Scope**: `AGENTS.md`, `claude/CLAUDE.md`, `codex/AGENTS.md`, `claude/evals/contract-evals.md`, `tests/kernel-gate.py`, `tests/run.sh`, `STATUS.md`, `docs/archive/decisions-2026-09.md`, `docs/archive/milestones-2026-09.md`
-- **Dossier Steward**: `codex:container-network-collision-safety`
-- **Success Criteria**: Claude Code 與 Codex 都在 first attach 前拒絕與 host／LAN／VPN／production routes 重疊的 container CIDR；不得複製 production IP/CIDR；OrbStack cleanup 必須驗 isolation table；三份 kernel、G13、完整 tests 與 doc audit 全綠。
+（目前無進行中項目。）
 
 ---
 
@@ -28,9 +22,9 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 歷史入口
 
-- 決策：`docs/archive/decisions-2026-08.md`「事件記錄（event-time）」。
+- 決策：`docs/archive/decisions-2026-09.md`「事件記錄（event-time）」。
 - 死路：`docs/archive/dead-ends-2026-08.md`「事件記錄（event-time）」。
-- 里程碑：`docs/archive/milestones-2026-08.md`「事件記錄（event-time）」。
+- 里程碑：`docs/archive/milestones-2026-09.md`「事件記錄（event-time）」。
 - legacy dead-end 的完整推導與實驗證據：`docs/dead-ends.md`「分工」。
 - 無路徑線索時執行 `scripts/doc-governance.py find '自然語言問題或 stable ID'`；人工 pointer 不作為可檢索性的代理。
 

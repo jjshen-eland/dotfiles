@@ -47,6 +47,10 @@ MIN_ROUTE_LINES = 2  # heading + executable route contract; blocks equal to "x" 
 # 代表有人又抄了一份（複本一旦落在 gate 管不到的地方，漂移就回來了）。
 CANARIES = ("git add -A", "--no-local", "git switch -c", "`perf`, `ci`", "One writer per work item.")
 REQUIRED_KERNEL_RULES = (
+    "Container-network collision safety.",
+    "Before first attach",
+    "NEVER copy production/LAN CIDRs",
+    "On macOS/OrbStack",
     "One writer per work item.",
     "separate branch/worktree",
     "Dossier Steward",
@@ -151,7 +155,7 @@ def scan(root):
         ref = bodies[KERNEL_FILES[0]]
         missing = [rule for rule in REQUIRED_KERNEL_RULES if rule not in ref]
         if missing:
-            findings.append(finding("KERNEL_REQUIRED_RULE", "kernel block 缺跨 runtime dossier 規則指紋: %s"
+            findings.append(finding("KERNEL_REQUIRED_RULE", "kernel block 缺必要安全規則指紋: %s"
                             % ", ".join(repr(item) for item in missing)))
         for rel in KERNEL_FILES[1:]:
             if bodies[rel] != ref:
