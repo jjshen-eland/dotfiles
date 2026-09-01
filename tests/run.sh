@@ -451,6 +451,7 @@ kg_reverse_markers() {  # $1=檔案；$2=block 名。保留各一個 marker，�
 kg_body='- rule 1
 - rule 2
 - rule 3
+- **Container-network collision safety.** Before first attach, prove its CIDR avoids host/LAN/VPN/production routes; inline/E2E included. NEVER copy production/LAN CIDRs to preserve IP literals—use auto allocation plus DNS/test config. If unproven, STOP. On macOS/OrbStack, cleanup is incomplete until the isolation table is checked for collisions; report them, never auto-delete unrelated entries.
 - One writer per work item.
 - Use a separate branch/worktree for another writer.
 - The Dossier Steward owns shared state.
@@ -528,6 +529,10 @@ kg_red "$KG/hollow" '規則行' "gate 自檢：三份同時掏空 → 命中（�
 # 條目數足夠、三份也一致，但拿掉 stewardship 語意仍須紅，否則可用 filler 騙過下限。
 kg_make "$KG/required-rule" "$(printf '%s\n' "$kg_body" | sed 's/Dossier delta/worker report/')"
 kg_red "$KG/required-rule" '\[KERNEL_REQUIRED_RULE\]' "gate 自檢：kernel 缺 stewardship 必要規則 → 命中" "gate 自檢：kernel required-rule 分支未命中"
+
+# 安全規則本身也須有可證偽 fixture；三份完全同步仍不得以 filler 騙過 required-rule gate。
+kg_make "$KG/required-network-rule" "$(printf '%s\n' "$kg_body" | sed 's/production\/LAN CIDRs/test CIDRs/')"
+kg_red "$KG/required-network-rule" '\[KERNEL_REQUIRED_RULE\]' "gate 自檢：kernel 缺 container-network 安全規則 → 命中" "gate 自檢：container-network required-rule 分支未命中"
 
 # 缺一份
 kg_make "$KG/missing" "$kg_body"; rm -f "$KG/missing/codex/AGENTS.md"
