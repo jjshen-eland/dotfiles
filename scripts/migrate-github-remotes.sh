@@ -6,7 +6,7 @@
 #   migrate-github-remotes.sh [--apply] [--skip-identity-check] [<搜尋根目錄>...]
 #
 #   預設 **dry-run**（只印計畫，零 mutation），`--apply` 才動手。
-#   預設搜尋根目錄：~/Projects 底下每個直屬子目錄 + ~/.dotfiles。
+#   預設搜尋根目錄：~/Projects 與 ~/SideProjects 底下每個直屬子目錄 + ~/.dotfiles。
 #
 # exit code：0 = 完成（含「無事可做」）；1 = STOP（前提不成立，零 mutation）；2 = 用法錯誤
 #
@@ -24,6 +24,11 @@
 #      pilot-api 各有一條指向 github-work 的 `fork` remote——照抄就留兩顆未爆彈，而且是在
 #      「看起來已經全部遷完」之後。本腳本掃**每個 remote**。
 #   3. 還有 12 台機器要跑同一件事，每台手貼一次就是 12 次出錯機會。
+#
+# 這支腳本的第二個用途（2026-09-02 起）：**`gh repo clone` 之後的收尾**。
+#   `gh` 的 git_protocol 是 host 層級、兩帳號共用，clone 個人 repo 一樣產出
+#   `git@github.com:dev-bitpod-cc/...`（走預設 key＝工作身分，長相是「連得上但權限不對」）。
+#   跑一次本腳本就會換成 `git@github-me:`。這也是為什麼預設根目錄要含 ~/SideProjects。
 #
 # ⚠ 這支腳本只改**本機**。散佈 ssh/config 到某台機器後，那台機器要自己跑一次，
 #   否則它的 `git@github-work:` remote 會當場全部失效（新 config 已無 github-work 這條 Host）。
@@ -55,7 +60,7 @@ while [ $# -gt 0 ]; do
 done
 
 if [ "${#ROOTS[@]}" -eq 0 ]; then
-    ROOTS=("$HOME/Projects" "$HOME/.dotfiles")
+    ROOTS=("$HOME/Projects" "$HOME/SideProjects" "$HOME/.dotfiles")
 fi
 
 # --- 前置 gate：身分驗證 ---

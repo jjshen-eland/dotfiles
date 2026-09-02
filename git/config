@@ -50,3 +50,30 @@
     side-by-side = true
     line-numbers = true
     light = false
+
+# -------------------------------------------------------------------------
+# 身分（identity）——這裡只放**規則**，身分值本身不進 repo
+# -------------------------------------------------------------------------
+# email/name 屬機器層，由 `scripts/setup-git-identity.sh` 生成
+# `~/.gitconfig-work` 與 `~/.gitconfig-personal`（兩檔都不進 git）。
+#
+# `useConfigOnly = true` 是安全網：沒有任何一條 includeIf 命中時，git **不會**用
+# `<user>@<hostname>` 捏造作者，而是當場 `Author identity unknown` 擋下 commit。
+# 少了它，落在分界外的目錄會**靜默**產出假信箱的 commit——本 repo 歷史那筆
+# `jjshen@jjshen-mba.local` 正是這麼來的，而且沒有任何一步會提醒你。
+#
+# ⚠️ 沒有 fallback 身分是**刻意的**。分界外的 repo 就是要被擋下來，讓你當場決定它
+# 屬於哪一邊，而不是拿到一個「能動但錯了」的身分。
+[user]
+    useConfigOnly = true
+
+# 目錄分界（後者勝）。`gitdir` 比對的是 repo 的 `.git` 路徑，所以 linked worktree
+# 跟著**主 repo** 的位置判定，不是 worktree 自己的位置。
+[includeIf "gitdir:~/Projects/"]
+    path = ~/.gitconfig-work
+[includeIf "gitdir:~/SideProjects/"]
+    path = ~/.gitconfig-personal
+# dotfiles 不在上面兩個根底下，需要自己一條：它的 origin 在工作帳號、且全機隊共有，
+# 故算工作身分。
+[includeIf "gitdir:~/.dotfiles/"]
+    path = ~/.gitconfig-work

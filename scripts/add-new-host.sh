@@ -26,6 +26,7 @@
 #     * git push
 #     * ./scripts/dotfiles-sync.sh
 #     * ./scripts/render-etc-hosts.sh --remote <host>（更新其他主機 /etc/hosts）
+#     * 在新主機跑 ./scripts/setup-git-identity.sh --apply（git 身分是機器層，散佈不過去）
 #
 # 前提（使用者需先完成）：
 #   - 新主機已跑過 `curl -fsSL dot.bitpod.cc | sh`
@@ -293,6 +294,10 @@ if phase_b_check_prereq; then
     echo "    git push                                       # 發布到 remote"
     echo "    ./scripts/dotfiles-sync.sh                     # 同步到所有主機"
     echo "    ./scripts/render-etc-hosts.sh --remote <host>  # 更新其他主機 /etc/hosts（選用，逐台或批次）"
+    echo ""
+    info "以及在新主機上（它的 git 身分是機器層的，dotfiles 散佈不過去）："
+    echo "    ssh ${ALIAS} 'cd ~/.dotfiles && ./scripts/setup-git-identity.sh --apply --name <n> --work-email <e>'"
+    echo "    # 沒設就會被 useConfigOnly 擋下——那是刻意的，總比靜默產出 <user>@<hostname> 的假作者好"
 else
     warn "未偵測到 iCloud CA（${HOST_CA} / ${USER_CA}）"
     info "Phase A 已完成。在有 CA 的管理機上執行："
