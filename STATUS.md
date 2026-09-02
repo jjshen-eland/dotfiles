@@ -12,7 +12,16 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-（目前無進行中項目。）
+### Git 身分與專案目錄分界的收斂（issue #161）
+
+- **Writer**: `claude:git-identity-boundary`
+- **Workspace**: `branch=feat/git-identity-boundary`
+- **Write Scope**: `STATUS.md`, `CLAUDE.md`, `git/config`, `gh/config.yml`, `setup-mac-env.sh`, `setup-linux-env.sh`, `scripts/setup-git-identity.sh`, `scripts/migrate-github-remotes.sh`, `scripts/add-new-host.sh`, `docs/repo-guide.md`, `docs/plans/2026-09-02-git-identity-boundary.md`, `docs/backlog.md`, `docs/archive/decisions-2026-09.md`, `docs/archive/milestones-2026-09.md`, `tests/run.sh`
+- **Dossier Steward**: `claude:git-identity-boundary`
+- **Success Criteria**: 分界規則（`useConfigOnly` ＋ 三條 `includeIf`）進共用 `git/config` 且不含任何 email；`scripts/setup-git-identity.sh` 能生成／檢查機器層身分檔並清除 `~/.gitconfig` 的寫死身分；三個根各自解析到正確 email、根外得到 `Author identity unknown` 而非捏造身分；`proj` 與 `migrate-github-remotes.sh` 兩個根都涵蓋；`gh/config.yml` 的 `git_protocol` 與實際生效值一致並寫明 hosts.yml 優先；`docs/repo-guide.md` 同時涵蓋連線身分與 commit 身分；`./tests/run.sh` 以 exit code 判全綠。完整 spec 見 `docs/plans/2026-09-02-git-identity-boundary.md`。
+- **進度**: 本機（家中 MacBook）已驗證 `--check` 回 `verdict: OK`；程式碼與文件變更完成。
+- **下一步**: 進 `origin/main` 後，各機器 `brewup` 拉新 `git/config`，再逐台跑 `setup-git-identity.sh --apply`。macs 的 `~/SideProjects` 已建立、`isdotgd` 已搬入（2026-09-02）。逐機狀態見 `B-20260902-identity-fleet-rollout`。
+- **關聯**: `B-20260902-identity-fleet-rollout`, `B-20260902-gh-account-autoswitch`
 
 ---
 
