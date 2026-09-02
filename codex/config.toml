@@ -7,6 +7,14 @@ model_reasoning_effort = "medium"
 sandbox_mode = "danger-full-access"
 approval_policy = "on-request"
 
+# Codex 會對 hook 定義的 hash 建立信任；每次變更後在 CLI 用 /hooks 複核並信任。
+[[hooks.Stop]]
+
+[[hooks.Stop.hooks]]
+type = "command"
+command = '"$HOME"/.dotfiles/scripts/agent-turn-end-timestamp.sh'
+timeout = 3
+
 [notice.model_migrations]
 "gpt-5.1-codex" = "gpt-5.3-codex"
 "gpt-5.3-codex" = "gpt-5.4"

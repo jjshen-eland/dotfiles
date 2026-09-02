@@ -24,6 +24,7 @@
 #  14. codex-runtime-hygiene.sh（deep-review skill script）孤兒偵測 / 誤殺防護 / exit 契約
 #  15. ensure-rc-source.sh 幂等補 source shell/functions.sh 行
 #  16. session-pull-check.sh（SessionStart hook）落後偵測與靜默契約
+# 16b. agent-turn-end-timestamp.sh（Claude Code／Codex Stop hook）GMT+8 輸出與失敗隔離
 #  17. codex-exec-review.sh（deep-review skill script）exit 契約 / job 產物 / resume（codex stub）
 #  18. ensure-codex-skills.sh 幂等連結 ~/.codex/skills → dotfiles
 # 18b. ensure-codex-guidance.sh 幂等連結全域 ~/.codex/AGENTS.md → dotfiles
@@ -5014,6 +5015,67 @@ assert_rc "fetch 失敗 + feature branch → exit 0" 0 $?
 if grep -q "base 用 head" <<< "$spc_out" && grep -q "可能已過期" <<< "$spc_out"; then
     ok "fetch 失敗 → base 建議帶「可能已過期」警告"
 else bad "fetch 失敗後的 base 建議未標示 ref 可能過期：$spc_out"; fi
+
+echo "▶ 16b. agent-turn-end-timestamp.sh（Claude Code／Codex Stop hook）"
+TET="$ROOT/scripts/agent-turn-end-timestamp.sh"
+tet_bin="$TMP/tet-bin"
+mkdir -p "$tet_bin"
+cat > "$tet_bin/date" <<'STUB'
+#!/usr/bin/env bash
+printf '%s|%s\n' "${TZ:-}" "$*" > "${TET_DATE_CALL:?}"
+if [ "${TET_DATE_FAIL:-0}" -eq 1 ]; then exit 1; fi
+printf '%s\n' '2026-09-02 16:05:06 GMT+8'
+STUB
+chmod +x "$tet_bin/date"
+
+if [ -x "$TET" ]; then
+    ok "turn-end timestamp hook script 存在且可執行"
+    tet_date_call="$TMP/tet-date-call"
+    tet_out="$(printf '%s\n' '{"hook_event_name":"Stop","secret":"must-not-leak"}' \
+        | PATH="$tet_bin:$PATH" TZ=UTC TET_DATE_CALL="$tet_date_call" "$TET")"
+    assert_rc "turn-end timestamp hook 成功 → exit 0" 0 $?
+    assert_eq "turn-end timestamp 輸出兩端共用的有效 JSON" \
+        '{"systemMessage":"🕒 等待輸入起點：2026-09-02 16:05:06 GMT+8"}' "$tet_out"
+    if printf '%s\n' "$tet_out" | jq -e '.systemMessage | type == "string"' >/dev/null 2>&1; then
+        ok "turn-end timestamp stdout 可被 hook runtime 當作 JSON 解析"
+    else bad "turn-end timestamp stdout 不是有效 hook JSON：$tet_out"; fi
+    assert_eq "turn-end timestamp 強制固定 GMT+8，不受 host TZ 影響" \
+        "Etc/GMT-8|+%Y-%m-%d %H:%M:%S GMT+8" "$(cat "$tet_date_call" 2>/dev/null)"
+    if grep -qF 'must-not-leak' <<< "$tet_out"; then
+        bad "turn-end timestamp 把 hook input 內容洩漏到 UI"
+    else ok "turn-end timestamp 不回顯 hook input"; fi
+
+    tet_fail_out="$(printf '%s\n' '{"hook_event_name":"Stop"}' \
+        | PATH="$tet_bin:$PATH" TET_DATE_CALL="$tet_date_call" TET_DATE_FAIL=1 "$TET")"
+    assert_rc "date 失敗 → hook 仍 exit 0" 0 $?
+    assert_eq "date 失敗 → hook 靜默，不阻斷 agent 收尾" "" "$tet_fail_out"
+else
+    bad "turn-end timestamp hook script 不存在或不可執行：$TET"
+fi
+
+if jq -e --arg command '"$HOME"/.dotfiles/scripts/agent-turn-end-timestamp.sh' '
+    .hooks.Stop == [{hooks: [{type: "command", command: $command, timeout: 3}]}]
+    and (.hooks.SubagentStop == null)
+' "$ROOT/claude/settings.json" >/dev/null 2>&1; then
+    ok "Claude Code 只在主 agent Stop 接線 turn-end timestamp"
+else bad "Claude Code Stop hook 未精確接線 turn-end timestamp"; fi
+
+codex_tet_hook="$(awk '
+    /^\[\[hooks\.Stop\]\]$/ { capture = 1 }
+    capture && /^\[/ && $0 !~ /^\[\[hooks\.Stop(\.hooks)?\]\]$/ { exit }
+    capture { print }
+' "$ROOT/codex/config.toml")"
+# shellcheck disable=SC2016 # $HOME 是 TOML command 的字面值，要留到 hook 執行時才展開。
+codex_tet_expected='[[hooks.Stop]]
+
+[[hooks.Stop.hooks]]
+type = "command"
+command = '\''"$HOME"/.dotfiles/scripts/agent-turn-end-timestamp.sh'\''
+timeout = 3'
+if [ "$codex_tet_hook" = "$codex_tet_expected" ] \
+    && ! grep -q '^\[\[hooks\.SubagentStop' "$ROOT/codex/config.toml"; then
+    ok "Codex 只在主 agent Stop 接線 turn-end timestamp"
+else bad "Codex Stop hook 未精確接線 turn-end timestamp"; fi
 
 echo "▶ 17. codex-exec-review.sh（deep-review skill script）exit 契約與 job 產物"
 CER="$ROOT/claude/skills/deep-review/scripts/codex-exec-review.sh"

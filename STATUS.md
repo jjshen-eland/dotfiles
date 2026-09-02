@@ -12,23 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### Claude Code／Codex turn-end 時間戳
-
-- Context: 工作回合結束後缺少明確的等待起點，無法直接判斷操作者已 idle 多久。
-- Goal: Claude Code 與 Codex 的主 agent 每回合結束、開始等待輸入時，顯示當下 GMT+8 日期時間。
-- Acceptance Criteria:
-  - Claude Code 與 Codex 都只在主 agent 的 Stop lifecycle 顯示時間戳。
-  - 顯示格式固定包含 `YYYY-MM-DD HH:MM:SS GMT+8`，不受主機時區影響。
-  - hook 輸入不外洩，日期指令失敗時安靜退場且不阻擋 agent。
-  - 自動測試覆蓋輸出、時區、失敗模式與兩套 runtime wiring。
-- Constraints: 共用單一腳本；保留 live Codex config 的使用者本機差異；Codex 新 hook 仍須由使用者透過 `/hooks` 信任。
-- **Writer**: codex:turn-end-timestamps
-- **Workspace**: branch=feat/turn-end-timestamps
-- **Write Scope**: STATUS.md, claude/settings.json, codex/config.toml, docs/archive/milestones-2026-09.md, scripts/agent-turn-end-timestamp.sh, tests/run.sh
-- **Dossier Steward**: codex:turn-end-timestamps
-- 進度: 實作與測試完成，正在重建為可驗證的 lifecycle commit sequence。
-- 下一步: 完成候選重建、驗證 tree equivalence 與 shipping gates。
-- 關聯: none
+（目前無進行中項目。）
 
 ---
 

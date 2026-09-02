@@ -36,6 +36,17 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.dotfiles/scripts/agent-turn-end-timestamp.sh",
+            "timeout": 3
+          }
+        ]
+      }
     ]
   },
   "enabledPlugins": {
