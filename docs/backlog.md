@@ -21,22 +21,29 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
 
 ## 技術債
 
-- **B-20260902-identity-fleet-rollout** · [ ] **git 身分分界只在家中 MacBook 落地，機隊其餘 15 台尚未收斂**（2026-09-02 加）。
-  本批把規則（`useConfigOnly` ＋ 三條 `includeIf`）放進共用 `git/config`，但**身分值是機器層的、散佈不過去**，
-  每台都要跑一次 `./scripts/setup-git-identity.sh --apply`。2026-09-02 盤點的起始狀態：
-  - eagle03/06/07/08/09、db01、ap01/02、macmini、agent01、fe01、be01（12 台）：`~/.gitconfig` 寫死
-    `<工作 email>`，**排在 `[include]` 之前**，所以拉到新 `git/config` 後仍可 commit（includeIf
-    指向的檔案不存在時被靜默略過）。收斂前不會壞，但分界形同沒有。
-  - **m4mini：完全沒有身分**——目前任何 commit 都會是 `jjshen@m4mini.local`。拉到新 `git/config`
-    的**當下就會被擋住**，這是本批唯一會立刻改變行為的機器（也正是它該被擋）。
-  - macs：`~/SideProjects` 已建立、`~/Projects/isdotgd`（個人 repo）已搬入（2026-09-02 完成，
-    見 `docs/plans/2026-09-02-git-identity-boundary.md` D1）；仍欠 `setup-git-identity.sh --apply`。
-    ⚠️ 搬完到收斂前，該 repo 的 commit 會用 macs `~/.gitconfig` 的寫死工作 email——**目錄對了、
-    身分還沒對**，收斂前不要在它上面 commit。
-  ⚠️ **散佈的前提是本批已進 `origin/main`**——本地 branch 未 push 時 `dotsync` 是空轉。
-  ⚠️ **兩部個人 MacBook 不在 `inventory.conf`**（見 `B-20260809-gap-10`），`dotsync` 涵蓋不到，
-    要在該機自己跑 `brewup`；漏跑是無聲的。
-  - **關閉條件**：全機隊 `./scripts/setup-git-identity.sh --check` 皆回 `verdict: OK`。
+- **B-20260902-identity-fleet-rollout** · [ ] **git 身分分界的機隊收斂：inventory 14 台 ＋ 家中 MacBook 已完成，只剩休眠中的公司 MacBook**（2026-09-02 加，2026-09-03 更新）。
+  規則隨 `git/config` 散佈，但**身分值是機器層的、散佈不過去**，每台要跑一次
+  `./scripts/setup-git-identity.sh --apply`。
+  - **已完成（2026-09-03）**：`inventory.conf` 全部 14 台（eagle03/06/07/08/09、macs、db01、
+    ap01/02、macmini、m4mini、agent01、fe01、be01）＋ 家中 MacBook。每台皆 `git pull --ff-only`
+    到 `f0e1bad` 後 `--apply`，`--check` 全數 `verdict: OK`。
+    行為實測（問真 repo 的 `GIT_AUTHOR_IDENT`，不看設定檔）：`~/Projects` 與 `~/.dotfiles` → 工作、
+    macs `~/SideProjects/isdotgd` → 個人、`/tmp` 下的臨時 repo → `Author identity unknown`。
+    **m4mini 那格已關閉**：收斂前它的 `user.email`／`user.name` 皆空，任何 commit 都會是
+    `jjshen@m4mini.local`；現在解析到工作身分。
+  - **剩下**：**公司的 MacBook**——**仍在服役，2026-09-03 當下休眠中**，故本條不放棄、只是等它醒。
+    它不在 `inventory.conf`（見 `B-20260809-gap-10`），`dotsync` 涵蓋不到、也無法遠端喚醒代跑；
+    唯一路徑是在該機本地執行：
+    ```
+    brewup
+    cd ~/.dotfiles && ./scripts/setup-git-identity.sh --apply    # 需要個人身分再加 --personal-email
+    ```
+    ⚠️ **在它醒來並補跑之前，那台的 commit 仍會用 `~/.gitconfig` 的寫死工作 email**——分界對它尚未生效。
+    使用者的工作重心已移到 macs console，所以這台可能很久才會開機一次；**漏跑是無聲的**，
+    唯一判準是 `--check` 回 `verdict: OK`。
+  ⚠️ **收斂前的寫死身分排在 `[include]` 之前，所以拉到新 `git/config` 不會壞**——那也表示
+  「已 pull」不等於「已收斂」，唯一判準是 `--check` 回 `verdict: OK`。
+  - **關閉條件**：公司 MacBook 亦回 `verdict: OK`（或明確判定退役），屆時寫 `M-*` 並移除本條。
 
 - **B-20260902-gh-account-autoswitch** · [ ] **`gh` 的 active 帳號沒有依 repo 自動切換**（2026-09-02 加）。
   `gh` **完全不看 SSH alias**，active 帳號不對時的長相是 `Could not resolve to a Repository`
