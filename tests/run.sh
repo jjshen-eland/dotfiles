@@ -25,6 +25,7 @@
 #  15. ensure-rc-source.sh 幂等補 source shell/functions.sh 行
 #  16. session-pull-check.sh（SessionStart hook）落後偵測與靜默契約
 # 16b. agent-turn-end-timestamp.sh（Claude Code／Codex Stop hook）GMT+8 輸出與失敗隔離
+# 16c. check-network-isolation-collisions.py（OrbStack PF isolation table）碰撞與 fail-closed 契約
 #  17. codex-exec-review.sh（deep-review skill script）exit 契約 / job 產物 / resume（codex stub）
 #  18. ensure-codex-skills.sh 幂等連結 ~/.codex/skills → dotfiles
 # 18b. ensure-codex-guidance.sh 幂等連結全域 ~/.codex/AGENTS.md → dotfiles
@@ -5076,6 +5077,80 @@ if [ "$codex_tet_hook" = "$codex_tet_expected" ] \
     && ! grep -q '^\[\[hooks\.SubagentStop' "$ROOT/codex/config.toml"; then
     ok "Codex 只在主 agent Stop 接線 turn-end timestamp"
 else bad "Codex Stop hook 未精確接線 turn-end timestamp"; fi
+
+echo "▶ 16c. check-network-isolation-collisions.py（OrbStack PF isolation table）"
+NIC="$ROOT/scripts/check-network-isolation-collisions.py"
+nic_fix="$TMP/network-isolation-collisions"
+mkdir -p "$nic_fix"
+cat > "$nic_fix/ifconfig" <<'EOF'
+en0: flags=8863<UP,BROADCAST,SMART,RUNNING,SIMPLEX,MULTICAST> mtu 1500
+    inet 10.10.12.140 netmask 0xffffff00 broadcast 10.10.12.255
+bridge100: flags=8a63<UP,BROADCAST,SMART,RUNNING,ALLMULTI,SIMPLEX,MULTICAST> mtu 1500
+    inet 192.168.139.3 netmask 0xfffffe00 broadcast 192.168.139.255
+EOF
+cat > "$nic_fix/rules" <<'EOF'
+pass quick on bridge100 inet from 192.168.138.0/23 to 192.168.138.0/23 flags any keep state
+block drop quick inet from <network_isolation_table_v4> to <network_isolation_table_v4>
+EOF
+cat > "$nic_fix/table-collision" <<'EOF'
+   10.10.12.0/24
+   192.168.138.0/23
+EOF
+cat > "$nic_fix/table-clean" <<'EOF'
+   10.77.91.0/24
+   192.168.138.0/23
+EOF
+cat > "$nic_fix/table-supernet" <<'EOF'
+   10.10.0.0/16
+EOF
+
+if [ -x "$NIC" ]; then
+    ok "network isolation collision detector 存在且可執行"
+
+    nic_out="$("$NIC" --ifconfig-file "$nic_fix/ifconfig" \
+        --rules-file "$nic_fix/rules" --table-file "$nic_fix/table-collision" 2>&1)"
+    nic_rc=$?
+    assert_rc "實體 LAN 與 isolation CIDR 撞號 → exit 1" 1 "$nic_rc"
+    if grep -q '^verdict: STOP$' <<< "$nic_out" \
+        && grep -q '^reason: NETWORK_ISOLATION_COLLISION$' <<< "$nic_out" \
+        && grep -q '^source: fixture (NOT live-host proof)$' <<< "$nic_out" \
+        && grep -q 'collision: isolation=10.10.12.0/24 interface=en0 local=10.10.12.0/24 address=10.10.12.140' <<< "$nic_out"; then
+        ok "碰撞告警交付 exact 證據，且 fixture 不冒充 live-host proof"
+    else bad "碰撞告警缺 deterministic 證據：$nic_out"; fi
+    if grep -q 'collision:.*interface=bridge100' <<< "$nic_out"; then
+        bad "anchor 明示放行的 managed bridge 被誤報為 host collision"
+    else ok "anchor 明示配對的 managed bridge 不誤報"; fi
+    if grep -q '^action: STOP container attach/create' <<< "$nic_out" \
+        && grep -q '^action: use auto allocation plus DNS/test config' <<< "$nic_out" \
+        && grep -q '^action: NEVER auto-delete PF entries; request authorization before restart or firewall changes' <<< "$nic_out"; then
+        ok "告警附 agent 必須採取的安全處置且禁止自動破壞 PF"
+    else bad "碰撞告警沒有完整處置契約：$nic_out"; fi
+
+    nic_clean_out="$("$NIC" --ifconfig-file "$nic_fix/ifconfig" \
+        --rules-file "$nic_fix/rules" --table-file "$nic_fix/table-clean" 2>&1)"
+    assert_rc "只有 managed bridge／不相交 entry → exit 0" 0 $?
+    if grep -q '^verdict: CLEAN$' <<< "$nic_clean_out" \
+        && grep -q '^managed-exemptions: 1$' <<< "$nic_clean_out"; then
+        ok "乾淨結果揭露 managed bridge exemption 數量"
+    else bad "乾淨結果或 exemption evidence 不符：$nic_clean_out"; fi
+
+    nic_super_out="$("$NIC" --ifconfig-file "$nic_fix/ifconfig" \
+        --rules-file "$nic_fix/rules" --table-file "$nic_fix/table-supernet" 2>&1)"
+    assert_rc "isolation supernet 包住 LAN → 仍判碰撞" 1 $?
+    if grep -q 'collision: isolation=10.10.0.0/16 interface=en0 local=10.10.12.0/24' <<< "$nic_super_out"; then
+        ok "CIDR overlap 用網段交集判斷，不只比字串相等"
+    else bad "supernet overlap 未被正確揭露：$nic_super_out"; fi
+
+    nic_unknown_out="$("$NIC" --ifconfig-file "$nic_fix/missing" \
+        --rules-file "$nic_fix/rules" --table-file "$nic_fix/table-clean" 2>&1)"
+    assert_rc "讀不到 proof input → exit 2" 2 $?
+    if grep -q '^verdict: STOP$' <<< "$nic_unknown_out" \
+        && grep -q '^reason: PROOF_INPUT_UNAVAILABLE$' <<< "$nic_unknown_out"; then
+        ok "權限／讀取證據不足時 fail closed，不冒充 CLEAN"
+    else bad "proof input 不可得未 fail closed：$nic_unknown_out"; fi
+else
+    bad "network isolation collision detector 不存在或不可執行：$NIC"
+fi
 
 echo "▶ 17. codex-exec-review.sh（deep-review skill script）exit 契約與 job 產物"
 CER="$ROOT/claude/skills/deep-review/scripts/codex-exec-review.sh"
