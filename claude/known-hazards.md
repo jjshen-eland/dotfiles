@@ -68,6 +68,17 @@ Apple 因 GPLv3 停更：bash 3.2、rsync 已換成自寫的 openrsync、BSD awk
 就變成整段沒跑、卻只回一個 127，被 grep 過濾後**看起來像通過**。當天據此誤判
 「某條斷言是虛設的」，實際那次根本沒執行。
 
+### BSD awk 沒有 `systime()`（2026-09-03）
+
+要替測試輸出逐行加時間戳而寫 `awk '{ print systime(), $0 }'`，macOS 的 BWK awk 直接
+`calling undefined function systime` 並以 **exit 2** 結束——`systime()`／`strftime()` 是
+**gawk 擴充**，不在 POSIX awk 裡。
+
+危險形狀與 `timeout` 那格同源：它是**接在管線末端**的，前面那支長時間指令照跑不誤，
+失敗只反映在整條管線的 exit code 上；若當時沒去看 exit code，會誤以為「測試自己壞了」。
+正解是改用保證存在的工具（`perl -ne 'BEGIN{$|=1} print time," ",$_'`），或先
+`command -v gawk` 顯式檢查。
+
 ---
 
 ## SIGPIPE + pipefail
@@ -233,3 +244,32 @@ worktree 絕對路徑**才測到新版。
 與「只有乾淨 clone 看得見」的誤收同一類，人工看 diff 抓不到。
 
 `tests/run.sh` 以 `$ROOT` 解析故不受影響；坑只在 **skill body／eval／手動呼叫**這三處。
+
+---
+
+## `git -C <dir> worktree add` 的相對路徑基準
+
+### 實地（2026-09-03）
+
+為了量「改動前的測試耗時」而建基準 worktree：
+
+```sh
+cd <scratchpad> && git -C ~/.dotfiles worktree add -q --detach baseline-wt <sha>
+```
+
+意圖是把 worktree 建在 scratchpad，實際卻建在 **`~/.dotfiles/baseline-wt/`**——
+`-C` 會先切到該目錄，**其後所有相對路徑都以它為基準**，`cd` 到哪裡不影響。
+
+### 為什麼會被漏掉
+
+指令 **exit 0**、`worktree add -q` 什麼都不印，所以 `&&` 鏈往下走、只有後面的
+`cd baseline-wt` 失敗，錯誤訊息長得像「worktree 沒建成功」而不是「建錯地方」。
+真正的後果是 repo 裡多了一個未追蹤目錄；`git status` 會看到 `?? baseline-wt/`，
+但若當下正忙著別的事就會被當成雜訊。
+
+### 正解
+
+`-C` 與相對路徑不要混用：worktree 目標一律寫**絕對路徑**。
+清理用 `git worktree remove <path>`（不要只 `rm -rf`——那會留下 `.git/worktrees/` 的
+administrative 檔，`git worktree list` 仍列得出來）。
+
