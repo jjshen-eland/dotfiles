@@ -5,7 +5,7 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
 
 # Backlog
 
-待辦清單:技術債與已知缺口(更新日期:2026-08-24)
+待辦清單:技術債與已知缺口(更新日期:2026-09-03)
 
 > **為什麼與 `STATUS.md`／history 分家**：三者生命週期不同。STATUS 只留 active／paused；history
 > event 發生後 append-only；backlog 只留未結案狀態，直到做掉或明確放棄才會消失。

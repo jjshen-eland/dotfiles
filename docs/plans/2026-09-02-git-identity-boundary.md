@@ -1,7 +1,7 @@
 # Git 身分與專案目錄分界的收斂
 
 - 日期：2026-09-02
-- 狀態：in-progress
+- 狀態：implemented
 - 工作項：git-identity-boundary
 - 種類：implementation
 - 需求來源：issue #161「統整 review：公司／個人身分分界、git 全域設定、GitHub 連線 protocol」
