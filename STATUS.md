@@ -12,13 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### OrbStack PF isolation CIDR 碰撞偵測
-
-- **Writer**: `codex:network-isolation-collision-detector`
-- **Workspace**: `branch=feat/detect-network-cidr-collisions`
-- **Write Scope**: `STATUS.md`, `scripts/check-network-isolation-collisions.py`, `tests/run.sh`, `docs/archive/milestones-2026-09.md`
-- **Dossier Steward**: `codex:network-isolation-collision-detector`
-- **Success Criteria**: 唯讀檢查 OrbStack IPv4 isolation table 與本機介面網段；豁免 anchor 規則明確配對的 managed bridge；碰撞時以非零 exit、`verdict: STOP`、碰撞證據與安全處置告警 agent；讀取權限或解析不足時 fail closed；不自動刪 PF entry、network 或重啟 OrbStack；deterministic fixtures 與完整測試全綠。
+（目前無進行中項目。）
 
 ---
 
