@@ -56,6 +56,9 @@ Phase A 已完成。在有 CA 的管理機上執行：
 ## 使用者仍需手動完成
 
 - 新主機上填寫 `~/.env`（API keys 等機密）
-- 新主機上設定 `~/.gitconfig` 的 `user.name` / `user.email`
+- 新主機上設定 git 身分：`cd ~/.dotfiles && ./scripts/setup-git-identity.sh --apply`
+  （身分值是機器層的，dotfiles 散佈不過去；沒設就會被 `useConfigOnly` 擋下——那是刻意的，
+  總比靜默產出 `<user>@<hostname>` 的假作者好。**不要**直接寫 `~/.gitconfig` 的 `[user] email`，
+  它會贏過目錄分界。詳見 `docs/repo-guide.md`「Git 身分與專案目錄分界」）
 
 > **known_hosts 清理**：bootstrap 階段 SSH 連線會在本機 `~/.ssh/known_hosts` 留下個別 host fingerprint。`dotfiles-sync.sh` 會用 repo 的 `ssh/known_hosts`（僅含 `@cert-authority` + GitHub）覆蓋本機和所有遠端主機的 known_hosts，自動清除這些殘留條目。

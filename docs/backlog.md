@@ -21,6 +21,34 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
 
 ## 技術債
 
+- **B-20260902-identity-fleet-rollout** · [ ] **git 身分分界只在家中 MacBook 落地，機隊其餘 15 台尚未收斂**（2026-09-02 加）。
+  本批把規則（`useConfigOnly` ＋ 三條 `includeIf`）放進共用 `git/config`，但**身分值是機器層的、散佈不過去**，
+  每台都要跑一次 `./scripts/setup-git-identity.sh --apply`。2026-09-02 盤點的起始狀態：
+  - eagle03/06/07/08/09、db01、ap01/02、macmini、agent01、fe01、be01（12 台）：`~/.gitconfig` 寫死
+    `<工作 email>`，**排在 `[include]` 之前**，所以拉到新 `git/config` 後仍可 commit（includeIf
+    指向的檔案不存在時被靜默略過）。收斂前不會壞，但分界形同沒有。
+  - **m4mini：完全沒有身分**——目前任何 commit 都會是 `jjshen@m4mini.local`。拉到新 `git/config`
+    的**當下就會被擋住**，這是本批唯一會立刻改變行為的機器（也正是它該被擋）。
+  - macs：`~/SideProjects` 已建立、`~/Projects/isdotgd`（個人 repo）已搬入（2026-09-02 完成，
+    見 `docs/plans/2026-09-02-git-identity-boundary.md` D1）；仍欠 `setup-git-identity.sh --apply`。
+    ⚠️ 搬完到收斂前，該 repo 的 commit 會用 macs `~/.gitconfig` 的寫死工作 email——**目錄對了、
+    身分還沒對**，收斂前不要在它上面 commit。
+  ⚠️ **散佈的前提是本批已進 `origin/main`**——本地 branch 未 push 時 `dotsync` 是空轉。
+  ⚠️ **兩部個人 MacBook 不在 `inventory.conf`**（見 `B-20260809-gap-10`），`dotsync` 涵蓋不到，
+    要在該機自己跑 `brewup`；漏跑是無聲的。
+  - **關閉條件**：全機隊 `./scripts/setup-git-identity.sh --check` 皆回 `verdict: OK`。
+
+- **B-20260902-gh-account-autoswitch** · [ ] **`gh` 的 active 帳號沒有依 repo 自動切換**（2026-09-02 加）。
+  `gh` **完全不看 SSH alias**，active 帳號不對時的長相是 `Could not resolve to a Repository`
+  ——不是權限錯誤，是「查無此 repo」（對那個帳號來說它確實不存在），所以第一次撞到很難聯想。
+  現況只補了文件（`docs/repo-guide.md`「GitHub 多帳號：三個互不相干的層」），要人自己
+  `gh auth switch`。
+  ⚠️ **本批刻意不做 helper**，理由是兩條路都不乾淨：wrap `gh` 要改 PATH、影響所有 `gh` 操作、
+  且有把非預期子命令攔下的風險；只在 shell function 覆蓋部分子命令則**覆蓋不全等於沒有**
+  （漏掉的那個子命令仍會用錯帳號，而且症狀一模一樣）。
+  - **觸發條件**：跨帳號操作變成常態、或同一個症狀再查錯方向一次。屆時傾向做成
+    **唯讀提示**（進錯帳號時警告，不自動切），先驗證偵測那半是否可靠。
+
 - **B-20260823-fleet-rollout-remaining** · [ ] **canary 之後的其餘 repo 尚未採用文檔治理**(2026-08-23 加)。
   Dotfiles(pilot)、`krepo-mops-major-news`(canary)、`krepo-mops-announcement` 與 `kapi-gateway` 已完成目前
   記錄的 rollout batch；機隊其餘 repo 尚未全數採用。2026-08-24 memory-independent kernel 上線後，本機盤點
