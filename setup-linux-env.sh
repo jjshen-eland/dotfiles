@@ -748,13 +748,16 @@ if command -v fzf &> /dev/null && command -v fd &> /dev/null; then
     }
 
     # 快速切換專案目錄
+    # 兩個專案根：~/Projects 公司、~/SideProjects 個人（與 git 身分分界同一組目錄，
+    # 見 ~/.dotfiles/git/config）。兩個都掃，才不會讓「跳不到」變成搬錯目錄的理由。
     proj() {
         local dir
-        if [ -d ~/Projects ]; then
-            dir=$(fd --type d --max-depth 3 . ~/Projects | fzf --preview 'eza --tree --level=2 {} 2>/dev/null || tree -C {} | head -200')
-        else
-            dir=$(fd --type d --max-depth 3 . ~ | fzf --preview 'eza --tree --level=2 {} 2>/dev/null || tree -C {} | head -200')
-        fi
+        local -a roots
+        roots=()
+        [ -d ~/Projects ] && roots+=(~/Projects)
+        [ -d ~/SideProjects ] && roots+=(~/SideProjects)
+        [ ${#roots[@]} -eq 0 ] && roots=(~)
+        dir=$(fd --type d --max-depth 3 . "${roots[@]}" | fzf --preview 'eza --tree --level=2 {} 2>/dev/null || tree -C {} | head -200')
         [ -n "$dir" ] && cd "$dir"
     }
 fi
@@ -986,24 +989,31 @@ fi
 # ================================================
 print_header "步驟 4: 配置 Git"
 
-# 檢查 Git 用戶資訊
-GIT_USER=$(git config --global user.name 2>/dev/null || echo "")
-GIT_EMAIL=$(git config --global user.email 2>/dev/null || echo "")
-
-if [ -z "$GIT_USER" ] || [ -z "$GIT_EMAIL" ]; then
-    print_warning "Git 用戶資訊尚未設定"
-    echo "請稍後執行："
-    echo "  git config --global user.name \"Your Name\""
-    echo "  git config --global user.email \"your@email.com\""
-else
-    print_success "Git 用戶: $GIT_USER <$GIT_EMAIL>"
-fi
-
 # Git 共用設定（透過 include.path 引入 dotfiles 中的 git/config）
+# ⚠️ 必須在身分檢查**之前**：分界規則（useConfigOnly ＋ includeIf）就住在那個檔裡，
+#    還沒 include 就查身分，查到的是舊世界。
 if [ -f "$SCRIPT_DIR/git/config" ]; then
     # shellcheck disable=SC2088  # 刻意存字面 ~：git 對 include.path 自行展開，config 跨機器可攜
     git config --global include.path "~/.dotfiles/git/config"
     print_success "Git 共用設定已載入（include.path）"
+fi
+
+# 專案根目錄：~/Projects 公司、~/SideProjects 個人。
+# 這兩個目錄同時是 git 身分分界（見 git/config 的 includeIf）與 `proj` 的搜尋範圍，
+# 所以由 setup 建立，而不是等人自己想到——沒建立時「分界」只是一句文件裡的話。
+mkdir -p ~/Projects ~/SideProjects
+print_success "專案根目錄已就緒（~/Projects 公司、~/SideProjects 個人）"
+
+# Git 身分：值屬機器層、不進 repo，由 scripts/setup-git-identity.sh 生成。
+# 這裡只檢查、不自動寫——它需要兩個 email，猜錯比沒設更糟。
+if [ -x "$SCRIPT_DIR/scripts/setup-git-identity.sh" ]; then
+    if "$SCRIPT_DIR/scripts/setup-git-identity.sh" --check >/dev/null 2>&1; then
+        print_success "Git 身分分界已設定"
+    else
+        print_warning "Git 身分尚未收斂——分界外的 repo 會被擋下（這是刻意的，不是故障）"
+        echo "請執行：./scripts/setup-git-identity.sh --apply"
+        echo "詳情：  ./scripts/setup-git-identity.sh --check"
+    fi
 fi
 
 # 全域 .gitignore（symlink 到 dotfiles）

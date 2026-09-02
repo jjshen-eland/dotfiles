@@ -1,6 +1,18 @@
 # GitHub CLI 共用設定（由 dotfiles 管理）
+#
+# ⚠️ git_protocol 在這裡是**全域預設**，會被 ~/.config/gh/hosts.yml 的 host 層設定蓋掉，
+#    而 hosts.yml 由 `gh auth login` 寫、含 token、**不進 repo**。實測（2026-09-02）：
+#    本檔寫 https、hosts.yml 寫 ssh → `gh config get git_protocol` 回 https，
+#    但 `gh auth status` 與實際 clone 走的都是 ssh。所以本檔這行**改不動實際行為**，
+#    寫成與現實一致的 ssh，避免它變成一行會誤導人的死設定。
+#
+# ⚠️ git_protocol 是 **host 層級**、兩個帳號共用，無法分帳號設定。於是
+#    `gh repo clone dev-bitpod-cc/<repo>` 會產出 `git@github.com:dev-bitpod-cc/...`
+#    ——走預設 key＝**工作身分**，症狀是「連得上但權限不對」。
+#    修法：clone 完跑一次 `scripts/migrate-github-remotes.sh --apply`，
+#    它會把個人 repo 的 remote 換成 `git@github-me:`。
 version: 1
-git_protocol: https
+git_protocol: ssh
 editor:
 prompt: enabled
 prefer_editor_prompt: disabled

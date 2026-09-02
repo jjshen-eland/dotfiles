@@ -7363,6 +7363,122 @@ git init -q "$edr/no-origin"
 DOTFILES_DIR="$edr/no-origin" bash "$EDR_SCRIPT" >/dev/null 2>&1
 assert_rc "無 origin remote → 靜默 exit 0" 0 $?
 
+echo "▶ 23c. setup-git-identity.sh（機器層 git 身分 ＋ 目錄分界）"
+# 這套設計的價值全在「分界外會不會被擋下」那一格。擋不下來的失敗是**靜默的**：git 直接用
+# `<user>@<hostname>` 捏造作者送出，本 repo 歷史那筆 `jjshen@jjshen-mba.local` 就是這樣來的。
+# 所以下面每一組都用真的 git repo 去問 `git var GIT_AUTHOR_IDENT`，不看設定檔長相。
+SGI_SCRIPT="$ROOT/scripts/setup-git-identity.sh"
+sgi="$TMP/sgi"; mkdir -p "$sgi"
+# $1=sandbox home 路徑；$2=legacy 時在 ~/.gitconfig 寫死身分（12 台機器的真實長相）
+sgi_mkhome() {
+    local h="$1"
+    mkdir -p "$h/.dotfiles/git"
+    cp "$ROOT/git/config" "$h/.dotfiles/git/config"
+    if [ "${2:-}" = legacy ]; then
+        # 寫死身分排在 [include] **之前**——順序照抄機隊現況，因為它決定誰贏
+        printf '[user]\n\tname = legacy\n\temail = legacy@example.com\n[include]\n\tpath = ~/.dotfiles/git/config\n' > "$h/.gitconfig"
+    else
+        printf '[include]\n\tpath = ~/.dotfiles/git/config\n' > "$h/.gitconfig"
+    fi
+    mkdir -p "$h/Projects/repo-a" "$h/SideProjects/repo-b" "$h/Elsewhere/repo-c"
+    local d
+    for d in Projects/repo-a SideProjects/repo-b Elsewhere/repo-c .dotfiles; do git init -q -b main "$h/$d"; done
+}
+sgi_run()   { local h="$1"; shift; HOME="$h" "$SGI_SCRIPT" "$@" </dev/null; }
+sgi_ident() { local h="$1"; HOME="$h" git -C "$h/$2" var GIT_AUTHOR_IDENT 2>&1; }
+
+# ---- 主沙盒：有 legacy 寫死身分 ----
+sgi_mkhome "$sgi/home" legacy
+
+# 收斂前：分界外用的是那個寫死值——**這正是要消滅的「能動但錯了」**，先把它釘成事實
+if grep -q 'legacy@example.com' <<< "$(sgi_ident "$sgi/home" Elsewhere/repo-c)"; then
+    ok "收斂前：分界外安靜地用寫死身分（本測試的存在理由）"
+else
+    bad "前提不成立：分界外未取用寫死身分（$(sgi_ident "$sgi/home" Elsewhere/repo-c)）"
+fi
+
+# dry-run：印計畫、零 mutation
+sgi_out="$(sgi_run "$sgi/home" --name tester --work-email w@example.com --personal-email p@example.com)"
+assert_rc "dry-run → exit 0" 0 $?
+if grep -q 'dry-run' <<< "$sgi_out"; then ok "dry-run 明示未執行"; else bad "dry-run 未告知這只是計畫"; fi
+if [ -e "$sgi/home/.gitconfig-work" ]; then bad "dry-run 竟寫了身分檔"; else ok "dry-run 零 mutation（未寫身分檔）"; fi
+if grep -q 'legacy@example.com' "$sgi/home/.gitconfig"; then ok "dry-run 未動 ~/.gitconfig"; else bad "dry-run 動了 ~/.gitconfig"; fi
+
+# 未知參數 → exit 2（不得被靜默忽略，否則打錯字會變成「跑過了但什麼都沒設」）
+sgi_run "$sgi/home" --aply >/dev/null 2>&1
+assert_rc "未知參數 → exit 2" 2 $?
+
+# --apply：寫兩檔 ＋ 清掉寫死身分 ＋ 留備份
+sgi_run "$sgi/home" --apply --name tester --work-email w@example.com --personal-email p@example.com >/dev/null 2>&1
+assert_rc "--apply → exit 0" 0 $?
+assert_eq "work 身分檔權限 600" "600" \
+    "$(stat -c '%a' "$sgi/home/.gitconfig-work" 2>/dev/null || stat -f '%Lp' "$sgi/home/.gitconfig-work" 2>/dev/null)"
+assert_eq "personal 身分檔權限 600" "600" \
+    "$(stat -c '%a' "$sgi/home/.gitconfig-personal" 2>/dev/null || stat -f '%Lp' "$sgi/home/.gitconfig-personal" 2>/dev/null)"
+# 寫死身分必須消失。留著它，分界外就會繼續安靜地用它——分界等於沒做
+if grep -q 'legacy@example.com' "$sgi/home/.gitconfig"; then bad "寫死身分未移除（分界外仍會用它）"; else ok "寫死身分已移除"; fi
+if ls "$sgi/home"/.gitconfig.bak.* >/dev/null 2>&1; then ok "移除前留下備份"; else bad "未備份就改 ~/.gitconfig"; fi
+
+# 三個分界各自解析對，且**互不污染**
+# shellcheck disable=SC2088  # 測試標籤裡的 ~ 是給人讀的路徑字面，實際路徑走 $sgi/home
+if grep -q '<w@example.com>' <<< "$(sgi_ident "$sgi/home" Projects/repo-a)"; then ok "~/Projects → 工作身分"; else bad "~/Projects 解析錯（$(sgi_ident "$sgi/home" Projects/repo-a)）"; fi
+# shellcheck disable=SC2088  # 同上
+if grep -q '<p@example.com>' <<< "$(sgi_ident "$sgi/home" SideProjects/repo-b)"; then ok "~/SideProjects → 個人身分"; else bad "~/SideProjects 解析錯（$(sgi_ident "$sgi/home" SideProjects/repo-b)）"; fi
+# shellcheck disable=SC2088  # 同上
+if grep -q '<w@example.com>' <<< "$(sgi_ident "$sgi/home" .dotfiles)"; then ok "~/.dotfiles → 工作身分（它不在任何專案根底下，靠自己那條 includeIf）"; else bad "~/.dotfiles 解析錯（$(sgi_ident "$sgi/home" .dotfiles)）"; fi
+
+# 本節最重要的一格：分界外必須**擋下**，而不是捏造 <user>@<hostname>
+sgi_out="$(sgi_ident "$sgi/home" Elsewhere/repo-c)"
+if grep -q 'Author identity unknown' <<< "$sgi_out"; then
+    ok "分界外 → Author identity unknown（擋下，不捏造）"
+else
+    bad "分界外未被擋下：$sgi_out"
+fi
+
+# --check 契約
+sgi_run "$sgi/home" --check >/dev/null 2>&1
+assert_rc "--check 收斂後 → exit 0" 0 $?
+sgi_out="$(sgi_run "$sgi/home" --check)"
+if grep -q 'verdict: OK' <<< "$sgi_out"; then ok "--check 印 verdict: OK"; else bad "--check 未印 verdict（${sgi_out}）"; fi
+# --check 必須是唯讀：拿它當驗證手段的人不預期它會改東西
+mv "$sgi/home/.gitconfig-personal" "$sgi/home/.gitconfig-personal.hidden"
+sgi_run "$sgi/home" --check >/dev/null 2>&1
+assert_rc "--check 缺身分檔 → exit 1" 1 $?
+if [ -e "$sgi/home/.gitconfig-personal" ]; then bad "--check 竟自行補寫身分檔"; else ok "--check 唯讀（不自行修復）"; fi
+mv "$sgi/home/.gitconfig-personal.hidden" "$sgi/home/.gitconfig-personal"
+
+# --check 與 --apply 互斥（避免「我以為只是看看」變成寫入）
+sgi_run "$sgi/home" --check --apply >/dev/null 2>&1
+assert_rc "--check 與 --apply 併用 → exit 2" 2 $?
+
+# 幂等：重跑不需要再給值（沿用既有身分檔），且結果不變
+sgi_run "$sgi/home" --apply >/dev/null 2>&1
+assert_rc "--apply 幂等（值可從既有身分檔沿用）" 0 $?
+if grep -q '<w@example.com>' <<< "$(sgi_ident "$sgi/home" Projects/repo-a)"; then ok "幂等後身分不變"; else bad "重跑後身分跑掉了"; fi
+
+# ---- 沙盒 2：legacy 值要能當工作 email 的預設（12 台機隊一鍵收斂靠這條） ----
+# 那 12 台 ~/.gitconfig 寫死的正好就是工作 email，所以不必逐台重打；但它必須是**繼承**、
+# 不是猜——繼承完那個值就從 ~/.gitconfig 移除，避免兩份來源。
+sgi_mkhome "$sgi/inherit" legacy
+sgi_run "$sgi/inherit" --apply >/dev/null 2>&1
+assert_rc "無 flag 但有 legacy 身分 → exit 0（繼承）" 0 $?
+if grep -q '<legacy@example.com>' <<< "$(sgi_ident "$sgi/inherit" Projects/repo-a)"; then ok "legacy 值被繼承為工作身分"; else bad "未繼承 legacy 值（$(sgi_ident "$sgi/inherit" Projects/repo-a)）"; fi
+if [ -e "$sgi/inherit/.gitconfig-personal" ]; then bad "沒給個人 email 卻寫了 personal 身分檔"; else ok "未提供個人 email → 不寫 personal 身分檔"; fi
+if grep -q 'Author identity unknown' <<< "$(sgi_ident "$sgi/inherit" SideProjects/repo-b)"; then ok "缺 personal 身分檔 → 個人分界被擋下（不回退到工作身分）"; else bad "個人分界竟解析出身分"; fi
+
+# ---- 沙盒 3：真的無值可繼承時必須 STOP，不得寫出半套設定 ----
+sgi_mkhome "$sgi/bare"
+sgi_run "$sgi/bare" --apply >/dev/null 2>&1
+assert_rc "非互動且無任何可繼承的值 → exit 1（STOP）" 1 $?
+if [ -e "$sgi/bare/.gitconfig-work" ]; then bad "STOP 時仍寫出身分檔"; else ok "STOP 時零 mutation"; fi
+
+# 共用層與腳本的檔名契約：改名只改一邊會讓 include 靜默失效
+for sgi_f in .gitconfig-work .gitconfig-personal; do
+    if grep -q "$sgi_f" "$ROOT/git/config"; then ok "git/config 引用 ${sgi_f}"; else bad "git/config 未引用 ${sgi_f}（檔名契約已破）"; fi
+done
+# 共用層**不得**含 email：dotfiles 是公開 bootstrap 的來源
+if grep -qE '^[[:space:]]*email[[:space:]]*=' "$ROOT/git/config"; then bad "git/config 含 email（身分不該進 repo）"; else ok "git/config 不含任何 email"; fi
+
 echo "▶ 24. .githooks/dispatcher（全域 core.hooksPath 的單一入口）"
 # 為什麼是 dispatcher 而不是單一 pre-commit：全域 `core.hooksPath` **取代整個 hook 目錄**，
 # 目錄裡沒有的 hook 名，repo 自己 `.git/hooks/` 的同名版本就靜默不執行（post-checkout／
