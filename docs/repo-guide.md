@@ -105,15 +105,90 @@ glog=git log --oneline --graph --decorate
 ### 自訂函數
 
 - `fe` - fzf 搜尋並編輯檔案
-- `proj` - 快速切換專案目錄
+- `proj` - 快速切換專案目錄（同時掃 `~/Projects` 與 `~/SideProjects`）
 - `stats` - 程式碼統計（tokei）
 - `venv [name]` - 建立 Python 虛擬環境（優先使用 uv）
 - `sysupdate` - 詳細的系統更新（僅 Linux）
+
+## Git 身分與專案目錄分界
+
+### 目錄分界
+
+| 目錄 | 用途 | commit 身分 |
+|------|------|------------|
+| `~/Projects` | 公司專案 | 工作 |
+| `~/SideProjects` | 個人專案 | 個人 |
+| `~/.dotfiles` | 本 repo | 工作（origin 在工作帳號、全機隊共有） |
+| 其他任何位置 | — | **無**——commit 會被擋下 |
+
+兩個根由 setup 腳本建立；`proj` 兩個都掃。
+
+### 兩層切法：規則在 repo，值在機器
+
+- **共用層 `git/config`**（dotfiles 散佈到全機隊）：只放 `user.useConfigOnly = true`
+  與三條 `includeIf`，指向固定檔名 `~/.gitconfig-work` / `~/.gitconfig-personal`。
+  **不含任何 email**——那是身分，且兩個身分的值不同。
+- **機器層** `~/.gitconfig-work` / `~/.gitconfig-personal`：由
+  `scripts/setup-git-identity.sh` 生成，權限 600，**不進 git**。檔名是契約，改名要同時改
+  `git/config`。
+- `~/.gitconfig` 只留機器特定的東西（憑證 helper、公司 GitLab credential helper 之類）
+  ＋ 一行 `include.path`。**不要在這裡寫 `[user] email`**：它會贏過分界，讓分界外的 repo
+  安靜地用錯身分——那正是這套設計要消滅的東西，`setup-git-identity.sh --apply` 會移除它。
+
+```
+./scripts/setup-git-identity.sh --check    # 只報告，零 mutation
+./scripts/setup-git-identity.sh --apply    # 生成身分檔 ＋ 清掉寫死身分
+```
+
+### ⚠️ 沒設身分時 git 會捏造一個，不會報錯
+
+沒有 `user.useConfigOnly` 時，找不到 `user.email` 的 git **不會停下來問**，而是直接用
+`<user>@<hostname>` 當作者送出。本 repo 歷史因此累積了四種身分，其中
+`jjshen@jjshen-mba.local` 根本不是信箱；2026-09-02 盤點時 m4mini 仍處於同一狀態。
+
+| 設定 | `git commit` 行為 |
+|---|---|
+| 無 global、無 repo-local `user.email` | 靜默用 `<user>@<hostname>` 提交 |
+| 同上 ＋ `user.useConfigOnly = true` | `Author identity unknown` 直接擋下 |
+
+所以**分界外沒有 fallback 身分是刻意的**。撞到 `Author identity unknown` 不是故障，是要你
+當場決定那個 repo 屬於哪一邊（多半的正解是把它搬進兩個根之一）。
+
+### ⚠️ `includeIf gitdir:` 要在真的 repo 裡才會被求值
+
+站在 `~/Projects` 這個非 repo 的目錄下問 `git config user.email`、或用 `GIT_DIR=` 指一個
+不存在的路徑，兩者都回空值——那是「沒有 repo 可判定」，不是分界壞了。要驗證就在該根底下
+真的 repo 裡問（`setup-git-identity.sh --check` 就是這樣做的）。
+
+linked worktree 跟著**主 repo** 的位置判定，不是 worktree 自己的位置。
+
+### GitHub 多帳號：三個互不相干的層
+
+一次搞混這三層，症狀都是「連得上但權限不對」，但修法完全不同：
+
+| 層 | 決定什麼 | 由誰控制 |
+|---|---|---|
+| SSH key／Host alias | push/pull 用哪個 GitHub 帳號 | `ssh/config` 的 `github.com` vs `github-me` |
+| commit identity | commit 上顯示誰 | 上面的目錄分界 |
+| `gh` active 帳號 | `gh` 指令以誰的身分呼叫 API | `gh auth switch`（**完全不看 SSH alias**） |
+
+- **`gh` active 帳號不對**的長相是 `Could not resolve to a Repository`（不是權限錯誤，
+  是「查無此 repo」——因為對那個帳號來說它確實不存在）。解法：`gh auth switch`。
+  `gh auth status` 看目前 active 是誰。
+- **兩個帳號的 token scopes 要一致**。曾發生一邊缺 `workflow`，症狀是 push 只要動到
+  `.github/workflows/` 就被拒。檢查：`gh auth status` 會列出每個帳號的 scopes，逐行比對。
+- **`git_protocol` 是 host 層級、兩帳號共用**，無法分帳號設定，且
+  `~/.config/gh/hosts.yml`（`gh auth login` 寫的、含 token、不進 repo）會蓋掉
+  `gh/config.yml`。所以 `gh repo clone` 個人 repo 一樣得到
+  `git@github.com:dev-bitpod-cc/...`＝走預設 key＝工作身分。
+  **收尾**：`./scripts/migrate-github-remotes.sh --apply` 會換成 `git@github-me:`。
 
 ## SSH 配置
 
 ### 認證架構
 
+- ⚠️ 這一節只涵蓋**連線身分**（用哪把 key）。**commit 身分**（作者寫誰）是另一半，
+  見上面「Git 身分與專案目錄分界」——兩者可以各自正確卻互相矛盾
 - **內網伺服器**：SSH CA certificate 認證（`id_autogen` + cert）
 - **GitHub 工作**（預設）：`id_github_com`（Host `github.com`）——標準 URL `git@github.com:` 直接可用，
   `gh` 也才對得上（**gh 完全不看 SSH alias**，那是 alias 方案永遠解不掉的一半）
