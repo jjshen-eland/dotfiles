@@ -283,3 +283,22 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   它們 pull,而**漏跑是無聲的**(skill／地雷／模板停在舊版)。**加進 inventory 這條路今天不可用**:
   2026-08-09 查 tailnet 沒有它們,且常離線的筆電會讓每次 dotsync 都帶 ❌、稀釋訊號。
   **待確認是刻意(終端設備不入清單)還是缺口。**
+
+- **B-20260907-governed-repo-declared-path-gaps** · **已 rollout 的 repo 有配置缺口，等各自的 session 補**(2026-09-07 加)。
+  issue #165 實測六個 repo:`krepo-tej-export` 與 `krepo-mops-financial-statements` 的 `plan_dir` 指向
+  `docs/plans` 卻沒有 `plans` class;`krepo-mops-financial-statements` 的 `STATUS.md` Dossier Steward 欄被中文
+  註解裝飾過。成因不是粗心，是 rollout 方法論「classes 對著該 repo 現有 canonical paths 寫」的必然後果——
+  rollout 當下沒有那個目錄就不會建 class。**scanner 側已於 `M-20260907-doc-governance-silent-config-gaps`
+  修完**，這兩個 repo 下次跑 `audit --ship` 會自己報出來，故此處**不列修復步驟**，只記「本 repo 已知但
+  刻意未跨 repo 動手」。附帶觀察同源:`analysis`（`docs/analysis/*.md`）與 `script-guides`（`scripts/*/README.md`）
+  在部分 repo 缺漏，但它們沒有 `plan_dir` 那種矛盾證據，機械偵測不到——**未決**:rollout 是否該對照一份
+  標準 class 清單逐項確認要或不要。
+
+- **B-20260907-actor-key-decoration-limit** · **`ACTOR_RE` 擋得住空白、擋不住無空白的裝飾**(2026-09-07 加)。
+  規則是 `^(claude|codex|human|owner|external|unassigned):[^\s:][^\s]*$`，所以
+  `` `codex:kb-x`（使用者於2026-09-01具名移交terminal scope） `` 因為含空白被兩個 gate 一致拒絕，
+  但 `codex:ui（暫代）` 這種**沒有空白**的中文裝飾會**同時通過** `audit` 與 `steward-authority.py`。
+  後果比原缺口輕（兩個 gate 至少一致，不會再出現「audit 綠、authority BROKEN」的死結），但
+  `derived_actor` 的 `writer.startswith(f"{runtime}:")` 仍會靜默不匹配、退回 branch 推導。
+  **未決**:收緊 `ACTOR_RE`（例如限定 ASCII 字元集）會改變 `steward-authority.py` 在所有已 rollout repo 的
+  執行期行為，需要先盤點各 repo `STATUS.md` 的實際寫法才知道會擋掉誰;2026-09-07 判為超出 issue #165 範圍。
