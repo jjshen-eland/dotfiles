@@ -6,7 +6,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 # STATUS.md
 
-個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-09-03)
+個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-09-07)
 
 ---
 
@@ -23,7 +23,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 ## 歷史入口
 
 - 決策：`docs/archive/decisions-2026-09.md`「事件記錄（event-time）」。
-- 死路：`docs/archive/dead-ends-2026-08.md`「事件記錄（event-time）」。
+- 死路：`docs/archive/dead-ends-2026-09.md`「事件記錄（event-time）」。
 - 里程碑：`docs/archive/milestones-2026-09.md`「事件記錄（event-time）」。
 - legacy dead-end 的完整推導與實驗證據：`docs/dead-ends.md`「分工」。
 - 無路徑線索時執行 `scripts/doc-governance.py find '自然語言問題或 stable ID'`；人工 pointer 不作為可檢索性的代理。
