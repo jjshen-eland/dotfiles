@@ -22,6 +22,11 @@ FENCE_RE = re.compile('^(?P<indent> {0,3})(?P<fence>`{3,}|~{3,})(?P<info>.*)$')
 HEADING_RE = re.compile('^(#{1,6})\\s+(.*)$')
 TOP_BULLET_RE = re.compile('^([-+*])\\s+(.*)$')
 STATUS_FIELD_RE = re.compile(r'^\s*[-+*]\s+\*\*(?P<field>[^*]+)\*\*\s*[：:]\s*(?P<value>.*)$')
+# Replica of steward-authority.py's ACTOR_RE. doc-governance.py is copied verbatim
+# into every governed repo, so it cannot import from the skill tree; tests/run.sh
+# machine-checks the two literals for drift.
+ACTOR_RE = re.compile(r"^(claude|codex|human|owner|external|unassigned):[^\s:][^\s]*$")
+ACTOR_FIELDS = ('Writer', 'Dossier Steward')
 COMMENT_RE = re.compile('<!--.*?-->', re.S)
 DATE_RE = re.compile('(?<!\\d)(\\d{4}-\\d{2}-\\d{2})(?!\\d)')
 STABLE_ID_RE = re.compile('\\b([DXM])-(\\d{8})-([a-z0-9][a-z0-9-]*)\\b')
@@ -247,6 +252,25 @@ def missing_tracked_markdown(root):
 def indexed_markdown(root):
   output = run_git(root, ['ls-files', '-z', '--cached', '--', '*.md'])
   return sorted(item for item in output.split('\x00') if item)
+
+def declared_path_probes(config):
+  # Paths the config's own mechanisms always scan: plan_findings() walks plan_dir
+  # (which has a default, so it is live even when unset) and history routing
+  # resolves history_paths.  A concrete probe under each is what both the
+  # coverage check and the dead-glob exemption are stated in terms of.
+  probes = []
+  plan_dir = config.raw.get('plan_dir', 'docs/plans').rstrip('/')
+  if plan_dir:
+    probes.append(f'{plan_dir}/probe.md')
+  for pattern in config.history_paths.values():
+    probes.append(pattern.replace('{YYYY-MM}', '2000-01'))
+  return probes
+
+def normalize_actor(value):
+  # Mirrors steward-authority.py's field normalization so both gates accept and
+  # reject exactly the same values. Stripping backticks here is what closes the
+  # `unassigned:foo` decoration bypass rather than opening a new one.
+  return value.strip().strip('`')
 
 def matching_classes(rel, config):
   return [cls for cls in config.classes if any(fnmatch.fnmatchcase(rel, pattern) for pattern in cls.paths)]
@@ -555,10 +579,19 @@ def class_findings(config, classification):
     elif len(matches) > 1:
       findings.append(f"multi-class: {rel} -> {','.join((cls.name for cls in matches))}")
   tracked = set(classification)
+  # A glob that backs a declared mechanism (plan_dir, history_paths) is forward
+  # declared, not stale: the repo is required to classify that path even before
+  # the first file lands there.  Without this exemption the coverage finding and
+  # this one are unsatisfiable together for a repo whose plans/archive dirs are
+  # still empty.
+  probes = declared_path_probes(config)
   for cls in config.classes:
     for pattern in cls.paths:
-      if not any(fnmatch.fnmatchcase(rel, pattern) for rel in tracked):
-        findings.append(f'class glob 無匹配: {cls.name}:{pattern}')
+      if any(fnmatch.fnmatchcase(rel, pattern) for rel in tracked):
+        continue
+      if any(fnmatch.fnmatchcase(probe, pattern) for probe in probes):
+        continue
+      findings.append(f'class glob 無匹配: {cls.name}:{pattern}')
   return findings
 
 def expected_history_path(config, entry_type, event_date):
@@ -1024,7 +1057,13 @@ def status_findings(config, documents):
           findings.append(f"STATUS active item missing field: {field} at {path}:{item['line']}")
         elif not fields[field]:
           findings.append(f"STATUS active item empty field: {field} at {path}:{item['line']}")
-      steward = fields.get('Dossier Steward', '')
+      for field in ACTOR_FIELDS:
+        raw_value = fields.get(field, '')
+        if not raw_value:
+          continue
+        if not ACTOR_RE.fullmatch(normalize_actor(raw_value)):
+          findings.append(f"STATUS active item invalid actor key: {field} at {path}:{item['line']}")
+      steward = normalize_actor(fields.get('Dossier Steward', ''))
       if steward == 'unassigned' or steward.startswith('unassigned:'):
         findings.append(f"STATUS Dossier Steward cannot be unassigned: {path}:{item['line']}")
       for field in uniform_values:
@@ -1148,6 +1187,13 @@ def surface_bytes(config):
 
 def self_governance_findings(config):
   findings = []
+  plan_dir = config.raw.get('plan_dir', 'docs/plans').rstrip('/')
+  if plan_dir and not matching_classes(f'{plan_dir}/probe.md', config):
+    findings.append(f'plan_dir has no matching class: {plan_dir}')
+  for kind, pattern in sorted(config.history_paths.items()):
+    probe = pattern.replace('{YYYY-MM}', '2000-01')
+    if not matching_classes(probe, config):
+      findings.append(f'history_paths has no matching class: {kind} {probe}')
   maximum = config.raw.get('governance_max_bytes')
   if maximum is not None:
     if not isinstance(maximum, int) or maximum < 1:
