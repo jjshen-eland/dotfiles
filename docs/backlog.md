@@ -95,6 +95,11 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
       正解是把 `governance_max_bytes` 調到下一個 binary tier **131072**（dotfiles pilot 本身即 131072），
       依 `docs/document-governance.md`「Surface budget」:correctness fix 可以移 tier，且**明文禁止只加
       剛好夠用的 bytes**，所以不是刪文件湊字數、也不是改成 66560 這種剛好夠的值。
+      ⚠️ **但這 2453 bytes 的性質是混的，別把理由講得比實際牢固**:actor key 形狀驗證（修的是
+      「audit 全綠但 `steward-authority.py` exit 2 BROKEN」的假綠）與 dead-glob 豁免（修的是「補 class」
+      與 dead-glob 檢查互斥的自相矛盾）兩項是 correctness fix;`plan_dir`／`history_paths` 涵蓋檢查
+      則較接近 new capability，而同一段規則對 new capability 的要求是「must justify their surface cost」。
+      升 tier 的依據是**前兩項**，而「禁止只加剛好夠用」那條使得一旦要動就只能整級升。
       ⚠️ **根因值得單獨看**:core 本身 57915 bytes ＝ 65536 budget 的 **88%**——這個上限幾乎整個被一支
       沒人會讀的 vendored 腳本吃掉，只要 core 再長就會複製這次的狀況。**未決**:governance surface 是否
       該把 vendored core 排除在外（它是工具、不是要人讀的治理 prose），或 target repo 的預設 budget
