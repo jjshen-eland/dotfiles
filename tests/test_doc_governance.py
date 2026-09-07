@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import fnmatch
 import json
 import os
 from pathlib import Path
@@ -19,7 +20,9 @@ ROOT = Path(__file__).resolve().parents[1]
 TOOL = ROOT / "scripts" / "doc-governance.py"
 
 
-def base_config(classes: list[dict], **overrides: object) -> dict:
+def base_config(
+    classes: list[dict], *, cover_declared_paths: bool = True, **overrides: object
+) -> dict:
     classes = [
         {
             **item,
@@ -45,6 +48,52 @@ def base_config(classes: list[dict], **overrides: object) -> dict:
         "governance_surface": [],
     }
     config.update(overrides)
+    return _cover_declared_paths(config) if cover_declared_paths else config
+
+
+def _cover_declared_paths(config: dict) -> dict:
+    """Fill in classes for plan_dir / history_paths when the case did not declare them.
+
+    A real config must classify the paths its own mechanisms scan, and audit now
+    reports it when one does not.  Most cases here declare only the one or two
+    classes they exercise, so without this the new finding would fire in every
+    unrelated test.  Coverage is computed exactly the way the scanner computes
+    it, and a class is injected ONLY for a probe no declared glob already
+    matches -- injecting unconditionally would make some paths match two classes
+    and turn them ambiguous.
+    """
+    classes = config.get("classes")
+    if not isinstance(classes, list):
+        return config
+    globs = [
+        pattern
+        for item in classes
+        if isinstance(item, dict)
+        for pattern in (item.get("paths") or [])
+        if isinstance(pattern, str)
+    ]
+
+    def covered(probe: str) -> bool:
+        return any(fnmatch.fnmatchcase(probe, pattern) for pattern in globs)
+
+    added: list[dict] = []
+    plan_dir = str(config.get("plan_dir") or "").rstrip("/")
+    if plan_dir and not covered(f"{plan_dir}/probe.md"):
+        added.append({"name": "plans", "mode": "routed", "paths": [f"{plan_dir}/*.md"]})
+    for kind, pattern in sorted((config.get("history_paths") or {}).items()):
+        if not isinstance(pattern, str):
+            continue
+        if covered(pattern.replace("{YYYY-MM}", "2000-01")):
+            continue
+        added.append(
+            {
+                "name": f"history-{kind.replace('_', '-')}",
+                "mode": "history",
+                "paths": [pattern.replace("{YYYY-MM}", "*")],
+            }
+        )
+    if added:
+        config["classes"] = classes + added
     return config
 
 
@@ -1853,6 +1902,179 @@ class DocGovernanceTests(RepoCase):
         self.assertIn("STATUS active item empty field: Writer", result.stdout)
         self.assertIn("STATUS Dossier Steward cannot be unassigned", result.stdout)
         self.assertIn("STATUS active item field mismatch: Dossier Steward", result.stdout)
+
+    def test_plan_dir_without_matching_class_is_reported(self) -> None:
+        """plan_dir 指向的路徑沒有任何 class 涵蓋時，audit 必須出聲。
+
+        rollout 方法論是「classes 對著該 repo 現有 canonical paths 寫」，所以
+        rollout 當下沒有 docs/plans/ 的 repo 不會有 plans class——但 plan_dir 有
+        預設值，plan_findings() 照樣在掃。缺口必須在 audit 階段浮出來，而不是
+        等到有人建第一份 plan 才看到 unclassified。
+        """
+        self.write("docs/notes.md", "# Notes\n")
+        self.configure(
+            base_config(
+                [{"name": "project-doc", "mode": "routed", "paths": ["docs/notes.md"]}],
+                cover_declared_paths=False,
+            )
+        )
+        self.track()
+        result = self.run_tool("audit", "--ship")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("plan_dir has no matching class: docs/plans", result.stdout)
+
+    def test_history_paths_without_matching_class_is_reported(self) -> None:
+        """同型缺口：history_paths 指向的 shard 路徑也要有 class 涵蓋。"""
+        self.write("docs/notes.md", "# Notes\n")
+        self.configure(
+            base_config(
+                [
+                    {"name": "project-doc", "mode": "routed", "paths": ["docs/notes.md"]},
+                    {"name": "plans", "mode": "routed", "paths": ["docs/plans/*.md"]},
+                ],
+                cover_declared_paths=False,
+            )
+        )
+        self.track()
+        result = self.run_tool("audit", "--ship")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn(
+            "history_paths has no matching class: decision docs/archive/decisions-2000-01.md",
+            result.stdout,
+        )
+        self.assertIn("history_paths has no matching class: dead_end", result.stdout)
+        self.assertIn("history_paths has no matching class: milestone", result.stdout)
+        self.assertNotIn("plan_dir has no matching class", result.stdout)
+
+    def test_covered_plan_dir_and_history_paths_stay_silent(self) -> None:
+        """涵蓋齊全時不得誤報——這兩條 finding 只在真的缺 class 時出現。
+
+        同時釘住與 dead-glob 檢查的交互作用：`docs/plans/` 與 `docs/archive/`
+        目前一個檔案都沒有，但它們的 class 是**為宣告的機制而前置存在**的，
+        不得被判為 stale glob。少了這個豁免，「補 class」與「class glob 無匹配」
+        對空目錄的 repo 就變成互斥，rollout 指南要求的做法會做不到。
+        無關的死 glob 仍必須照報——豁免只涵蓋 plan_dir／history_paths。
+        """
+        self.write("docs/notes.md", "# Notes\n")
+        self.configure(
+            base_config(
+                [
+                    {"name": "project-doc", "mode": "routed", "paths": ["docs/notes.md"]},
+                    {"name": "plans", "mode": "routed", "paths": ["docs/plans/*.md"]},
+                    {"name": "history", "mode": "history", "paths": ["docs/archive/*.md"]},
+                    {"name": "stale", "mode": "routed", "paths": ["docs/gone/*.md"]},
+                ]
+            )
+        )
+        self.track()
+        result = self.run_tool("audit", "--ship")
+        self.assertNotIn("plan_dir has no matching class", result.stdout)
+        self.assertNotIn("history_paths has no matching class", result.stdout)
+        self.assertNotIn("class glob 無匹配: plans", result.stdout)
+        self.assertNotIn("class glob 無匹配: history", result.stdout)
+        self.assertIn("class glob 無匹配: stale:docs/gone/*.md", result.stdout)
+
+    def test_status_actor_key_shape_is_validated_and_decoration_cannot_bypass(self) -> None:
+        """audit 必須驗 actor key 的形狀，而不是只驗非空／非 unassigned。
+
+        兩個實地失效面：
+        1. 被中文註解裝飾過的 Dossier Steward 讓 audit --ship 全綠，卻讓
+           steward-authority.py 回 exit 2 BROKEN——修復路徑會打結，因為修
+           STATUS.md 需要 authority，而 authority 正因 STATUS.md 壞掉而 BROKEN。
+        2. `unassigned:foo` 加反引號可以繞過 unassigned 檢查（字面比對）。
+        """
+        contract = {
+            "required_fields": ["Writer", "Workspace", "Write Scope", "Dossier Steward"],
+            "uniform_fields": [],
+        }
+        self.write(
+            "STATUS.md",
+            """# Status
+
+## 進行中
+
+### Decorated steward
+
+- **Writer**：codex:kb-platform-phase0
+- **Workspace**：branch=feat/kb
+- **Write Scope**：src/
+- **Dossier Steward**：`codex:kb-platform-phase0`（使用者於2026-09-01具名移交terminal scope）
+
+### Decorated unassigned steward
+
+- **Writer**：codex:api
+- **Workspace**：branch=feat/api
+- **Write Scope**：src/api/
+- **Dossier Steward**：`unassigned:integration`
+
+### Decorated writer
+
+- **Writer**：codex:ui （暫代）
+- **Workspace**：branch=feat/ui
+- **Write Scope**：src/ui/
+- **Dossier Steward**：codex:integration
+""",
+        )
+        self.configure(
+            base_config(
+                [{"name": "status", "mode": "active", "paths": ["STATUS.md"]}],
+                status_schema={
+                    "path": "STATUS.md",
+                    "required_headings": ["進行中"],
+                    "forbidden_headings": [],
+                    "active_item_contract": contract,
+                },
+            )
+        )
+        self.track()
+        result = self.run_tool("audit", "--ship")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn(
+            "STATUS active item invalid actor key: Dossier Steward", result.stdout
+        )
+        self.assertIn("STATUS active item invalid actor key: Writer", result.stdout)
+        # 反引號裝飾不得繞過 unassigned 檢查。
+        self.assertIn("STATUS Dossier Steward cannot be unassigned", result.stdout)
+
+    def test_status_bare_actor_keys_stay_silent(self) -> None:
+        """乾淨的 actor key 不得被新檢查誤報。"""
+        self.write(
+            "STATUS.md",
+            """# Status
+
+## 進行中
+
+### Clean item
+
+- **Writer**：external:registrar
+- **Workspace**：external/no-repo-write
+- **Write Scope**：none
+- **Dossier Steward**：owner:repo-maintainer
+""",
+        )
+        self.configure(
+            base_config(
+                [{"name": "status", "mode": "active", "paths": ["STATUS.md"]}],
+                status_schema={
+                    "path": "STATUS.md",
+                    "required_headings": ["進行中"],
+                    "forbidden_headings": [],
+                    "active_item_contract": {
+                        "required_fields": [
+                            "Writer",
+                            "Workspace",
+                            "Write Scope",
+                            "Dossier Steward",
+                        ],
+                        "uniform_fields": ["Dossier Steward"],
+                    },
+                },
+            )
+        )
+        self.track()
+        result = self.run_tool("audit", "--ship")
+        self.assertNotIn("invalid actor key", result.stdout)
+        self.assertNotIn("cannot be unassigned", result.stdout)
 
     def test_status_active_item_contract_rejects_completed_h3_and_ignores_hidden_examples(self) -> None:
         self.write(

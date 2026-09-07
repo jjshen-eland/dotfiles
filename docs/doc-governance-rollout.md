@@ -23,6 +23,13 @@ PR 階段才擋下來（canary 實測 9 條 finding 全落在該檔）。
 Markdown 恰好落在一個 class（`unclassified`、`multi-class`、class glob 無匹配都是 findings）。
 `loaded` budget 只給真的進 context 的檔。
 
+**「對著現有 paths 寫」有一個例外必須手動補：`plan_dir` 與 `history_paths` 指向的路徑一定要有 class
+涵蓋，即使該目錄當下還沒有任何檔案。** 這兩者是**無條件運作**的機制——`plan_dir` 連沒寫進配置都有預設值
+`docs/plans`，`plan_findings()` 一直在掃它——所以「rollout 當下沒有那個目錄 ⇒ 沒建 class」會留下一個
+沉默的缺口，直到有人建第一份 plan 才以 `unclassified` 的面貌出現，而他會以為是自己的檔案寫錯了。
+`audit` 現在會把這個缺口報成 `plan_dir has no matching class` ／ `history_paths has no matching class`，
+且這類前置宣告的 glob **豁免於 class glob 無匹配**（它不是 stale，是還沒有檔案）。
+
 xref findings 先分三類：真的壞掉的指標（修）、遷移本身會清掉的（略過）、指向兄弟 repo 的（宣告進
 `external_reference_targets`）。**第三類必須在遷移前宣告完**——history 是 append-only，落在 archive 裡的
 跨 repo 指標事後改不動，只剩宣告一條路。

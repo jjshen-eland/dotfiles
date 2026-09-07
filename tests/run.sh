@@ -808,6 +808,18 @@ else
     sed 's/^/     /' "$doc_test_out"
 fi
 
+# ACTOR_RE 是刻意的複本：doc-governance.py 逐字 vendored 進每個受治理的 repo，不能 import
+# skill tree 的東西；steward-authority.py 只活在 project skill 裡。兩份規則一旦漂移，
+# audit 與 authority gate 就會對同一個 STATUS.md 給出相反答案——而那正是本 gate 要防的事
+# （實地：被裝飾過的 Dossier Steward 讓 audit --ship 全綠、authority gate 回 exit 2 BROKEN）。
+actor_re_scanner="$(sed -n 's/^ACTOR_RE = re\.compile(\(.*\))$/\1/p' "$ROOT/scripts/doc-governance.py")"
+actor_re_authority="$(sed -n 's/^ACTOR_RE = re\.compile(\(.*\))$/\1/p' "$ROOT/claude/skills/project/scripts/steward-authority.py")"
+if [ -n "$actor_re_scanner" ] && [ "$actor_re_scanner" = "$actor_re_authority" ]; then
+    ok "ACTOR_RE 兩份複本逐字相同（audit 與 authority gate 判準一致）"
+else
+    bad "ACTOR_RE 複本漂移：scanner=[${actor_re_scanner}] authority=[${actor_re_authority}]"
+fi
+
 echo "▶ 3. inventory.sh 解析"
 # 在子 shell 內 source，避免污染本 shell
 inv() { (INVENTORY_FILE="$1" && export INVENTORY_FILE && shift && source "$ROOT/scripts/lib/inventory.sh" && "$@"); }
