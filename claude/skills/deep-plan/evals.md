@@ -600,6 +600,19 @@ ground truth 證據位置（**只記指標，不複製內容**）：
   ⚠️ 跑在 **Opus**（session 模型）非樓層模型，觀察不可用於「規則有沒有作用」的判定。
   逐次數據見本檔「執行紀錄」表同日該列。
 
+- **2026-08-22，krepo-judicial `docs/plans/judicial-api.md`——第三次核對**（前兩次見上兩條）。
+  條件①**不成立**——第一輪 2 個 reviewer 共 **27** 條 findings，最高只到**高**（3 條：`REPRESENTATIVE_DOCS`
+  的推論已被新增檔案推翻、P2 相容 view 的結論已被家族側收回、探針 400 成因表缺第四格），**無阻斷級**
+  ⇒ 依「高／中／低都不算」直接否決登記。
+  條件②**成立**（判準類：上述「探針 400 的第四種成因」正是「本來會落進 A 格、改完落進 B 格」的成員
+  集合變化），但①既已否決，**刻意未逐項記證據位置**——不為一份不合格的 fixture 預先鋪路。
+  **僅備查、非 fixture，NEVER 當作 P4 fixture 取用**：第一輪當下 commit
+  `f4abbe7bf4e42bc8b456d970d89cd770b4178bd0`（working tree clean）、reviewer N=2。
+  ⚠️ **執行紀錄自身有缺口**：來源紀錄內文稱「同一份計畫連續四次執行」（盤點表漏列 19 → 20 → 22），
+  但本檔連同本條只登記到三次 ⇒ **至少有一次執行未留任何紀錄**，不可回溯補。
+  ⚠️ 跑在 **Opus**（session 模型）非樓層模型，觀察不可用於「規則有沒有作用」的判定。
+  使用面數據見 `field-log.md` 同日該列。
+
 - **2026-08-19，dotfiles `c567204`（分片架構計畫 v3）——fixture 汰換驗證，FAIL、維持 `5cf20c7`。**
   第三方建議把 P4 換成這份（在 dotfiles 內、可消除跨 repo 私有依賴），切換前以**樓層模型
   Sonnet ×2** 在 `c567204` 的乾淨 clone 上驗證。**預先登記的判準**：至少一個 reviewer 抓到
@@ -788,6 +801,7 @@ B 判**低**（「漏設會直接 assertion failure、是自我糾正型缺口�
 | 2026-08-19 | **P4 觸發條件核對**（真實執行：krepo-mops-announcement `docs/plans/announcement-api.md`） | Opus ×2（第一輪 N=2） | **達標 ⇒ P4 當日實例化** | 兩個 AND 條件皆成立：①第一輪 **1 條阻斷級**，兩個 reviewer **獨立**指到且**都判阻斷**；②**判準類**——`category` 的放行/攔下成員集合從未被量過，且明列常數與取自 DB **各有一格是靜默的**。登記 hash `5cf20c7`（第一輪當下，非處置版 `ac15ae0`），branch 為此**已 push**（推之前只存單機，等同上一個 fixture 的死法）。⚠️ 本次核對是**事後補做**——執行當下漏了，根因是「附提醒區塊／做 P4 核對」只寫在 `field-log.md` 而該檔刻意不從 `SKILL.md` 連結，執行時讀不到；已於同日補進 `SKILL.md` 的 Step 3b／Step 6 |
 | 2026-08-20 | **P4 觸發條件核對**（真實執行：krepo-judicial `docs/plans/judicial-api.md`，**第一次執行**） | Opus ×2（第一輪 N=2） | **未達觸發條件 ⇒ 不登記、P4 維持既有 fixture** | 條件②**成立**（判準類：案類白名單換成存在性探針，「本來回 200 空集合、改完回 400」那一格兩個 reviewer 獨立指到、且各自舉的成員不同——A 舉 delete-info purge 到零筆、B 舉依法不公開的 9%）；條件①**不成立**——第一輪最高嚴重度為**高**（README 第五處反向記載 2/2、探針反向失效 2/2、`test_import_boundary` 那條守門根本不存在 2/2），**無阻斷級**。依「hash 取法」節不登記 hash（登記不合格 fixture 比不登記更糟）。⚠️ 本次跑在 **Opus**（session 模型）不是樓層模型，觀察不可用於任何「規則有沒有作用」的判定 |
 | 2026-08-20 | **P4 觸發條件核對**（真實執行：krepo-judicial `docs/plans/judicial-api.md`，**第二次執行**——前次 2 輪判不通過、分流「先量事實再重審」，量完 8 項 prod 事實後重跑） | Opus ×2（新一輪 N=2） | **未達觸發條件 ⇒ 不登記** | 條件①**成立**（出現 **1 條阻斷級**：`ORDER BY judgment_date DESC NULLS LAST` 無法由既有的 ASC NULLS LAST 索引滿足 ⇒ 全檔 `EXPLAIN` 都不是最終 SQL 的計畫）；條件②**不成立**——**那條阻斷級不是判準類**，是效能／事實類，沒有「本來會攔、改完不攔」那格。⚠️ 本輪**確實有**判準類 findings（法院「名稱」軸的集合相等只有計數證據 ⇒ 合法名稱可能從此回 400，2/2 獨立指到），但它們是**高**不是阻斷 ⇒ **兩個條件落在不同的 finding 上，AND 不成立**。不登記 hash。⚠️ 同上跑在 Opus，非樓層模型 |
+| 2026-08-22 | **P4 觸發條件核對**（真實執行：krepo-judicial `docs/plans/judicial-api.md`，**第三次核對**） | Opus ×2（第一輪 N=2） | **未達觸發條件 ⇒ 不登記** | 條件②**成立**（判準類：探針 400 成因表缺的第四格）；條件①**不成立**——第一輪 2 個 reviewer 共 **27** 條 findings，最高只到**高**（3 條），**無阻斷級** ⇒ 直接否決。第二輪判**不通過**，**10 條新 blocking**。備查 commit `f4abbe7`（第一輪當下）**僅供回溯、非 fixture**。⚠️ 來源紀錄稱同一份計畫已連續四次執行，本檔只登記到三次 ⇒ **有一次未留紀錄**。⚠️ 同上跑在 Opus，非樓層模型 |
 | 2026-08-22 | portable v2 無 skill baseline（dp1） | Codex fresh context | **RED** | 能直接找出核心缺陷並判 NO-GO，但只有單一 context 直接審查；沒有 N=2 隔離、typed gate、逐條處置或第二輪。證明一般 plan review 不能替代 orchestration contract。 |
 | 2026-08-22 | portable v2 Claude Code forward eval（dp1，第一輪） | Sonnet + 2× background Agent | **GREEN** | skill discovery 成功；同輪並行建立 2 個 fresh Agent，兩者均完成；prompt 只傳 plan／repo／brief 路徑，輸出 typed findings 並在處置 gate 前停止；fixture 無 mutation。 |
 | 2026-08-22 | portable v2 Codex forward eval（dp1，第一輪） | Codex fresh orchestrator | **部分 GREEN；P14 首跑 RED 後修正** | 首跑產出兩份 fresh typed reviews 與正確 NO-GO，但 reviewer 建立順序是 A 完成後才建 B，依 P14 判 RED；據此把「N IDs 必須在 wait 前存在」寫成明確 adapter contract。後續巢狀盲測在等待 A 前確實嘗試 B，但 runtime 回 `collab spawn failed: agent thread limit reached`；workflow 原已允許這種有明確拒絕證據的 sequential 例外，P14 現也要求保留 refusal 原文。未宣稱已驗證 unrestricted parallel path；fixture 無 mutation。 |
