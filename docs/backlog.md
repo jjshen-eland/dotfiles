@@ -100,10 +100,18 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
       與 dead-glob 檢查互斥的自相矛盾）兩項是 correctness fix;`plan_dir`／`history_paths` 涵蓋檢查
       則較接近 new capability，而同一段規則對 new capability 的要求是「must justify their surface cost」。
       升 tier 的依據是**前兩項**，而「禁止只加剛好夠用」那條使得一旦要動就只能整級升。
-      ⚠️ **根因值得單獨看**:core 本身 57915 bytes ＝ 65536 budget 的 **88%**——這個上限幾乎整個被一支
-      沒人會讀的 vendored 腳本吃掉，只要 core 再長就會複製這次的狀況。**未決**:governance surface 是否
-      該把 vendored core 排除在外（它是工具、不是要人讀的治理 prose），或 target repo 的預設 budget
-      本來就該跟 pilot 對齊。
+      ⚠️ **這次擴容不是根因修復,是既有 policy 的正常運作**:core 長大時擋下無聲散佈、要求人重新判斷
+      成本,正是 budget 該做的事。（本條先前寫成「根因未解，vendored 工具不該計入 surface」,已於
+      2026-09-07 撤回——理由與誤讀見 `X-20260907-unreadable-tool-exclusion-argument`。）
+      **仍待研究的是量測口徑**:core 57915 bytes ＝ 舊 budget 的 **88%**,而這次 +2453 bytes 在 9 個 repo
+      只擋下 2 個,擋不擋得下取決於各 repo 自己的 `.doc-governance.json` 大小（1637～4874）——與 core
+      無關的變數;另外 4 個已 merge 的 repo 無聲吃下同一筆增長。⇒ **「阻止 core 無聲成長」在 target repo
+      端只有 2/9 成立**,要真的守住得在 core 所在的 dotfiles 設檢查點。
+      **候選方向（未達開 spec 門檻,不要直接排除 core——那是把已知成本移出量測、改口徑而非修根因）**:
+      拆成兩個指標——① canonical core 的體積與複雜度,在 dotfiles 集中設 hard budget;② 各 target repo
+      自有的 config／文件／integration glue,另設 local budget。target repo 仍須 byte-for-byte 驗 core,
+      不因排除計量而允許漂移;total installed footprint 繼續報告但可不作 target-local blocking。
+      **開 spec 的門檻**:能證明拆分後仍擋得住 core 無限制成長,且更能捕捉 repo-specific 複雜度。
     - **只修了 STATUS、core 未換**:`krepo-mops-financial-statements`（commit `79a1c51` 未 push）——
       其 `Dossier Steward` 欄位夾帶反引號與中文註解，`steward-authority.py` 原本 exit 2 BROKEN，
       修成純 actor key 後回到正常的 exit 1 policy STOP。換 core 後 surface 63082 < 65536，不需調 budget。
