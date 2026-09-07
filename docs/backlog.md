@@ -58,11 +58,20 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
 
 - **B-20260823-fleet-rollout-remaining** · [ ] **fleet 核心曾經同步，但 dotfiles 的核心之後又動了，收尾要重驗一次**
   (2026-08-23 加；2026-08-25 依遠端與 clean-clone 證據校正；2026-09-07 補上兩顆 audit 修正的下落並重新界定關閉條件)。
-  Dotfiles(pilot)及七個 target repo:`krepo`、`krepo-common`、`krepo-mops-major-news`、
-  `krepo-mops-announcement`、`krepo-judicial`、`kapi-protocol`、`kapi-gateway` 的 remote `main`
-  **在 2026-08-25 當時**都已採用 repo-local governance;trusted scanner、`docs/document-governance.md`
-  與 kernel／route／portable managed blocks 和 dotfiles source byte-identical，root `CLAUDE.md` 皆以
-  首個非空白行 `@AGENTS.md` 載入，七個 `audit --ship` 均為 rc=0。
+  Dotfiles(pilot)及當時記錄的七個 target repo 的 remote `main` **在 2026-08-25 當時**都已採用
+  repo-local governance;trusted scanner、`docs/document-governance.md` 與 kernel／route／portable
+  managed blocks 和 dotfiles source byte-identical，root `CLAUDE.md` 皆以首個非空白行 `@AGENTS.md`
+  載入，七個 `audit --ship` 均為 rc=0。
+  - ⚠️ **那份「七個」名單本身是錯的**（2026-09-07 逐 repo 實測校正）。**多列一個過期名稱**:
+    `krepo-mops-announcement` 已改名為 `krepo-mops-disclosure`——證據是 `gh repo view
+    elandcomtw/krepo-mops-announcement` 回傳的 repo name 就是 `krepo-mops-disclosure`（GitHub 對
+    改名 repo 轉址），且 disclosure 的首顆 commit 正是「建立公告知識庫 repo」。**漏列三個**:
+    `krepo-mops-disclosure`（即上者）、`krepo-tej-export`、`krepo-mops-financial-statements`
+    三個都有 `.doc-governance.json` ＋ vendored core，是實實在在的採用者。
+    ⇒ **實際受治理的是 9 個 repo，不是 7 個**;任何「七 repo 重驗」都是不完整的驗證。
+    現行清單:`krepo`、`krepo-common`、`krepo-mops-major-news`、`krepo-mops-disclosure`、
+    `krepo-judicial`、`kapi-protocol`、`kapi-gateway`、`krepo-tej-export`、
+    `krepo-mops-financial-statements`。
   - **2026-08-25 找到的兩個 repo-local 缺口**:`krepo` 的文檔把 host fact／遺失 plan 導向 runtime-private
     memory（commit `d0854bf`）;`krepo-common` 缺 contract regression gate（commit `c60f817`）。
     **2026-09-07 查到的下落**:那兩顆 SHA 至今不被任何 branch 包含、只剩 dangling object，但**內容其後
@@ -74,8 +83,20 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
     history_paths 涵蓋檢查、dead-glob 豁免、actor key 形狀驗證）。該檔是**逐 byte vendored** 進七個
     repo 的，所以 2026-08-25 那次的 byte-identical 結論**已經過期,不能沿用**——這正是本條下方
     「每次核心變更 = 每個採用 repo 欠一次 sync ship」那行講的成本，這次是它的實例。
-  - **關閉條件**:重跑一次七 repo 的核對——remote SHA、trusted core／managed blocks 逐 byte 比對、
-    各自的 `audit --ship` 與 contract tests;**新 core 散佈完成後**才寫 `M-*` 並移除本條。
+  - **2026-09-07 的 core 散佈進度**（新舊 core 對掃過 9 個 repo，差集只有 3 個 repo 各多一條 finding）:
+    - 已 commit 待送:`krepo-mops-major-news`、`kapi-gateway`、`krepo-mops-disclosure`（差集為空）。
+    - 已 commit 但**送不出去**:`krepo`（surface 66185>65536）、`krepo-judicial`（65558>65536）
+      ——這兩個 repo 的 `origin/main` **用它們自己的舊 core 掃也是紅的**，是既有問題、與本次換版無關;
+      `ship-state.sh` 因此回 `verdict: STOP`。**刻意不調高它們的 budget**——調門檻消音是本治理明文
+      禁止的事，且該不該調是那兩個 repo 自己的決定。（附帶觀察:它們目前進行中的 feature branch
+      掃起來是綠的，超標可能正在被處理。）
+    - 尚未動:`kapi-protocol`、`krepo-tej-export`（換 core 會各多一條 `plan_dir has no matching
+      class`，需同一顆 commit 補 `plans` class）、`krepo-mops-financial-statements`（會多一條
+      `STATUS active item invalid actor key`，其 `steward-authority.py` 目前實測 exit 2 BROKEN）、
+      `krepo-common`（**停下**:領先 41 顆、落後 10 顆，且有 2 個非本 session 造成的未提交檔案，
+      依 kernel 不得在其上動手）。
+  - **關閉條件**:對**上列 9 個** repo 各跑一次核對——remote SHA、trusted core／managed blocks 逐 byte
+    比對、各自的 `audit --ship` 與 contract tests;**新 core 全數散佈完成後**才寫 `M-*` 並移除本條。
   - **放行條件**:`docs/rollout-ledger.md` 的 steady-state 證據(總數 10 次 qualifying ship,且 canary 自己
     要貢獻數次 post-cutover ship)已達成；現況 11 筆、canary 貢獻 3 筆，**至今沒有任何一次判為
     `compaction`**；本條不再由放行門檻或 adoption 阻塞（剩下的是上面那條關閉條件）。
