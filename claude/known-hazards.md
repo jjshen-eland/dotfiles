@@ -273,3 +273,76 @@ cd <scratchpad> && git -C ~/.dotfiles worktree add -q --detach baseline-wt <sha>
 清理用 `git worktree remove <path>`（不要只 `rm -rf`——那會留下 `.git/worktrees/` 的
 administrative 檔，`git worktree list` 仍列得出來）。
 
+
+## zsh 的 word splitting
+
+zsh 預設**不做** field splitting（bash 會做）。未加引號的變數展開後仍是**一個**參數，不會依
+空白拆成多個。
+
+### 2026-09-04 實地：批次刪 branch 七次全部失效
+
+想用一個迴圈跑七次 `cleanup-stale-branch.sh <repo> <scope> <branch> <sha>`，寫成：
+
+```sh
+for spec in "$@"; do
+  set -- $spec          # 想把 "remote feat/x abc123" 拆成三個參數
+  "$CLEAN" "$REPO" "$1" "$2" "$3"
+done
+```
+
+在 zsh 底下 `$1` 拿到的是整串 `remote feat/x abc123`，腳本收到的 scope 就是那一整串：
+
+```
+error: 未知 scope「remote feat/financial-legacy-rest-parity abfeb81...」（只接受 local / remote）
+```
+
+七次全部被腳本的參數檢查擋下，**零 mutation**——這次沒出事是因為被呼叫的腳本自己驗參數。
+換一支不驗參數的腳本，同樣的寫法就會帶著垃圾參數執行下去。
+
+### 正解
+
+不要倚賴自動分詞。明確逐條呼叫，或用 shell 陣列：
+
+```sh
+run() { "$CLEAN" "$REPO" "$1" "$2" "$3"; }
+run remote feat/financial-legacy-rest-parity abfeb816...
+run local  feat/financial-pilot-domain-port  c390f82a...
+```
+
+### 順帶：`cmd | sed` 之後的 `$?`
+
+同一天踩兩次：`"$CLEAN" ... 2>&1 | sed 's/^/    /'; echo "exit=$?"` 印出的是 **sed** 的
+exit code，永遠 0。要取前段的狀態就別接管線（或用 `PIPESTATUS`）。這在判讀
+`gh pr checks --required` 時特別危險——它用 exit 8 表示 pending、0 表示全綠，接了管線就分不出來。
+
+## `git checkout <file>` 的還原來源
+
+`git checkout -- <file>` 是從 **index** 還原，不是從 HEAD。檔案 `git add` 過之後，它「還原」到的
+是你剛暫存的那個版本——看起來像沒有作用。
+
+### 2026-09-04 實地：治理 class 被加了兩次
+
+流程是「改 `.doc-governance.json` → `git add` → 發現格式不對想重做」：
+
+```sh
+git checkout .doc-governance.json    # 以為回到 HEAD，其實回到剛 add 的版本
+# 接著又跑一次「插入 plans/analysis class」的腳本
+```
+
+結果 class 陣列變成 `..., plans, analysis, plans, analysis, ...`，scanner 直接報
+
+```
+doc-governance error: config classes[6] name invalid
+doc-governance: BROKEN   (exit 2)
+```
+
+### 正解
+
+要回到 HEAD 版本一律寫明來源：
+
+```sh
+git checkout HEAD -- <file>
+```
+
+冪等的產生式編輯再加一道 assert（「插入前確認目標尚不存在」），這類重複就會在寫入前就被擋下，
+而不是等 scanner 報 BROKEN 才發現。
