@@ -83,18 +83,32 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
     history_paths 涵蓋檢查、dead-glob 豁免、actor key 形狀驗證）。該檔是**逐 byte vendored** 進七個
     repo 的，所以 2026-08-25 那次的 byte-identical 結論**已經過期,不能沿用**——這正是本條下方
     「每次核心變更 = 每個採用 repo 欠一次 sync ship」那行講的成本，這次是它的實例。
-  - **2026-09-07 的 core 散佈進度**（新舊 core 對掃過 9 個 repo，差集只有 3 個 repo 各多一條 finding）:
-    - 已 commit 待送:`krepo-mops-major-news`、`kapi-gateway`、`krepo-mops-disclosure`（差集為空）。
-    - 已 commit 但**送不出去**:`krepo`（surface 66185>65536）、`krepo-judicial`（65558>65536）
-      ——這兩個 repo 的 `origin/main` **用它們自己的舊 core 掃也是紅的**，是既有問題、與本次換版無關;
-      `ship-state.sh` 因此回 `verdict: STOP`。**刻意不調高它們的 budget**——調門檻消音是本治理明文
-      禁止的事，且該不該調是那兩個 repo 自己的決定。（附帶觀察:它們目前進行中的 feature branch
-      掃起來是綠的，超標可能正在被處理。）
-    - 尚未動:`kapi-protocol`、`krepo-tej-export`（換 core 會各多一條 `plan_dir has no matching
-      class`，需同一顆 commit 補 `plans` class）、`krepo-mops-financial-statements`（會多一條
-      `STATUS active item invalid actor key`，其 `steward-authority.py` 目前實測 exit 2 BROKEN）、
-      `krepo-common`（**停下**:領先 41 顆、落後 10 顆，且有 2 個非本 session 造成的未提交檔案，
-      依 kernel 不得在其上動手）。
+  - **2026-09-07 的 core 散佈進度。** ⚠️ **本條 2026-09-07 稍早的版本有兩句錯誤陳述，已更正**——
+    原文稱 `krepo`／`krepo-judicial` 的超標是「既有問題、與本次換版無關」，且稱「刻意不調高 budget，
+    調門檻消音是本治理明文禁止的事」。**兩句都是錯的**，成因與更正見 `X-20260907-stale-core-scan-false-baseline`。
+    - **已進 `origin/main`**:`kapi-gateway`、`krepo-mops-major-news`、`krepo-mops-disclosure`
+      （差集為空）、`krepo-tej-export`（同一顆 commit 併上 `plans` class）。
+    - **已 commit、待調 budget 才能送**:`krepo`（commit `4f2026d`）、`krepo-judicial`（`23c5332`）。
+      新 core 是 57915 bytes、比舊版大 **2453**，把兩者的 governance surface 推過 65536:
+      `krepo` 63732 → **66185**（超 649）、`krepo-judicial` 63105 → **65558**（超 22）。
+      **兩者的 `origin/main` 目前都是綠的**——超標由本次換版造成，不是既有問題。
+      正解是把 `governance_max_bytes` 調到下一個 binary tier **131072**（dotfiles pilot 本身即 131072），
+      依 `docs/document-governance.md`「Surface budget」:correctness fix 可以移 tier，且**明文禁止只加
+      剛好夠用的 bytes**，所以不是刪文件湊字數、也不是改成 66560 這種剛好夠的值。
+      ⚠️ **根因值得單獨看**:core 本身 57915 bytes ＝ 65536 budget 的 **88%**——這個上限幾乎整個被一支
+      沒人會讀的 vendored 腳本吃掉，只要 core 再長就會複製這次的狀況。**未決**:governance surface 是否
+      該把 vendored core 排除在外（它是工具、不是要人讀的治理 prose），或 target repo 的預設 budget
+      本來就該跟 pilot 對齊。
+    - **只修了 STATUS、core 未換**:`krepo-mops-financial-statements`（commit `79a1c51` 未 push）——
+      其 `Dossier Steward` 欄位夾帶反引號與中文註解，`steward-authority.py` 原本 exit 2 BROKEN，
+      修成純 actor key 後回到正常的 exit 1 policy STOP。換 core 後 surface 63082 < 65536，不需調 budget。
+    - **需 Codex 出手**:`kapi-protocol`（尚未開 branch;換 core 需同一顆 commit 補 `plans` class,
+      surface 63899 < 65536 不需調 budget）。連同上述 `krepo`、`krepo-judicial`、
+      `krepo-mops-financial-statements`,四者的 durable steward 都是 `codex:kb-platform-phase0`;
+      **從 `claude` runtime 看全部 `recovery-kind: none`（cross-runtime，無 recovery 路徑）**,
+      `as=` 也不適用（它只接受 durable steward 本身是 `human:*`／`owner:*`）。
+    - **停下**:`krepo-common`——領先 41 顆、落後 10 顆，且有 2 個非本 session 造成的未提交檔案，
+      依 kernel 不得在其上動手。
   - **關閉條件**:對**上列 9 個** repo 各跑一次核對——remote SHA、trusted core／managed blocks 逐 byte
     比對、各自的 `audit --ship` 與 contract tests;**新 core 全數散佈完成後**才寫 `M-*` 並移除本條。
   - **放行條件**:`docs/rollout-ledger.md` 的 steady-state 證據(總數 10 次 qualifying ship,且 canary 自己
