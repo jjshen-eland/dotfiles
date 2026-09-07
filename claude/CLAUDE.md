@@ -85,6 +85,8 @@ When the user pastes third-party review findings, read the source code and verif
 - cask 卡在 `Linking Binary` 時直接跑 `brewfix` 診斷；只有 `brewfix --fix` 會修改。
 - 腳本內 `git pull` 後若自身 checksum 改變，必須 `exec` 新版並設迴圈防護；呼叫端可把 pull 拆成前置指令。
 - 在 worktree 驗自家 skill 時一律用該 worktree 絕對路徑；`~/.claude/skills`／`~/.codex/skills` 仍可能指向主 checkout。
+- zsh 預設不做 word splitting：`set -- $spec`／`for x in $var` 不會依空白拆開，整串會變成單一參數。要拆就明確寫陣列或逐條展開；跨 shell 的腳本別倚賴未加引號變數自動分詞。
+- `git checkout <file>` 是從 **index** 還原，不是 HEAD。檔案 `git add` 過之後，它還原到的是你剛暫存的版本（看起來像沒還原）。要回到 HEAD 版本一律寫 `git checkout HEAD -- <file>`。
 
 ## 測試
 
