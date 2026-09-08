@@ -37,3 +37,9 @@
   - 放棄:同 `D-20260907-declared-path-coverage-and-shared-actor-rule` 的放棄欄;另外本批刻意只做 dotfiles 這側的 scanner，下游已 rollout 的 repo 配置不在範圍（見 `B-20260907-governed-repo-declared-path-gaps`）
   - 重議:下游 repo 補完 class 後仍出現同型 finding;或 rollout 需要一份「標準 class 清單」逐項確認要或不要（issue #165 附帶觀察的 `analysis`／`script-guides` 缺漏走的是同一個成因）
   - 關聯:D-20260907-declared-path-coverage-and-shared-actor-rule;B-20260907-governed-repo-declared-path-gaps;B-20260907-actor-key-decoration-limit;scripts/doc-governance.py;tests/test_doc_governance.py;tests/run.sh;docs/doc-governance-rollout.md
+
+- **M-20260908-fleet-governance-rollout-closeout · 2026-09-08 九個 repo 的文檔治理 fleet rollout 完成**:從 GitHub `main` 建立九個 fresh clones，逐 repo 確認 clone HEAD 等於 remote SHA；trusted `scripts/doc-governance.py`、`docs/document-governance.md` 與 kernel／route／portable managed blocks 全部逐 byte 相同，root `CLAUDE.md` 的首個非空白行全為 `@AGENTS.md`，九個 `audit --ship` 均為 rc=0。Remote main 分別為 `krepo@3418e491`、`krepo-common@10099b5b`、`krepo-mops-major-news@52392988`、`krepo-mops-disclosure@9e3a3a83`、`krepo-judicial@86343848`、`kapi-protocol@69bac314`、`kapi-gateway@592c751b`、`krepo-tej-export@968a9b1b`、`krepo-mops-financial-statements@9e6fdad5`；八個 agent-contract suites 合計 26 passed，TEJ（無獨立 agent-contract test）以完整 suite 55 passed／3 skipped加上逐 byte／native-import gate驗證。`B-20260823-fleet-rollout-remaining` 的關閉條件全數成立並自 backlog 移除。
+  - 日期來源:direct
+  - 放棄:沿用 2026-08-25 的七 repo 舊快照；用既有 working trees 取代 fresh clones；把裸 `uv sync` 未安裝 pytest 誤判成 contract failure
+  - 重議:trusted core 或任一 managed block 再次改動時建立新的 bounded rollout item，不重開本歷史記錄
+  - 關聯:B-20260823-fleet-rollout-remaining;elandcomtw/krepo#190;elandcomtw/krepo-common#53;elandcomtw/krepo-mops-major-news#52;elandcomtw/krepo-mops-disclosure#45;elandcomtw/krepo-judicial#62;elandcomtw/kapi-protocol#19;elandcomtw/kapi-gateway#52;elandcomtw/krepo-tej-export#10;elandcomtw/krepo-mops-financial-statements#30
