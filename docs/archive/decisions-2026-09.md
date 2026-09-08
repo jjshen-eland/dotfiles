@@ -31,3 +31,9 @@
   - 放棄:讓涵蓋檢查只在 `plan_dir` 底下真的有檔案時才觸發（那正是本 issue 的病——有檔案時 `unclassified:` 本來就會報，等於什麼都沒加）;在 `active_item_contract` 新增 `actor_fields` 配置鍵（缺省即無驗證，已 rollout 的 repo 不會自己長出來，重演同一個沉默缺口）;把 `ACTOR_RE` 收緊到能擋沒有空白的 CJK 裝飾（會同時改變 `steward-authority.py` 在所有 repo 的執行期行為，超出本 issue 範圍——見 `B-20260907-actor-key-decoration-limit`）;讓 `doc-governance.py` import `steward-authority.py`（vendored core 不得依賴 skill tree）;為了讓 19 個既有測試轉綠而放寬涵蓋檢查（那些 fixture 本來就不是合法配置，改的是 fixture 不是判準）
   - 重議:`plan_dir`／`history_paths` 之外再出現同型的「配置宣告了一個機制、卻沒有對應 class」的鍵;或 dead-glob 檢查本身需要區分「前置宣告」與「真的 stale」以外的第三種狀態
   - 關聯:M-20260907-doc-governance-silent-config-gaps;B-20260907-governed-repo-declared-path-gaps;B-20260907-actor-key-decoration-limit;scripts/doc-governance.py;claude/skills/project/scripts/steward-authority.py;docs/doc-governance-rollout.md;tests/run.sh
+
+- **D-20260909-dossier-byte-budget-cjk · 2026-09-09 dossier 的 byte 上限從 24576 提到 30720，理由是 CJK 密度讓它比行數上限先開火**:`DOSSIER_MAX_BYTES` 原本以 krepo 收斂後的 ~85B/行反推 24KB，對齊 `DOSSIER_MAX_LINES=300`。但那個密度來自英數為主的 dossier；純中文一個字 3 bytes，sumo 的 `STATUS.md` 實測 **90.9 B/行**，300 行需要 27.3KB——結果 byte flag 在 **270 行**就開火，比行數上限早約一成。兩個代理因此互相矛盾：行數說還有空間、bytes 說當次收斂，而 flag 的收斂順序又把「蒸餾」列為最後手段，實務上卻逼著 agent 去砍理由與實測數字（本次 sumo 連續三輪 ship 都在削既有決策條目才擠得下新紀錄）。改成 30720 ≈ 300 行 × ~102B/行，讓 bytes 退回它原本的角色：**巨型單行架空行數代理時的後盾**，而不是中文 dossier 的實質行數上限。`DOSSIER_ENTRY_MAX_BYTES=800` 不動——5 行中文條目約 450–500 bytes，該上限仍有餘裕，且它防的是「一條塞多個決策」，與語言密度無關。
+  - 日期來源:direct
+  - 放棄:加逐專案 override（`ship-state.sh` 的門檻刻意是單一數值來源，逐專案覆蓋會讓「這裡為什麼沒被擋」變成要一個個查的問題）;把 byte 上限直接由 `DOSSIER_MAX_LINES × 密度常數` 算出（省不了決定密度的那一步，卻多一層間接）;維持 24576 並要求中文 dossier 自行蒸餾（那正是本次觀察到的失敗形狀）
+  - 重議:出現英數為主的 dossier 因新門檻而長期超過 300 行卻不被擋的實例;或 dossier 改為以 token 數而非 bytes 計量
+  - 關聯:claude/skills/project/scripts/ship-state.sh;tests/run.sh;sumo/STATUS.md

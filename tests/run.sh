@@ -1707,14 +1707,14 @@ mkdir -p "$TMP/ds-order"
 python3 - "$TMP/ds-order/STATUS.md" <<'PYEOF'
 import sys, pathlib
 doc = ("# STATUS.md\n專案一句話定位(更新日期:2026-08-14)\n\n## 進行中\n- 一個工作項\n"
-       + "".join(f"- 第 {i} 條佔位敘述{'佔' * 18}。\n" for i in range(350))
+       + "".join(f"- 第 {i} 條佔位敘述{'佔' * 18}。\n" for i in range(400))
        + "\n## 關鍵決策(附理由)\n- 一條決策\n\n## 死路(試過但放棄——防重工)\n- 一條死路\n\n"
          "## 技術債\n- 一條技術債\n\n## 已完成(里程碑)\n- ✅ 一個里程碑\n\n"
          "## 已知缺口\n- 一條缺口\n\n## 移交準備度\n(暫無)\n")
 # 前提斷言必須在 write **之前**：assert 失敗時 python exit 1，但 tests/run.sh 是
 # `set -uo pipefail`（無 -e）不會中止——寫在後面的話，檔案已經落地、測試照跑，
 # 斷言形同虛設。2026-08-14 首版即踩到（60 條只有 12802 bytes，沒超標卻靜默跑完）。
-assert len(doc.encode()) > 24576, f"fixture bytes 未超標: {len(doc.encode())}"
+assert len(doc.encode()) > 30720, f"fixture bytes 未超標: {len(doc.encode())}"
 assert doc.count("\n") > 300, f"fixture 行數未超標: {doc.count(chr(10))}"
 pathlib.Path(sys.argv[1]).write_text(doc)
 PYEOF
@@ -2553,7 +2553,7 @@ if echo "$out" | grep -qE "dossier-flag:.*全檔.*bytes > "; then ok "行數少�
 if echo "$out" | grep -q "dossier-flag:.*> 300"; then bad "bytes fixture 不應觸發行數 flag（行數僅 ~125）"; else ok "bytes fixture 未誤觸發行數 flag"; fi
 if echo "$out" | grep -q "dossier-flag:.*最長行"; then bad "bytes fixture 不應觸發最長行 flag（每行 ~548B < 1000）"; else ok "bytes fixture 未誤觸發最長行 flag"; fi
 # 建議收斂目標：壓到「剛好低於門檻」等於下次 ship 必再觸發，故 flag 要直接給目標值
-if echo "$out" | grep -q "建議收斂至 ≤ 20889 bytes"; then ok "bytes flag 附建議收斂目標（門檻 85%）"; else bad "bytes flag 缺建議收斂目標（agent 會停在剛好過關處）"; fi
+if echo "$out" | grep -q "建議收斂至 ≤ 26112 bytes"; then ok "bytes flag 附建議收斂目標（門檻 85%）"; else bad "bytes flag 缺建議收斂目標（agent 會停在剛好過關處）"; fi
 # 各節佔比：超標時才印，供 model 決定收哪一節（憑印象挑會挑錯——krepo 實證 905B/PR）
 if echo "$out" | grep -q "^dossier-sections:"; then ok "全檔超標 → 印各節佔比"; else bad "全檔超標未印 dossier-sections（收斂對象只能靠猜）"; fi
 # 釘住「最大戶排第一」＋數值形狀：排序方向是這功能的全部價值（挑錯對象正是它要防的），

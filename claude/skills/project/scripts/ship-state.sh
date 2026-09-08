@@ -57,7 +57,7 @@ PROJECT_TEMPLATES_DIR="$(CDPATH='' cd -- "$SHIP_STATE_DIR/../templates" 2>/dev/n
 # legacy dossier detector 的衛生門檻（單一數值來源；改門檻只改這裡）。
 DOSSIER_MAX_LINES=300  # 全檔超過即「當次收斂」硬訊號（krepo 599 行先例：訊號密度崩壞）
 DOSSIER_STALE_DAYS=30  # STATUS.md 最後 commit 落後 repo 活動超過即過期（假狀態比沒有更糟）
-DOSSIER_MAX_BYTES=24576      # 行數代理會被巨型單行架空（evint 117 行/38KB 實證）；24KB ≈ 300 行 × krepo 收斂後密度（~85B/行）
+DOSSIER_MAX_BYTES=30720      # 行數代理會被巨型單行架空（evint 117 行/38KB 實證）。24KB 曾以 krepo 收斂後密度（~85B/行）反推，但那是英數為主的 dossier；純中文一個字 3 bytes，sumo 實測 90.9B/行 → 300 行要 27.3KB，byte 上限反而比行數上限先開火（270 行就爆），兩個代理互相矛盾。30KB ≈ 300 行 × ~102B/行，讓 bytes 退回它該有的角色：巨型單行的後盾，不是 CJK repo 的實質行數上限
 DOSSIER_MAX_LINE_BYTES=1000  # 巨型單行風格的早期糾正訊號（≈330 中文字；正常換行段落 <300B）。量 bytes 非字元——macOS BSD awk 的 length 不分 locale 一律數 bytes，字元門檻跨平台不確定
 DOSSIER_ENTRY_MAX_BYTES=800  # 決策/里程碑單一條目蒸餾上限（決策≤5行×~160B；量 bytes 防單行繞過行數）
 DOSSIER_SECTIONS_TOP_N=6     # 各節佔比只列前 N 大——超標時要的是「該動哪一節」，尾巴小節是噪音
