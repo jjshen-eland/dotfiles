@@ -12,19 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### 九個 repo 的文檔治理 fleet rollout 收尾
-
-- **Writer**: `codex:fleet-rollout-closeout`
-- **Workspace**: `branch=docs/fleet-rollout-closeout`
-- **Write Scope**: `STATUS.md`, `docs/backlog.md`, `docs/archive/milestones-2026-09.md`
-- **Dossier Steward**: `codex:fleet-rollout-closeout`
-- **Context**: `B-20260823-fleet-rollout-remaining` 要求 trusted core 散佈完成後，對九個採用 repo 以 remote-visible fresh clones 重驗 SHA、managed blocks、`audit --ship` 與 contract tests。
-- **Goal**: 取得九個 repo 的完整 closeout evidence，記錄 milestone 並移除已完成的 backlog item。
-- **Acceptance Criteria**: 九個 clone HEAD 等於 remote `main`；trusted scanner、guide 與 kernel／route／portable blocks 逐 byte 相同；九個 audit rc=0；八個 agent-contract suites 與 TEJ 完整 suite 全綠；dotfiles audit 與完整測試全綠。
-- **Constraints**: 不沿用舊快照或既有 working tree 作 closeout 證據；任何 SHA、byte comparison、audit 或 test gate 失敗即不關閉 backlog。
-- **進度**: 九個 fresh-clone gates、dotfiles audit 與完整測試皆已通過，正在受控重建尚未送出的 closeout candidate。
-- **下一步**: 寫入 completion milestone、移除 `B-20260823-fleet-rollout-remaining` 與本 active item，重驗後送出。
-- **關聯**: `B-20260823-fleet-rollout-remaining`, `D-20260824-cross-runtime-dossier-stewardship`, `D-20260825-project-prompt-bound-authority-recovery`
+（目前無進行中項目。）
 
 ---
 
