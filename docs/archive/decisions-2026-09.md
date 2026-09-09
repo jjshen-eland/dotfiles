@@ -37,3 +37,9 @@
   - 放棄:加逐專案 override（`ship-state.sh` 的門檻刻意是單一數值來源，逐專案覆蓋會讓「這裡為什麼沒被擋」變成要一個個查的問題）;把 byte 上限直接由 `DOSSIER_MAX_LINES × 密度常數` 算出（省不了決定密度的那一步，卻多一層間接）;維持 24576 並要求中文 dossier 自行蒸餾（那正是本次觀察到的失敗形狀）
   - 重議:出現英數為主的 dossier 因新門檻而長期超過 300 行卻不被擋的實例;或 dossier 改為以 token 數而非 bytes 計量
   - 關聯:claude/skills/project/scripts/ship-state.sh;tests/run.sh;sumo/STATUS.md
+
+- **D-20260909-prod-tier-excluded-from-inventory · 2026-09-09 租賃機房 prod 主機刻意不進 `scripts/inventory.conf`，只擴充 `@cert-authority` 涵蓋範圍**:AI Search 新資訊服務系統的五台生產主機（`10.20.150.11-15`）落在租賃機房，與辦公環境（dev／stage）是不同信任域。本 repo 的 fan-out 腳本以 inventory 全體為預設目標——`dotfiles-sync.sh` 在每台 `git pull` 個人 dotfiles，`sign-host-keys.sh` 預設全體，`sign-user-key.sh --all` 亦然——而 `add-new-host.sh` Phase B 更會 `scp` `id_personal` 與 `id_github_com` 的**私鑰**到目標主機。`id_personal` 的憑證 principals 為 `jjshen,elsysman,root,admin,masterman` 且 `Valid: forever`，在同一信任域的辦公機隊是刻意保留的後路（CA 憑證失效時仍可登入），跨到對外機房則變成單台失陷即可回打整個辦公室機隊 root 與 GitHub org 的路徑，信任方向由最低流向最高。因此 inventory 維持 14 台（office 層），prod 的 `Host` 區塊改由 `ais-infra` repo 維護、寫入機器本地 `~/.ssh/config.local`（`ssh/config` 已 `Include` 它）。本 repo 只擴充 `ssh/known_hosts` 的 `@cert-authority` 涵蓋 `10.20.*.*`——那是純本機信任設定、不外送任何東西，卻是 host certificate 能被驗證的必要條件（原樣式不含該網段，會靜默退回逐條 fingerprint 提示）。順帶訂正 `docs/add-new-host.md` 早已與 `known_hosts` 不符的涵蓋清單（列了不存在的 `10.10.40.*`），並在該文件加註本流程只適用辦公環境。
+  - 日期來源:direct
+  - 放棄:把五台加進 inventory 再讓三支 fan-out 腳本認得分層（要改三支既有腳本並維護一份「哪些是 prod」的判斷，耦合仍在，且分層判斷本身會成為新的漂移面）;倚賴「記得不要加 `--all`」這種非機械性防線（本 repo 既有的 fail-closed 風格正是為了不依賴記憶）;把 prod 的 Host 區塊也放進 `ssh/config`（它由 `inventory.conf` 生成，留一份就等於留全部）
+  - 重議:fan-out 腳本改為預設 fail-closed 且私鑰散佈改成 opt-in 時（屆時單一 inventory 才不再有信任外溢）;或 prod 與 office 合併為同一信任域
+  - 關聯:ssh/known_hosts;docs/add-new-host.md;scripts/add-new-host.sh;scripts/inventory.conf
