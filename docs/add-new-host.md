@@ -6,7 +6,9 @@
 
 - `curl -fsSL dot.bitpod.cc | sh`（自動 clone dotfiles + 執行平台對應的 setup script）
 - 能從本機 SSH 連線（使用者需先用 `ssh-copy-id` 放臨時公鑰）
-- 新主機 IP 需在 `ssh/known_hosts` 的 `@cert-authority` 涵蓋範圍內（`10.10.12.*`、`10.10.40.*`、`10.200.50.*`、`172.17.13.*`、`172.18.110.*`），否則先擴充
+- 新主機 IP 需在 `ssh/known_hosts` 的 `@cert-authority` 涵蓋範圍內（`10.10.*.*`、`10.20.*.*`、`10.200.*.*`、`172.17.*.*`、`172.18.*.*`），否則先擴充
+
+> ⚠️ **本流程只適用辦公環境（dev / stage）**。`10.20.*.*` 是租賃機房的生產環境，雖然共用同一個 Host CA，但**不走這支腳本**——Phase B 會把 `id_personal` 與 `id_github_com` 的**私鑰**送到目標主機，而 `id_personal` 的憑證 principals 含 `root`／`admin` 且永不過期。放到對外機房等於單台失陷即可回打整個辦公室機隊與 GitHub org。生產環境的上線流程與分層定義見 `ais-infra` repo。
 
 ## 主要流程
 
