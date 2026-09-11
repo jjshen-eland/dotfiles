@@ -4,7 +4,7 @@
 #
 # 用法：./tests/run.sh
 # 涵蓋：
-#   1. shellcheck / bash -n 全腳本 gate（含 claude/skills/*/scripts/、codex/skills/*/scripts/）
+#   1. shellcheck / bash -n 全腳本 gate（含 shared/skills/*/scripts/ 與兩個 runtime adapter）
 #  1h. known-hazards 的 pipeline 狀態指引標明 Bash／zsh 差異與跨 shell 首選
 #   2. bash -n 語法 gate
 #   3. scripts/lib/inventory.sh 解析
@@ -28,7 +28,7 @@
 # 16b. agent-turn-end-timestamp.sh（Claude Code／Codex Stop hook）GMT+8 輸出與失敗隔離
 # 16c. check-network-isolation-collisions.py（OrbStack PF isolation table）碰撞與 fail-closed 契約
 #  17. codex-exec-review.sh（deep-review skill script）exit 契約 / job 產物 / resume（codex stub）
-#  18. ensure-codex-skills.sh 幂等連結 ~/.codex/skills → dotfiles
+#  18. ensure-codex-skills.sh 幂等連結 ~/.agents/skills → dotfiles，安全清理 repo-managed legacy links
 # 18b. ensure-codex-guidance.sh 幂等連結全域 ~/.codex/AGENTS.md → dotfiles
 # 18c. ensure-lftprc.sh 幂等連結 ~/.lftprc → dotfiles（含 .lftprc.local 保證存在且不覆寫）
 # 18d. brewup.sh helper 部署與失敗告知（temp HOME + PATH stub 全隔離；不得碰真實環境）
@@ -39,6 +39,7 @@
 #  25. cross-platform contract：GitHub Actions 雙 OS、Ubuntu 24.04 preflight、Claude plugin hints parity
 #  26. outward-action gate：push／merge classifier、Claude ask、Codex prompt + opaque-wrapper deny
 #  27. Codex config／dotsync：三層 TOML 原子 merge、race guard、聚合 exit semantics
+#  28. neutral shared skill core：雙 runtime 薄 adapter、single eval oracle、無 whole-skill symlink
 #
 set -uo pipefail
 
@@ -55,7 +56,7 @@ cd "$ROOT" || exit 1   # 相對路徑的 source 解析與 git 操作以 repo 根
 shopt -s nullglob
 # nullglob 是 process-wide 的，代價是**其他** glob 若哪天失效會靜默窄化（gate 照樣全綠、
 # 實際少掃一批檔）。用下界斷言把那個代價擋回來：數字取保守下界，新增腳本只會讓它更寬鬆。
-_gate_files=("$ROOT"/scripts/*.sh "$ROOT"/claude/skills/*/scripts/*.sh)   # nullglob 下無匹配即空陣列
+_gate_files=("$ROOT"/scripts/*.sh "$ROOT"/shared/skills/*/scripts/*.sh "$ROOT"/claude/skills/*/scripts/*.sh)   # nullglob 下無匹配即空陣列
 if [ "${#_gate_files[@]}" -lt 15 ]; then
     echo "❌ gate 檔案數異常少（${#_gate_files[@]}）——glob 可能已靜默窄化，先修再跑" >&2
     exit 1
@@ -94,6 +95,7 @@ echo "▶ 1. shellcheck gate"
 if shellcheck -x -P "SCRIPTDIR:$ROOT/scripts" \
     "$ROOT"/scripts/*.sh "$ROOT/scripts/lib/inventory.sh" \
     "$ROOT"/claude/scripts/*.sh \
+    "$ROOT"/shared/skills/*/scripts/*.sh "$ROOT"/shared/skills/*/scripts/lib/*.sh \
     "$ROOT"/claude/skills/*/scripts/*.sh "$ROOT"/claude/skills/*/scripts/lib/*.sh \
     "$ROOT"/codex/skills/*/scripts/*.sh \
     "$ROOT/.githooks/dispatcher" \
@@ -743,7 +745,7 @@ else
     bad "pressure Scenario 7 缺少正向 anchor，或仍要求新 schema 禁止的 STATUS 歷史節"
 fi
 if grep -q 'STATUS-legacy-template.md' "$ROOT/claude/skills/project/references/workflow.md" \
-    && [ -f "$ROOT/claude/templates/STATUS-legacy-template.md" ]; then
+    && [ -f "$ROOT/shared/skills/project/templates/STATUS-legacy-template.md" ]; then
     ok "project spec 對 legacy repo 使用 legacy template"
 else
     bad "project spec 把 adopted-only STATUS template 無條件發給 legacy repo"
@@ -781,7 +783,7 @@ fi
 if grep -q 'any repo-local skill' "$ROOT/AGENTS.md" \
     && grep -q 'any repo-local skill' "$ROOT/codex/AGENTS.md" \
     && grep -q 'docs/skill-portability.md' "$ROOT/AGENTS.md" \
-    && grep -q 'canonical source.*claude/skills.*codex/skills' "$ROOT/codex/AGENTS.md"; then
+    && grep -q 'shared core.*claude/skills.*codex/skills.*shared/skills' "$ROOT/codex/AGENTS.md"; then
     ok "Codex always-on authoring trigger 涵蓋任一 canonical tree 的 repo-local skill"
 else
     bad "Codex always-on trigger 仍可能把 claude/skills canonical source 誤判成非 Codex authoring"
@@ -806,6 +808,7 @@ echo "▶ 2. bash -n 語法 gate"
 syntax_fail=0
 for f in "$ROOT"/scripts/*.sh "$ROOT/scripts/lib/inventory.sh" \
          "$ROOT"/claude/scripts/*.sh \
+         "$ROOT"/shared/skills/*/scripts/*.sh "$ROOT"/shared/skills/*/scripts/lib/*.sh \
          "$ROOT"/claude/skills/*/scripts/*.sh "$ROOT"/claude/skills/*/scripts/lib/*.sh \
          "$ROOT"/codex/skills/*/scripts/*.sh \
          "$ROOT/.githooks/dispatcher" \
@@ -3181,8 +3184,10 @@ assert_rc "review-scope three-dot range → exit 4" 4 $?
 assert_rc "review-scope 無引數 → exit 2" 2 $?
 
 echo "▶ 12. repo-review 薄殼 packaging"
-if [ -f "$DRS_CLAUDE/evals.md" ] && [ ! -e "$RRS_CODEX/evals.md" ]; then
-    ok "behavior oracle 只留在 canonical core，不從 adapter 重複曝光"
+if [ -f "$ROOT/shared/skills/deep-review/evals.md" ] \
+    && [ "$DRS_CLAUDE/evals.md" -ef "$ROOT/shared/skills/deep-review/evals.md" ] \
+    && [ ! -e "$RRS_CODEX/evals.md" ]; then
+    ok "behavior oracle 實體只留 neutral core，Claude compatibility path 共用 inode"
 else bad "repo-review adapter 重複暴露或缺少 canonical eval oracle"; fi
 if python3 - "$ROOT/.doc-governance.json" <<'PY'
 import json
@@ -3191,7 +3196,7 @@ import sys
 with open(sys.argv[1], encoding="utf-8") as stream:
     config = json.load(stream)
 skill_eval = next(item for item in config["classes"] if item["name"] == "skill-eval")
-raise SystemExit("codex/skills/*/evals.md" in skill_eval["paths"])
+raise SystemExit(skill_eval["paths"] != ["shared/skills/*/evals.md"])
 PY
 then
     ok "doc-governance 只分類 canonical eval tree，不要求 adapter 重複 eval"
@@ -3252,9 +3257,9 @@ if ! grep -Eq 'spawn_agent|wait_agent|fork_turns|SendMessage|Claude Code|Codex' 
     && grep -q 'Use \$deep-plan' "$DPS_CODEX/agents/openai.yaml"; then
     ok "deep-plan shared core 無 runtime 私有工具，eval 與 UI metadata 各安其位"
 else bad "deep-plan shared core 污染、eval 重複或 Codex metadata 缺漏"; fi
-if grep -q 'receiver_thread_ids=\[\]' "$DPS_CLAUDE/evals.md" \
-    && grep -q 'P17 — Codex deterministic launcher' "$DPS_CLAUDE/evals.md" \
-    && ! grep -Eq 'fork_turns|spawn_agent|wait_agent' "$DPS_CLAUDE/evals.md" \
+if grep -q 'receiver_thread_ids=\[\]' "$ROOT/shared/skills/deep-plan/evals.md" \
+    && grep -q 'P17 — Codex deterministic launcher' "$ROOT/shared/skills/deep-plan/evals.md" \
+    && ! grep -Eq 'fork_turns|spawn_agent|wait_agent' "$ROOT/shared/skills/deep-plan/evals.md" \
     && grep -q '恰好收到 N 份可歸因' "$DPS_CLAUDE/SKILL.md" \
     && [ -x "$DPS_CODEX/scripts/launch-reviewers.py" ] \
     && [ -f "$DPS_CODEX/assets/reviewer-output.schema.json" ]; then
@@ -3531,13 +3536,13 @@ if grep -q 'resolved head' "$DRS_CLAUDE/references/workflow.md" \
     && grep -q 'non-overlapping primary assignments' "$DRS_CLAUDE/references/workflow.md"; then
     ok "shared workflow 承接 historical guidance 與 scale-aware partition"
 else bad "portable core 尚未承接 repo-review 的必要成熟能力"; fi
-if grep -q 'Portable behavior oracle (2026-08-23)' "$DRS_CLAUDE/evals.md" \
-    && grep -q 'P14 — Historical committed range uses historical guidance' "$DRS_CLAUDE/evals.md" \
-    && grep -q 'P15 — Scale-aware fresh reviewer partitioning' "$DRS_CLAUDE/evals.md" \
-    && grep -q 'P16 — Codex repo-review adapter preserves the explicit-range interface' "$DRS_CLAUDE/evals.md" \
-    && grep -q 'P17 — Empty-tree and divergent-range safety' "$DRS_CLAUDE/evals.md" \
-    && grep -q "P18 — Deterministic helper runs on the runtime's system Bash" "$DRS_CLAUDE/evals.md" \
-    && rg -q 'PASS.*FAIL.*BLOCKED' "$DRS_CLAUDE/evals.md"; then
+if grep -q 'Portable behavior oracle (2026-08-23)' "$ROOT/shared/skills/deep-review/evals.md" \
+    && grep -q 'P14 — Historical committed range uses historical guidance' "$ROOT/shared/skills/deep-review/evals.md" \
+    && grep -q 'P15 — Scale-aware fresh reviewer partitioning' "$ROOT/shared/skills/deep-review/evals.md" \
+    && grep -q 'P16 — Codex repo-review adapter preserves the explicit-range interface' "$ROOT/shared/skills/deep-review/evals.md" \
+    && grep -q 'P17 — Empty-tree and divergent-range safety' "$ROOT/shared/skills/deep-review/evals.md" \
+    && grep -q "P18 — Deterministic helper runs on the runtime's system Bash" "$ROOT/shared/skills/deep-review/evals.md" \
+    && rg -q 'PASS.*FAIL.*BLOCKED' "$ROOT/shared/skills/deep-review/evals.md"; then
     ok "portable behavior oracle 覆蓋薄殼、歷史 guidance、scale partition 與 range safety"
 else bad "deep-review portable behavior oracle 尚未落地"; fi
 
@@ -3579,10 +3584,18 @@ else bad "deep-review terminal helper 破壞 legacy anchor 或殘留 terminal si
 echo "▶ 12c. project skill 跨 Claude Code／Codex 共用核心"
 PJS_CLAUDE="$ROOT/claude/skills/project"
 PJS_CODEX="$ROOT/codex/skills/project"
+project_scripts_shared=1
+for script_name in bootstrap-baseline.sh branch-first.sh cleanup-stale-branch.sh doc-governance.py ship-state.sh steward-authority.py; do
+    [ "$PJS_CLAUDE/scripts/$script_name" -ef "$ROOT/shared/skills/project/scripts/$script_name" ] \
+        && [ "$PJS_CODEX/scripts/$script_name" -ef "$ROOT/shared/skills/project/scripts/$script_name" ] \
+        || project_scripts_shared=0
+done
 if [ -f "$PJS_CLAUDE/SKILL.md" ] && [ -f "$PJS_CODEX/SKILL.md" ] \
-    && [ "$PJS_CODEX/references" -ef "$PJS_CLAUDE/references" ] \
-    && [ "$PJS_CODEX/scripts" -ef "$PJS_CLAUDE/scripts" ] \
-    && [ "$PJS_CODEX/templates" -ef "$PJS_CLAUDE/templates" ] \
+    && [ "$PJS_CLAUDE/references" -ef "$ROOT/shared/skills/project/references" ] \
+    && [ "$PJS_CODEX/references" -ef "$ROOT/shared/skills/project/references" ] \
+    && [ "$project_scripts_shared" -eq 1 ] \
+    && [ "$PJS_CLAUDE/templates" -ef "$ROOT/shared/skills/project/templates" ] \
+    && [ "$PJS_CODEX/templates" -ef "$ROOT/shared/skills/project/templates" ] \
     && [ "$PJS_CODEX/scripts/doc-governance.py" -ef "$ROOT/scripts/doc-governance.py" ]; then
     ok "project 兩個薄入口共用 canonical references/scripts/templates"
 else bad "project 跨 runtime 封裝未共用同一核心"; fi
@@ -3908,13 +3921,13 @@ if ! rg -q "${runtime_tilde}/.claude/skills/handoff|${runtime_tilde}/.codex/skil
     "$HFS_CLAUDE/references" "$HFS_CLAUDE/scripts"; then
     ok "handoff shared core 不綁 runtime skill 安裝路徑"
 else bad "handoff shared core 仍綁 Claude／Codex 私有 skill path"; fi
-if grep -q 'handoff invocation 本身不授權編輯' "$HFS_CLAUDE/evals.md" \
-    && grep -q 'repo 內檔案必須 byte-identical' "$HFS_CLAUDE/evals.md" \
+if grep -q 'handoff invocation 本身不授權編輯' "$ROOT/shared/skills/handoff/evals.md" \
+    && grep -q 'repo 內檔案必須 byte-identical' "$ROOT/shared/skills/handoff/evals.md" \
     && grep -q '只有使用者已另行授權該 repo mutation 時才寫入' \
         "$HFS_CLAUDE/references/workflow.md"; then
     ok "handoff 續寫 oracle 不把 durable-doc repo mutation 當隱性授權"
 else bad "handoff 續寫 workflow／eval 仍可能未授權改 repo"; fi
-if grep -q 'H14 — cross-host' "$HFS_CLAUDE/evals.md" \
+if grep -q 'H14 — cross-host' "$ROOT/shared/skills/handoff/evals.md" \
     && grep -q 'Memory availability' "$HFS_CLAUDE/references/workflow.md" \
     && grep -q 'authorization.*不得.*carry' "$HFS_CLAUDE/references/workflow.md"; then
     ok "handoff 不以 machine-local memory/checkpoint 承擔 project transfer 或授權延續"
@@ -3982,13 +3995,13 @@ if ! rg -q 'TaskOutput|TaskList|CronList|ScheduleWakeup|scratchpad|~/.claude|~/.
     "$RQS_CLAUDE/references" "$RQS_CLAUDE/scripts"; then
     ok "ready4quit shared core 不綁 runtime private evidence surface 或安裝路徑"
 else bad "ready4quit shared core 混入 runtime-private evidence surface 或安裝路徑"; fi
-if grep -q 'Codex 無 skill baseline' "$RQS_CLAUDE/evals.md" \
-    && grep -q '不得改用 handoff/checkpoint workflow' "$RQS_CLAUDE/evals.md" \
+if grep -q 'Codex 無 skill baseline' "$ROOT/shared/skills/ready4quit/evals.md" \
+    && grep -q '不得改用 handoff/checkpoint workflow' "$ROOT/shared/skills/ready4quit/evals.md" \
     && grep -q 'target repo contract 指定的' "$RQS_CLAUDE/references/workflow.md" \
     && grep -q 'project authority。只有目前 actor' "$RQS_CLAUDE/references/workflow.md"; then
     ok "ready4quit portable behavior oracle 與 authority routing 已落地"
 else bad "ready4quit portable eval 或 authority routing contract 缺失"; fi
-if grep -q 'Q7 — memory 開關矩陣' "$RQS_CLAUDE/evals.md" \
+if grep -q 'Q7 — memory 開關矩陣' "$ROOT/shared/skills/ready4quit/evals.md" \
     && grep -q 'instruction promotion candidate' "$RQS_CLAUDE/references/workflow.md" \
     && grep -q '未升格候選就是 concrete residue' "$RQS_CLAUDE/references/workflow.md" \
     && grep -q 'disabled/unavailable.*skipped' "$RQS_CLAUDE/references/workflow.md" \
@@ -4033,7 +4046,7 @@ rcf_sig='$root-cause-first'
 if grep -qF "$rcf_sig" "$RCF_CODEX/agents/openai.yaml" \
     && grep -q 'CONTAINMENT ONLY' "$RCF_CLAUDE/references/workflow.md" \
     && grep -q 'No false completion' "$RCF_CLAUDE/references/workflow.md" \
-    && grep -q '完整 suite 仍 1/6 失敗' "$RCF_CLAUDE/evals.md"; then
+    && grep -q '完整 suite 仍 1/6 失敗' "$ROOT/shared/skills/root-cause-first/evals.md"; then
     ok "root-cause-first UI metadata、pressure RED 與 completion gate 已接線"
 else bad "root-cause-first portable behavior contract 缺失"; fi
 
@@ -4069,8 +4082,8 @@ else bad "nc-notify shared workflow 洩漏 runtime-private surface 或私人 sch
 # shellcheck disable=SC2016
 ncn_sig='$nc-notify'
 if grep -qF "$ncn_sig" "$NCN_CODEX/agents/openai.yaml" 2>/dev/null \
-    && grep -q 'Portable behavior oracle' "$NCN_CLAUDE/evals.md" \
-    && grep -q 'failure isolation' "$NCN_CLAUDE/evals.md"; then
+    && grep -q 'Portable behavior oracle' "$ROOT/shared/skills/nc-notify/evals.md" \
+    && grep -q 'failure isolation' "$ROOT/shared/skills/nc-notify/evals.md"; then
     ok "nc-notify UI metadata 與 portable behavior oracle 已接線"
 else bad "nc-notify metadata 或 portable behavior oracle 缺失"; fi
 # Markdown backticks are part of the literal contract.
@@ -4112,8 +4125,8 @@ else bad "send-mail shared workflow 洩漏 runtime-private surface"; fi
 # shellcheck disable=SC2016
 sm_sig='$send-mail'
 if grep -qF "$sm_sig" "$SM_CODEX/agents/openai.yaml" 2>/dev/null \
-    && grep -q 'Portable behavior oracle' "$SM_CLAUDE/evals.md" \
-    && grep -q 'ambient identity' "$SM_CLAUDE/evals.md"; then
+    && grep -q 'Portable behavior oracle' "$ROOT/shared/skills/send-mail/evals.md" \
+    && grep -q 'ambient identity' "$ROOT/shared/skills/send-mail/evals.md"; then
     ok "send-mail UI metadata 與 hostile-identity oracle 已接線"
 else bad "send-mail metadata 或 portable behavior oracle 缺失"; fi
 if grep -q 'jjshen@eland.com.tw' "$SM_CLAUDE/references/workflow.md" \
@@ -5557,24 +5570,43 @@ assert_rc "路徑含空白 → exit 0" 0 $?
 cer_job_sp="$(printf '%s\n' "$cer_out" | sed -n 's/^job-dir: //p' | head -1)"
 if [ -s "$cer_job_sp/report.md" ]; then ok "路徑含空白 → 報告正確落檔"; else bad "路徑含空白 → 報告未落檔"; fi
 
-echo "▶ 18. ensure-codex-skills.sh 幂等連結 codex skill"
+echo "▶ 18. ensure-codex-skills.sh 幂等連結 Codex skill"
 ECS="$ROOT/scripts/ensure-codex-skills.sh"
 ecs="$TMP/ecs"
-mkdir -p "$ecs/src/repo-review" "$ecs/src/not-a-skill" "$ecs/dst/.system"
+mkdir -p "$ecs/src/repo-review" "$ecs/src/physical-skill" "$ecs/src/third-party" "$ecs/src/broken" \
+    "$ecs/src/not-a-skill" "$ecs/dst/.system" "$ecs/legacy/.system" "$ecs/external/third-party"
 echo "# skill" > "$ecs/src/repo-review/SKILL.md"
+echo "# physical" > "$ecs/src/physical-skill/SKILL.md"
+echo "# third-party" > "$ecs/src/third-party/SKILL.md"
+echo "# broken" > "$ecs/src/broken/SKILL.md"
 echo "noise"   > "$ecs/src/not-a-skill/README.md"
+ln -s "$ecs/src/repo-review" "$ecs/legacy/repo-review"
+mkdir -p "$ecs/legacy/physical-skill"
+ln -s "$ecs/external/third-party" "$ecs/legacy/third-party"
+ln -s "$ecs/missing" "$ecs/legacy/broken"
 
 # 目的地是舊的實體目錄 → 換成 symlink（這正是 7/20 實證的 stale 情境）
 mkdir -p "$ecs/dst/repo-review" && echo "# 舊版" > "$ecs/dst/repo-review/SKILL.md"
-SRC_ROOT="$ecs/src" DST_ROOT="$ecs/dst" bash "$ECS"
+SRC_ROOT="$ecs/src" DST_ROOT="$ecs/dst" LEGACY_ROOT="$ecs/legacy" bash "$ECS"
 assert_rc "實體舊目錄 → exit 0" 0 $?
 if [ -L "$ecs/dst/repo-review" ]; then ok "舊實體目錄已換成 symlink"; else bad "仍是實體目錄"; fi
 assert_eq "symlink 指向 dotfiles 來源" "$ecs/src/repo-review" "$(readlink "$ecs/dst/repo-review")"
 assert_eq "透過 symlink 讀到新版內容" "# skill" "$(cat "$ecs/dst/repo-review/SKILL.md")"
 
-# 無 SKILL.md 的目錄不接管；~/.codex/skills 下的其他項目（.system）不動
+# 無 SKILL.md 的目錄不接管；discovery root 下的其他項目（.system）不動
 if [ ! -e "$ecs/dst/not-a-skill" ]; then ok "無 SKILL.md 的目錄不建連結"; else bad "誤建了非 skill 連結"; fi
 if [ -d "$ecs/dst/.system" ] && [ ! -L "$ecs/dst/.system" ]; then ok ".system 未被動到"; else bad ".system 被誤動"; fi
+if [ ! -e "$ecs/legacy/repo-review" ]; then
+    ok "新 link 驗證後移除 repo-managed legacy symlink"
+else bad "repo-managed legacy symlink 未清理"; fi
+if [ -d "$ecs/legacy/physical-skill" ] && [ ! -L "$ecs/legacy/physical-skill" ]; then
+    ok "legacy 實體目錄不動"
+else bad "legacy 實體目錄被誤接管"; fi
+if [ -L "$ecs/legacy/third-party" ] && [ "$ecs/legacy/third-party" -ef "$ecs/external/third-party" ]; then
+    ok "legacy 第三方 symlink 不動"
+else bad "legacy 第三方 symlink 被誤刪"; fi
+if [ -L "$ecs/legacy/broken" ]; then ok "legacy 斷鏈不猜測所有權"; else bad "legacy 斷鏈被誤刪"; fi
+if [ -d "$ecs/legacy/.system" ] && [ ! -L "$ecs/legacy/.system" ]; then ok "legacy .system 不動"; else bad "legacy .system 被誤動"; fi
 
 # 接管實體目錄須「備份而非刪除」：此腳本每台每次 dotsync 都跑，直接 rm -rf 等於把
 # 手工修改的內容不可逆地消滅。備份區必須在 DST_ROOT 之外——codex 會把 skills/ 下每個
@@ -5594,23 +5626,27 @@ else bad "備份留在 skills/ 內，會被 codex 當成另一個過期 skill"; 
 ecs_ro="$TMP/ecs-ro"
 mkdir -p "$ecs_ro/src/s1" "$ecs_ro/dst" "$ecs_ro/bin"
 echo "# s" > "$ecs_ro/src/s1/SKILL.md"
+mkdir -p "$ecs_ro/legacy"
+ln -s "$ecs_ro/src/s1" "$ecs_ro/legacy/s1"
 printf '#!/usr/bin/env bash\nexit 1\n' > "$ecs_ro/bin/ln"
 chmod +x "$ecs_ro/bin/ln"
-ecs_out="$(PATH="$ecs_ro/bin:$PATH" SRC_ROOT="$ecs_ro/src" DST_ROOT="$ecs_ro/dst" BACKUP_ROOT="$ecs_ro/bak" bash "$ECS" 2>&1)"
+ecs_out="$(PATH="$ecs_ro/bin:$PATH" SRC_ROOT="$ecs_ro/src" DST_ROOT="$ecs_ro/dst" \
+    LEGACY_ROOT="$ecs_ro/legacy" BACKUP_ROOT="$ecs_ro/bak" bash "$ECS" 2>&1)"
 ecs_rc=$?
 assert_rc "ln 失敗 → exit 非 0（不報成功）" 1 "$ecs_rc"
 if printf '%s\n' "$ecs_out" | grep -q '⚠️'; then ok "ln 失敗印出警告（stdout，不被 2>/dev/null 吞）"; else bad "ln 失敗無警告"; fi
+if [ -L "$ecs_ro/legacy/s1" ]; then ok "新 links 未全綠時不清 legacy"; else bad "新 link 失敗卻刪了 legacy fallback"; fi
 
 # 重跑幂等：已是正確 symlink → 不動檔（比對 inode 確認沒有 rm+重建）
 # stat -c 先試（GNU 成功、BSD 失敗）再退 -f；順序不可顛倒——GNU 的 -f 是「檔案系統」會假成功
 ecs_inode() { stat -c %i "$1" 2>/dev/null || stat -f %i "$1" 2>/dev/null; }
 ecs_before="$(ecs_inode "$ecs/dst/repo-review")"
-SRC_ROOT="$ecs/src" DST_ROOT="$ecs/dst" bash "$ECS"
+SRC_ROOT="$ecs/src" DST_ROOT="$ecs/dst" LEGACY_ROOT="$ecs/legacy" bash "$ECS"
 ecs_after="$(ecs_inode "$ecs/dst/repo-review")"
 assert_eq "重跑幂等（symlink 未重建）" "$ecs_before" "$ecs_after"
 
 # 來源不存在 → 靜默 exit 0，不建立目的地
-SRC_ROOT="$ecs/nonexistent" DST_ROOT="$ecs/dst2" bash "$ECS"
+SRC_ROOT="$ecs/nonexistent" DST_ROOT="$ecs/dst2" LEGACY_ROOT="$ecs/legacy2" bash "$ECS"
 assert_rc "來源不存在 → exit 0" 0 $?
 if [ ! -e "$ecs/dst2" ]; then ok "來源不存在 → 不建立目的地"; else bad "來源不存在卻建了目的地"; fi
 
@@ -7881,6 +7917,46 @@ out="$(INVENTORY_FILE="$ds/inventory" DOTFILES_DIR="$ds/dotfiles" HOME="$ds/home
     DOTSYNC_SSH_LOG="$ds/ssh.log" PATH="$ds/bin:$PATH" bash "$ROOT/scripts/dotfiles-sync.sh" hostgood 2>&1)"; rc=$?
 assert_rc "本機與所有遠端成功 → dotsync exit 0" 0 "$rc"
 if grep -q 'local=ok remote_ok=1 remote_failed=0' <<< "$out"; then ok "dotsync 全綠總計正確"; else bad "dotsync 全綠總計錯誤"; fi
+
+echo "▶ 28. neutral shared skill core topology"
+SHARED_SKILLS="$ROOT/shared/skills"
+portable_skills="check-crawl-quality deep-plan handoff nc-notify ready4quit root-cause-first send-mail"
+if [ -d "$SHARED_SKILLS" ] && [ -z "$(find "$SHARED_SKILLS" -name SKILL.md -print 2>/dev/null)" ]; then
+    ok "shared skill core 存在且不暴露 runtime entry"
+else bad "shared skill core 缺漏或誤放 SKILL.md"; fi
+for skill_name in $portable_skills; do
+    claude_entry="$ROOT/claude/skills/$skill_name"
+    codex_entry="$ROOT/codex/skills/$skill_name"
+    shared_core="$SHARED_SKILLS/$skill_name"
+    if [ -f "$claude_entry/SKILL.md" ] && [ -f "$codex_entry/SKILL.md" ] \
+        && [ ! -L "$claude_entry" ] && [ ! -L "$codex_entry" ] \
+        && [ -f "$shared_core/evals.md" ] \
+        && [ "$claude_entry/evals.md" -ef "$shared_core/evals.md" ] \
+        && [ ! -e "$codex_entry/evals.md" ]; then
+        ok "$skill_name 雙薄入口與 single shared eval oracle"
+    else bad "$skill_name adapter/core/eval topology 錯誤"; fi
+done
+if [ -d "$SHARED_SKILLS/project/references" ] \
+    && [ -d "$SHARED_SKILLS/project/scripts" ] \
+    && [ -d "$SHARED_SKILLS/project/templates" ] \
+    && [ ! -e "$SHARED_SKILLS/project/evals.md" ] \
+    && [ "$ROOT/claude/skills/project/references" -ef "$SHARED_SKILLS/project/references" ] \
+    && [ "$ROOT/codex/skills/project/references" -ef "$SHARED_SKILLS/project/references" ]; then
+    ok "project 雙薄入口共用 neutral resources（無虛構 eval oracle）"
+else bad "project adapter/core topology 錯誤"; fi
+if [ -f "$SHARED_SKILLS/deep-review/evals.md" ] \
+    && [ "$ROOT/claude/skills/deep-review/references/workflow.md" -ef "$SHARED_SKILLS/deep-review/references/workflow.md" ] \
+    && [ "$ROOT/codex/skills/repo-review/references/workflow.md" -ef "$SHARED_SKILLS/deep-review/references/workflow.md" ] \
+    && [ "$ROOT/claude/skills/deep-review/scripts/lib/review-subjects.sh" -ef "$SHARED_SKILLS/deep-review/scripts/lib/review-subjects.sh" ] \
+    && [ "$ROOT/codex/skills/repo-review/scripts/lib/review-subjects.sh" -ef "$SHARED_SKILLS/deep-review/scripts/lib/review-subjects.sh" ] \
+    && [ "$ROOT/claude/skills/deep-review/evals.md" -ef "$SHARED_SKILLS/deep-review/evals.md" ] \
+    && [ ! -e "$ROOT/codex/skills/repo-review/evals.md" ]; then
+    ok "deep-review/repo-review 共用 neutral portable core 與 single eval oracle"
+else bad "deep-review neutral core topology 錯誤"; fi
+if grep -q 'DST_ROOT=.*\.agents/skills' "$ROOT/scripts/ensure-codex-skills.sh" \
+    && ! rg -q '__codex_link_skills' "$ROOT/setup-mac-env.sh" "$ROOT/setup-linux-env.sh"; then
+    ok "Codex personal skill discovery 收旂到 ~/.agents/skills"
+else bad "Codex skill discovery 仍依賴 legacy ~/.codex/skills"; fi
 
 echo ""
 echo "════════════════════════════"

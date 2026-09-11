@@ -80,11 +80,11 @@ description: Extract text and tables from PDF files, fill forms, merge documents
 - **引用只能一層深**：所有 reference 檔直接從 SKILL.md 連出。巢狀引用（A→B→C）會讓 Claude 只 `head -100` 預覽、讀到不完整資訊
 - **> 100 行的 reference 檔開頭放 table of contents**，讓 Claude 預覽時看得到全貌
 - 檔名要描述性（`form_validation_rules.md` 不是 `doc2.md`）；用 forward slash，不用 Windows 反斜線
-- **路徑慣例（本 repo）**：skill 文件內凡是 runtime 要讀/執行的自家資源（`scripts/`、`references/`）一律寫 `~/.claude/skills/<name>/...`——該 symlink 由 setup 腳本建立、指向 repo 實際位置，與 clone 路徑解耦；只有描述「skill 原始碼在 repo 何處」（開發/編輯情境）才寫 `~/.dotfiles/claude/skills/`。同檔混用兩種寫法視為待修的不一致
+- **路徑慣例（本 repo）**：skill 文件內凡是 runtime 要讀/執行的自家資源（`scripts/`、`references/`）一律寫 `~/.claude/skills/<name>/...`——該 adapter 由 setup 腳本建立、其 nested links 解析到 repo 內的 neutral core，與 clone 路徑解耦；只有描述「skill 原始碼在 repo 何處」（開發/編輯情境）才寫 `~/.dotfiles/{claude,codex,shared}/skills/`。同檔混用 runtime 安裝路徑與 repo source path 視為待修的不一致
 
 ## Claude Code 特有機制（code.claude.com skills 文件；2026-07 新增）
 
-> 本 repo 的 skill 全部跑在 Claude Code。以下為 Agent Skills 開放標準之外、Claude Code 擴充的執行面機制，與上方通用規則一併適用。custom commands 已併入 skills（`.claude/commands/deploy.md` 與 `.claude/skills/deploy/SKILL.md` 等價，後者可帶支援檔案）。
+> 本節只描述 Claude Code adapter 的執行面擴充；portable behavior 同時由 Codex entry 暴露。custom commands 已併入 skills（`.claude/commands/deploy.md` 與 `.claude/skills/deploy/SKILL.md` 等價，後者可帶支援檔案）。
 
 ### Frontmatter 擴充欄位
 

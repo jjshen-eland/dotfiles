@@ -1,7 +1,7 @@
 # 跨平台與跨 runtime 收斂
 
 - 日期：2026-09-11
-- 狀態：in-progress
+- 狀態：implemented
 - 工作項：cross-runtime-portability
 - 種類：implementation
 - 需求來源：使用者要求檢查 macOS／Ubuntu、Claude Code／Codex 設計並實作優化

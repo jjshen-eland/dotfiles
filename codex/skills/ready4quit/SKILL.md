@@ -8,7 +8,7 @@ description: "End-of-session pre-quit flush for Codex. Use only when the user ex
 這是 Codex 的薄入口。只有使用者明確提及 `$ready4quit` 才執行；一般對話中的「收尾」不是叫用。
 
 1. 以本 `SKILL.md` 的實際位置解析 **ready4quit skill directory**；`references/` 與 `scripts/` 是
-   canonical Claude tree 的 shared links。從 worktree 測試時必須使用 worktree 這份，不得跳去全域安裝副本。
+   neutral shared core 的 links。從 worktree 測試時必須使用 worktree 這份，不得跳去全域安裝副本。
 2. 使用以下 Codex adapter facts：
    - runtime label：`Codex`；exit wording：結束目前 session。
    - durable user memory：Codex local memory files 是 **generated state**，不得直接編輯。只在目前 runtime

@@ -3,7 +3,7 @@
 > **快照基準**：check-crawl-quality skill @ commit bf65093（2026-07-21）。
 > **定位**：clean-room 重寫實驗產出的需求層蒸餾——描述**目標、硬需求、環境事實**，
 > 不描述實作機制。**Non-normative**：skill 演進不回寫本檔（避免 double-source；
-> 實作的單一權威恆為 `claude/skills/check-crawl-quality/`）。
+> 實作的共用權威恆為 `shared/skills/check-crawl-quality/`；runtime 入口分別位於 `claude/skills/` 與 `codex/skills/`）。
 > **用途**：skill 的第一份需求層文件；重大重構或移交時的規格參照；附錄記錄「只活在實作裡」的知識缺口。
 
 ## 任務

@@ -1,1 +1,1 @@
-../../../../scripts/doc-governance.py
+../../../../shared/skills/project/scripts/doc-governance.py

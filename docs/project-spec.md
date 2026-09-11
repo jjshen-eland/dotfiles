@@ -3,7 +3,7 @@
 > **快照基準**：project skill @ commit 25aca11（2026-07-21）。
 > **定位**：clean-room 重寫實驗產出的需求層蒸餾——描述**目標、硬需求、環境事實**，
 > 不描述實作機制。**Non-normative**：skill 演進不回寫本檔（避免 double-source；**唯一例外＝『本條已被推翻，見 X』的失效標記**——不回寫等於讓被推翻的條文以現況之姿被讀，比 double-source 更危險；
-> 實作的單一權威恆為 `claude/skills/project/`）。
+> 實作的共用權威恆為 `shared/skills/project/`；runtime 入口分別位於 `claude/skills/` 與 `codex/skills/`）。
 > **用途**：skill 的第一份需求層文件；重大重構或移交時的規格參照；附錄記錄「只活在實作裡」的知識缺口。
 
 ## 任務
@@ -26,7 +26,7 @@
 3. **transfer（移交）**——檢查 dossier 完整度、產出移交指南，供專案換 owner。
 
 使用方式：使用者輸入 `/project [spec|log|transfer] [repo|.] [module...]`。
-> ⚠️ **本條的 `[module...]` 已被推翻**（2026-08-07，見 `claude/skills/project/references/log-workflow.md`
+> ⚠️ **本條的 `[module...]` 已被推翻**（2026-08-07，見 `shared/skills/project/references/log-workflow.md`
 > 「引數前處理（依形狀分類，不靠優先序記憶）」）：裸字不再被當成 module 過濾——它會在打錯字時靜默縮小
 > Step 2 的掃描範圍。**module 一律走路徑形式**（`./docs/plans`）。同時新增 `--` flag 形式
 > （`--merge` / `--pr` / `--no-pr` / `--spec|--log|--transfer`），與裸說法等價。
@@ -73,7 +73,7 @@
 - PR 路徑：push feature branch → 偵測既有 PR → 無則開新 PR（title/body 由 commits 組）
 - 直接 push 路徑（僅確定無保護）：仍推 feature branch，附帶提示可開 PR
 - 使用者後續明說 merge → 執行標準收尾（merge → 清 branch → 同步本地 default），不得因通篇「絕不 merge」而拒絕明確授權
-  > **2026-08-06 更新**：預設 `--squash` 已被推翻——壓不壓改關鍵字分流／選項式詢問，且 merge 授權可在 Step 4 第 1 題預先給。現況見 `claude/skills/project/references/ship-paths.md`「說法表」；歷史理由用 repo-local `find` 查詢。
+  > **2026-08-06 更新**：預設 `--squash` 已被推翻——壓不壓改關鍵字分流／選項式詢問，且 merge 授權可在 Step 4 第 1 題預先給。現況見 `shared/skills/project/references/ship-paths.md`「說法表」；歷史理由用 repo-local `find` 查詢。
 
 ### F7 Spec 模式
 - adopted repo 先用 repo-local `find` 查相關 decision／dead end，把命中 ID 寫入 active 關聯；不得先全讀 archive

@@ -67,7 +67,7 @@ fi
 # 確保互動 rc 有 source shell/functions.sh（幂等；讓便利函數免重跑 setup 即散佈）
 [ -f "$DOTFILES_DIR/scripts/ensure-rc-source.sh" ] && { bash "$DOTFILES_DIR/scripts/ensure-rc-source.sh" 2>/dev/null || local_helper_warn=1; } || true
 
-# 確保 ~/.codex/skills 指向 dotfiles（幂等；讓 codex skill 免重跑 setup 即散佈）
+# 確保 ~/.agents/skills 指向 dotfiles（幂等；讓 Codex skill 免重跑 setup 即散佈）
 [ -f "$DOTFILES_DIR/scripts/ensure-codex-skills.sh" ] && { bash "$DOTFILES_DIR/scripts/ensure-codex-skills.sh" 2>/dev/null || local_helper_warn=1; } || true
 
 # 確保全域 Codex guidance 指向 dotfiles（幂等；既有主機免重跑 setup）
@@ -116,7 +116,7 @@ sync_remote() {
             [ -f scripts/ensure-ssh-config.sh ] && { bash scripts/ensure-ssh-config.sh 2>/dev/null || helper_warn=1; } || true
             # 確保互動 rc 有 source shell/functions.sh（幂等）
             [ -f scripts/ensure-rc-source.sh ] && { bash scripts/ensure-rc-source.sh 2>/dev/null || helper_warn=1; } || true
-            # 確保 ~/.codex/skills 指向 dotfiles（幂等；免重跑 setup 即拿到最新 codex skill）
+            # 確保 ~/.agents/skills 指向 dotfiles（幂等；免重跑 setup 即拿到最新 Codex skill）
             [ -f scripts/ensure-codex-skills.sh ] && { bash scripts/ensure-codex-skills.sh 2>/dev/null || helper_warn=1; } || true
             # 確保全域 Codex guidance 指向 dotfiles（幂等）
             [ -f scripts/ensure-codex-guidance.sh ] && { bash scripts/ensure-codex-guidance.sh 2>/dev/null || helper_warn=1; } || true

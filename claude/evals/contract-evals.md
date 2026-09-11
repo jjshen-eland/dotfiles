@@ -148,7 +148,7 @@ Opus 專屬的觀察，在樓層模型上不成立。** 同一個 fixture、同�
 - **kernel 的 branch-first 對 Claude 不是「邊際價值有限」**：在 PASS 門檻的模型上，它就是
   branch 有沒有被開出來的**唯一**原因。原本那句推論（「真正不可取代的是 Codex 與協作者的
   clean clone」）**低估了它對 Claude 自己的作用**，已作廢。
-- **H6 的地位不變**（`claude/skills/handoff/evals.md`）——它本來就是「規則不在 always-on
+- **H6 的地位不變**（`shared/skills/handoff/evals.md`）——它本來就是「規則不在 always-on
   context 就會 silent miss」的證據，這次的結果與它同向，不是推翻也不是取代。
 - **教訓**：「強模型上兩臂沒差」不能推論成「這條規則沒用」。強模型自己補上了規則要求的行為，
   **那恰恰是它掩蓋了規則的作用**，不是規則多餘。要判一條規則多餘，得在**樓層**模型上兩臂沒差。
@@ -199,7 +199,7 @@ prompt：接手一個中等工作項（加重試 + 測試），並口述一條 d
 13 個欄位填入 fixture，而不是靠失效的 `str.replace` 產生空 dossier。
 
 **關鍵的那一次失敗（g7base-r1）**：agent 沒有去讀死指標，但把它**原樣往下傳**——
-「dossier — see the file's own header comment and `~/.dotfiles/claude/skills/project/references/dossier.md`」。
+「dossier — see the file's own header comment and `~/.dotfiles/shared/skills/project/references/dossier.md`」。
 它教下一手去查一個在對方機器上不存在的路徑。**這就是死指標的實際危害**：不是讓 agent 卡住，
 是讓它把壞引用往下傳。
 
@@ -378,7 +378,7 @@ find "$SB" -name .credentials.json      # 必須為空
 
 > **這組刻意不測 `/project` 說法表本身**——skill 是 `disable-model-invocation`、headless 不會載入，
 > 硬塞進 fixture 只會測到「我把表貼給它看」而非契約行為。表的驗收在
-> `claude/skills/project/references/pressure-tests.md`；本組測的是**沒有表可查時 kernel 自己的下限**。
+> `shared/skills/project/references/pressure-tests.md`；本組測的是**沒有表可查時 kernel 自己的下限**。
 
 **執行紀錄**（2026-08-13 一輪 RED → 兩輪修補 → GREEN；kernel 文本因此改了三版）
 

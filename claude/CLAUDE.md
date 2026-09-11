@@ -51,7 +51,7 @@ fallback conventions 則由該 repo 自己的規定勝出。Repo 沒有契約檔
 - 使用者明說 merge 後的標準收尾：merge PR → 清 remote/本地 branch → 同步本地 default，**一路做完不再回問**。**壓不壓由說法決定、預設保留**（裸「merge」＝保留語意 commit）。說法表與完整序列見 `~/.claude/skills/project/references/ship-paths.md`「說法表」＋「Merge 最後一哩」（唯一權威，勿在此重述對照）。
 - **說法授權的是「怎麼送」，never whether an unreviewed batch may ship.** `ship-state.sh` 印 `verdict: STOP`（含 `review-terminal:` 上一場審查未修完就終止）→ 停下處置，關鍵字不得覆蓋。
 - **Solo repo is not a lighter process** — "It's just me" / "no protection anyway" is never a reason to relax the kernel's safety floor, the PR default, or explicit merge（後兩者是個人流程、不在契約裡；理由與完整條文見 `ship-paths.md` 檔首，勿在此重述）。
-- 誤 commit 已落在 default branch 時的救援序列見 `~/.claude/skills/project/references/ship-paths.md`「Branch-first 與誤 commit 搬移」（唯一權威，本檔不重述）。**規則本體在 kernel**——它不隨 skill 是否載入而變（實測失效面：`claude/skills/handoff/evals.md` H6 首跑，同一輪 repo-a 的 commit 落在 main、repo-b 才開 branch，因為當時規則只存在於 `/project` 載入後才讀得到的檔案裡）。
+- 誤 commit 已落在 default branch 時的救援序列見 `~/.claude/skills/project/references/ship-paths.md`「Branch-first 與誤 commit 搬移」（唯一權威，本檔不重述）。**規則本體在 kernel**——它不隨 skill 是否載入而變（實測失效面：`shared/skills/handoff/evals.md` H6 首跑，同一輪 repo-a 的 commit 落在 main、repo-b 才開 branch，因為當時規則只存在於 `/project` 載入後才讀得到的檔案裡）。
 
 ## Third-party Review Verification
 
@@ -84,7 +84,7 @@ When the user pastes third-party review findings, read the source code and verif
 - `grep -c ... || echo 0` 會得到雙 `0`；用 `n=$(grep -c ...) || n=0`。數值 command substitution 失敗先轉成可辨識 sentinel，再做算術。
 - cask 卡在 `Linking Binary` 時直接跑 `brewfix` 診斷；只有 `brewfix --fix` 會修改。
 - 腳本內 `git pull` 後若自身 checksum 改變，必須 `exec` 新版並設迴圈防護；呼叫端可把 pull 拆成前置指令。
-- 在 worktree 驗自家 skill 時一律用該 worktree 絕對路徑；`~/.claude/skills`／`~/.codex/skills` 仍可能指向主 checkout。
+- 在 worktree 驗自家 skill 時一律用該 worktree 絕對路徑；`~/.claude/skills`／`~/.agents/skills` 仍可能指向主 checkout。
 - zsh 預設不做 word splitting：`set -- $spec`／`for x in $var` 不會依空白拆開，整串會變成單一參數。要拆就明確寫陣列或逐條展開；跨 shell 的腳本別倚賴未加引號變數自動分詞。
 - `git checkout <file>` 是從 **index** 還原，不是 HEAD。檔案 `git add` 過之後，它還原到的是你剛暫存的版本（看起來像沒還原）。要回到 HEAD 版本一律寫 `git checkout HEAD -- <file>`。
 

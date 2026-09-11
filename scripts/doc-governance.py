@@ -37,7 +37,12 @@ EVENT_SECTION = '事件記錄（event-time）'
 MAX_RESULTS = 5
 MAX_EXCERPT_BYTES = 240
 MAX_STDOUT_BYTES = 8192
-TILDE_MAP = (('~/.claude/skills/', 'claude/skills/'), ('~/.codex/skills/', 'codex/skills/'), ('~/.dotfiles/', ''))
+TILDE_MAP = (
+  ('~/.claude/skills/', 'claude/skills/'),
+  ('~/.agents/skills/', 'codex/skills/'),
+  ('~/.codex/skills/', 'codex/skills/'),  # legacy references remain searchable
+  ('~/.dotfiles/', ''),
+)
 METRICS = ('dated_records', 'struck_records', 'checkbox_records', 'undated_records', 'h2_sections', 'empty_h2_sections', 'file_preamble_entries', 'legacy_type_file_mismatches')
 
 class ScannerError(RuntimeError):

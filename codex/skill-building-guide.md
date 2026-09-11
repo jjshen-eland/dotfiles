@@ -55,7 +55,7 @@ Evals 是 source of truth。Skill review 的 blocking line 是「agent 照做是
 
 ### 5. 建立或修改 skill
 
-- 新 skill 使用 `$skill-creator` 提供的 `init_skill.py`，建立在 `~/.dotfiles/codex/skills/<name>/`，讓跨機散佈仍以 dotfiles 為 source of truth。
+- 新 skill 使用 `$skill-creator` 提供的 `init_skill.py` 建立 runtime entry，再依 portable contract 補齊 `~/.dotfiles/claude/skills/<name>/`、`~/.dotfiles/codex/skills/<name>/` 與 `~/.dotfiles/shared/skills/<name>/`；只有前兩者放 `SKILL.md`。
 - Existing skill 直接修改原目錄，不重新初始化。
 - Frontmatter 只放 `name` 與 `description`；將主要 use case、trigger words、scope 與 boundaries 前置到 description。
 - Body 使用 imperative/infinitive instructions，單檔語言保持一致，只加入 Codex 不會可靠推導出的程序或領域資訊。
@@ -92,9 +92,9 @@ Validation 失敗就修正並重跑；不能把失敗留給未來使用者處理
 
 發布模型：
 
-1. Source of truth 留在 `~/.dotfiles/codex/skills/` 與 `~/.dotfiles/codex/AGENTS.md`。
+1. Runtime entry 留在 `~/.dotfiles/codex/skills/`，portable core 留在 `~/.dotfiles/shared/skills/`，全域 guidance 留在 `~/.dotfiles/codex/AGENTS.md`。
 2. Review verified diff，再 commit 與 push。
-3. 執行 `dotsync`；各主機在 pull 後由 ensure helpers 幂等建立 `~/.codex/skills/<name>` 與 `~/.codex/AGENTS.md` symlink。
+3. 執行 `dotsync`；各主機在 pull 後由 ensure helpers 幂等建立 `~/.agents/skills/<name>` 與 `~/.codex/AGENTS.md` symlink。
 4. 抽查至少本機與一台遠端的 symlink target、內容 revision 與 skill discovery。
 
 除非使用者明確要求 ship，本機 authoring／validation 不自動 commit、push 或 dotsync。
