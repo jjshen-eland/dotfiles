@@ -21,6 +21,8 @@
 
 set -e  # 遇到錯誤立即退出
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+
 # 解析參數
 AUTO_YES=false
 while getopts "y" opt; do
@@ -237,26 +239,11 @@ if [ "$EUID" -eq 0 ]; then
     exit 1
 fi
 
-# 檢查是否為 Linux
-if [ "$(uname)" != "Linux" ]; then
-    print_error "此腳本僅適用於 Linux"
-    exit 1
-fi
-
-# 檢查是否為 Ubuntu
-if [ -f /etc/os-release ]; then
-    # shellcheck disable=SC1091  # 系統檔，macOS 上跑 shellcheck 時不存在
-    . /etc/os-release
-    if [ "$ID" != "ubuntu" ]; then
-        print_warning "此腳本專為 Ubuntu 設計，當前系統：$PRETTY_NAME"
-        if [ "$AUTO_YES" = false ]; then
-            echo -n "是否繼續？[y/N] "
-            read -r response
-            if [[ ! "$response" =~ ^[Yy]$ ]]; then
-                exit 0
-            fi
-        fi
-    fi
+# 必須在任何 apt/brew mutation 前硬停 unsupported platform。
+if DOTFILES_UNAME="$(uname)" bash "$SCRIPT_DIR/scripts/check-supported-platform.sh"; then
+    :
+else
+    exit $?
 fi
 
 print_header "Ubuntu 現代化開發環境自動安裝 v4.0"
@@ -921,8 +908,6 @@ print_success ".bashrc 已建立"
 # ================================================
 print_header "步驟 3: 設定 SSH"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-
 # 3a. 確保 ~/.ssh 存在
 mkdir -p ~/.ssh && chmod 700 ~/.ssh
 
@@ -1065,6 +1050,18 @@ if [ -d "$SCRIPT_DIR/claude" ]; then
     fi
 
     unset -f __claude_link
+
+    if command -v claude &> /dev/null && [ -x "$SCRIPT_DIR/scripts/claude-plugin-install-hints.sh" ]; then
+        _plugin_hints="$(CLAUDE_SETTINGS="$SCRIPT_DIR/claude/settings.json" \
+            bash "$SCRIPT_DIR/scripts/claude-plugin-install-hints.sh" 2>/dev/null || true)"
+        if [ -n "$_plugin_hints" ]; then
+            print_info "Claude Code plugins 需手動安裝（互動式 terminal）："
+            while IFS= read -r _plugin_hint; do
+                printf '  %s\n' "$_plugin_hint"
+            done <<< "$_plugin_hints"
+        fi
+        unset _plugin_hints _plugin_hint
+    fi
 else
     print_info "未找到 claude/ 目錄，跳過 Claude Code 配置"
 fi

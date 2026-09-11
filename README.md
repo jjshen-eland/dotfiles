@@ -1,6 +1,6 @@
 # Shell 環境設定工具
 
-跨平台（macOS + Linux Ubuntu）的現代化開發環境自動配置工具。
+跨平台（macOS + Ubuntu 24.04+）的現代化開發環境自動配置工具。
 
 ## 檔案結構
 
@@ -8,7 +8,7 @@
 config/
 ├── README.md              # 本文件（快速入門）
 ├── CLAUDE.md              # Claude Code 環境指引（自動讀取）
-├── bootstrap.sh           # 雙平台一鍵 bootstrap（macOS + Linux）
+├── bootstrap.sh           # 雙平台一鍵 bootstrap（macOS + Ubuntu 24.04+）
 ├── claude/                # Claude Code 共用設定與 skills
 ├── codex/                 # Codex 共用設定、rules、skills
 ├── setup-mac-env.sh       # macOS 開發環境安裝腳本 (v3.1)

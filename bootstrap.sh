@@ -5,7 +5,7 @@
 # macOS 新機上只需執行這一行：
 #   curl -fsSL dot.bitpod.cc | sh
 #
-# Linux 新機上：
+# Ubuntu 24.04+ 新機上：
 #   curl -fsSL dot.bitpod.cc | sh
 #
 # -f  fail: HTTP 錯誤時回傳非零 exit code，不輸出錯誤頁面
@@ -18,7 +18,7 @@
 #   2. Clone dotfiles repo 至 ~/.dotfiles
 #   3. 執行 setup-mac-env.sh
 #
-# Linux 流程：
+# Ubuntu 24.04+ 流程：
 #   1. 用 apt 安裝前置依賴（git, curl, build-essential）
 #   2. Clone dotfiles repo 至 ~/.dotfiles
 #   3. 執行 setup-linux-env.sh
@@ -45,7 +45,56 @@ print_error()   { echo -e "${RED}❌ $1${NC}"; }
 DOTFILES_REPO="https://github.com/jjshen-eland/dotfiles.git"
 DOTFILES_DIR="$HOME/.dotfiles"
 
-OS="$(uname)"
+OS="${DOTFILES_UNAME:-$(uname)}"
+
+# bootstrap 會在 repo clone 前以 curl pipe 執行，因此這段 platform preflight 必須自包含。
+# clone 完成後，setup scripts 會再呼叫 scripts/check-supported-platform.sh 作為單一正式判準。
+check_supported_platform() {
+    local os_release id version_id version_major version_minor
+
+    [ "$OS" = "Darwin" ] && return 0
+    if [ "$OS" != "Linux" ]; then
+        print_error "不支援的作業系統: $OS（僅支援 macOS 和 Ubuntu 24.04+）"
+        return 2
+    fi
+
+    os_release="${DOTFILES_OS_RELEASE:-/etc/os-release}"
+    if [ ! -r "$os_release" ]; then
+        print_error "無法辨識 Linux distribution（僅支援 Ubuntu 24.04+）"
+        return 2
+    fi
+
+    id="$(sed -n 's/^ID=//p' "$os_release" | tr -d '\"' | head -1)"
+    version_id="$(sed -n 's/^VERSION_ID=//p' "$os_release" | tr -d '\"' | head -1)"
+    if [ "$id" != "ubuntu" ]; then
+        print_error "不支援的 Linux distribution: ${id:-unknown}（僅支援 Ubuntu 24.04+）"
+        return 2
+    fi
+
+    version_major="${version_id%%.*}"
+    version_minor="${version_id#*.}"
+    version_minor="${version_minor%%.*}"
+    case "$version_major:$version_minor" in
+        *[!0-9:]*|:*)
+            print_error "無法辨識 Ubuntu 版本: ${version_id:-unknown}（僅支援 Ubuntu 24.04+）"
+            return 2
+            ;;
+    esac
+    if [ "$version_major" -lt 24 ] || { [ "$version_major" -eq 24 ] && [ "$version_minor" -lt 4 ]; }; then
+        print_error "不支援 Ubuntu $version_id（僅支援 Ubuntu 24.04+）"
+        return 2
+    fi
+}
+
+if check_supported_platform; then
+    :
+else
+    exit $?
+fi
+
+if [ "${1:-}" = "--check-platform" ]; then
+    exit 0
+fi
 
 # ================================================
 # 作業系統分流
@@ -105,7 +154,7 @@ if [ "$OS" = "Darwin" ]; then
 elif [ "$OS" = "Linux" ]; then
 
     echo -e "${BLUE}================================================${NC}"
-    echo -e "${BLUE}  Linux 開發環境 Bootstrap${NC}"
+    echo -e "${BLUE}  Ubuntu 24.04+ 開發環境 Bootstrap${NC}"
     echo -e "${BLUE}================================================${NC}"
 
     # ------------------------------------------------
@@ -144,7 +193,4 @@ elif [ "$OS" = "Linux" ]; then
     chmod +x "$DOTFILES_DIR/setup-linux-env.sh"
     exec "$DOTFILES_DIR/setup-linux-env.sh"
 
-else
-    print_error "不支援的作業系統: $OS（僅支援 macOS 和 Linux）"
-    exit 1
 fi

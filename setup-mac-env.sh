@@ -977,17 +977,17 @@ if [ -d "$SCRIPT_DIR/claude" ]; then
 
     unset -f __claude_link
 
-    # Plugins: settings.json 已透過 symlink 同步 enabledPlugins 清單
-    # 實際安裝需在互動式 terminal 中手動執行（claude plugins install 需要 trust prompt）
-    if command -v claude &> /dev/null; then
-        # 注意：此處在頂層執行，不可用 local（set -e 下 local 會使腳本中斷）
-        _plugins=$(jq -r '.enabledPlugins // {} | keys[]' "$SCRIPT_DIR/claude/settings.json" 2>/dev/null)
-        if [ -n "$_plugins" ]; then
+    # Plugins: settings.json 已透過 symlink 同步 enabledPlugins 清單；安裝仍需互動式 trust prompt。
+    if command -v claude &> /dev/null && [ -x "$SCRIPT_DIR/scripts/claude-plugin-install-hints.sh" ]; then
+        _plugin_hints="$(CLAUDE_SETTINGS="$SCRIPT_DIR/claude/settings.json" \
+            bash "$SCRIPT_DIR/scripts/claude-plugin-install-hints.sh" 2>/dev/null || true)"
+        if [ -n "$_plugin_hints" ]; then
             print_info "Claude Code plugins 需手動安裝（互動式 terminal）："
-            echo "$_plugins" | while read -r p; do
-                echo "  claude plugins install $p"
-            done
+            while IFS= read -r _plugin_hint; do
+                printf '  %s\n' "$_plugin_hint"
+            done <<< "$_plugin_hints"
         fi
+        unset _plugin_hints _plugin_hint
     fi
 else
     print_info "未找到 claude/ 目錄，跳過 Claude Code 配置"

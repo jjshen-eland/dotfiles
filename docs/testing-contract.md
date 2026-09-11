@@ -631,6 +631,13 @@ local 覆寫 global）。同樣明列、不假裝擋得住。
 **exit code 一律直接呼叫 dispatcher 驗**：`git commit` 對 hook 只看零/非零、自己回 1，
 透過它量不到 42（2026-08-14 首版測試就是這樣誤判成實作壞掉）。
 
+## 25. cross-platform contract
+
+- GitHub Actions 必須以唯讀 repository 權限，在 `macos-15` 與 `ubuntu-24.04` 跑完整 suite。
+- Ubuntu preflight 必須在任何 package mutation 前執行；非 Ubuntu 或低於 24.04 都回 exit 2。
+- Claude plugin 提示由同一 helper 讀 `enabledPlugins`，只輸出值為 `true` 的項目並穩定排序；
+  macOS、Linux setup 不得各自再實作一份解析邏輯。
+
 ## 未列於本檔的節
 
 `dotfiles-sync` 遠端回報段（ssh 失敗與無告知時都不可吞掉主機結果）已有測試但無獨立節號。
