@@ -49,3 +49,9 @@
   - 放棄:關閉 Claude Auto／Codex danger-full-access；用共同 hook 在 Codex 回 ask（產品不支援且會 fail-open）；把所有 GitHub write 一律 tool-level prompt（超出本次只鎖 push／merge 的決定）；為排除 `--dry-run` 強迫所有真 push 改走自訂 wrapper
   - 重議:Codex PreToolUse 支援 ask，或 execpolicy 支援 suffix／negative predicate；任一 runtime 的 hook input／decision schema 改變；classifier 出現新的實際 bypass
   - 關聯:docs/plans/2026-09-11-cross-runtime-portability.md;scripts/outward-action-gate.py;claude/settings.json;codex/config.toml;codex/rules/default.rules;tests/run.sh
+
+- **D-20260912-codex-config-three-layer-merge · 2026-09-12 Codex live config 改為 base→runtime-only→local 三層 merge，不再由 setup 複製整檔**:`ensure-codex-config.py` 讓 repo base 擁有它明列的 leaf，從 live config 只保留 base／local 未管理的 state，最後由 `config.local.toml` 覆蓋；輸出首行嵌入 managed-path manifest，解決 local 或 base 刪除後舊值被下一輪誤認成 runtime-only 而復活的黏著問題。yq 同時充當 TOML parser／renderer；所有輸入與 render 都先驗證，lock 阻擋第二個 helper writer，replace 前再比 target digest 抓外部 writer，候選檔與 target 同目錄後以 `os.replace` 原子換入。dotsync 同步改為 local pull／helper 與每台 remote 各自記狀態、全部嘗試後聚合，任何失敗回 1。
+  - 日期來源:direct
+  - 放棄:直接 append local TOML（duplicate table/key 可產生壞 config）；整檔覆蓋 live config（遺失 project trust 與 runtime state）；把 live config 所有 base 以外欄位永遠視為 runtime state（刪掉的 local key 會復活）；dotsync 遇錯立即退出（其餘主機失去更新與診斷）
+  - 重議:Codex 提供原生 include/overlay 或把 runtime state 移出 config.toml；yq 取消 TOML 支援；需要多 writer transactional API 取代 digest guard
+  - 關聯:docs/plans/2026-09-11-cross-runtime-portability.md;scripts/ensure-codex-config.py;scripts/dotfiles-sync.sh;codex/README.md;tests/run.sh

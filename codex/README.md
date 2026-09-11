@@ -30,11 +30,13 @@
 
 `setup-linux-env.sh` 與 `setup-mac-env.sh` 會：
 
-1. 將 `~/.dotfiles/codex/config.toml` 同步到 `~/.codex/config.toml`
-2. 若偵測到舊的 `[projects."..."]` 區塊，第一次同步時自動搬到 `~/.codex/config.local.toml`
-3. 將 `config.local.toml` 內容附加到最終的 `config.toml`
+1. 以 `codex/config.toml` 作為 repo-managed base
+2. 從既有 `~/.codex/config.toml` 保留 base／local 未管理的 runtime-only state（例如 project trust）
+3. 最後套用 `config.local.toml`，讓明示的本機 override 優先
+4. 驗證完整 TOML 後原子更新 `config.toml`；壞輸入、缺 yq 或並行 writer 都保留原檔並回非零
 
-如此可讓共享設定進版控，本機信任設定仍留在本機。
+產出檔首行含 helper 使用的 managed-path manifest，讓 local/base 刪除的鍵不會在下次被誤認成
+runtime state 而復活；請勿手改該註解。setup、`brewup`、`dotsync` 都呼叫同一支 helper。
 
 ## 跨機散佈
 

@@ -38,6 +38,7 @@
 #  24. .githooks/dispatcher 全域 hook 代理：chain／exit code 原樣傳回／guard 三態 fail-open／三個刻意的 false negative
 #  25. cross-platform contract：GitHub Actions 雙 OS、Ubuntu 24.04 preflight、Claude plugin hints parity
 #  26. outward-action gate：push／merge classifier、Claude ask、Codex prompt + opaque-wrapper deny
+#  27. Codex config／dotsync：三層 TOML 原子 merge、race guard、聚合 exit semantics
 #
 set -uo pipefail
 
@@ -5643,7 +5644,7 @@ if printf '%s\n' "$ecs_out" | grep -q 'hostB: ↻ 接管 x'; then ok "有 ↻ �
 if printf '%s\n' "$ecs_out" | grep -q '✅ hostB'; then ok "有 ↻ 時成敗回報不受影響"; else bad "有 ↻ 時成敗回報消失"; fi
 # ssh 失敗（主機不可達）→ 必須印 ❌，不可整段靜默
 ecs_out="$(FAKE_RESULT="" FAKE_RC=255 bash "$ecs_report" hostC 2>&1)"
-assert_rc "ssh 失敗 → sync_remote 仍正常結束" 0 $?
+assert_rc "ssh 失敗 → sync_remote 回非零供聚合" 1 $?
 if printf '%s\n' "$ecs_out" | grep -q '❌ hostC'; then ok "ssh 失敗 → 印出連線失敗（不靜默）"; else bad "ssh 失敗被 set -e 吞掉——同步失敗變靜默成功"; fi
 ecs_out="$(FAKE_RESULT="NO_DOTFILES" bash "$ecs_report" hostD 2>&1)"
 if printf '%s\n' "$ecs_out" | grep -q 'hostD'; then ok "NO_DOTFILES → 印出警告"; else bad "NO_DOTFILES 回報消失"; fi
@@ -7750,6 +7751,136 @@ if grep -q 'check-claude-auto-mode-drift.sh' "$ROOT/scripts/brewup.sh"; then
 else
     bad "brewup 未接上 Claude auto-mode drift checker"
 fi
+
+echo "▶ 27. Codex config merge 與 dotsync 聚合終判"
+CODEX_CONFIG_HELPER="$ROOT/scripts/ensure-codex-config.py"
+ccm="$TMP/codex-config-merge"
+mkdir -p "$ccm/dotfiles/codex" "$ccm/home"
+cat > "$ccm/dotfiles/codex/config.toml" <<'CCMBASE'
+model = "repo"
+sandbox_mode = "danger-full-access"
+
+[notice.model_migrations]
+"repo-old" = "repo-new"
+CCMBASE
+cat > "$ccm/home/config.toml" <<'CCMCURRENT'
+model = "stale-runtime-copy"
+runtime_only = "keep"
+
+[notice.model_migrations]
+"repo-old" = "stale-copy"
+"runtime-added" = "runtime-new"
+
+[projects."/tmp/example"]
+trust_level = "trusted"
+CCMCURRENT
+cat > "$ccm/home/config.local.toml" <<'CCMLOCAL'
+model = "local"
+local_only = "wins"
+
+[projects."/tmp/example"]
+trust_level = "untrusted"
+CCMLOCAL
+DOTFILES_DIR="$ccm/dotfiles" CODEX_HOME="$ccm/home" python3 "$CODEX_CONFIG_HELPER" >/dev/null 2>&1; rc=$?
+assert_rc "三層 Codex config merge → exit 0" 0 "$rc"
+assert_eq "local overlay 最終優先" "local" "$(yq eval '.model' -p toml "$ccm/home/config.toml" 2>/dev/null)"
+assert_eq "runtime-only top-level state 保留" "keep" "$(yq eval '.runtime_only' -p toml "$ccm/home/config.toml" 2>/dev/null)"
+assert_eq "runtime-only nested state 保留" "runtime-new" "$(yq eval '.notice.model_migrations."runtime-added"' -p toml "$ccm/home/config.toml" 2>/dev/null)"
+assert_eq "repo-managed nested value 更新" "repo-new" "$(yq eval '.notice.model_migrations."repo-old"' -p toml "$ccm/home/config.toml" 2>/dev/null)"
+assert_eq "local project trust 覆蓋 generated state" "untrusted" "$(yq eval '.projects."/tmp/example".trust_level' -p toml "$ccm/home/config.toml" 2>/dev/null)"
+ccm_before="$(cksum < "$ccm/home/config.toml")"
+DOTFILES_DIR="$ccm/dotfiles" CODEX_HOME="$ccm/home" python3 "$CODEX_CONFIG_HELPER" >/dev/null 2>&1
+assert_eq "Codex config merge 冪等" "$ccm_before" "$(cksum < "$ccm/home/config.toml")"
+printf '%s\n' 'model = "local"' > "$ccm/home/config.local.toml"
+DOTFILES_DIR="$ccm/dotfiles" CODEX_HOME="$ccm/home" python3 "$CODEX_CONFIG_HELPER" >/dev/null 2>&1
+assert_eq "local override 移除後不會黏成 runtime state" "null" "$(yq eval '.local_only' -p toml "$ccm/home/config.toml" 2>/dev/null)"
+
+ccm_valid="$(cat "$ccm/home/config.toml")"
+printf '%s\n' 'not = [valid' > "$ccm/home/config.local.toml"
+DOTFILES_DIR="$ccm/dotfiles" CODEX_HOME="$ccm/home" python3 "$CODEX_CONFIG_HELPER" >/dev/null 2>&1; rc=$?
+assert_rc "壞 local TOML → exit 1" 1 "$rc"
+assert_eq "壞 local TOML 不動既有有效 config" "$ccm_valid" "$(cat "$ccm/home/config.toml")"
+printf '%s\n' 'model = "local"' > "$ccm/home/config.local.toml"
+YQ_BIN="$ccm/missing-yq" DOTFILES_DIR="$ccm/dotfiles" CODEX_HOME="$ccm/home" python3 "$CODEX_CONFIG_HELPER" >/dev/null 2>&1; rc=$?
+assert_rc "merge dependency 缺失 → exit 1" 1 "$rc"
+assert_eq "dependency 缺失不動既有 config" "$ccm_valid" "$(cat "$ccm/home/config.toml")"
+mkdir "$ccm/home/config.toml.lock"
+DOTFILES_DIR="$ccm/dotfiles" CODEX_HOME="$ccm/home" python3 "$CODEX_CONFIG_HELPER" >/dev/null 2>&1; rc=$?
+assert_rc "已有 writer lock → exit 1" 1 "$rc"
+assert_eq "writer lock 衝突不動既有 config" "$ccm_valid" "$(cat "$ccm/home/config.toml")"
+rmdir "$ccm/home/config.toml.lock"
+
+mkdir -p "$ccm/bin"
+ccm_real_yq="$(command -v yq)"
+cat > "$ccm/bin/yq" <<'CCMYQ'
+#!/usr/bin/env bash
+if printf '%s\n' "$*" | grep -q -- '-p json'; then
+    : > "$CCM_RACE_READY"
+    i=0
+    while [ ! -e "$CCM_RACE_RELEASE" ] && [ "$i" -lt 500 ]; do
+        sleep 0.01
+        i=$((i + 1))
+    done
+fi
+exec "$REAL_YQ" "$@"
+CCMYQ
+chmod +x "$ccm/bin/yq"
+CCM_RACE_READY="$ccm/ready" CCM_RACE_RELEASE="$ccm/release" REAL_YQ="$ccm_real_yq" \
+    YQ_BIN="$ccm/bin/yq" DOTFILES_DIR="$ccm/dotfiles" CODEX_HOME="$ccm/home" \
+    python3 "$CODEX_CONFIG_HELPER" >/dev/null 2>&1 &
+ccm_pid=$!
+for _ccm_wait in $(seq 1 500); do [ -e "$ccm/ready" ] && break; sleep 0.01; done
+printf '%s\n' 'external = "wins"' > "$ccm/home/config.toml"
+: > "$ccm/release"
+wait "$ccm_pid"; rc=$?
+assert_rc "render 期間 config 被其他 writer 改動 → exit 1" 1 "$rc"
+assert_eq "race guard 保留外部 writer 內容" "wins" "$(yq eval '.external' -p toml "$ccm/home/config.toml" 2>/dev/null)"
+
+for wiring_file in setup-mac-env.sh setup-linux-env.sh scripts/brewup.sh; do
+    if grep -q 'ensure-codex-config.py' "$ROOT/$wiring_file"; then ok "$wiring_file 使用 Codex config helper"; else bad "$wiring_file 未使用 Codex config helper"; fi
+done
+assert_eq "dotsync 本機＋遠端都使用 Codex config helper" 2 "$(grep -c 'ensure-codex-config.py' "$ROOT/scripts/dotfiles-sync.sh")"
+if ! rg -q '__extract_codex_local_config' "$ROOT/setup-mac-env.sh" "$ROOT/setup-linux-env.sh"; then
+    ok "setup 的兩份 inline Codex merge 已移除"
+else
+    bad "setup 仍留著 inline Codex merge 複本"
+fi
+
+ds="$TMP/dotsync-e2e"
+mkdir -p "$ds/dotfiles" "$ds/home" "$ds/bin"
+printf 'hostgood 127.0.0.1\nhostbad 127.0.0.2\n' > "$ds/inventory"
+cat > "$ds/bin/git" <<'DSGIT'
+#!/usr/bin/env bash
+if [ "${DOTSYNC_GIT_FAIL:-0}" = 1 ] && [ "${1:-}" = pull ]; then exit 1; fi
+exit 0
+DSGIT
+cat > "$ds/bin/ssh" <<'DSSSH'
+#!/usr/bin/env bash
+for arg in "$@"; do
+    case "$arg" in
+      hostbad) printf '%s\n' hostbad >> "$DOTSYNC_SSH_LOG"; exit 255 ;;
+      hostgood) printf '%s\n' hostgood >> "$DOTSYNC_SSH_LOG"; printf '%s\n' OK; exit 0 ;;
+    esac
+done
+exit 255
+DSSSH
+chmod +x "$ds/bin/git" "$ds/bin/ssh"
+out="$(INVENTORY_FILE="$ds/inventory" DOTFILES_DIR="$ds/dotfiles" HOME="$ds/home" \
+    DOTSYNC_SSH_LOG="$ds/ssh.log" PATH="$ds/bin:$PATH" bash "$ROOT/scripts/dotfiles-sync.sh" hostgood hostbad 2>&1)"; rc=$?
+assert_rc "任一遠端失敗 → dotsync exit 1" 1 "$rc"
+assert_eq "遠端失敗仍跑完所有 requested hosts" 2 "$(wc -l < "$ds/ssh.log" | tr -d ' ')"
+if grep -q 'remote_ok=1 remote_failed=1' <<< "$out"; then ok "dotsync 輸出遠端聚合總計"; else bad "dotsync 缺遠端聚合總計"; fi
+: > "$ds/ssh.log"
+out="$(DOTSYNC_GIT_FAIL=1 INVENTORY_FILE="$ds/inventory" DOTFILES_DIR="$ds/dotfiles" HOME="$ds/home" \
+    DOTSYNC_SSH_LOG="$ds/ssh.log" PATH="$ds/bin:$PATH" bash "$ROOT/scripts/dotfiles-sync.sh" hostgood 2>&1)"; rc=$?
+assert_rc "本機 pull 失敗 → dotsync exit 1" 1 "$rc"
+assert_eq "本機失敗後仍嘗試遠端" 1 "$(wc -l < "$ds/ssh.log" | tr -d ' ')"
+if grep -q 'local=failed' <<< "$out"; then ok "dotsync 總計揭露本機失敗"; else bad "dotsync 總計漏掉本機失敗"; fi
+: > "$ds/ssh.log"
+out="$(INVENTORY_FILE="$ds/inventory" DOTFILES_DIR="$ds/dotfiles" HOME="$ds/home" \
+    DOTSYNC_SSH_LOG="$ds/ssh.log" PATH="$ds/bin:$PATH" bash "$ROOT/scripts/dotfiles-sync.sh" hostgood 2>&1)"; rc=$?
+assert_rc "本機與所有遠端成功 → dotsync exit 0" 0 "$rc"
+if grep -q 'local=ok remote_ok=1 remote_failed=0' <<< "$out"; then ok "dotsync 全綠總計正確"; else bad "dotsync 全綠總計錯誤"; fi
 
 echo ""
 echo "════════════════════════════"
