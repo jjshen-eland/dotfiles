@@ -6,13 +6,22 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 # STATUS.md
 
-個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-09-08)
+個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-09-11)
 
 ---
 
 ## 進行中
 
-（目前無進行中項目。）
+### 修正 shell pipeline 狀態指引（issue #176）
+
+- **Writer**: `codex:issue-176-pipestatus`
+- **Workspace**: `branch=fix/issue-176-pipestatus`
+- **Write Scope**: `STATUS.md`, `claude/known-hazards.md`, `tests/run.sh`, `docs/archive/milestones-2026-09.md`
+- **Dossier Steward**: `codex:issue-176-pipestatus`
+- **Success Criteria**: `claude/known-hazards.md` 不再把 Bash 專用的 `PIPESTATUS` 當成跨 shell 建議；清楚標示 Bash 的 `PIPESTATUS`、zsh 的 `pipestatus` 與跨 shell 首選做法；回歸測試能讓舊文字變紅、修後轉綠；文檔治理 audit 與 `./tests/run.sh` 皆以 exit 0 通過。
+- **進度**: root cause、文件修正與回歸測試均已完成並通過；正依 prompt-bound recovery 重建尚未送出的 candidate。
+- **下一步**: 提交本 active contract，再由合法 steward 重建 completion commit 並送出。
+- **關聯**: GitHub issue #176
 
 ---
 
