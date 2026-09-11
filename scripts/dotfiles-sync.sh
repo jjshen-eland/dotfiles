@@ -12,7 +12,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-DOTFILES_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+DOTFILES_DIR="${DOTFILES_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 
 # 主機清單：從 inventory.conf 載入
 # shellcheck source=lib/inventory.sh
@@ -41,16 +41,27 @@ fi
 
 # 本機先同步
 echo -e "${BLUE}▶ 本機同步${NC}"
-(cd "$DOTFILES_DIR" && git checkout -- claude/settings.json 2>/dev/null; git pull --autostash 2>&1) || true
-
-# SSH config 的重生已下沉為 ensure-ssh-config.sh（見下方 helper 段）——原本四份行內複本
-# 都只掛在 dotsync 與 setup，不在 inventory 的機器因此永遠拿不到更新。
-if [ -f "$DOTFILES_DIR/ssh/known_hosts" ]; then
-    cp "$DOTFILES_DIR/ssh/known_hosts" ~/.ssh/known_hosts
+local_state=ok
+overall_failed=0
+if (cd "$DOTFILES_DIR" && git checkout -- claude/settings.json 2>/dev/null && git pull --autostash 2>&1); then
+    :
+else
+    local_state=failed
+    overall_failed=1
+    echo -e "${RED}  ❌ 本機：git pull 失敗${NC}"
 fi
 
 # helper 部署失敗不中止同步，但必須反映進本機終判——不可誤報完成（codex C2）
 local_helper_warn=0
+
+# SSH config 的重生已下沉為 ensure-ssh-config.sh（見下方 helper 段）——原本四份行內複本
+# 都只掛在 dotsync 與 setup，不在 inventory 的機器因此永遠拿不到更新。
+if [ -f "$DOTFILES_DIR/ssh/known_hosts" ]; then
+    if ! cp "$DOTFILES_DIR/ssh/known_hosts" ~/.ssh/known_hosts; then
+        local_helper_warn=1
+    fi
+fi
+
 # 重生 ~/.ssh/config（幂等；原子寫入 + 完整性驗證，取代原本的行內截斷寫入）
 [ -f "$DOTFILES_DIR/scripts/ensure-ssh-config.sh" ] && { bash "$DOTFILES_DIR/scripts/ensure-ssh-config.sh" 2>/dev/null || local_helper_warn=1; } || true
 # 確保互動 rc 有 source shell/functions.sh（幂等；讓便利函數免重跑 setup 即散佈）
@@ -62,6 +73,9 @@ local_helper_warn=0
 # 確保全域 Codex guidance 指向 dotfiles（幂等；既有主機免重跑 setup）
 [ -f "$DOTFILES_DIR/scripts/ensure-codex-guidance.sh" ] && { bash "$DOTFILES_DIR/scripts/ensure-codex-guidance.sh" 2>/dev/null || local_helper_warn=1; } || true
 
+# 合併 repo defaults、runtime-only state 與 config.local.toml（原子寫入）。
+[ -f "$DOTFILES_DIR/scripts/ensure-codex-config.py" ] && { env DOTFILES_DIR="$DOTFILES_DIR" python3 "$DOTFILES_DIR/scripts/ensure-codex-config.py" 2>/dev/null || local_helper_warn=1; } || true
+
 # 確保 ~/.lftprc 指向 dotfiles（幂等；既有主機免重跑 setup）
 [ -f "$DOTFILES_DIR/scripts/ensure-lftprc.sh" ] && { bash "$DOTFILES_DIR/scripts/ensure-lftprc.sh" 2>/dev/null || local_helper_warn=1; } || true
 
@@ -72,6 +86,8 @@ if [ "$local_helper_warn" -eq 0 ]; then
     echo -e "${GREEN}  ✅ 本機完成${NC}"
 else
     echo -e "${YELLOW}  ⚠️  本機完成，但 helper 部署有警告（見上方 ⚠️ 行）${NC}"
+    local_state=failed
+    overall_failed=1
 fi
 
 # 遠端同步（並行）
@@ -80,10 +96,7 @@ echo -e "${BLUE}▶ 遠端同步 ${#HOSTS[@]} 台${NC}"
 sync_remote() {
     local host="$1"
     local result
-    # `|| true` 不可省：set -e 下 ssh 回非 0（主機不可達／DNS 失敗）會讓這個背景 subshell
-    # 當場結束，下方的 case 完全不執行 → 連線失敗的 ❌ 永遠印不出來，dotsync 對真正的
-    # 失敗一直是靜默的。失敗時 result 為空 → last_line 空 → 落到 *) 分支印 ❌，正是原意。
-    result=$(ssh -o BatchMode=yes -o ConnectTimeout=5 "$host" '
+    if result=$(ssh -o BatchMode=yes -o ConnectTimeout=5 "$host" '
         if [ -d ~/.dotfiles ]; then
             cd ~/.dotfiles && git checkout -- claude/settings.json 2>/dev/null
             # pull 失敗必須中止並回報：否則主機停在舊 revision（衝突／認證／remote 錯誤），
@@ -107,6 +120,8 @@ sync_remote() {
             [ -f scripts/ensure-codex-skills.sh ] && { bash scripts/ensure-codex-skills.sh 2>/dev/null || helper_warn=1; } || true
             # 確保全域 Codex guidance 指向 dotfiles（幂等）
             [ -f scripts/ensure-codex-guidance.sh ] && { bash scripts/ensure-codex-guidance.sh 2>/dev/null || helper_warn=1; } || true
+            # 原子合併 repo defaults、runtime-only state 與 local override
+            [ -f scripts/ensure-codex-config.py ] && { DOTFILES_DIR="$HOME/.dotfiles" python3 scripts/ensure-codex-config.py 2>/dev/null || helper_warn=1; } || true
             # 確保 ~/.lftprc 指向 dotfiles（幂等）
             [ -f scripts/ensure-lftprc.sh ] && { bash scripts/ensure-lftprc.sh 2>/dev/null || helper_warn=1; } || true
             # 一次性遷移（2026-08-15 轉入 jjshen-eland）：origin 改指新 owner。
@@ -116,7 +131,11 @@ sync_remote() {
         else
             echo "NO_DOTFILES"
         fi
-    ' 2>/dev/null) || true
+    ' 2>/dev/null); then
+        :
+    else
+        result="${result:-}"
+    fi
 
     # 接管實體 codex skill 目錄的告知必須撈出來——遠端輸出只取 tail -1 判成敗，其餘全丟；
     # 而「其他主機仍是舊實體目錄」正是這訊息唯一會觸發的場合，吞掉等於設計意圖落空。
@@ -127,17 +146,30 @@ sync_remote() {
     local last_line
     last_line="$(echo "$result" | tail -1)"
     case "$last_line" in
-        OK)           echo -e "${GREEN}  ✅ ${host}${NC}" ;;
-        OK_HELPER_WARN) echo -e "${YELLOW}  ⚠️  ${host}：pull 完成，但 helper 部署有警告（見上方 ⚠️ 行）${NC}" ;;
-        NO_DOTFILES)  echo -e "${YELLOW}  ⚠️  ${host}：~/.dotfiles 不存在${NC}" ;;
-        PULL_FAILED)  echo -e "${RED}  ❌ ${host}：git pull 失敗（仍停在舊 revision，本次未部署）${NC}" ;;
-        *)            echo -e "${RED}  ❌ ${host}：連線失敗${NC}" ;;
+        OK)             echo -e "${GREEN}  ✅ ${host}${NC}"; return 0 ;;
+        OK_HELPER_WARN) echo -e "${YELLOW}  ⚠️  ${host}：pull 完成，但 helper 部署有警告（見上方 ⚠️ 行）${NC}"; return 1 ;;
+        NO_DOTFILES)    echo -e "${YELLOW}  ⚠️  ${host}：~/.dotfiles 不存在${NC}"; return 1 ;;
+        PULL_FAILED)    echo -e "${RED}  ❌ ${host}：git pull 失敗（仍停在舊 revision，本次未部署）${NC}"; return 1 ;;
+        *)              echo -e "${RED}  ❌ ${host}：連線失敗${NC}"; return 1 ;;
     esac
 }
 
+pids=()
 for host in "${HOSTS[@]}"; do
     sync_remote "$host" &
+    pids+=("$!")
 done
-wait
 
-echo -e "${BLUE}▶ 完成${NC}"
+remote_ok=0
+remote_failed=0
+for pid in "${pids[@]}"; do
+    if wait "$pid"; then
+        remote_ok=$((remote_ok + 1))
+    else
+        remote_failed=$((remote_failed + 1))
+        overall_failed=1
+    fi
+done
+
+echo -e "${BLUE}▶ 完成：local=${local_state} remote_ok=${remote_ok} remote_failed=${remote_failed}${NC}"
+exit "$overall_failed"

@@ -55,3 +55,9 @@
   - 放棄:只 grep 設定檔長相而不跑 classifier output；漂移時自動重寫 `settings.json`；把 checker failure 算成 package update failure
   - 重議:同 D-20260912-cross-runtime-outward-gate；或 Claude `autoMode.environment` 支援 `$defaults`／覆寫語意，屆時刪除全量複本與 checker
   - 關聯:D-20260912-cross-runtime-outward-gate;B-20260816-debt-08;scripts/check-claude-auto-mode-drift.sh;scripts/brewup.sh;tests/run.sh
+
+- **M-20260912-codex-config-and-dotsync-exit · 2026-09-12 Codex config 原子收斂與 dotsync 精確終判完成**:三層 fixture 證明 local 最終優先、repo-managed leaf 更新、top-level／nested runtime-only state 保留、local 刪除不復活且重跑 byte-identical；壞 local TOML、缺 yq、writer lock 與 render 期間外部改寫四條 RED 都回 1 且原檔不動。setup mac/Linux、brewup、dotsync 已統一呼叫 helper，兩份 setup inline merge 移除。dotsync E2E stub 證明任一 remote 失敗與 local pull 失敗都回 1、仍跑完所有 requested hosts 並輸出 local／remote 聚合；全綠才回 0。完整 suite 1379 PASS／0 FAIL。
+  - 日期來源:direct
+  - 放棄:只測 TOML 長相不測刪除／race；讓 helper warning 維持 dotsync exit 0；失敗時取消其餘背景同步
+  - 重議:同 D-20260912-codex-config-three-layer-merge；或 dotsync 改用集中式部署工具並有等價逐目標終判
+  - 關聯:D-20260912-codex-config-three-layer-merge;scripts/ensure-codex-config.py;scripts/dotfiles-sync.sh;tests/run.sh

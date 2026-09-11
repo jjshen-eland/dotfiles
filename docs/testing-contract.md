@@ -648,6 +648,16 @@ Codex 的 prefix rule 是詞彙前綴，因此 direct `git push --dry-run` 也�
 仍把它判為無 outward effect，Claude 不提示。另在 `claude update` 後以 warn-only checker 比對
 內建與本機 `autoMode.environment` slot 名；漂移須列出雙向差異，但不得讓套件更新失敗。
 
+## 27. Codex config merge 與 dotsync 聚合終判
+
+`ensure-codex-config.py` 以 repo base → 既有 config 中 repo 未管理的 runtime-only state →
+`config.local.toml` 合併；同一路徑由 setup、brewup、dotsync 使用。任一輸入 TOML 無效、缺 yq、
+writer lock 衝突、render 期間 target 被外部 writer 改動，都必須保留進場時的有效 config 並回非零。
+成功輸出須能由 yq 重新解析、原子 replace，重跑 byte-identical。
+
+dotsync 必須把本機 pull／helper 與每台 remote 的結果全數納入終判；任一失敗仍跑完其餘 requested
+hosts，最後輸出 `local`、`remote_ok`、`remote_failed` 聚合總計，只有全綠時 exit 0。
+
 ## 未列於本檔的節
 
 `dotfiles-sync` 遠端回報段（ssh 失敗與無告知時都不可吞掉主機結果）已有測試但無獨立節號。
