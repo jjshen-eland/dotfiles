@@ -43,3 +43,9 @@
   - 放棄:把五台加進 inventory 再讓三支 fan-out 腳本認得分層（要改三支既有腳本並維護一份「哪些是 prod」的判斷，耦合仍在，且分層判斷本身會成為新的漂移面）;倚賴「記得不要加 `--all`」這種非機械性防線（本 repo 既有的 fail-closed 風格正是為了不依賴記憶）;把 prod 的 Host 區塊也放進 `ssh/config`（它由 `inventory.conf` 生成，留一份就等於留全部）
   - 重議:fan-out 腳本改為預設 fail-closed 且私鑰散佈改成 opt-in 時（屆時單一 inventory 才不再有信任外溢）;或 prod 與 office 合併為同一信任域
   - 關聯:ssh/known_hosts;docs/add-new-host.md;scripts/add-new-host.sh;scripts/inventory.conf
+
+- **D-20260912-cross-runtime-outward-gate · 2026-09-12 push／merge gate 採共同語意 classifier＋runtime-native 控制面**:Claude Code 與 Codex 都保留既有高自主模式；共同 `outward-action-gate.py` 只分類真的 Git push／send-pack 與 GitHub PR merge，Claude PreToolUse 對 direct／wrapper 皆回 `ask`。Codex 的 PreToolUse 不支援 ask，故 direct canonical argv 由 execpolicy `prefix_rule(... decision="prompt")` 處理，shell wrapper、compound command 與 `git -C` 等無法由 prefix 精確表示的形狀則由 hook `deny` 並要求改用 canonical command 重送。Codex prefix rule 的已知保守邊界是 direct `git push --dry-run` 也會提示；若要排除它只能犧牲 direct canonical UX 或新增獲准 wrapper，代價高於一次無副作用 prompt。
+  - 日期來源:direct
+  - 放棄:關閉 Claude Auto／Codex danger-full-access；用共同 hook 在 Codex 回 ask（產品不支援且會 fail-open）；把所有 GitHub write 一律 tool-level prompt（超出本次只鎖 push／merge 的決定）；為排除 `--dry-run` 強迫所有真 push 改走自訂 wrapper
+  - 重議:Codex PreToolUse 支援 ask，或 execpolicy 支援 suffix／negative predicate；任一 runtime 的 hook input／decision schema 改變；classifier 出現新的實際 bypass
+  - 關聯:docs/plans/2026-09-11-cross-runtime-portability.md;scripts/outward-action-gate.py;claude/settings.json;codex/config.toml;codex/rules/default.rules;tests/run.sh

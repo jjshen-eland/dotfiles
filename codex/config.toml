@@ -8,6 +8,14 @@ sandbox_mode = "danger-full-access"
 approval_policy = "on-request"
 
 # Codex 會對 hook 定義的 hash 建立信任；每次變更後在 CLI 用 /hooks 複核並信任。
+[[hooks.PreToolUse]]
+matcher = "Bash"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = 'python3 "$HOME"/.dotfiles/scripts/outward-action-gate.py --runtime codex'
+timeout = 5
+
 [[hooks.Stop]]
 
 [[hooks.Stop.hooks]]
