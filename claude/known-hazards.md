@@ -312,8 +312,12 @@ run local  feat/financial-pilot-domain-port  c390f82a...
 ### 順帶：`cmd | sed` 之後的 `$?`
 
 同一天踩兩次：`"$CLEAN" ... 2>&1 | sed 's/^/    /'; echo "exit=$?"` 印出的是 **sed** 的
-exit code，永遠 0。要取前段的狀態就別接管線（或用 `PIPESTATUS`）。這在判讀
-`gh pr checks --required` 時特別危險——它用 exit 8 表示 pending、0 表示全綠，接了管線就分不出來。
+exit code，永遠 0。這在判讀 `gh pr checks --required` 時特別危險——它用 exit 8 表示 pending、
+0 表示全綠，接了管線就分不出來。
+
+**首選**：不要接管線。需要保留輸出又要判斷狀態時，先把輸出寫入暫存檔、立刻保存 `$?`，
+再另外用 `sed`／`head` 顯示暫存檔。`PIPESTATUS` **只在 Bash 下可用**；zsh 使用小寫的 `pipestatus`。
+跨 shell 的腳本不要倚賴任一個。
 
 ## `git checkout <file>` 的還原來源
 
