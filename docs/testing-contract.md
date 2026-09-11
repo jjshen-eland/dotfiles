@@ -638,6 +638,16 @@ local 覆寫 global）。同樣明列、不假裝擋得住。
 - Claude plugin 提示由同一 helper 讀 `enabledPlugins`，只輸出值為 `true` 的項目並穩定排序；
   macOS、Linux setup 不得各自再實作一份解析邏輯。
 
+## 26. outward-action gate
+
+共同 classifier 只辨識會真的 push 或 merge 的 shell command；`git push --dry-run`、`git status`、
+`gh pr view` 與只回顯字樣的 `echo` 都必須分類為 `none`。Claude Code 對 direct 與 wrapper 形狀回 `ask`；
+Codex 對 rules 能精確命中的 direct argv 用 `prompt`，對 shell wrapper、compound command、`git -C`
+等 rules 無法安全精確分類的形狀由 PreToolUse `deny`，理由要求改用 canonical command 重送。
+Codex 的 prefix rule 是詞彙前綴，因此 direct `git push --dry-run` 也會保守提示；共同 classifier
+仍把它判為無 outward effect，Claude 不提示。另在 `claude update` 後以 warn-only checker 比對
+內建與本機 `autoMode.environment` slot 名；漂移須列出雙向差異，但不得讓套件更新失敗。
+
 ## 未列於本檔的節
 
 `dotfiles-sync` 遠端回報段（ssh 失敗與無告知時都不可吞掉主機結果）已有測試但無獨立節號。

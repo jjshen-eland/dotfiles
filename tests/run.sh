@@ -37,6 +37,7 @@
 #  21. crawl-quality-scan.py（check-crawl-quality skill script）確定性掃描 / 扣分帳目 / --classify 覆核
 #  24. .githooks/dispatcher 全域 hook 代理：chain／exit code 原樣傳回／guard 三態 fail-open／三個刻意的 false negative
 #  25. cross-platform contract：GitHub Actions 雙 OS、Ubuntu 24.04 preflight、Claude plugin hints parity
+#  26. outward-action gate：push／merge classifier、Claude ask、Codex prompt + opaque-wrapper deny
 #
 set -uo pipefail
 
@@ -7658,6 +7659,97 @@ for setup_file in setup-mac-env.sh setup-linux-env.sh; do
         bad "$setup_file 未使用共用 plugin hints helper"
     fi
 done
+
+echo "▶ 26. outward-action gate（push／merge only）"
+OUTWARD_GATE="$ROOT/scripts/outward-action-gate.py"
+gate_classify() { python3 "$OUTWARD_GATE" --classify "$1" 2>/dev/null; }
+
+assert_eq "direct git push → canonical push" "push canonical" "$(gate_classify 'git push origin feat/x')"
+assert_eq "direct git send-pack → canonical push" "push canonical" "$(gate_classify 'git send-pack origin refs/heads/x')"
+assert_eq "direct gh pr merge → canonical merge" "merge canonical" "$(gate_classify 'gh pr merge 176 --squash')"
+assert_eq "bash -lc 內藏 push → opaque push" "push opaque" "$(gate_classify "bash -lc 'git push origin feat/x'")"
+assert_eq "git -C push（rules 無法精確 match）→ opaque push" "push opaque" "$(gate_classify 'git -C /tmp/repo push origin feat/x')"
+assert_eq "compound command 內含 push → opaque push" "push opaque" "$(gate_classify 'git status && git push origin feat/x')"
+assert_eq "git push --dry-run → none" "none" "$(gate_classify 'git push --dry-run origin feat/x')"
+assert_eq "git status → none" "none" "$(gate_classify 'git status --short')"
+assert_eq "gh pr view → none" "none" "$(gate_classify 'gh pr view 176')"
+assert_eq "echo 的資料不是命令 → none" "none" "$(gate_classify 'echo git push')"
+
+gate_input='{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"git push origin feat/x"}}'
+out="$(printf '%s' "$gate_input" | python3 "$OUTWARD_GATE" --runtime claude 2>/dev/null)"; rc=$?
+assert_rc "Claude guarded action hook → exit 0" 0 "$rc"
+if jq -e '.hookSpecificOutput.hookEventName == "PreToolUse" and .hookSpecificOutput.permissionDecision == "ask"' <<< "$out" >/dev/null 2>&1; then
+    ok "Claude guarded action → ask"
+else
+    bad "Claude guarded action 未回 ask"
+fi
+out="$(printf '%s' "$gate_input" | python3 "$OUTWARD_GATE" --runtime codex 2>/dev/null)"; rc=$?
+assert_rc "Codex canonical action 交由 rules → exit 0" 0 "$rc"
+assert_eq "Codex canonical action hook 不重複 deny" "" "$out"
+
+gate_opaque='{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"bash -lc '\''git push origin feat/x'\''"}}'
+out="$(printf '%s' "$gate_opaque" | python3 "$OUTWARD_GATE" --runtime codex 2>/dev/null)"; rc=$?
+assert_rc "Codex opaque action hook → exit 0" 0 "$rc"
+if jq -e '.hookSpecificOutput.hookEventName == "PreToolUse" and .hookSpecificOutput.permissionDecision == "deny"' <<< "$out" >/dev/null 2>&1; then
+    ok "Codex opaque action → deny 並要求 canonical rerun"
+else
+    bad "Codex opaque action 未回 deny"
+fi
+
+if jq -e '
+    .permissions.defaultMode == "auto"
+    and any(.hooks.PreToolUse[]?; .matcher == "Bash")
+' "$ROOT/claude/settings.json" >/dev/null; then
+    ok "Claude 維持 Auto 並接上 Bash PreToolUse gate"
+else
+    bad "Claude Auto／PreToolUse gate contract 不成立"
+fi
+if grep -q 'sandbox_mode = "danger-full-access"' "$ROOT/codex/config.toml" \
+    && grep -q '^\[\[hooks\.PreToolUse\]\]$' "$ROOT/codex/config.toml"; then
+    ok "Codex 維持 danger-full-access 並接上 PreToolUse gate"
+else
+    bad "Codex autonomy／PreToolUse gate contract 不成立"
+fi
+for rule in 'git", "push' 'git", "send-pack' 'gh", "pr", "merge'; do
+    if grep -F "$rule" "$ROOT/codex/rules/default.rules" | grep -q 'decision="prompt"'; then
+        ok "Codex canonical rule prompt: $rule"
+    else
+        bad "Codex canonical rule 未 prompt: $rule"
+    fi
+done
+
+CLAUDE_DRIFT="$ROOT/scripts/check-claude-auto-mode-drift.sh"
+mkdir -p "$TMP/claude-drift/bin"
+cat > "$TMP/claude-drift/bin/claude" <<'DRIFTEOF'
+#!/usr/bin/env bash
+case "$1 $2" in
+  'auto-mode defaults') printf '%s\n' '{"environment":["alpha: built in","beta: built in"]}' ;;
+  'auto-mode config')
+    if [ "${CLAUDE_DRIFT_FIXTURE:-same}" = drift ]; then
+      printf '%s\n' '{"environment":["alpha: local","gamma: local"]}'
+    else
+      printf '%s\n' '{"environment":["alpha: built in","beta: built in"]}'
+    fi
+    ;;
+  *) exit 1 ;;
+esac
+DRIFTEOF
+chmod +x "$TMP/claude-drift/bin/claude"
+out="$(PATH="$TMP/claude-drift/bin:$PATH" bash "$CLAUDE_DRIFT" 2>&1)"; rc=$?
+assert_rc "Claude auto-mode slots 相同 → warn-only checker exit 0" 0 "$rc"
+assert_eq "Claude auto-mode slots 相同 → 靜默" "" "$out"
+out="$(CLAUDE_DRIFT_FIXTURE=drift PATH="$TMP/claude-drift/bin:$PATH" bash "$CLAUDE_DRIFT" 2>&1)"; rc=$?
+assert_rc "Claude auto-mode slots 漂移 → checker 仍 exit 0" 0 "$rc"
+if grep -q 'autoMode.environment' <<< "$out" && grep -q 'beta' <<< "$out" && grep -q 'gamma' <<< "$out"; then
+    ok "Claude auto-mode 漂移提示列出本機缺少與多出的 slot"
+else
+    bad "Claude auto-mode 漂移提示缺少可操作差異"
+fi
+if grep -q 'check-claude-auto-mode-drift.sh' "$ROOT/scripts/brewup.sh"; then
+    ok "brewup 在 Claude update 後執行 drift checker"
+else
+    bad "brewup 未接上 Claude auto-mode drift checker"
+fi
 
 echo ""
 echo "════════════════════════════"

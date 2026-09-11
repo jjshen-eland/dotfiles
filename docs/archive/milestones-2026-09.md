@@ -49,3 +49,9 @@
   - 放棄:只把 `PIPESTATUS` 改成 zsh 的 `pipestatus`（會把同一個跨 shell 缺口反向留下）；以 `pipefail` 當成前段命令的通用狀態（多段 pipeline 時語意不同）
   - 重議:互動命令執行 shell 改變；或文件改為只服務單一明示 shell
   - 關聯:jjshen-eland/dotfiles#176;claude/known-hazards.md;tests/run.sh
+
+- **M-20260912-outward-gate-and-auto-mode-drift · 2026-09-12 Claude Code／Codex push／merge 互動閘門與 Claude policy 漂移訊號完成**:先以 20 個 RED 固定 direct push、send-pack、PR merge、三種 opaque wrapper、四種 safe negative、兩端 hook output 與 Codex rules；實作後 Claude 保留 Auto 並回 ask，Codex 保留 danger-full-access 且 direct rule 經 `codex execpolicy check` 實測為 prompt、opaque command 回 deny。另將 `B-20260816-debt-08` 的無訊號缺口收斂為 `check-claude-auto-mode-drift.sh`：`claude update` 後比對 defaults／config slot 名，漂移時列雙向差異但永遠不自動改 policy 或讓 brewup 失敗。完整 suite 1350 PASS／0 FAIL。
+  - 日期來源:direct
+  - 放棄:只 grep 設定檔長相而不跑 classifier output；漂移時自動重寫 `settings.json`；把 checker failure 算成 package update failure
+  - 重議:同 D-20260912-cross-runtime-outward-gate；或 Claude `autoMode.environment` 支援 `$defaults`／覆寫語意，屆時刪除全量複本與 checker
+  - 關聯:D-20260912-cross-runtime-outward-gate;B-20260816-debt-08;scripts/check-claude-auto-mode-drift.sh;scripts/brewup.sh;tests/run.sh

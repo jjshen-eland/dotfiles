@@ -66,6 +66,10 @@ brew update && brew upgrade --yes && brew cleanup
         done
 } 2>/dev/null
 
+# autoMode.environment 沒有 $defaults sentinel；升版後只提示 slot 漂移，不自行改 policy。
+[ -x "${DOTFILES}/scripts/check-claude-auto-mode-drift.sh" ] \
+    && bash "${DOTFILES}/scripts/check-claude-auto-mode-drift.sh"
+
 # 4. known_hosts 同步
 { [ -f "${DOTFILES}/ssh/known_hosts" ] && cp "${DOTFILES}/ssh/known_hosts" ~/.ssh/known_hosts 2>/dev/null; } 2>/dev/null
 
