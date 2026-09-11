@@ -1,1 +1,1 @@
-../../../../claude/skills/deep-review/references/portable-reviewer-brief.md
+../../../../shared/skills/deep-review/references/portable-reviewer-brief.md

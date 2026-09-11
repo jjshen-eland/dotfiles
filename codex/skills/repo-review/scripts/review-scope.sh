@@ -1,1 +1,1 @@
-../../../../claude/skills/deep-review/scripts/review-scope.sh
+../../../../shared/skills/deep-review/scripts/review-scope.sh

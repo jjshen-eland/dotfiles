@@ -239,7 +239,7 @@ worktree 絕對路徑**才測到新版。
 
 ### 為什麼看不出來
 
-`~/.claude/skills` → `~/.dotfiles/claude/skills`（主 checkout）；`~/.codex/skills`
+`~/.claude/skills` → `~/.dotfiles/claude/skills`（主 checkout）；`~/.agents/skills`
 由 `ensure-codex-skills.sh` 建立，同一形狀。測試照樣全綠，因為它測的是舊檔 ——
 與「只有乾淨 clone 看得見」的誤收同一類，人工看 diff 抓不到。
 

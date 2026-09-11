@@ -55,3 +55,10 @@
   - 放棄:直接 append local TOML（duplicate table/key 可產生壞 config）；整檔覆蓋 live config（遺失 project trust 與 runtime state）；把 live config 所有 base 以外欄位永遠視為 runtime state（刪掉的 local key 會復活）；dotsync 遇錯立即退出（其餘主機失去更新與診斷）
   - 重議:Codex 提供原生 include/overlay 或把 runtime state 移出 config.toml；yq 取消 TOML 支援；需要多 writer transactional API 取代 digest guard
   - 關聯:docs/plans/2026-09-11-cross-runtime-portability.md;scripts/ensure-codex-config.py;scripts/dotfiles-sync.sh;codex/README.md;tests/run.sh
+
+- **D-20260912-neutral-portable-skill-core · 2026-09-12 portable skill 核心收旂到 runtime-neutral `shared/skills/`**:先前的 portable 設計已確立雙薄入口、nested linkage 與 single eval oracle，但共用 references/scripts/evals 的實體仍住在 `claude/skills/`，讓路徑名稱持續傳遞「Claude 擁有、Codex 借用」的錯誤訊號，也讓更換 canonical location 被誤當成重做移植。現在共用資源統一位於 `shared/skills/<behavior>/`，該棵不放 `SKILL.md`；Claude Code 與 Codex 各保留 runtime-native entry/metadata/assets，以 nested symlink 指向 neutral inode。`deep-review` 只搬已證明 portable 的 workflow/brief/scope/terminal/eval subset，Claude-only compatibility helpers 留在 Claude adapter；`deep-plan` 的 Codex launcher/schema 同樣留在 Codex adapter。Codex 個人 entries 改安裝到官方共用 discovery root `$HOME/.agents/skills`；只在新 link 驗證成功後移除仍 resolve 到本 repo adapter 的 legacy `$HOME/.codex/skills/<name>` symlink，不碰實體目錄、斷鏈或第三方 target。
+  - 範圍:只取代下列舊決策的 canonical-location／ownership 部分；既有的 portable behavior contract、runtime adapter 差異與 eval 證據仍有效
+  - 日期來源:direct
+  - 放棄:繼續把 Claude tree 當共用核心（ownership 訊號錯誤）；whole-skill symlink（無法保留雙端 entry/metadata 差異）；在 shared tree 放第三份 `SKILL.md`（會變成未定義的第三入口）；整批刪除 `$HOME/.codex/skills`（會傷及 system 與第三方內容）；重寫已 portable skill（重演 X-20260825）
+  - 重議:Agent Skills 標準提供無 adapter 複製且可攜帶 runtime metadata 的單一入口；任一 runtime 不再 follow nested symlink；或 `$HOME/.agents/skills` discovery contract 改變
+  - 關聯:D-20260822-portable-deep-plan;D-20260823-portable-deep-review;D-20260825-portable-skill-authoring-default;X-20260825-deep-plan-duplicate-port;docs/skill-portability.md;shared/skills;scripts/ensure-codex-skills.sh;tests/run.sh

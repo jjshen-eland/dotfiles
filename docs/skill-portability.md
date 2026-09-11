@@ -13,7 +13,7 @@ runtime metadata、驗證器與工具差異；skill 的產品行為、共享資�
 1. **Shared behavior core**：目的、輸入／輸出、分類、gate、失敗語意與平台無關的 workflow，只保留一份。
 2. **Thin runtime entries**：Claude Code／Codex 各自有可發現的 `SKILL.md`，只處理 invocation、tool binding、
    metadata 與該 runtime 無法共享的 lifecycle。
-3. **Shared resources**：共同 references、scripts、templates、schemas 與 eval oracle 只有一個 canonical copy；另一端
+3. **Shared resources**：共同 references、scripts、templates、schemas 與 eval oracle 只有一個 canonical copy；兩端
    用 nested symlink 或同等 linkage 共用。不要 whole-directory symlink，否則兩端無法獨立演進薄入口與 metadata。
 
 這是新 skill 與有 topology RED 的改版預設；已通過雙端 eval 的既有 linkage 不因本規則自動重構，仍依 preflight
@@ -21,6 +21,16 @@ runtime metadata、驗證器與工具差異；skill 的產品行為、共享資�
 
 Shared core 不得出現 runtime 私有工具或私人安裝路徑。兩端可以使用不同 primitive，但必須產生相同的可觀察
 語意與 fail-closed 結果。不要為了逐字相同而複製兩份 workflow，也不要讓 adapter 重新定義 core 的 gate。
+
+## This repository's neutral core
+
+本 repo 的 portable resources 統一放在 `shared/skills/<behavior-name>/`，這棵目錄不放 `SKILL.md`，
+因此不會被任一 runtime 當成第三個入口。`claude/skills/` 與 `codex/skills/` 只保留各自的
+thin entry、UI metadata 與 runtime-only assets，再以 nested links 解析到 neutral core。
+
+這個位置不是第三個安裝 root，而是避免「共用核心物理上屬於 Claude Code」的錯誤 ownership
+訊號。Codex 的個人 skill entries 由 `$HOME/.agents/skills/<name>` 發現；`$HOME/.codex/skills`
+只保留 Codex 自帶或第三方內容，不再是本 repo adapter 的發布點。
 
 ## Existing-skill preflight
 
@@ -42,8 +52,7 @@ adapter 分層或 linkage 等 topology，必須有新證據並以 `supersedes:<d
 ## New-skill workflow
 
 1. 先寫 runtime-neutral behavior contract 與 with／without-skill eval；不要從任一 harness 的工具名稱開始設計。
-2. 選一份 canonical shared core，建立兩個 thin entries，並明列 linkage；canonical 在哪一棵 tree 不代表由哪個
-   runtime 擁有。
+2. 在 `shared/skills/<behavior-name>/` 建立 canonical core，在兩個 runtime tree 建立 thin entries 並明列 linkage。
 3. 先用 native primitive。只有 frozen RED 證明 ordering、attribution、mutation safety 或其他脆弱 invariant 不承重時，
    才加入 deterministic helper；helper 必須有界、無隱式 retry，並公開失敗而非自行降級。
 4. 使用同一 realistic query／fixture 驗證 Claude Code 與 Codex：trigger、核心結果、主要 failure path、未授權 mutation、

@@ -1,1 +1,1 @@
-../../../../claude/skills/deep-review/references/workflow.md
+../../../../shared/skills/deep-review/references/workflow.md

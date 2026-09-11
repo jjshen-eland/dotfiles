@@ -13,7 +13,7 @@
 
 **本檔是延遲載入的**——只有真的要改 gate 時才會被讀到。凡是「不改 gate 也必須遵守」的
 約束（不放寬 pattern、必跑時機、以 exit code 判綠紅）留在 `CLAUDE.md`，**不要搬進本檔**：
-規則不在 always-on context 就不生效，這在 `claude/skills/handoff/evals.md` 的 H6 首跑實測過
+規則不在 always-on context 就不生效，這在 `shared/skills/handoff/evals.md` 的 H6 首跑實測過
 （同一輪 repo-a 的 commit 落在 main、repo-b 才開 branch，因為規則只存在於延遲載入的檔案裡）。
 
 ## 為什麼獨立成檔
@@ -346,7 +346,7 @@ shared helper 回傳，ownership 仍由 workflow 依可觀察來源判定。
 ## 12. repo-review thin-adapter packaging
 
 Codex 只保留 `$repo-review` 公開入口；workflow、reviewer brief 與 scope／terminal helpers 必須和
-Claude canonical source inode 相同。Eval oracle 只存在 canonical Claude tree，adapter 不重複曝光，
+`shared/skills/deep-review/` 的 neutral core inode 相同。Eval oracle 只存在 neutral core，adapter 不重複曝光，
 doc-governance 的 `skill-eval` class 也不得要求 Codex adapter 另放一份。`SKILL.md` 只路由 runtime
 entry，不複製核心。
 
@@ -377,7 +377,7 @@ collab wait，且兩份 reviewer output 都能命中 fixture oracle。Headless p
 ## 12f. root-cause-first portable evidence gate
 
 Claude Code／Codex 各保留薄入口，並以 nested symlink 共用單一 `references/workflow.md`；eval oracle
-只留 canonical Claude tree。舊 method-specific reference 內容必須退場；原 tracked path 在未提交 lifecycle
+只留 neutral shared core。舊 method-specific reference 內容必須退場；原 tracked path 在未提交 lifecycle
 保留為不被 adapter 載入的 compatibility pointer。Shared workflow 不得出現 runtime 私有路徑、工具或
 invocation token。
 
@@ -388,7 +388,7 @@ invocation token。
 ## 12g. nc-notify portable lifecycle gate
 
 Claude Code／Codex 各保留薄入口，並以 nested symlink 共用單一 `references/workflow.md`；eval oracle
-只留 canonical Claude tree。兩端 description 必須相同，Codex adapter 不得帶 Claude Code 專屬
+只留 neutral shared core。兩端 description 必須相同，Codex adapter 不得帶 Claude Code 專屬
 frontmatter，shared workflow 也不得依賴 runtime 私有工具、使用者 home 下的 schema 文件或 machine-local
 memory。
 
@@ -403,7 +403,7 @@ scheme。這些 static checks 不能取代兩個 runtime 對相同 fixture 的 f
 ## 12h. send-mail portable recipient-authority gate
 
 Claude Code／Codex 各保留薄入口，並以 nested symlink 共用單一 `references/workflow.md`；eval oracle
-只留 canonical Claude tree。兩端 description 必須相同，Codex adapter 不得帶 Claude Code 專屬
+只留 neutral shared core。兩端 description 必須相同，Codex adapter 不得帶 Claude Code 專屬
 frontmatter，shared workflow 也不得依賴 runtime 私有工具、使用者 home 或 machine-local memory。
 
 行為 RED 來自 hostile local-only fixture：fresh Codex 看見 stale `# userEmail` 後，雖辨識它可能過期，
@@ -522,8 +522,8 @@ per-source evidence 抓到，不可被全域比例或固定三行前綴稀釋。
 不得為了完成「no example, no finding」而自行從來源挑例。
 
 Portable packaging 使用 Claude Code／Codex 雙薄入口，`references/workflow.md` 與
-`scripts/crawl-quality-scan.py` 必須指向 canonical Claude tree 的同一 inode；eval oracle 只保留在
-canonical tree。Shared workflow 不得出現 runtime 私有 home path、Claude argument token 或
+`scripts/crawl-quality-scan.py` 必須指向 `shared/skills/check-crawl-quality/` 的同一 inode；eval oracle 只保留在
+neutral core。Shared workflow 不得出現 runtime 私有 home path、Claude argument token 或
 resource-root 變數；Codex adapter 只負責 invocation input、skill directory 與 UI metadata。
 
 ## review-residue（Step 4 squash 出題依據）

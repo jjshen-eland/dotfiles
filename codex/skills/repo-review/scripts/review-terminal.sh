@@ -1,1 +1,1 @@
-../../../../claude/skills/deep-review/scripts/review-terminal.sh
+../../../../shared/skills/deep-review/scripts/review-terminal.sh

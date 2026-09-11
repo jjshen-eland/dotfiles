@@ -1071,7 +1071,7 @@ fi
 # ================================================
 if [ -d "$SCRIPT_DIR/codex" ]; then
     print_info "設定 Codex 全域配置..."
-    mkdir -p ~/.codex ~/.codex/skills ~/.codex/rules
+    mkdir -p ~/.codex ~/.codex/rules
 
     __codex_link() {
         local src="$1" dst="$2"
@@ -1082,26 +1082,6 @@ if [ -d "$SCRIPT_DIR/codex" ]; then
         ln -sf "$src" "$dst"
     }
 
-    __codex_link_skills() {
-        local src_root="$1" dst_root="$2" skill_dir skill_name target
-        [ -d "$src_root" ] || return 0
-        mkdir -p "$dst_root"
-
-        for skill_dir in "$src_root"/*; do
-            [ -d "$skill_dir" ] || continue
-            [ -f "$skill_dir/SKILL.md" ] || continue
-
-            skill_name=$(basename "$skill_dir")
-            target="$dst_root/$skill_name"
-
-            if [ -L "$target" ] || [ -e "$target" ]; then
-                rm -rf "$target"
-            fi
-
-            ln -sf "$skill_dir" "$target"
-        done
-    }
-
     if [ -f "$SCRIPT_DIR/scripts/ensure-codex-config.py" ]; then
         DOTFILES_DIR="$SCRIPT_DIR" python3 "$SCRIPT_DIR/scripts/ensure-codex-config.py"
         print_success "已同步 ~/.codex/config.toml"
@@ -1110,8 +1090,10 @@ if [ -d "$SCRIPT_DIR/codex" ]; then
     __codex_link "$SCRIPT_DIR/codex/rules" ~/.codex/rules
     [ -d "$SCRIPT_DIR/codex/rules" ] && print_success "已建立 ~/.codex/rules symlink"
 
-    __codex_link_skills "$SCRIPT_DIR/codex/skills" ~/.codex/skills
-    [ -d "$SCRIPT_DIR/codex/skills" ] && print_success "已建立 ~/.codex/skills/<skill> symlink"
+    if [ -f "$SCRIPT_DIR/scripts/ensure-codex-skills.sh" ]; then
+        DOTFILES_DIR="$SCRIPT_DIR" bash "$SCRIPT_DIR/scripts/ensure-codex-skills.sh"
+        print_success "已建立 ~/.agents/skills/<skill> symlink"
+    fi
 
     if [ -f "$SCRIPT_DIR/scripts/ensure-codex-guidance.sh" ]; then
         DOTFILES_DIR="$SCRIPT_DIR" bash "$SCRIPT_DIR/scripts/ensure-codex-guidance.sh"
@@ -1119,7 +1101,6 @@ if [ -d "$SCRIPT_DIR/codex" ]; then
     fi
 
     unset -f __codex_link
-    unset -f __codex_link_skills
 else
     print_info "未找到 codex/ 目錄，跳過 Codex 配置"
 fi

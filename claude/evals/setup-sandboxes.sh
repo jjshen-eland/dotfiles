@@ -1560,7 +1560,7 @@ make_g7() {
 - 所有對外指令都要支援 `--dry-run`
 - 測試：`uv run pytest`
 EOF
-    _g7_fill_status "$DOTFILES_ROOT/claude/templates/STATUS-legacy-template.md" "$dir/work/STATUS.md"
+    _g7_fill_status "$DOTFILES_ROOT/shared/skills/project/templates/STATUS-legacy-template.md" "$dir/work/STATUS.md"
     printf 'def push(host, artifact):\n    """把 artifact 推到 host。"""\n    return _ssh_copy(host, artifact)\n\n\ndef _ssh_copy(host, artifact):\n    raise NotImplementedError\n' > "$dir/work/src/deploy.py"
     # fixture 必須自洽：transfer.md 與 CLAUDE.md 都提到 README／uv sync／pytest／`uv run deploy`，
     # 缺一項就會讓 agent 停下或補造無關 scaffolding，污染「只想測 STATUS 模板可攜性」的 oracle。
@@ -1813,7 +1813,7 @@ make_g4() {
     ln -sfn "$DOTFILES_ROOT/claude/CLAUDE.md" "$dir/home-rules/.claude/CLAUDE.md"
     _g4_repo "$dir/work"
     # dossier 存在且**已有內容**——空殼會讓「不得自建」與「該不該寫」兩件事混在一起
-    _g7_fill_status "$DOTFILES_ROOT/claude/templates/STATUS-legacy-template.md" "$dir/work/STATUS.md"
+    _g7_fill_status "$DOTFILES_ROOT/shared/skills/project/templates/STATUS-legacy-template.md" "$dir/work/STATUS.md"
     (cd "$dir/work" && git add -A && git commit -qm "docs: 建立 dossier")
 }
 

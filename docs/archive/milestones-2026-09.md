@@ -61,3 +61,9 @@
   - 放棄:只測 TOML 長相不測刪除／race；讓 helper warning 維持 dotsync exit 0；失敗時取消其餘背景同步
   - 重議:同 D-20260912-codex-config-three-layer-merge；或 dotsync 改用集中式部署工具並有等價逐目標終判
   - 關聯:D-20260912-codex-config-three-layer-merge;scripts/ensure-codex-config.py;scripts/dotfiles-sync.sh;tests/run.sh
+
+- **M-20260912-cross-runtime-portability · 2026-09-12 macOS／Ubuntu 與 Claude Code／Codex 收斂計畫完成本地實作**:四個可分離批次完成：(1) GitHub Actions 以 macOS 15＋Ubuntu 24.04 matrix 執行完整 suite，Linux setup 在 mutation 前拒絕非 Ubuntu 24.04+；(2) Claude ask 與 Codex prompt/deny 組合鎖住 push／merge，safe read-only 命令不受影響；(3) Codex config 三層原子 merge 與 dotsync 逐目標聚合終判；(4) portable resources 移到無 `SKILL.md` 的 `shared/skills/`，兩端只留 entry／metadata／runtime assets，Codex 個人 discovery 改為 `$HOME/.agents/skills` 並保守清理 repo-owned legacy links。Claude 原生 component validator 通過，9 個 Codex adapters 通過 OpenAI validator，doc-governance ship audit OK，完整 suite `PASS=1396 FAIL=0`。本里程碑只代表本地實作完成；remote CI、push、PR、merge 與 dotsync fleet rollout 仍依計畫邊界另取授權。
+  - 日期來源:direct
+  - 放棄:繼續由 Claude tree 擔任 shared canonical owner；whole-skill symlink；整批刪除 legacy Codex skill root；以尚未執行的 remote CI 冒充雙 OS 已驗證
+  - 重議:任一 runtime 的 skill discovery、nested symlink、hook schema 或 config layering contract 改變；GitHub runner 映像退役；或 remote matrix 首跑揭露 host-specific failure
+  - 關聯:D-20260912-cross-runtime-outward-gate;D-20260912-codex-config-three-layer-merge;D-20260912-neutral-portable-skill-core;docs/plans/2026-09-11-cross-runtime-portability.md;shared/skills;scripts/ensure-codex-skills.sh;tests/run.sh

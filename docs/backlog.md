@@ -125,7 +125,7 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   ⇒ 該欄本次刻意不做,理由與取捨見 `docs/plans/2026-08-19-handoff-active-mtime.md`。
 - **B-20260819-debt-05** · [ ] **`deep-plan` 的模型層級待一個獨立決定**(2026-08-19 加,與下一條同型)。2026-08-19 首次真實執行
   跑在 **Opus**(session 模型),而全部 evals 校準在 **Sonnet**(樓層)。兩個後果性質不同:①**成本**
-  ——第二輪與 N 都動不得(理由見 `claude/skills/deep-plan/field-log.md`「C2 — 第二輪不能砍，但它審的是處置而非計畫」),
+  ——第二輪與 N 都動不得(理由見 `shared/skills/deep-plan/field-log.md`「C2 — 第二輪不能砍，但它審的是處置而非計畫」),
   模型是唯一沒動過的降本槓桿;②**可比性**——強模型會自己補上規則要求的行為,**跑在 Opus 的觀察
   一律不能拿來判「某條規則有沒有作用」**。要決定的是「預設釘 Sonnet、需要時才升」還是「維持吃
   session 模型、只在 field log 記下當次模型」。⚠️ 不該在檢討裡順手改——同下一條。
@@ -220,7 +220,7 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   **Q4c**(`RECALLED + ✓`,需最低證據等級剛好是 RECALLED)至今無 GREEN 證據。symlink 前置已解除,
   但手動驗證二度失敗,並暴露原程序自身兩個錯(`~/.dotfiles` 當 pwd 讓 Git 衛生恆 ⚠;「全新且安靜的
   session」自相矛盾——無對話歷史時回憶型面向只會落 PARTIAL)。**v3 程序見
-  `claude/skills/ready4quit/evals.md`,別再照舊程序跑。**
+  `shared/skills/ready4quit/evals.md`,別再照舊程序跑。**
 - **B-20260811-gap-03** · **同型處置的 self-report 擋得住靜默跳過,擋不住填了但敷衍**(2026-08-11 落地兩軸拆分＋五個終態
   報告必填「同型處置紀錄」表之後的殘留面):**表格內容無法機檢**,`tests/run.sh` 第 1f 節只驗
   **結構**(模板覆蓋率、表頭形狀、引用行不複述軸名等,逐項以該節為準)。R5 終止路徑為何不補

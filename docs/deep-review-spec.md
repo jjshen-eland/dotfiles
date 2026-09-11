@@ -3,7 +3,7 @@
 > **快照基準**：deep-review skill @ commit 22ae336（2026-07-21）。
 > **定位**：clean-room 重寫實驗（見文末附錄）產出的需求層蒸餾——描述**目標、硬需求、環境事實**，
 > 不描述實作機制。**Non-normative**：skill 演進不回寫本檔（避免 double-source；**唯一例外＝『本條已被推翻，見 X』的失效標記**——不回寫等於讓被推翻的條文以現況之姿被讀，比 double-source 更危險；
-> 實作的單一權威恆為 `claude/skills/deep-review/`）。
+> portable 實作的共用權威恆為 `shared/skills/deep-review/`；runtime-only 入口與 helper 留在各自 adapter）。
 > **用途**：skill 的第一份需求層文件；重大重構或移交時的規格參照；附錄記錄「只活在實作裡」的知識缺口。
 
 ## 任務
@@ -134,5 +134,5 @@
 squash 範圍恆等審查範圍）並在 squash-cmd 加壓掉前警告。
 **2026-08-06 該拍板已被推翻**：改採與此處 clean-room 版相近的設計（squash base 由 subject
 掃描求得、只收攏 review 產生的 commits，語意 commit 保留），故本段記錄的是**當時**的結論，
-勿據此判斷現行實作；現況讀 `claude/skills/deep-review/`，理由以
+勿據此判斷現行實作；現況讀 `shared/skills/deep-review/` 與相應 runtime adapter，理由以
 `scripts/doc-governance.py find '2026-08-06 squash 範圍與審查範圍解耦'` 定位 canonical record。
