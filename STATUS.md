@@ -12,7 +12,18 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-（目前無進行中項目。）
+### 1. 跨平台與跨 runtime 收斂 ⏳
+
+- **Writer**：`codex:cross-runtime-portability`
+- **Workspace**：`branch=refactor/cross-runtime-portability`
+- **Write Scope**：`repo-wide`
+- **Dossier Steward**：`codex:cross-runtime-portability`
+- **Context**：macOS／Ubuntu 與 Claude Code／Codex 的測試、設定同步、outward-action gate、skill canonical topology 已出現可重現漂移或錯誤 ownership 暗示。
+- **Goal**：完成 `docs/plans/2026-09-11-cross-runtime-portability.md` 的四段實作與驗收；遠端 shipping／fleet rollout 不在本輪授權內。
+- **Acceptance Criteria**：雙 OS CI；push/merge gate；Codex 三層 config 原子收斂；dotsync 精確 exit；neutral shared skill core 與 `$HOME/.agents/skills` discovery；完整 tests／validators／doc audit 全綠。
+- **Constraints**：維持 Claude Auto、Codex `danger-full-access`；Linux 僅 Ubuntu 24.04+；不修改第三方或 unmanaged legacy skill；每個外送操作另取授權。
+- **進度**：platform CI、Ubuntu 24.04+ mutation 前 preflight、雙平台 Claude plugin helper 已完成；完整 suite `PASS=1321 FAIL=0`。
+- **下一步**：以 RED fixture 建立 Claude ask／Codex prompt+deny 的 push／merge 雙層 gate。
 
 ---
 
