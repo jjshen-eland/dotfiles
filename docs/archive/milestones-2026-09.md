@@ -43,3 +43,9 @@
   - 放棄:沿用 2026-08-25 的七 repo 舊快照；用既有 working trees 取代 fresh clones；把裸 `uv sync` 未安裝 pytest 誤判成 contract failure
   - 重議:trusted core 或任一 managed block 再次改動時建立新的 bounded rollout item，不重開本歷史記錄
   - 關聯:B-20260823-fleet-rollout-remaining;elandcomtw/krepo#190;elandcomtw/krepo-common#53;elandcomtw/krepo-mops-major-news#52;elandcomtw/krepo-mops-disclosure#45;elandcomtw/krepo-judicial#62;elandcomtw/kapi-protocol#19;elandcomtw/kapi-gateway#52;elandcomtw/krepo-tej-export#10;elandcomtw/krepo-mops-financial-statements#30
+
+- **M-20260911-pipestatus-shell-boundary · 2026-09-11 pipeline 狀態指引補齊 Bash／zsh 邊界**:`claude/known-hazards.md` 不再把 Bash 專用的 `PIPESTATUS` 當成無條件備選；跨 shell 的首選改為先將輸出寫入暫存檔、立刻保存 `$?`，再另外格式化輸出，並明列 Bash 使用 `PIPESTATUS`、zsh 使用小寫 `pipestatus`。先以 `false | true` 對照確認 zsh 的 `${PIPESTATUS[0]}` 為空、`${pipestatus[1]}` 為 1，而 Bash 的 `${PIPESTATUS[0]}` 為 1；再加入文件契約 gate，舊文字穩定 RED 2、修後 GREEN。`scripts/doc-governance.py audit --ship` 回 `OK`，`./tests/run.sh` 1311 PASS／0 FAIL。
+  - 日期來源:direct
+  - 放棄:只把 `PIPESTATUS` 改成 zsh 的 `pipestatus`（會把同一個跨 shell 缺口反向留下）；以 `pipefail` 當成前段命令的通用狀態（多段 pipeline 時語意不同）
+  - 重議:互動命令執行 shell 改變；或文件改為只服務單一明示 shell
+  - 關聯:jjshen-eland/dotfiles#176;claude/known-hazards.md;tests/run.sh

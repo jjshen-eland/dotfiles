@@ -5,6 +5,7 @@
 # 用法：./tests/run.sh
 # 涵蓋：
 #   1. shellcheck / bash -n 全腳本 gate（含 claude/skills/*/scripts/、codex/skills/*/scripts/）
+#  1h. known-hazards 的 pipeline 狀態指引標明 Bash／zsh 差異與跨 shell 首選
 #   2. bash -n 語法 gate
 #   3. scripts/lib/inventory.sh 解析
 #   4. inventory_append 行為
@@ -781,6 +782,21 @@ if grep -q 'any repo-local skill' "$ROOT/AGENTS.md" \
     ok "Codex always-on authoring trigger 涵蓋任一 canonical tree 的 repo-local skill"
 else
     bad "Codex always-on trigger 仍可能把 claude/skills canonical source 誤判成非 Codex authoring"
+fi
+
+echo "▶ 1h. known-hazards pipeline 狀態指引的 shell 邊界"
+known_hazards="$ROOT/claude/known-hazards.md"
+if grep -Fq "別接管線（或用 \`PIPESTATUS\`）" "$known_hazards"; then
+    bad "known-hazards 仍把 Bash 專用的 PIPESTATUS 當成無條件備選"
+else
+    ok "known-hazards 不再無條件推薦 PIPESTATUS"
+fi
+if grep -Fq '**首選**：不要接管線。' "$known_hazards" \
+    && grep -Fq "\`PIPESTATUS\` **只在 Bash 下可用**；zsh 使用小寫的 \`pipestatus\`。" "$known_hazards" \
+    && grep -Fq '跨 shell 的腳本不要倚賴任一個。' "$known_hazards"; then
+    ok "known-hazards 明列跨 shell 首選與 Bash／zsh 各自狀態陣列"
+else
+    bad "known-hazards 缺跨 shell 首選或 Bash／zsh 的狀態陣列邊界"
 fi
 
 echo "▶ 2. bash -n 語法 gate"
