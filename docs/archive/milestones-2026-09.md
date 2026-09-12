@@ -67,3 +67,9 @@
   - 放棄:繼續由 Claude tree 擔任 shared canonical owner；whole-skill symlink；整批刪除 legacy Codex skill root；以尚未執行的 remote CI 冒充雙 OS 已驗證
   - 重議:任一 runtime 的 skill discovery、nested symlink、hook schema 或 config layering contract 改變；GitHub runner 映像退役；或 remote matrix 首跑揭露 host-specific failure
   - 關聯:D-20260912-cross-runtime-outward-gate;D-20260912-codex-config-three-layer-merge;D-20260912-neutral-portable-skill-core;docs/plans/2026-09-11-cross-runtime-portability.md;shared/skills;scripts/ensure-codex-skills.sh;tests/run.sh
+
+- **M-20260912-ci-run-34676591841-repair · 2026-09-12 跨平台 CI 首跑揭露的兩層環境依賴完成修復**:run 34676591841／34676604555 先揭露 Ubuntu runner 接受預裝 ShellCheck 0.9.0、兩端皆缺 `rg`；workflow 改由同一個 Homebrew step 明示安裝 `shellcheck`／`ripgrep`／`yq`。PR #179 的下一輪 34700793684 證明工具已一致，但兩端仍同為 `PASS=1323 FAIL=74`；警告 `remote HEAD refers to nonexistent ref` 將第二層收斂到 bare Git fixture 依賴本機 `init.defaultBranch=main`。以 command-scope config 強制 `master` 在本機重現同一批 74 failures，先加反向 gate 穩定列出 29 個未明示 fixture，再逐一以 `-b main`／`-b trunk` 固定 intended default；未用 workflow 全域 Git 設定掩蓋不可攜 fixture。一般環境、強制 `master` 與 `--no-local` clean clone 的完整 suite 均為 `PASS=1399 FAIL=0`，doc-governance ship audit 為 `OK`；PR #179 head `3f68d41` 的 run 34703503410 最終 macOS 15、Ubuntu 24.04 皆成功。
+  - 日期來源:direct
+  - 放棄:在 workflow 設 `git config --global init.defaultBranch main`（只會讓 CI 與本機一起掩蓋 fixture 的隱性依賴）；沿用 runner 預裝工具；跳過或放寬失敗 assertions
+  - 重議:GitHub runner 不再提供 Homebrew；Git 移除 `git init --bare -b`；或新增 fixture 需要刻意測未設定 remote HEAD 的錯誤情境
+  - 關聯:M-20260912-cross-runtime-portability;jjshen-eland/dotfiles#179;tests/run.sh;docs/testing-contract.md;.github/workflows/test.yml

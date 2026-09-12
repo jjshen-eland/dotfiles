@@ -941,7 +941,7 @@ GH_SCRIPT="$ROOT/claude/skills/ready4quit/scripts/git-hygiene.sh"
 GITC=(git -c user.name=test -c user.email=test@test -c commit.gpgsign=false)
 
 # fixture：bare origin + clone（有 upstream 的正常 repo）
-git init --bare -q "$TMP/gh-origin.git"
+git init --bare -q -b main "$TMP/gh-origin.git"
 git init -q -b main "$TMP/gh-work"
 (cd "$TMP/gh-work" \
     && echo hi > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
@@ -1067,7 +1067,7 @@ make_hyg_gh_stub "$TMP/hyg-gh-closed" closed
 make_hyg_gh_stub "$TMP/hyg-gh-merged" merged "$TMP/hyg-head-oid"
 
 # fixture：feature branch 已 push 到 origin/feat/y 但**未設 upstream**（tree clean）
-git init --bare -q "$TMP/gh-b4-origin.git"
+git init --bare -q -b main "$TMP/gh-b4-origin.git"
 git init -q -b main "$TMP/gh-b4"
 (cd "$TMP/gh-b4" \
     && echo hi > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
@@ -1343,7 +1343,7 @@ STUB
 chmod +x "$TMP/gh-classic-required"
 
 # fixture：bare origin + clone，feature branch 上 1 commit、tree clean
-git init --bare -q "$TMP/ss-origin.git"
+git init --bare -q -b main "$TMP/ss-origin.git"
 git init -q -b main "$TMP/ss-work"
 (cd "$TMP/ss-work" \
     && echo hi > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
@@ -1464,7 +1464,7 @@ assert_rc "resolve 無 token → exit 2" 2 $?
 # --- branch 與**自己的** remote tracking ref 分岔（只比對 default 會漏）---
 # 缺口實據：2026-08-07 跑 eval 時，是受測 agent 自己去 `branch -vv` 才發現分岔——
 # 腳本所有訊號都在講「對 default 領先多少」，push 那一刻才被 non-fast-forward 拒。
-git init --bare -q "$TMP/bd-origin.git"
+git init --bare -q -b main "$TMP/bd-origin.git"
 git init -q -b main "$TMP/bd-work"
 (cd "$TMP/bd-work" \
     && echo hi > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
@@ -1523,7 +1523,7 @@ fi
 # merge 最後一哩只清它自己 merge 的那支，規則生效前的老 branch 會無聲累積
 # （實證：dotfiles 累到 2 支才被偶然發現）。只印訊號 + 清掃指令，絕不代刪。
 
-git init --bare -q "$TMP/sb-origin.git"
+git init --bare -q -b main "$TMP/sb-origin.git"
 git init -q -b main "$TMP/sb-work"
 (cd "$TMP/sb-work" \
     && echo hi > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
@@ -1574,7 +1574,7 @@ cat > "$TMP/ds-full/STATUS.md" <<'DOSSIER'
 DOSSIER
 # 需有 remote：無 remote 時 ship-state 在 verdict: STOP 就返回，dossier 檢查根本跑不到
 # （前一版漏了這點，「七節齊全→不報」那條是假綠——輸出裡沒有該字串只是因為沒執行）
-git init --bare -q "$TMP/ds-full-origin.git"
+git init --bare -q -b main "$TMP/ds-full-origin.git"
 (cd "$TMP/ds-full" && git init -q -b main . && "${GITC[@]}" add STATUS.md && "${GITC[@]}" commit -qm init \
     && git remote add origin "$TMP/ds-full-origin.git" && git push -qu origin main)
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-full" 2>/dev/null)"
@@ -1628,7 +1628,7 @@ cat > "$TMP/bl-full/docs/backlog.md" <<'BACKLOG'
 ## 已知缺口
 - 一條缺口
 BACKLOG
-git init --bare -q "$TMP/bl-full-origin.git"
+git init --bare -q -b main "$TMP/bl-full-origin.git"
 (cd "$TMP/bl-full" && git init -q -b main . && "${GITC[@]}" add STATUS.md docs/backlog.md && "${GITC[@]}" commit -qm init \
     && git remote add origin "$TMP/bl-full-origin.git" && git push -qu origin main)
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/bl-full" 2>/dev/null)"
@@ -1680,7 +1680,7 @@ b_entry = len(entry.encode())
 b_total = b_entry + 1 + len(quote.encode())
 assert b_entry < 800 < b_total, f"fixture 失效: 本體 {b_entry} / 合計 {b_total}"
 PYEOF
-git init --bare -q "$TMP/ds-entry-origin.git"
+git init --bare -q -b main "$TMP/ds-entry-origin.git"
 (cd "$TMP/ds-entry" && git init -q -b main . && "${GITC[@]}" add STATUS.md && "${GITC[@]}" commit -qm init \
     && git remote add origin "$TMP/ds-entry-origin.git" && git push -qu origin main)
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-entry" 2>/dev/null)"
@@ -1708,7 +1708,7 @@ doc = ("# STATUS.md\n專案一句話定位(更新日期:2026-08-13)\n\n## 進行
 pathlib.Path(sys.argv[1]).write_text(doc)
 assert len(entry.encode()) > 800, "fixture 失效: 本體未超標"
 PYEOF
-git init --bare -q "$TMP/ds-entry-real-origin.git"
+git init --bare -q -b main "$TMP/ds-entry-real-origin.git"
 (cd "$TMP/ds-entry-real" && git init -q -b main . && "${GITC[@]}" add STATUS.md && "${GITC[@]}" commit -qm init \
     && git remote add origin "$TMP/ds-entry-real-origin.git" && git push -qu origin main)
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-entry-real" 2>/dev/null)"
@@ -1740,7 +1740,7 @@ assert len(doc.encode()) > 30720, f"fixture bytes 未超標: {len(doc.encode())}
 assert doc.count("\n") > 300, f"fixture 行數未超標: {doc.count(chr(10))}"
 pathlib.Path(sys.argv[1]).write_text(doc)
 PYEOF
-git init --bare -q "$TMP/ds-order-origin.git"
+git init --bare -q -b main "$TMP/ds-order-origin.git"
 (cd "$TMP/ds-order" && git init -q -b main . && "${GITC[@]}" add STATUS.md && "${GITC[@]}" commit -qm init \
     && git remote add origin "$TMP/ds-order-origin.git" && git push -qu origin main)
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-order" 2>/dev/null)"
@@ -1786,7 +1786,7 @@ cat > "$TMP/ds-orph/STATUS.md" <<'DOSSIER'
 DOSSIER
 printf '# 被連到的歸檔\n\n有指標指向本檔。\n' > "$TMP/ds-orph/docs/archive/kept.md"
 printf '# 沒人連的歸檔\n\n從 dossier 走不到這裡。\n' > "$TMP/ds-orph/docs/archive/lost.md"
-git init --bare -q "$TMP/ds-orph-origin.git"
+git init --bare -q -b main "$TMP/ds-orph-origin.git"
 (cd "$TMP/ds-orph" && git init -q -b main . && "${GITC[@]}" add . && "${GITC[@]}" commit -qm init \
     && git remote add origin "$TMP/ds-orph-origin.git" && git push -qu origin main)
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-orph" 2>/dev/null)"
@@ -1832,7 +1832,7 @@ if grep -q "歸檔孤兒" <<< "$out"; then bad "無 docs/archive 卻印孤兒訊
 mkdir -p "$TMP/ds-ao"
 printf '# Repo conventions\n\n用 uv,測試 uv run pytest。\n' > "$TMP/ds-ao/CLAUDE.md"
 printf '# Agent contract\n\nkernel 見下。\n' > "$TMP/ds-ao/AGENTS.md"
-git init --bare -q "$TMP/ds-ao-origin.git"
+git init --bare -q -b main "$TMP/ds-ao-origin.git"
 (cd "$TMP/ds-ao" && git init -q -b main . && "${GITC[@]}" add -A && "${GITC[@]}" commit -qm init \
     && git remote add origin "$TMP/ds-ao-origin.git" && git push -qu origin main)
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-ao" 2>/dev/null)"
@@ -2023,7 +2023,7 @@ if ! echo "$out" | grep -qE "^  remote: origin/feat/old-merged"; then ok "當前
 # quoting、SHA 位置任一錯都是**靜默失敗**，腳本回 STOP，而 STOP 的長相與「偵測後有人推過」
 # 這個正常保護一模一樣，讀不出是 bug。獨立 fixture（sbe- 前綴），不動上面共用的 sb-work。
 # helper path 必須由正在執行的 ship-state.sh 自己解析；worktree／乾淨 clone 不得跳去全域安裝副本。
-git init --bare -q "$TMP/sbe-origin.git"
+git init --bare -q -b main "$TMP/sbe-origin.git"
 git init -q -b main "$TMP/sbe-work"
 (cd "$TMP/sbe-work" \
     && echo hi > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
@@ -2074,7 +2074,7 @@ STUB
 }
 
 # fixture：squash-merge 的真實形狀——branch 有自己的 commit，main 上是「內容相同但另一顆」
-git init --bare -q "$TMP/sq-origin.git"
+git init --bare -q -b main "$TMP/sq-origin.git"
 git init -q -b main "$TMP/sq-work"
 (cd "$TMP/sq-work" \
     && echo base > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
@@ -2174,8 +2174,8 @@ else bad "ls-remote 失敗時把 remote 行靜默丟掉、或未標未驗證：$
 # 判準刻意釘在**行為**而非文字：凡印出的 cleanup-cmd，照抄執行必須 exit 0。這是 B1 那條
 # 端到端斷言的推廣——「指令長得對」不等於「指令跑得動」，後者才是訊號的價值所在；
 # 釘行為也讓判準不隨修法搖擺（不論選擇不發指令、或發一條帶對 remote 的指令，都適用）。
-git init --bare -q "$TMP/mrb-origin.git"
-git init --bare -q "$TMP/mrb-fork.git"
+git init --bare -q -b main "$TMP/mrb-origin.git"
+git init --bare -q -b main "$TMP/mrb-fork.git"
 git init -q -b main "$TMP/mrb-work"
 (cd "$TMP/mrb-work" \
     && echo a > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
@@ -2235,7 +2235,7 @@ fi
 CL_SCRIPT="$ROOT/claude/skills/project/scripts/cleanup-stale-branch.sh"
 mk_cl_repo() {   # $1=路徑；造 main + feat/gone（local + remote）
     rm -rf "$1"
-    git init --bare -q "$1-origin.git"
+    git init --bare -q -b main "$1-origin.git"
     git init -q -b main "$1"
     (cd "$1" && echo a > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
         && git remote add origin "$1-origin.git" && git push -qu origin main \
@@ -2311,7 +2311,7 @@ else bad "STOP 訊息仍只說「確認名字是否正確」，把人導向錯�
 
 # 情境 0（#153 regression）：遠端零 branch + HEAD 在 feature + 本地沒有 intended-default
 # → 遠端為空不是把 feature 升成 default 的充分證據。必須 STOP，且不可輸出 push feature。
-git init --bare -q "$TMP/bs-feature-origin.git"
+git init --bare -q -b main "$TMP/bs-feature-origin.git"
 git init -q -b refactor/initial-import "$TMP/bs-feature-work"
 (cd "$TMP/bs-feature-work" \
     && echo hi > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
@@ -2325,7 +2325,7 @@ if echo "$out" | grep -q "baseline"; then
 else bad "missing intended-default STOP 未說明 baseline 缺口（${out}）"; fi
 
 # 情境 1：遠端零 branch + 本地 main 有 commit → BOOTSTRAP
-git init --bare -q "$TMP/bs-origin.git"
+git init --bare -q -b main "$TMP/bs-origin.git"
 git init -q -b main "$TMP/bs-work"
 (cd "$TMP/bs-work" \
     && echo hi > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
@@ -2339,7 +2339,7 @@ if echo "$out" | grep -q "bootstrap-note:.*default branch"; then ok "BOOTSTRAP �
 if echo "$out" | grep -q "bootstrap-scope:"; then ok "BOOTSTRAP 標明豁免作用域（防授權蔓延）"; else bad "BOOTSTRAP 缺 scope 行（授權會蔓延到後續 commit）"; fi
 
 # 非 main intended default + HEAD 在 feature，但 local trunk 是 ancestor → 推 trunk，不推 feature。
-git init --bare -q "$TMP/bs-nonmain-origin.git"
+git init --bare -q -b trunk "$TMP/bs-nonmain-origin.git"
 git init -q -b trunk "$TMP/bs-nonmain-work"
 (cd "$TMP/bs-nonmain-work" \
     && echo base > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
@@ -2444,7 +2444,7 @@ else bad "detached HEAD 誤判 bootstrap（${out}）"; fi
 
 # 情境 3（關鍵反例）：遠端**有** branch 但本地無 remote-tracking 且名非 main/master
 # → default 定位不到，但**絕不可** bootstrap 直推
-git init --bare -q "$TMP/bs-trunk.git"
+git init --bare -q -b trunk "$TMP/bs-trunk.git"
 git init -q -b trunk "$TMP/bs-seed"
 (cd "$TMP/bs-seed" \
     && echo hi > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
@@ -2468,7 +2468,7 @@ if echo "$out" | grep -q "branch-first: REQUIRED"; then ok "baseline 建立後 �
 # --- dossier 偵測行（Step 2 衛生檢查；門檻單一來源 = 本腳本）---
 
 # 無 STATUS.md → dossier: NONE
-git init --bare -q "$TMP/ds-origin.git"
+git init --bare -q -b main "$TMP/ds-origin.git"
 git init -q -b main "$TMP/ds-work"
 (cd "$TMP/ds-work" \
     && echo hi > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
@@ -2870,7 +2870,7 @@ git init -q -b main "$TMP/ds-stale"
     && GIT_AUTHOR_DATE='2026-01-01T00:00:00' GIT_COMMITTER_DATE='2026-01-01T00:00:00' \
        "${GITC[@]}" commit -qm "docs: old dossier" \
     && echo hi > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm "feat: recent work" \
-    && git init --bare -q "$TMP/ds-stale-origin.git" \
+    && git init --bare -q -b main "$TMP/ds-stale-origin.git" \
     && git remote add origin "$TMP/ds-stale-origin.git" && git push -qu origin main)
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-stale")"
 if echo "$out" | grep -q "dossier-flag:.*落後 repo 活動"; then ok "STATUS.md 落後 repo 活動 >30 天 → 過期 flag"; else bad "過期未偵測"; fi
@@ -2878,7 +2878,7 @@ if echo "$out" | grep -q "dossier-flag:.*落後 repo 活動"; then ok "STATUS.md
 echo "▶ 9b. branch-first.sh 情況 A/B 判定與救援序列"
 BF_SCRIPT="$ROOT/claude/skills/project/scripts/branch-first.sh"
 
-git init --bare -q "$TMP/bf-origin.git"
+git init --bare -q -b main "$TMP/bf-origin.git"
 git init -q -b main "$TMP/bf-work"
 (cd "$TMP/bf-work" \
     && echo base > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
@@ -2975,7 +2975,7 @@ echo "▶ 10. review-state.sh scope-priority / round 判定"
 RS_SCRIPT="$ROOT/claude/skills/deep-review/scripts/review-state.sh"
 
 # fixture：bare origin + clone，main 已 push
-git init --bare -q "$TMP/rs-origin.git"
+git init --bare -q -b main "$TMP/rs-origin.git"
 git init -q -b main "$TMP/rs-work"
 (cd "$TMP/rs-work" \
     && echo hi > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
@@ -6182,7 +6182,7 @@ echo "▶ 19. review-anchor.sh（deep-review skill script）錨點生命週期 /
 RA_SCRIPT="$ROOT/claude/skills/deep-review/scripts/review-anchor.sh"
 
 # fixture：bare origin + clone，main 已 push；feature branch 領先 2 commit
-git init --bare -q "$TMP/ra-origin.git"
+git init --bare -q -b main "$TMP/ra-origin.git"
 git init -q -b main "$TMP/ra-work"
 (cd "$TMP/ra-work" \
     && echo a > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
@@ -6367,7 +6367,7 @@ if grep -q "^review-residue: UNKNOWN" <<< "$out"; then ok "merge-base 失敗 →
 # --- option-like ref 名：quoting 擋不住，要靠 `--` terminator ---
 # `git branch -- '--all'` 前端會拒，但 `git update-ref refs/heads/--all` 建得起來且
 # `check-ref-format` 判合法（實測 rc=0）；quote 完 git 仍把 `--all` 當選項（codex C3）。
-git init --bare -q "$TMP/opt-origin.git"
+git init --bare -q -b main "$TMP/opt-origin.git"
 git clone -q "$TMP/opt-origin.git" "$TMP/rr-opt"
 (cd "$TMP/rr-opt" && echo o > o.txt && "${GITC[@]}" add o.txt && "${GITC[@]}" commit -qm init && git push -qu origin main)
 git -C "$TMP/rr-opt" update-ref 'refs/heads/--all' HEAD
@@ -6408,7 +6408,7 @@ fi
 # 送進 bash 直接 syntax error（codex C1 實證）。三支腳本共用同形的 shq helper。
 sq_dir="$TMP/we'ird \$(echo x) dir"
 mkdir -p "$sq_dir"
-git init -q --bare "$TMP/sq-origin.git"
+git init -q --bare -b main "$TMP/sq-origin.git"
 git clone -q "$TMP/sq-origin.git" "$sq_dir/repo" 2>/dev/null
 (cd "$sq_dir/repo" && echo s > s.txt && "${GITC[@]}" add s.txt && "${GITC[@]}" commit -qm init \
     && git push -qu origin main && git switch -qc feat/sq \
@@ -7555,7 +7555,7 @@ echo "▶ 24. .githooks/dispatcher（全域 core.hooksPath 的單一入口）"
 HOOKS_DIR="$ROOT/.githooks"
 hk_git() { git -c user.email=t@t -c user.name=t "$@"; }
 hk_repo() {   # $1=名稱 → bare origin + clone（有 origin/HEAD），local hooksPath 指向 .githooks
-    git init --bare -q "$TMP/$1.git"
+    git init --bare -q -b main "$TMP/$1.git"
     git clone -q "$TMP/$1.git" "$TMP/$1" 2>/dev/null
     ( cd "$TMP/$1" && echo seed > f.txt && hk_git add f.txt && hk_git commit -qm seed \
         && git push -q origin HEAD:main 2>/dev/null && git branch -q -M main
@@ -7653,6 +7653,34 @@ if [ -f "$CI_FILE" ] \
     ok "GitHub Actions 以唯讀權限跑 macOS 15 + Ubuntu 24.04 完整 suite"
 else
     bad "缺少雙 OS GitHub Actions contract"
+fi
+
+# GitHub-hosted images 的預裝工具不是跨 OS 契約：run 34676591841 的 Ubuntu image 帶
+# ShellCheck 0.9.0、macOS 則由 Homebrew 裝 0.11.0，且兩者都缺 rg。只用 command -v
+# 接受 runner 內任意版本會讓同一份 shell gate 產生不同 verdict，缺 rg 更會讓後續 assertion
+# 大量連鎖假紅。三項 suite dependency 必須由同一個明示的 Homebrew install step 收斂。
+ci_dependency_block="$(sed -n '/name: Install test dependencies/,/name: Run complete suite/p' "$CI_FILE")"
+if grep -Eq 'brew install .*shellcheck' <<< "$ci_dependency_block" \
+    && grep -Eq 'brew install .*ripgrep' <<< "$ci_dependency_block" \
+    && grep -Eq 'brew install .*yq' <<< "$ci_dependency_block"; then
+    ok "CI 明示安裝 shellcheck、ripgrep、yq"
+else
+    bad "CI dependency contract 缺 shellcheck／ripgrep／yq"
+fi
+if grep -Eq 'command -v shellcheck.*\|\|' <<< "$ci_dependency_block"; then
+    bad "CI 仍會接受 runner 任意預裝的 ShellCheck 版本"
+else
+    ok "CI 不以任意預裝 ShellCheck 取代一致 provider"
+fi
+
+# GitHub runners 的 init.defaultBranch 未必與開發機一致。bare fixture 若不明示 HEAD，
+# 後續 push main 再 clone 會得到 unborn checkout，造成 Git 行為測試大量連鎖假紅。
+bare_init_without_branch="$(grep -nE '[g]it init [^#]*--bare' "$ROOT/tests/run.sh" \
+    | grep -vE -- '(^|[[:space:]])-b[[:space:]]' || true)"
+if [ -z "$bare_init_without_branch" ]; then
+    ok "bare Git fixtures 明示 initial branch，不依賴 host init.defaultBranch"
+else
+    bad "bare Git fixtures 仍依賴 host init.defaultBranch（${bare_init_without_branch}）"
 fi
 
 PLATFORM_CHECK="$ROOT/scripts/check-supported-platform.sh"
