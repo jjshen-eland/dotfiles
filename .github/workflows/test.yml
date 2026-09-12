@@ -30,9 +30,7 @@ jobs:
           echo /home/linuxbrew/.linuxbrew/sbin >> "$GITHUB_PATH"
 
       - name: Install test dependencies
-        run: |
-          command -v shellcheck >/dev/null || brew install shellcheck
-          command -v yq >/dev/null || brew install yq
+        run: brew install shellcheck ripgrep yq
 
       - name: Run complete suite
         run: ./tests/run.sh

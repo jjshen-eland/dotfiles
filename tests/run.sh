@@ -7655,6 +7655,24 @@ else
     bad "缺少雙 OS GitHub Actions contract"
 fi
 
+# GitHub-hosted images 的預裝工具不是跨 OS 契約：run 34676591841 的 Ubuntu image 帶
+# ShellCheck 0.9.0、macOS 則由 Homebrew 裝 0.11.0，且兩者都缺 rg。只用 command -v
+# 接受 runner 內任意版本會讓同一份 shell gate 產生不同 verdict，缺 rg 更會讓後續 assertion
+# 大量連鎖假紅。三項 suite dependency 必須由同一個明示的 Homebrew install step 收斂。
+ci_dependency_block="$(sed -n '/name: Install test dependencies/,/name: Run complete suite/p' "$CI_FILE")"
+if grep -Eq 'brew install .*shellcheck' <<< "$ci_dependency_block" \
+    && grep -Eq 'brew install .*ripgrep' <<< "$ci_dependency_block" \
+    && grep -Eq 'brew install .*yq' <<< "$ci_dependency_block"; then
+    ok "CI 明示安裝 shellcheck、ripgrep、yq"
+else
+    bad "CI dependency contract 缺 shellcheck／ripgrep／yq"
+fi
+if grep -Eq 'command -v shellcheck.*\|\|' <<< "$ci_dependency_block"; then
+    bad "CI 仍會接受 runner 任意預裝的 ShellCheck 版本"
+else
+    ok "CI 不以任意預裝 ShellCheck 取代一致 provider"
+fi
+
 PLATFORM_CHECK="$ROOT/scripts/check-supported-platform.sh"
 mkdir -p "$TMP/platform"
 printf 'ID=ubuntu\nVERSION_ID="24.04"\nPRETTY_NAME="Ubuntu 24.04"\n' > "$TMP/platform/ubuntu-24"
