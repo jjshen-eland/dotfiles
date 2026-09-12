@@ -79,7 +79,8 @@ When the user pastes third-party review findings, read the source code and verif
 - `printf` 的 format 必須是字面常數：`printf '%s\n' "$data"`，NEVER `printf "$data"`。
 - `sd` replacement 含 `$` 會被當 capture group；改用可保證字面的編輯方式。
 - macOS 腳本只用 POSIX 確定子集；量 bytes 明寫 `LC_ALL=C`，需要 GNU 行為就顯式檢查工具。不要假設有 `timeout`／`gtimeout`。
-- `pipefail` 下不要 `printf "$big" | grep -q`；存在性檢查用 herestring，測試命中點放輸入前段。
+- `pipefail` 下不要把大量輸出接 `grep -q`（`printf "$big"`、`locale -a`、任何超過 pipe buffer 的生產者）；存在性檢查先落地成變數再用 herestring，測試命中點放輸入前段。
+- 同一組資料的 `sort` 與 `comm`／`join` 必須釘同一個 collation，兩邊都明寫 `LC_ALL=C`；只釘 `sort` 時 `comm` 會靜默把同一行同時印進兩欄。比對類 fixture 要帶真實前綴標點（`**`／`###`），否則測不到。
 - 平行任務逐 PID `wait` 並驗產出完整性；裸 `wait` 會吞失敗，bash 3.2 也沒有 associative array。
 - `grep -c ... || echo 0` 會得到雙 `0`；用 `n=$(grep -c ...) || n=0`。數值 command substitution 失敗先轉成可辨識 sentinel，再做算術。
 - cask 卡在 `Linking Binary` 時直接跑 `brewfix` 診斷；只有 `brewfix --fix` 會修改。

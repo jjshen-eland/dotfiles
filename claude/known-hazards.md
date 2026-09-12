@@ -274,6 +274,71 @@ cd <scratchpad> && git -C ~/.dotfiles worktree add -q --detach baseline-wt <sha>
 administrative 檔，`git worktree list` 仍列得出來）。
 
 
+## `sort` 與 `comm` 的 collation 必須一致
+
+`comm` 假設兩份輸入都**依它自己的 collation 排序**。餵給它用另一種 collation 排的檔案，它不會
+報錯、也不會回非零——而是**把同一行同時印進「只在左邊」與「只在右邊」兩欄**。輸出看起來像
+「兩邊差很多」，實際上兩邊幾乎一樣。
+
+### 2026-09-13 實地：brewup 每次噴 41 行假漂移
+
+`scripts/check-claude-auto-mode-drift.sh` 比對 Claude 內建與本機的 `autoMode.environment` slot：
+
+```sh
+extract_slots() {
+    jq -r '.environment[]? | split(":")[0]' | LC_ALL=C sort -u   # C collation 排序
+}
+missing="$(comm -23 "$tmp/defaults" "$tmp/config")"              # 繼承 zh_TW.UTF-8 collation
+```
+
+`sort` 被顯式釘在 `LC_ALL=C`，`comm` 卻沿用互動 shell 的 `LC_COLLATE=zh_TW.UTF-8`。兩者對
+`### Org-wide`（`#` = 0x23）與 `**Organization**`（`*` = 0x2A）的先後判斷相反：C 依碼位、
+UTF-8 locale 第一層忽略標點。結果 21 個 slot 裡有 20 個同時出現在兩欄：
+
+```
+     missing locally: **Organization**
+     ...
+     local-only slot: **Organization**
+```
+
+真正的漂移只有一個（`**Host containment**`）。假警告把它埋在 41 行噪音裡，等於這個 checker
+存在但不可讀。
+
+### 為什麼守門測試沒抓到
+
+當時的 fixture 用 `alpha` / `beta` / `gamma`——純小寫 ASCII，兩種 collation 排序**剛好一樣**，
+測試恆綠。**比對類腳本的 fixture 必須帶真實的前綴標點**（`**`、`###`、`-`、`_`），
+不然 collation 差異這條路徑根本沒被執行到。
+
+### 正解
+
+同一組資料的 `sort` 與 `comm`（`join`、`uniq` 同理）釘同一個 collation，兩邊都寫出來：
+
+```sh
+... | LC_ALL=C sort -u > "$tmp/a"
+missing="$(LC_ALL=C comm -23 "$tmp/a" "$tmp/b")"
+```
+
+只在 `sort` 寫 `LC_ALL=C` 是最容易漏的形狀——它看起來已經「處理過 locale 了」。
+
+### 順帶：locale 探測自己踩 SIGPIPE
+
+同一次修復中，測試想挑一個「排序行為與 C 不同」的 locale 來重現 bug，寫成：
+
+```sh
+if locale -a | grep -qx "$cand" && [ ... ]; then drift_collate="$cand"; fi
+```
+
+`set -o pipefail` 下 `grep -q` 命中即退出，`locale -a` 還有兩百行沒寫完 → SIGPIPE →
+整條 pipeline 非零 → `&&` 短路 → **永遠 fallback 到 C，測試根本沒測到 bug**（見上方
+「SIGPIPE + pipefail」）。這條的觸發者不限於 `printf`：**任何**產出量大於 pipe buffer 的
+生產者接 `grep -q` 都一樣。正解同樣是先落地再 herestring：
+
+```sh
+locales="$(locale -a 2>/dev/null)"
+grep -qx "$cand" <<< "$locales" || continue
+```
+
 ## zsh 的 word splitting
 
 zsh 預設**不做** field splitting（bash 會做）。未加引號的變數展開後仍是**一個**參數，不會依
