@@ -7810,6 +7810,51 @@ if grep -q 'autoMode.environment' <<< "$out" && grep -q 'beta' <<< "$out" && gre
 else
     bad "Claude auto-mode 漂移提示缺少可操作差異"
 fi
+# 真實 slot 名帶 `**`／`###`，且 comm 的 collation 與 sort 不同時，舊版會把同名 slot
+# 同時列進「missing」與「local-only」。fixture 必須用真實形狀才抓得到。
+cat > "$TMP/claude-drift/bin/claude" <<'DRIFTEOF'
+#!/usr/bin/env bash
+case "$1 $2" in
+  'auto-mode defaults')
+    printf '%s\n' '{"environment":["**Organization**: built in","**Host containment**: built in","**Source control**: built in"]}' ;;
+  'auto-mode config')
+    printf '%s\n' '{"environment":["### Org-wide","**Organization**: local","**Source control**: local","### User-specific"]}' ;;
+  *) exit 1 ;;
+esac
+DRIFTEOF
+chmod +x "$TMP/claude-drift/bin/claude"
+# pipefail 下 `locale -a | grep -q` 會因 SIGPIPE 讓整條 pipeline 非零，探測永遠 fallback
+# 到 C、測試就測不到 bug。改 herestring（known-hazards 記載的解法）。
+drift_collate=C
+drift_locales="$(locale -a 2>/dev/null)"
+drift_c_first="$(printf '%s\n' '### b' '**a**' | LC_ALL=C sort | head -1)"
+for cand in zh_TW.UTF-8 en_US.UTF-8; do
+    grep -qx "$cand" <<< "$drift_locales" || continue
+    if [ "$drift_c_first" \
+         != "$(printf '%s\n' '### b' '**a**' | LC_COLLATE="$cand" sort | head -1)" ]; then
+        drift_collate="$cand"
+        break
+    fi
+done
+out="$(LC_COLLATE="$drift_collate" PATH="$TMP/claude-drift/bin/:$PATH" bash "$CLAUDE_DRIFT" 2>&1)"
+if grep -q 'missing locally: \*\*Host containment\*\*' <<< "$out"; then
+    ok "Claude auto-mode 漂移提示列出真正缺少的 slot（collate=${drift_collate}）"
+else
+    bad "Claude auto-mode 漂移提示漏掉真正缺少的 slot（collate=${drift_collate}）"
+fi
+for noise in '\*\*Organization\*\*' '\*\*Source control\*\*'; do
+    if grep -q "$noise" <<< "$out"; then
+        bad "Claude auto-mode 把兩邊都有的 slot 誤報成漂移（collate=${drift_collate}）: $noise"
+    else
+        ok "Claude auto-mode 未誤報兩邊都有的 slot: $noise"
+    fi
+done
+if grep -q '###' <<< "$out"; then
+    bad "Claude auto-mode 把章節標題誤報成 slot"
+else
+    ok "Claude auto-mode 忽略 environment 的章節標題"
+fi
+
 if grep -q 'check-claude-auto-mode-drift.sh' "$ROOT/scripts/brewup.sh"; then
     ok "brewup 在 Claude update 後執行 drift checker"
 else
