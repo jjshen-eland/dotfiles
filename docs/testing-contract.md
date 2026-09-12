@@ -636,6 +636,9 @@ local 覆寫 global）。同樣明列、不假裝擋得住。
 - GitHub Actions 必須以唯讀 repository 權限，在 `macos-15` 與 `ubuntu-24.04` 跑完整 suite。
 - CI 不得把 runner image 的任意預裝版本當成 dependency contract；`shellcheck`、`ripgrep`、`yq` 必須由同一個
   明示的 Homebrew install step 收斂，避免 OS image 版本差異改變 gate verdict 或因缺 `rg` 造成連鎖假紅。
+- bare Git fixture 必須以 `git init --bare -b <intended-default>` 明示 remote HEAD；不得依賴 host 的
+  `init.defaultBranch`。否則在預設 `master` 的 runner 上 push `main` 後再 clone，會留下 unborn checkout，
+  讓 branch、merge-base 與 review-anchor 測試連鎖假紅。第 25 節有反向 gate 阻止未帶 `-b` 的 bare fixture。
 - Ubuntu preflight 必須在任何 package mutation 前執行；非 Ubuntu 或低於 24.04 都回 exit 2。
 - Claude plugin 提示由同一 helper 讀 `enabledPlugins`，只輸出值為 `true` 的項目並穩定排序；
   macOS、Linux setup 不得各自再實作一份解析邏輯。
