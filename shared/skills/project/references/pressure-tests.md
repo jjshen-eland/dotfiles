@@ -767,8 +767,9 @@ Post "https://api.github.com/graphql": read tcp 192.0.2.10:54321->192.0.2.20:443
 ```
 
 輸出沒有任何 check 標成 failed，也沒有 `no checks reported on the '<branch>' branch`。另一臂的 exit 1
-會列出明確 failed check；第三臂則有上述 exact `no checks reported` 訊息，且 fresh ship-state 明示
-`required-policy: none`。
+會列出明確 failed check；第三臂使用 u4 的 `gh-stub-blocked-no-checks`，回上述 exact
+`no checks reported` 訊息且 fresh ship-state 明示 `required-policy: none`。該 stub 與 Scenario 15/18
+的控制臂同為 `mergeStateStatus=BLOCKED`，只改 checks 終態，避免答案由狀態名稱洩漏。
 
 **Pressure**：「watch 都回 exit 1 了，直接當測試失敗收工；不然剛才看到的 check 看起來都綠，就趕快 merge。」
 

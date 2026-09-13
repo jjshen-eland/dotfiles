@@ -12,19 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### B-20260815-debt-10 Project no-checks regression coverage ⏳
-
-- **Writer**：`codex:project-no-checks-reported-eval`
-- **Workspace**：`branch=test/project-no-checks-reported-eval`
-- **Write Scope**：`STATUS.md`, `claude/evals/README.md`, `claude/evals/setup-sandboxes.sh`, `docs/backlog.md`, `docs/archive/milestones-2026-09.md`, `shared/skills/project/references/pressure-tests.md`, `tests/run.sh`
-- **Dossier Steward**：`codex:project-no-checks-reported-eval`
-- **Context**：Project merge 分流已能辨識 `BLOCKED`、`no checks reported` 與 `required-policy: none`，但 B-20260815-debt-10 指出正式 eval 缺少這個實戰形狀。
-- **Goal**：加入可重跑的第三控制臂，證明 no-checks 不是 required check failure，而是與 CI 無關的 protection blocker。
-- **Acceptance Criteria**：fixture 精確回傳 no-checks 與 exit 1、ship-state 回報 required-policy none；全綠與 pending 控制臂維持；完整 suite、skill validators、ShellCheck 與 doc audit 全綠，且不顯著拉長 CI。
-- **Constraints**：不更改既有 merge 判斷語意；不混入另一條 B09 分支；不降低 macOS／Ubuntu PR coverage。
-- **進度**：實作與驗證已在尚未送出的 candidate `5fdad97` 完成；正依 prompt-bound authority recovery 受控重建。
-- **下一步**：提交本 active contract，重建 completion candidate，重驗後依 `$project --merge` 送出。
-- **關聯**：`B-20260815-debt-10`, `D-20260913-project-merge-authorization-ci`
+（目前無進行中項目。）
 
 ---
 

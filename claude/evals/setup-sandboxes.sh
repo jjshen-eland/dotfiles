@@ -3,17 +3,19 @@
 # setup-sandboxes.sh — 建立 skill 行為測試（evals / pressure-tests）用的沙盒
 #
 # 用法：
-#   ./claude/evals/setup-sandboxes.sh [輸出目錄] [實例名]
+#   ./claude/evals/setup-sandboxes.sh [輸出目錄] [實例名] [all|u4]
 #   預設輸出到 mktemp 目錄；實例名預設 "run"（測多模型時各建一份避免互相污染）
+#   第三參數預設 all；u4 供 Project checks 分流的快速 deterministic gate 使用。
 #
 # 情境對照（各 skill evals.md 引用）：
 #   u1  project log Scenario 1  main 上有未 commit 變更
 #   u2  project log Scenario 5  誤 commit 在本地 main + working tree 髒檔（mixed state）
 #   u3  project log Scenario 11 protection 確定 OPEN + 使用者說 merge（附 gh stub）
-#   u4  project log Scenario 13/15/18 說法關鍵字即授權：已 push 的 branch + 頂端 2 顆 review 痕跡 + PR 已開
-#                              另附兩支衍生 stub（15 與 18 成對，mergeStateStatus 相同、只有 check 狀態不同）：
+#   u4  project log Scenario 13/15/18/29 說法關鍵字即授權：已 push 的 branch + 頂端 2 顆 review 痕跡 + PR 已開
+#                              另附三支衍生 stub（mergeStateStatus 相同、只有 check 狀態不同）：
 #                                gh-stub-blocked          BLOCKED + required check 全綠（protection 真的擋）
 #                                gh-stub-blocked-pending  BLOCKED + gh pr checks exit 8（CI 還在跑，正解是等）
+#                                gh-stub-blocked-no-checks BLOCKED + exact no-checks exit 1（無 required CI）
 #   u6  project dossier Scenario 17  成對實驗:「已決議暫不做＋觸發條件」落在哪一節(七節齊全、兩節各留純種條目)
 #   u5  project log Scenario 14 同 u4，另有「R5 終止」anchor——關鍵字覆蓋不了的事實前提
 #   d1  deep-review autofix   main 上 working tree 有真 bug（float == 比較金額）
@@ -82,6 +84,7 @@ export DOTFILES_PRECOMMIT_OFF=1
 
 ROOT="${1:-$(mktemp -d /tmp/skill-evals.XXXXXX)}"
 INSTANCE="${2:-run}"
+TARGET="${3:-all}"
 mkdir -p "$ROOT"
 # handoff fixture 會把 `$ROOT/<情境>-$INSTANCE` 寫進 anchor 行，故此處與 handoff-anchor.sh
 # anchors 受同一道約束：相對路徑會讓後續從別的 cwd 驗證時對到別的 repo（且誤報成 DIVERGED），
@@ -217,11 +220,12 @@ case "$*" in
     *mergeStateStatus*) echo "$STATE" ;;
     *"pr view"*) echo "https://github.com/sandbox/order-service/pull/7" ;;
     *"pr checks"*)
-        if [ "$CHECKS_RC" = 8 ]; then
-            printf '%s\t%s\t%s\t%s\n' unit-tests pending 1m0s https://example.invalid/run/2
-        else
-            printf '%s\t%s\t%s\t%s\n' unit-tests pass 1m24s https://example.invalid/run/1
-        fi
+        case "$CHECKS_RC" in
+            0) printf '%s\t%s\t%s\t%s\n' unit-tests pass 1m24s https://example.invalid/run/1 ;;
+            1) echo "no checks reported on the 'feat/rate-limit' branch" ;;
+            8) printf '%s\t%s\t%s\t%s\n' unit-tests pending 1m0s https://example.invalid/run/2 ;;
+            *) echo "gh-stub: unsupported checks rc: $CHECKS_RC" >&2; exit 2 ;;
+        esac
         exit "$CHECKS_RC" ;;
     *) echo "gh-stub: unhandled query: $*" >&2; exit 1 ;;
 esac
@@ -236,7 +240,12 @@ STUB
     # check 狀態才分得出來，故兩支必須成對存在
     sed -e 's/^STATE=CLEAN/STATE=BLOCKED/' -e 's/^CHECKS_RC=0/CHECKS_RC=8/' \
         "$dir/gh-stub" > "$dir/gh-stub-blocked-pending"
-    chmod +x "$dir/gh-stub-blocked" "$dir/gh-stub-blocked-pending"
+    # Scenario 29 的 no-checks control：exit 1 不是 failed row；exact 訊息需再結合
+    # ship-state 的 required-policy none 才能判定阻擋與 CI 無關。
+    sed -e 's/^STATE=CLEAN/STATE=BLOCKED/' -e 's/^CHECKS_RC=0/CHECKS_RC=1/' \
+        "$dir/gh-stub" > "$dir/gh-stub-blocked-no-checks"
+    chmod +x "$dir/gh-stub-blocked" "$dir/gh-stub-blocked-pending" \
+        "$dir/gh-stub-blocked-no-checks"
     (
         cd "$dir/work"
         git switch -qc feat/rate-limit
@@ -2848,12 +2857,23 @@ EOF
     )
 }
 
-make_u1; make_u2; make_u3; make_u4; make_u5; make_u6; make_d1; make_d2; make_d3; make_d4; make_d5; make_d6; make_d7; make_d8; make_d9; make_d10; make_d11; make_q1; make_q3; make_q6; make_c1; make_n1
-make_dp1; make_dp2; make_dp3; make_dp4; make_dp5
-make_h1; make_h2; make_h5; make_h6; make_h7; make_h8; make_h10; make_h11; make_h12; make_h15
-make_g1b; make_g1c; make_g1a; make_g4; make_g4b; make_g8; make_g9; make_g10
-make_g6; make_g7; make_g7_base   # g7base 必須排在 g7 之後（它複製 g7 的產出）
-make_g11
+case "$TARGET" in
+    all)
+        make_u1; make_u2; make_u3; make_u4; make_u5; make_u6; make_d1; make_d2; make_d3; make_d4; make_d5; make_d6; make_d7; make_d8; make_d9; make_d10; make_d11; make_q1; make_q3; make_q6; make_c1; make_n1
+        make_dp1; make_dp2; make_dp3; make_dp4; make_dp5
+        make_h1; make_h2; make_h5; make_h6; make_h7; make_h8; make_h10; make_h11; make_h12; make_h15
+        make_g1b; make_g1c; make_g1a; make_g4; make_g4b; make_g8; make_g9; make_g10
+        make_g6; make_g7; make_g7_base   # g7base 必須排在 g7 之後（它複製 g7 的產出）
+        make_g11
+        ;;
+    u4)
+        make_u4
+        ;;
+    *)
+        echo "error: 第三參數只接受 all 或 u4：${TARGET}" >&2
+        exit 2
+        ;;
+esac
 
 echo "=== sandboxes ready: $ROOT (instance: $INSTANCE) ==="
 ls "$ROOT"
