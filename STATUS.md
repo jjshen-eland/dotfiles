@@ -12,7 +12,19 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-（目前無進行中項目。）
+### 1. 恢復 Project merge 授權並縮短 CI ⏳
+
+- **Writer**：`codex:restore-merge-authorization-ci`
+- **Workspace**：`branch=fix/restore-merge-authorization-ci`
+- **Write Scope**：`.github/workflows/test.yml`, `claude/settings.json`, `scripts/outward-action-gate.py`, `tests/run.sh`, `docs/testing-contract.md`, `docs/archive/`
+- **Dossier Steward**：`codex:restore-merge-authorization-ci`
+- **Context**：Claude outward hook 無法辨識 `/project --merge` 已授權，並造成重複 approval UI；CI 同套完整 suite 在 PR 與 main 重跑。
+- **Goal**：只撤回 Claude hook、保留 Codex gate/classifier，維持 PR 雙平台 coverage 並縮短 suite。
+- **Acceptance Criteria**：組合 approval UI 計數為 0；Codex 行為不變；PR-only macOS＋Ubuntu；required checks 生效；完整 suite 全綠且耗時下降。
+- **Constraints**：不整顆 revert `c086aca`；不 push default；本輪 endpoint 只到 PR、不 merge。
+- **進度**：本地實作與驗證完成；正在依 prompt-bound recovery 重建未送出的 candidate。
+- **下一步**：建立可驗證的 steward parent，重建 completion candidate 後執行 `$project --pr`。
+- **關聯**：`D-20260913-project-merge-authorization-ci`; `M-20260913-project-merge-authorization-ci`
 
 ---
 
