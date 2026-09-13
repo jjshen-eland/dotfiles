@@ -79,9 +79,6 @@ fi
 # 確保 ~/.lftprc 指向 dotfiles（幂等；既有主機免重跑 setup）
 [ -f "$DOTFILES_DIR/scripts/ensure-lftprc.sh" ] && { bash "$DOTFILES_DIR/scripts/ensure-lftprc.sh" 2>/dev/null || local_helper_warn=1; } || true
 
-# 一次性遷移（2026-08-15 轉入 jjshen-eland）：把 origin 改指新 owner。全機隊跟上後可連同腳本移除
-[ -f "$DOTFILES_DIR/scripts/ensure-dotfiles-remote.sh" ] && { bash "$DOTFILES_DIR/scripts/ensure-dotfiles-remote.sh" || local_helper_warn=1; } || true
-
 if [ "$local_helper_warn" -eq 0 ]; then
     echo -e "${GREEN}  ✅ 本機完成${NC}"
 else
@@ -124,9 +121,6 @@ sync_remote() {
             [ -f scripts/ensure-codex-config.py ] && { DOTFILES_DIR="$HOME/.dotfiles" python3 scripts/ensure-codex-config.py 2>/dev/null || helper_warn=1; } || true
             # 確保 ~/.lftprc 指向 dotfiles（幂等）
             [ -f scripts/ensure-lftprc.sh ] && { bash scripts/ensure-lftprc.sh 2>/dev/null || helper_warn=1; } || true
-            # 一次性遷移（2026-08-15 轉入 jjshen-eland）：origin 改指新 owner。
-            # 刻意不吞 stdout——↻ 那行要被上層 grep 撈出來，否則改寫發生了卻沒人看到
-            [ -f scripts/ensure-dotfiles-remote.sh ] && { bash scripts/ensure-dotfiles-remote.sh || helper_warn=1; } || true
             if [ "$helper_warn" -eq 0 ]; then echo "OK"; else echo "OK_HELPER_WARN"; fi
         else
             echo "NO_DOTFILES"

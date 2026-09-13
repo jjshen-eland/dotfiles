@@ -90,3 +90,14 @@
   - 放棄:只在 Scenario prose 提到第三臂而不提供 fixture；讓 CI 每次建立全量 sandbox（基線 18.28 秒）；把 exit 1 一律視為 failed check 或 no-checks
   - 重議:`gh pr checks` 的 no-checks 訊息或 exit contract 改變；Project 不再以 `ship-state.sh` 提供 required-policy evidence；或 u4 targeted builder 與全量 builder 產物漂移
   - 關聯:B-20260815-debt-10;M-20260826-project-watch-transport-error;claude/evals/setup-sandboxes.sh;claude/evals/README.md;shared/skills/project/references/pressure-tests.md;shared/skills/project/references/ship-paths.md;tests/run.sh
+- **M-20260913-identity-fleet-rollout-complete · 2026-09-13 git identity 主機隊 rollout 結案**:`inventory.conf` 全部 14 台與家中 MacBook 的既有 `verdict: OK` 證據完成主機隊收斂；依 `D-20260913-company-mac-nonblocking-identity-rollout`，休眠且不在 inventory 的公司 MacBook 改為恢復使用時才本機補跑，不再是 rollout blocker。`B-20260902-identity-fleet-rollout` 已自 backlog 移除。
+  - 日期來源:direct
+  - 放棄:把公司 MacBook 未喚醒誤記為已驗證；以遠端 mutation 換取形式上的全數完成
+  - 重議:同 `D-20260913-company-mac-nonblocking-identity-rollout`
+  - 關聯:B-20260902-identity-fleet-rollout;D-20260913-company-mac-nonblocking-identity-rollout;D-20260902-git-identity-directory-boundary;M-20260902-git-identity-directory-boundary;scripts/setup-git-identity.sh;scripts/inventory.conf
+
+- **M-20260913-dotfiles-remote-migration-retired · 2026-09-13 dotfiles owner 一次性 remote migration 完整退役**:`B-20260815-debt-09` 的全機隊移除條件早已成立；本批刪除 `ensure-dotfiles-remote.sh`，移除 brewup、dotsync 本機與遠端共三個呼叫點，並把原 23b 遷移行為測試改成「helper 不存在且 steady-state 無引用」的防復活 gate。該 gate 先以 helper／引用仍在得到兩項 RED，再於移除後轉綠；在最新 `main` 重建後完整 suite `PASS=1402 FAIL=0`，既有 dotsync helper 警告聚合與逐目標終判維持不變。`B-20260815-debt-09` 已自 backlog 移除。
+  - 日期來源:direct
+  - 放棄:只刪腳本而留下呼叫點；只刪行為測試而不留下退役契約；順手移除仍服務其他 helper 的 warning aggregate
+  - 重議:dotfiles 再次移轉 owner 且需要 bounded fleet migration；屆時建立新的 migration item，不復活舊 helper
+  - 關聯:B-20260815-debt-09;scripts/brewup.sh;scripts/dotfiles-sync.sh;tests/run.sh

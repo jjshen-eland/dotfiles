@@ -12,19 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### Identity fleet 結案與 dotfiles remote migration helper 退役 ⏳
-
-- **Writer**：`codex:retire-dotfiles-remote-migration`
-- **Workspace**：`branch=chore/retire-dotfiles-remote-migration`
-- **Write Scope**：`STATUS.md`, `docs/backlog.md`, `docs/archive/decisions-2026-09.md`, `docs/archive/milestones-2026-09.md`, `scripts/brewup.sh`, `scripts/dotfiles-sync.sh`, `scripts/ensure-dotfiles-remote.sh`, `tests/run.sh`
-- **Dossier Steward**：`codex:retire-dotfiles-remote-migration`
-- **Context**：inventory 14 台與家用 Mac 已完成 identity 收斂；公司 MacBook 已明示不再阻塞 rollout。一次性 dotfiles remote migration helper 的全機隊移除條件因此成立。
-- **Goal**：關閉 identity fleet blocker，記錄公司 Mac 的非阻斷邊界，並移除已完成使命的 remote migration helper 與三個常態呼叫點。
-- **Acceptance Criteria**：identity backlog item 有 decision／milestone 並移除；B-20260815-debt-09 有 milestone 並移除；helper 與 steady-state 引用不存在；既有 warning 聚合和 dotsync 逐目標終判不變；完整 suite 全綠。
-- **Constraints**：不喚醒或遠端修改公司 MacBook；保留 B10 已進 main 的 dossier 狀態；不降低現有同步錯誤可見性。
-- **進度**：實作與驗證已在尚未送出的 candidate `fe0ec5e` 完成；正依 prompt-bound authority recovery 在最新 main 上受控重建。
-- **下一步**：提交本 active contract，重建 completion candidate，重驗後依 `$project --merge` 送出。
-- **關聯**：`B-20260902-identity-fleet-rollout`, `B-20260815-debt-09`, `D-20260913-company-mac-nonblocking-identity-rollout`
+（目前無進行中項目。）
 
 ---
 
