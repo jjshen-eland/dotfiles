@@ -62,3 +62,10 @@
   - 放棄:繼續把 Claude tree 當共用核心（ownership 訊號錯誤）；whole-skill symlink（無法保留雙端 entry/metadata 差異）；在 shared tree 放第三份 `SKILL.md`（會變成未定義的第三入口）；整批刪除 `$HOME/.codex/skills`（會傷及 system 與第三方內容）；重寫已 portable skill（重演 X-20260825）
   - 重議:Agent Skills 標準提供無 adapter 複製且可攜帶 runtime metadata 的單一入口；任一 runtime 不再 follow nested symlink；或 `$HOME/.agents/skills` discovery contract 改變
   - 關聯:D-20260822-portable-deep-plan;D-20260823-portable-deep-review;D-20260825-portable-skill-authoring-default;X-20260825-deep-plan-duplicate-port;docs/skill-portability.md;shared/skills;scripts/ensure-codex-skills.sh;tests/run.sh
+
+- **D-20260913-project-merge-authorization-ci · 2026-09-13 Project merge 授權優先於 Claude 無上下文 outward hook，CI 防線前移到 required PR checks**:`/project --merge` 已由 Project shipping table 定義為同輪 push 與 merge 的明確授權，但 Claude Bash PreToolUse hook 只看單一 shell command，無法取得 normalized invocation，因而對兩個已授權動作各再發一次 approval UI。撤回 `c086aca` 的 Claude hook/runtime response，保留共同 classifier 與 Codex canonical prompt／opaque deny；組合回歸把 Project `--merge` 執行 push＋merge 的額外 approval UI 數固定為 0。CI 保留 PR 的 macOS 15＋Ubuntu 24.04 完整 suite，取消 merge 後 `push: main` 的同套重跑；main 改由兩個 GitHub Actions matrix contexts 作 required checks，對 admins 生效但 `strict=false`，避免 base 更新強迫重跑。ShellCheck、doc-governance deterministic suite 與 fixture-heavy 主流程並行，只重疊獨立唯讀工作、不刪覆蓋。
+  - 範圍:取代 `D-20260912-cross-runtime-outward-gate` 的 Claude hook 部分；其 classifier、Codex gate 與已知 `--dry-run` 保守邊界仍有效
+  - 日期來源:direct
+  - 放棄:讓 Claude hook 自行辨識先前 `/project --merge`（hook input 沒有 invocation context）;保留 merge 後完整重跑（壞 main 已發生且成本重複）;把 main run 改排程（PR 雙平台已覆蓋同一 suite，排程沒有新增環境維度）;開啟 strict required checks（會因 base 更新增加重跑與等待）;刪除慢測試換時間（失去既有 oracle）
+  - 重議:Claude hook input 能可靠攜帶 normalized skill invocation 與同輪授權；PR 與 main 的執行環境或測試集合分化；或 GitHub required-check context 名稱、runner matrix 改變
+  - 關聯:D-20260912-cross-runtime-outward-gate;M-20260912-outward-gate-and-auto-mode-drift;scripts/outward-action-gate.py;claude/settings.json;.github/workflows/test.yml;docs/testing-contract.md;tests/run.sh

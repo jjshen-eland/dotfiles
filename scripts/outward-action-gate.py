@@ -149,22 +149,18 @@ def classify(command: str) -> Finding | None:
     return first
 
 
-def hook_response(runtime: str, finding: Finding) -> dict[str, object] | None:
-    if runtime == "codex" and finding.canonical:
+def hook_response(finding: Finding) -> dict[str, object] | None:
+    if finding.canonical:
         return None
 
-    decision = "ask" if runtime == "claude" else "deny"
-    if runtime == "claude":
-        reason = f"{finding.action} publishes or merges remote state and requires current user approval."
-    else:
-        reason = (
-            f"Opaque {finding.action} command blocked. Re-run it as a direct canonical command "
-            "so the Codex exec policy can display its approval prompt."
-        )
+    reason = (
+        f"Opaque {finding.action} command blocked. Re-run it as a direct canonical command "
+        "so the Codex exec policy can display its approval prompt."
+    )
     return {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
-            "permissionDecision": decision,
+            "permissionDecision": "deny",
             "permissionDecisionReason": reason,
         }
     }
@@ -174,7 +170,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--classify", metavar="COMMAND")
-    mode.add_argument("--runtime", choices=("claude", "codex"))
+    mode.add_argument("--runtime", choices=("codex",))
     args = parser.parse_args()
 
     if args.classify is not None:
@@ -195,7 +191,7 @@ def main() -> int:
     finding = classify(tool_input["command"])
     if finding is None:
         return 0
-    response = hook_response(args.runtime, finding)
+    response = hook_response(finding)
     if response is not None:
         json.dump(response, sys.stdout, separators=(",", ":"))
         sys.stdout.write("\n")
