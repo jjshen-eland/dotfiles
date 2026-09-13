@@ -69,3 +69,9 @@
   - 放棄:讓 Claude hook 自行辨識先前 `/project --merge`（hook input 沒有 invocation context）;保留 merge 後完整重跑（壞 main 已發生且成本重複）;把 main run 改排程（PR 雙平台已覆蓋同一 suite，排程沒有新增環境維度）;開啟 strict required checks（會因 base 更新增加重跑與等待）;刪除慢測試換時間（失去既有 oracle）
   - 重議:Claude hook input 能可靠攜帶 normalized skill invocation 與同輪授權；PR 與 main 的執行環境或測試集合分化；或 GitHub required-check context 名稱、runner matrix 改變
   - 關聯:D-20260912-cross-runtime-outward-gate;M-20260912-outward-gate-and-auto-mode-drift;scripts/outward-action-gate.py;claude/settings.json;.github/workflows/test.yml;docs/testing-contract.md;tests/run.sh
+
+- **D-20260913-company-mac-nonblocking-identity-rollout · 2026-09-13 公司 MacBook 改為非阻斷、喚醒後才本機收斂的 identity rollout 邊界**:`inventory.conf` 14 台與家中 MacBook 已完成並通過 `setup-git-identity.sh --check`；休眠中的公司 MacBook 不在 inventory，使用者明確決定它不再阻塞主 rollout。這不把該機宣告為退役：若恢復用它開發，應在第一次 commit 前於該機執行 `brewup`、`setup-git-identity.sh --apply` 與 `--check`，但不為結案喚醒機器或執行遠端 mutation。
+  - 日期來源:direct
+  - 放棄:繼續讓一台不在管理 inventory、長期休眠的端點無限阻塞已完成的主 rollout；把它虛構成已退役或已驗證；為了結案遠端喚醒並改寫設定
+  - 重議:公司 MacBook 恢復為日常開發端點；或被正式納入 inventory／集中端點管理
+  - 關聯:B-20260902-identity-fleet-rollout;D-20260902-git-identity-directory-boundary;M-20260902-git-identity-directory-boundary;scripts/setup-git-identity.sh;scripts/inventory.conf

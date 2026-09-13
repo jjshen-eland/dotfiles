@@ -21,30 +21,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
 
 ## 技術債
 
-- **B-20260902-identity-fleet-rollout** · [ ] **git 身分分界的機隊收斂：inventory 14 台 ＋ 家中 MacBook 已完成，只剩休眠中的公司 MacBook**（2026-09-02 加，2026-09-03 更新）。
-  規則隨 `git/config` 散佈，但**身分值是機器層的、散佈不過去**，每台要跑一次
-  `./scripts/setup-git-identity.sh --apply`。
-  - **已完成（2026-09-03）**：`inventory.conf` 全部 14 台（eagle03/06/07/08/09、macs、db01、
-    ap01/02、macmini、m4mini、agent01、fe01、be01）＋ 家中 MacBook。每台皆 `git pull --ff-only`
-    到 `f0e1bad` 後 `--apply`，`--check` 全數 `verdict: OK`。
-    行為實測（問真 repo 的 `GIT_AUTHOR_IDENT`，不看設定檔）：`~/Projects` 與 `~/.dotfiles` → 工作、
-    macs `~/SideProjects/isdotgd` → 個人、`/tmp` 下的臨時 repo → `Author identity unknown`。
-    **m4mini 那格已關閉**：收斂前它的 `user.email`／`user.name` 皆空，任何 commit 都會是
-    `jjshen@m4mini.local`；現在解析到工作身分。
-  - **剩下**：**公司的 MacBook**——**仍在服役，2026-09-03 當下休眠中**，故本條不放棄、只是等它醒。
-    它不在 `inventory.conf`（見 `B-20260809-gap-10`），`dotsync` 涵蓋不到、也無法遠端喚醒代跑；
-    唯一路徑是在該機本地執行：
-    ```
-    brewup
-    cd ~/.dotfiles && ./scripts/setup-git-identity.sh --apply    # 需要個人身分再加 --personal-email
-    ```
-    ⚠️ **在它醒來並補跑之前，那台的 commit 仍會用 `~/.gitconfig` 的寫死工作 email**——分界對它尚未生效。
-    使用者的工作重心已移到 macs console，所以這台可能很久才會開機一次；**漏跑是無聲的**，
-    唯一判準是 `--check` 回 `verdict: OK`。
-  ⚠️ **收斂前的寫死身分排在 `[include]` 之前，所以拉到新 `git/config` 不會壞**——那也表示
-  「已 pull」不等於「已收斂」，唯一判準是 `--check` 回 `verdict: OK`。
-  - **關閉條件**：公司 MacBook 亦回 `verdict: OK`（或明確判定退役），屆時寫 `M-*` 並移除本條。
-
 - **B-20260902-gh-account-autoswitch** · [ ] **`gh` 的 active 帳號沒有依 repo 自動切換**（2026-09-02 加）。
   `gh` **完全不看 SSH alias**，active 帳號不對時的長相是 `Could not resolve to a Repository`
   ——不是權限錯誤，是「查無此 repo」（對那個帳號來說它確實不存在），所以第一次撞到很難聯想。
@@ -138,12 +114,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
 - **B-20260817-debt-07** · [ ] **`deep-plan/evals.md` 未經 2026-08-17 那場 `/deep-review`**(batch 條款禁止 eval 檔進 reviewer
   prompt)。要不要單獨審是獨立決定,尚未做。⚠️ 2026-08-18 該檔又大幅擴充(P8–P12 ＋ 八次實跑紀錄),
   未審的面積比當初更大。
-- **B-20260815-debt-09** · [ ] **`scripts/ensure-dotfiles-remote.sh` 一次性遷移殘留,移除條件已滿足、待動手**(2026-08-15 加,
-  掛 `dotfiles-sync.sh`＋`brewup.sh`)。條件是 inventory 的 14 台**＋不在 inventory 的兩台 MacBook**
-  origin 皆為 `jjshen-eland`:14 台當天完成,兩台 MacBook **同日確認已跟上**(它們正是靠 `brewup.sh`
-  這個呼叫點自己正規化的)。**尚未拆**——要同時清兩個呼叫點與 `tests/run.sh` 第 23b 節,列為獨立
-  工作項。⚠️ **本條初版的移除條件只寫「14 台」、漏掉那兩台**,當天差點據以移除——`dotsync` 的
-  涵蓋範圍不等於機隊全體。
 - **B-20260815-debt-11** · [ ] **`tests/run.sh` 平時只在 macOS 跑,跨平台分支的 Linux 行為無人驗**(2026-08-15 發現:
   `:4199` 的 stat 順序寫反,在 Linux 上恆紅了不知多久,直到 hook 那批第一次上 Linux 才浮出)。
   **危害是它會掩蓋真失敗**——往後在 Linux 看到 FAIL=1 會先當成已知那條。dotsync 後任何一台
