@@ -78,3 +78,9 @@
   - 放棄:用 `^\*\*` 前綴濾 slot（Claude 改格式時兩側同時變空、靜默失效）;只在 `comm` 之一補 locale;把 `### 標題` 也當 slot 並要求 settings.json 拿掉分節
   - 重議:`claude auto-mode defaults` 改用非 `label: value` 的 environment 格式;或 slot 名開始合法包含前置冒號
   - 關聯:M-20260912-outward-gate-and-auto-mode-drift;B-20260816-debt-08;scripts/check-claude-auto-mode-drift.sh;claude/known-hazards.md;claude/CLAUDE.md;claude/settings.json;tests/run.sh
+
+- **M-20260913-project-merge-authorization-ci · 2026-09-13 Claude Project merge 零重問與 PR-only required CI 完成本地實作**:先以組合 RED 重播 `c086aca` 後 `/project --merge` 的 push＋merge 會觸發 2 次 Claude approval UI，再只移除 Claude outward hook/runtime path，Codex gate、classifier 與其他改動保留；修後組合斷言為 0。PR workflow 保留 macOS 15＋Ubuntu 24.04，移除 `push: main` 重複完整 run；GitHub main branch protection 已將 `suite (macos-15)`、`suite (ubuntu-24.04)` 綁定 GitHub Actions app 15368 並設 required、admins enforced、strict false。三個原慢區段改以唯讀背景 gate 與 fixture 主流程重疊，本機完整 suite 由約 200 秒降至 119.51 秒，`PASS=1403 FAIL=0`；ShellCheck、Codex Project validator、`git diff --check` 亦通過。feature branch 尚未 push 或 merge。
+  - 日期來源:direct
+  - 放棄:整顆 `git revert c086aca`;排程重跑相同 main suite;縮小 tests/shellcheck 掃描集合
+  - 重議:remote PR 雙平台首跑顯示並行造成 host-specific failure；或 GitHub Actions context／branch protection 漂移
+  - 關聯:D-20260913-project-merge-authorization-ci;c086aca;.github/workflows/test.yml;claude/settings.json;scripts/outward-action-gate.py;tests/run.sh

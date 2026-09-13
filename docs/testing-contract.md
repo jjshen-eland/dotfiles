@@ -633,7 +633,9 @@ local 覆寫 global）。同樣明列、不假裝擋得住。
 
 ## 25. cross-platform contract
 
-- GitHub Actions 必須以唯讀 repository 權限，在 `macos-15` 與 `ubuntu-24.04` 跑完整 suite。
+- GitHub Actions 必須以唯讀 repository 權限，在 pull request 上以 `macos-15` 與 `ubuntu-24.04`
+  跑完整 suite；同一 workflow 不得再由 `push: main` 重跑相同 suite。main 的防壞責任由 required PR
+  checks 承擔，而不是在壞 commit 已合入後才重驗。
 - CI 不得把 runner image 的任意預裝版本當成 dependency contract；`shellcheck`、`ripgrep`、`yq` 必須由同一個
   明示的 Homebrew install step 收斂，避免 OS image 版本差異改變 gate verdict 或因缺 `rg` 造成連鎖假紅。
 - bare Git fixture 必須以 `git init --bare -b <intended-default>` 明示 remote HEAD；不得依賴 host 的
@@ -642,15 +644,20 @@ local 覆寫 global）。同樣明列、不假裝擋得住。
 - Ubuntu preflight 必須在任何 package mutation 前執行；非 Ubuntu 或低於 24.04 都回 exit 2。
 - Claude plugin 提示由同一 helper 讀 `enabledPlugins`，只輸出值為 `true` 的項目並穩定排序；
   macOS、Linux setup 不得各自再實作一份解析邏輯。
+- 完整 suite 可把彼此獨立且唯讀 repo 的 slow gates（目前為 ShellCheck 與 doc-governance deterministic
+  suite）和 fixture-heavy 主流程並行，但必須逐 pid 收 exit code、彙總原始失敗輸出，且 EXIT cleanup
+  終止未收斂的 child；並行只縮短 critical path，不得縮小掃描檔案或測試集合。
 
 ## 26. outward-action gate
 
 共同 classifier 只辨識會真的 push 或 merge 的 shell command；`git push --dry-run`、`git status`、
-`gh pr view` 與只回顯字樣的 `echo` 都必須分類為 `none`。Claude Code 對 direct 與 wrapper 形狀回 `ask`；
-Codex 對 rules 能精確命中的 direct argv 用 `prompt`，對 shell wrapper、compound command、`git -C`
-等 rules 無法安全精確分類的形狀由 PreToolUse `deny`，理由要求改用 canonical command 重送。
+`gh pr view` 與只回顯字樣的 `echo` 都必須分類為 `none`。Codex 對 rules 能精確命中的 direct argv 用
+`prompt`，對 shell wrapper、compound command、`git -C` 等 rules 無法安全精確分類的形狀由
+PreToolUse `deny`，理由要求改用 canonical command 重送。Claude Auto 不另掛此 hook：它拿不到 Project
+normalized invocation，無法區分未授權 outward action 與同輪 `/project --merge` 已授權的 push／merge；
+組合 gate 必須固定後者的 approval UI 呼叫數為 0。
 Codex 的 prefix rule 是詞彙前綴，因此 direct `git push --dry-run` 也會保守提示；共同 classifier
-仍把它判為無 outward effect，Claude 不提示。另在 `claude update` 後以 warn-only checker 比對
+仍把它判為無 outward effect。另在 `claude update` 後以 warn-only checker 比對
 內建與本機 `autoMode.environment` slot 名；漂移須列出雙向差異，但不得讓套件更新失敗。
 
 ## 27. Codex config merge 與 dotsync 聚合終判

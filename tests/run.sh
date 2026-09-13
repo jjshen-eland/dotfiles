@@ -37,7 +37,7 @@
 #  21. crawl-quality-scan.py（check-crawl-quality skill script）確定性掃描 / 扣分帳目 / --classify 覆核
 #  24. .githooks/dispatcher 全域 hook 代理：chain／exit code 原樣傳回／guard 三態 fail-open／三個刻意的 false negative
 #  25. cross-platform contract：GitHub Actions 雙 OS、Ubuntu 24.04 preflight、Claude plugin hints parity
-#  26. outward-action gate：push／merge classifier、Claude ask、Codex prompt + opaque-wrapper deny
+#  26. outward-action gate：classifier、Claude Project --merge 零重問、Codex prompt + opaque-wrapper deny
 #  27. Codex config／dotsync：三層 TOML 原子 merge、race guard、聚合 exit semantics
 #  28. neutral shared skill core：雙 runtime 薄 adapter、single eval oracle、無 whole-skill symlink
 #
@@ -70,7 +70,17 @@ TMP="$(mktemp -d)" || { echo "mktemp -d 失敗（TMPDIR 不存在或不可寫？
 # macOS 的 mktemp 給 /var/...（symlink），而腳本的照抄行印 git --show-toplevel 的 realpath
 # （/private/var/...）——不正規化，所有「整行照抄」斷言都會因路徑前綴不同而假紅。
 TMP="$(cd "$TMP" && pwd -P)"
-trap 'rm -rf "$TMP"' EXIT
+background_pids=""
+# ShellCheck does not treat a trap's function name as a direct invocation.
+# shellcheck disable=SC2329
+cleanup() {
+    for background_pid in $background_pids; do
+        kill -0 "$background_pid" >/dev/null 2>&1 && kill "$background_pid" >/dev/null 2>&1
+        wait "$background_pid" >/dev/null 2>&1 || true
+    done
+    rm -rf "$TMP"
+}
+trap cleanup EXIT
 
 PASS=0
 FAIL=0
@@ -91,8 +101,9 @@ assert_rc() {
     if [ "$2" -eq "$3" ]; then ok "$1"; else bad "$1（期望 exit=$2，實際 exit=$3）"; fi
 }
 
-echo "▶ 1. shellcheck gate"
-if shellcheck -x -P "SCRIPTDIR:$ROOT/scripts" \
+echo "▶ 1. shellcheck gate（背景執行，結尾彙總）"
+shellcheck_out="$TMP/shellcheck.out"
+shellcheck -x -P "SCRIPTDIR:$ROOT/scripts" \
     "$ROOT"/scripts/*.sh "$ROOT/scripts/lib/inventory.sh" \
     "$ROOT"/claude/scripts/*.sh \
     "$ROOT"/shared/skills/*/scripts/*.sh "$ROOT"/shared/skills/*/scripts/lib/*.sh \
@@ -102,11 +113,15 @@ if shellcheck -x -P "SCRIPTDIR:$ROOT/scripts" \
     "$ROOT/shell/functions.sh" \
     "$ROOT/setup-mac-env.sh" "$ROOT/setup-linux-env.sh" "$ROOT/write-mac-defaults.sh" \
     "$ROOT"/claude/evals/*.sh \
-    "$ROOT/tests/run.sh"; then
-    ok "shellcheck 全部通過"
-else
-    bad "shellcheck 有 findings"
-fi
+    "$ROOT/tests/run.sh" >"$shellcheck_out" 2>&1 &
+shellcheck_pid=$!
+background_pids="$background_pids $shellcheck_pid"
+
+echo "▶ 2b. doc-governance.py deterministic suite（背景執行，結尾彙總）"
+doc_test_out="$TMP/doc-governance-tests.out"
+python3 "$ROOT/tests/test_doc_governance.py" >"$doc_test_out" 2>&1 &
+doc_test_pid=$!
+background_pids="$background_pids $doc_test_pid"
 
 echo "▶ 1b. 全形標點吞變數名 gate"
 # bash 在部分 locale 下會把緊接在 $var 後的多位元組字元併進變數名：
@@ -818,17 +833,6 @@ for f in "$ROOT"/scripts/*.sh "$ROOT/scripts/lib/inventory.sh" \
     bash -n "$f" || { syntax_fail=1; echo "     syntax fail: $f"; }
 done
 if [ "$syntax_fail" -eq 0 ]; then ok "bash -n 全部通過"; else bad "bash -n 有語法錯誤"; fi
-
-echo "▶ 2b. doc-governance.py deterministic suite"
-doc_test_out="$TMP/doc-governance-tests.out"
-python3 "$ROOT/tests/test_doc_governance.py" >"$doc_test_out" 2>&1
-doc_test_rc=$?
-if [ "$doc_test_rc" -eq 0 ]; then
-    ok "doc-governance synthetic + real retrieval corpus 全部通過"
-else
-    bad "doc-governance suite 失敗（exit ${doc_test_rc}）"
-    sed 's/^/     /' "$doc_test_out"
-fi
 
 # ACTOR_RE 是刻意的複本：doc-governance.py 逐字 vendored 進每個受治理的 repo，不能 import
 # skill tree 的東西；steward-authority.py 只活在 project skill 裡。兩份規則一旦漂移，
@@ -7654,6 +7658,12 @@ if [ -f "$CI_FILE" ] \
 else
     bad "缺少雙 OS GitHub Actions contract"
 fi
+if grep -q '^  pull_request:$' "$CI_FILE" \
+    && ! grep -q '^  push:$' "$CI_FILE"; then
+    ok "CI 僅由 PR 觸發，不在 merge 後對 main 重跑同一套完整 suite"
+else
+    bad "CI trigger contract 應為 PR-only，避免 main 重複完整 run"
+fi
 
 # GitHub-hosted images 的預裝工具不是跨 OS 契約：run 34676591841 的 Ubuntu image 帶
 # ShellCheck 0.9.0、macOS 則由 Homebrew 裝 0.11.0，且兩者都缺 rg。只用 command -v
@@ -7741,13 +7751,28 @@ assert_eq "gh pr view → none" "none" "$(gate_classify 'gh pr view 176')"
 assert_eq "echo 的資料不是命令 → none" "none" "$(gate_classify 'echo git push')"
 
 gate_input='{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"git push origin feat/x"}}'
-out="$(printf '%s' "$gate_input" | python3 "$OUTWARD_GATE" --runtime claude 2>/dev/null)"; rc=$?
-assert_rc "Claude guarded action hook → exit 0" 0 "$rc"
-if jq -e '.hookSpecificOutput.hookEventName == "PreToolUse" and .hookSpecificOutput.permissionDecision == "ask"' <<< "$out" >/dev/null 2>&1; then
-    ok "Claude guarded action → ask"
-else
-    bad "Claude guarded action 未回 ask"
-fi
+
+# Project 的既有 behavior oracle（Scenario 13）把 `--merge` 定義成同輪 push + merge
+# endpoint authorization，AskUserQuestion 呼叫數必須是 0。這裡補 runtime composition：
+# 若 Claude settings 另掛一個不讀 invocation 的 outward hook，它會在兩個 Bash call 各發
+# 一次 approval UI，單看 Project eval 或單看 hook classifier 都抓不到這個衝突。
+claude_outward_hooks="$(jq '[
+    .hooks.PreToolUse[]?
+    | select(.matcher == "Bash")
+    | .hooks[]?
+    | select(.command | contains("outward-action-gate.py --runtime claude"))
+] | length' "$ROOT/claude/settings.json")"
+project_merge_approval_calls=0
+for project_merge_command in \
+    'git push -u origin feat/example' \
+    'gh pr merge 176 --rebase --delete-branch'; do
+    if [ "$(gate_classify "$project_merge_command")" != "none" ]; then
+        project_merge_approval_calls=$((project_merge_approval_calls + claude_outward_hooks))
+    fi
+done
+assert_eq "Claude /project --merge 的 push + merge approval UI 呼叫數為 0" \
+    "0" "$project_merge_approval_calls"
+
 out="$(printf '%s' "$gate_input" | python3 "$OUTWARD_GATE" --runtime codex 2>/dev/null)"; rc=$?
 assert_rc "Codex canonical action 交由 rules → exit 0" 0 "$rc"
 assert_eq "Codex canonical action hook 不重複 deny" "" "$out"
@@ -7763,11 +7788,11 @@ fi
 
 if jq -e '
     .permissions.defaultMode == "auto"
-    and any(.hooks.PreToolUse[]?; .matcher == "Bash")
+    and ([.hooks.PreToolUse[]?.hooks[]?.command? | select(contains("outward-action-gate.py"))] | length) == 0
 ' "$ROOT/claude/settings.json" >/dev/null; then
-    ok "Claude 維持 Auto 並接上 Bash PreToolUse gate"
+    ok "Claude 維持 Auto 且不另掛無 invocation context 的 outward gate"
 else
-    bad "Claude Auto／PreToolUse gate contract 不成立"
+    bad "Claude Auto 或 Project shipping 授權相容性不成立"
 fi
 if grep -q 'sandbox_mode = "danger-full-access"' "$ROOT/codex/config.toml" \
     && grep -q '^\[\[hooks\.PreToolUse\]\]$' "$ROOT/codex/config.toml"; then
@@ -8030,6 +8055,23 @@ if grep -q 'DST_ROOT=.*\.agents/skills' "$ROOT/scripts/ensure-codex-skills.sh" \
     && ! rg -q '__codex_link_skills' "$ROOT/setup-mac-env.sh" "$ROOT/setup-linux-env.sh"; then
     ok "Codex personal skill discovery 收旂到 ~/.agents/skills"
 else bad "Codex skill discovery 仍依賴 legacy ~/.codex/skills"; fi
+
+echo "▶ 背景 slow gates 彙總"
+wait "$shellcheck_pid"; shellcheck_rc=$?
+if [ "$shellcheck_rc" -eq 0 ]; then
+    ok "shellcheck 全部通過"
+else
+    bad "shellcheck 有 findings（exit ${shellcheck_rc}）"
+    sed 's/^/     /' "$shellcheck_out"
+fi
+wait "$doc_test_pid"; doc_test_rc=$?
+if [ "$doc_test_rc" -eq 0 ]; then
+    ok "doc-governance synthetic + real retrieval corpus 全部通過"
+else
+    bad "doc-governance suite 失敗（exit ${doc_test_rc}）"
+    sed 's/^/     /' "$doc_test_out"
+fi
+background_pids=""
 
 echo ""
 echo "════════════════════════════"
