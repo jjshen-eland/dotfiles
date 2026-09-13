@@ -3845,7 +3845,34 @@ if grep -q 'Scenario 28 — runtime steward workline 結案不得留下 active d
     ok "project Log 在 runtime steward workline 結案前消除跨 repo dead references"
 else bad "project Log 仍可能讓已結案 runtime actor 留在 active steward contract"; fi
 project_check_routing="$(sed -n '/^### merge 受阻時的分流/,/^## PR title/p' "$PJS_CLAUDE/references/ship-paths.md")"
+project_no_checks_scenario="$(sed -n '/^## Scenario 29 /,/^## Scenario 30 /p' "$PJS_CLAUDE/references/pressure-tests.md")"
+project_eval_root="$TMP/project-no-checks-eval"
+"$ROOT/claude/evals/setup-sandboxes.sh" "$project_eval_root" gate u4 >/dev/null
+assert_rc "project eval builder 可只建立 u4 fixture" 0 $?
+project_u4="$project_eval_root/u4-gate"
+project_checks_out="$("$project_u4/gh-stub-blocked" pr checks 7 --required 2>&1)"
+assert_rc "u4 全綠 control → checks exit 0" 0 $?
+if grep -q $'unit-tests\tpass' <<< "$project_checks_out"; then
+    ok "u4 全綠 control 輸出 pass row"
+else bad "u4 全綠 control 缺 pass row（${project_checks_out}）"; fi
+project_checks_out="$("$project_u4/gh-stub-blocked-pending" pr checks 7 --required 2>&1)"
+assert_rc "u4 pending control → checks exit 8" 8 $?
+if grep -q $'unit-tests\tpending' <<< "$project_checks_out"; then
+    ok "u4 pending control 輸出 pending row"
+else bad "u4 pending control 缺 pending row（${project_checks_out}）"; fi
+project_checks_out="$("$project_u4/gh-stub-blocked-no-checks" pr checks 7 --required 2>&1)"
+assert_rc "u4 no-checks control → checks exit 1" 1 $?
+assert_eq "u4 no-checks control 輸出 exact gh 訊息" \
+    "no checks reported on the 'feat/rate-limit' branch" "$project_checks_out"
+project_state_out="$("$project_u4/gh-stub-blocked-no-checks" pr view 7 --json mergeStateStatus -q .mergeStateStatus)"
+assert_eq "u4 no-checks control 與 Scenario 15 同為 BLOCKED" "BLOCKED" "$project_state_out"
+project_policy_out="$(SHIP_STATE_GH="$project_u4/gh-stub-blocked-no-checks" \
+    "$PJS_CLAUDE/scripts/ship-state.sh" "$project_u4/work")"
+if grep -q 'required-policy: none' <<< "$project_policy_out"; then
+    ok "u4 no-checks control 同時提供 required-policy none"
+else bad "u4 no-checks control 未形成 no-checks + required-policy none（${project_policy_out}）"; fi
 if grep -q 'Scenario 29 — checks watch 的 transport failure 不得冒充 check verdict' "$PJS_CLAUDE/references/pressure-tests.md" \
+    && grep -q 'gh-stub-blocked-no-checks' <<< "$project_no_checks_scenario" \
     && grep -q 'exit 1 有三個' <<< "$project_check_routing" \
     && grep -q 'transport.*API.*query failure' <<< "$project_check_routing" \
     && grep -q 'non-watch' <<< "$project_check_routing" \

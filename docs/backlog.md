@@ -5,7 +5,7 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
 
 # Backlog
 
-待辦清單:技術債與已知缺口(更新日期:2026-09-03)
+待辦清單:技術債與已知缺口(更新日期:2026-09-14)
 
 > **為什麼與 `STATUS.md`／history 分家**：三者生命週期不同。STATUS 只留 active／paused；history
 > event 發生後 append-only；backlog 只留未結案狀態，直到做掉或明確放棄才會消失。
@@ -144,11 +144,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   這個呼叫點自己正規化的)。**尚未拆**——要同時清兩個呼叫點與 `tests/run.sh` 第 23b 節,列為獨立
   工作項。⚠️ **本條初版的移除條件只寫「14 台」、漏掉那兩台**,當天差點據以移除——`dotsync` 的
   涵蓋範圍不等於機隊全體。
-- **B-20260815-debt-10** · [ ] **`BLOCKED` ＋ `no checks reported` 這一格沒有 eval 覆蓋**(2026-08-15 加)。判準已寫進
-  `ship-paths.md`(exit 1 要看輸出才分得出「check 失敗」與「這 repo 沒有 required check」),但
-  Scenario 15 的 stub 回的是全綠 exit 0,**測不到這一格**。補法:`gh-stub` 加 `CHECKS_RC=1` ＋
-  `no checks reported` 輸出的變體,配一則情境。⚠️ **這個洞是實戰撞出來的、不是 fixture 抓到的**
-  ——本批三臂 eval 全綠仍漏了它,因為三臂都沒有「repo 沒有 CI」的形狀。
 - **B-20260815-debt-11** · [ ] **`tests/run.sh` 平時只在 macOS 跑,跨平台分支的 Linux 行為無人驗**(2026-08-15 發現:
   `:4199` 的 stat 順序寫反,在 Linux 上恆紅了不知多久,直到 hook 那批第一次上 Linux 才浮出)。
   **危害是它會掩蓋真失敗**——往後在 Linux 看到 FAIL=1 會先當成已知那條。dotsync 後任何一台

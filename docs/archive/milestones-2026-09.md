@@ -84,3 +84,9 @@
   - 放棄:整顆 `git revert c086aca`;排程重跑相同 main suite;縮小 tests/shellcheck 掃描集合
   - 重議:remote PR 雙平台首跑顯示並行造成 host-specific failure；或 GitHub Actions context／branch protection 漂移
   - 關聯:D-20260913-project-merge-authorization-ci;c086aca;.github/workflows/test.yml;claude/settings.json;scripts/outward-action-gate.py;tests/run.sh
+
+- **M-20260914-project-no-checks-reported-eval · 2026-09-14 Project `BLOCKED + no checks reported` 缺口完成可重跑覆蓋**:`ship-paths.md` 的三分流本來已正確，缺的是 Scenario 29 第三控制臂的正式 fixture。u4 現新增 `gh-stub-blocked-no-checks`：與全綠／pending 控制臂同為 `mergeStateStatus=BLOCKED`，但 `gh pr checks --required` 精確輸出 no-checks 並回 1，`ship-state.sh` 同時給 `required-policy: none`；oracle 因此能證明這不是 failed check，而是與 CI 無關的 protection 阻擋，裸 `merge` 應停下並提供 `bypass merge` 回程。先以舊 builder 實測 setup 成功但 fixture 不存在得到 RED，修後 targeted u4 建置 0.66 秒並逐項轉綠；完整 suite `PASS=1412 FAIL=0`，Codex skill validator、Claude frontmatter／shared topology、ShellCheck 與 doc-governance 均通過。`B-20260815-debt-10` 已自 backlog 移除。
+  - 日期來源:direct
+  - 放棄:只在 Scenario prose 提到第三臂而不提供 fixture；讓 CI 每次建立全量 sandbox（基線 18.28 秒）；把 exit 1 一律視為 failed check 或 no-checks
+  - 重議:`gh pr checks` 的 no-checks 訊息或 exit contract 改變；Project 不再以 `ship-state.sh` 提供 required-policy evidence；或 u4 targeted builder 與全量 builder 產物漂移
+  - 關聯:B-20260815-debt-10;M-20260826-project-watch-transport-error;claude/evals/setup-sandboxes.sh;claude/evals/README.md;shared/skills/project/references/pressure-tests.md;shared/skills/project/references/ship-paths.md;tests/run.sh
