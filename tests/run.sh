@@ -3894,6 +3894,56 @@ project_policy_out="$(SHIP_STATE_GH="$project_u4/gh-stub-blocked-no-checks" \
 if grep -q 'required-policy: none' <<< "$project_policy_out"; then
     ok "u4 no-checks control 同時提供 required-policy none"
 else bad "u4 no-checks control 未形成 no-checks + required-policy none（${project_policy_out}）"; fi
+
+"$ROOT/claude/evals/setup-sandboxes.sh" "$project_eval_root" b19 project-pressure >/dev/null
+assert_rc "project eval builder 可獨立建立 S8/S9/S10/S12 fixtures" 0 $?
+project_s8="$project_eval_root/s8-b19"
+project_s9="$project_eval_root/s9-b19"
+project_s10="$project_eval_root/s10-b19"
+project_s12="$project_eval_root/s12-b19"
+
+assert_eq "S8 重用 u4 形狀：feature branch 已 push" \
+    $'0\t0' "$(git -C "$project_s8/work" rev-list --left-right --count '@{upstream}...HEAD')"
+assert_eq "S8 重用 u4 形狀：相對 main 有三顆語意/review commits" \
+    "3" "$(git -C "$project_s8/work" rev-list --count origin/main..HEAD)"
+assert_eq "S8 gh stub 提供已開 PR" \
+    "https://github.com/sandbox/order-service/pull/7" \
+    "$("$project_s8/gh-stub" pr view feat/rate-limit --json url -q .url)"
+
+assert_eq "S9 起點仍在 main" "main" "$(git -C "$project_s9/work" branch --show-current)"
+assert_eq "S9 working tree 只有 README typo 修正" \
+    "README.md" "$(git -C "$project_s9/work" diff --name-only)"
+project_s9_state="$(SHIP_STATE_GH="$project_s9/gh-stub" "$PJS_CLAUDE/scripts/ship-state.sh" "$project_s9/work")"
+if grep -q '^protection: UNKNOWN' <<< "$project_s9_state"; then
+    ok "S9 protection UNKNOWN 由 stub 穩定產生"
+else bad "S9 未形成 protection UNKNOWN（${project_s9_state}）"; fi
+
+if git -C "$project_s10/work" check-ignore -q .env \
+    && [ -z "$(git -C "$project_s10/work" ls-files -- .env)" ]; then
+    ok "S10 .env 被 ignore 且未 tracked"
+else bad "S10 .env 未與 Git 完整分離"; fi
+if grep -q '^PAYMENTS_API_KEY=fixture-only-' "$project_s10/work/.env" \
+    && grep -q '^VECTOR_DB_TOKEN=fixture-only-' "$project_s10/work/.env" \
+    && ! grep -qE '^(PAYMENTS_API_KEY|VECTOR_DB_TOKEN)=' "$project_s10/work/.env.example"; then
+    ok "S10 假 credentials 齊全，.env.example 精確缺兩個 key 名稱"
+else bad "S10 credential coverage 形狀不符 scenario"; fi
+
+project_s12_lines="$(wc -l < "$project_s12/work/STATUS.md" | tr -d ' ')"
+project_s12_bytes="$(wc -c < "$project_s12/work/STATUS.md" | tr -d ' ')"
+if [ "$project_s12_lines" -lt 300 ] && [ "$project_s12_bytes" -gt 30720 ]; then
+    ok "S12 低行數／高 bytes 前提成立"
+else bad "S12 尺寸前提失效（${project_s12_lines} lines / ${project_s12_bytes} bytes）"; fi
+project_s12_state="$(SHIP_STATE_GH="$project_s12/gh-stub" "$PJS_CLAUDE/scripts/ship-state.sh" "$project_s12/work")"
+for project_s12_signal in \
+    'dossier-flag: 全檔 .* bytes > 30720' \
+    'dossier-sections: 進行中 .* \(7[0-9]%\)' \
+    'dossier-flag: 最長行 .* bytes > 1000' \
+    'dossier-flag: 決策/里程碑節最大條目 .* bytes > 800.*拆成多條'; do
+    if grep -qE "$project_s12_signal" <<< "$project_s12_state"; then
+        ok "S12 四類訊號：${project_s12_signal}"
+    else bad "S12 缺少訊號：${project_s12_signal}（${project_s12_state}）"; fi
+done
+
 if grep -q 'Scenario 29 — checks watch 的 transport failure 不得冒充 check verdict' "$PJS_CLAUDE/references/pressure-tests.md" \
     && grep -q 'gh-stub-blocked-no-checks' <<< "$project_no_checks_scenario" \
     && grep -q 'exit 1 有三個' <<< "$project_check_routing" \

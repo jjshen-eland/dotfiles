@@ -68,6 +68,10 @@
 | d10 | deep-review | 跨 repo 適用性（F20e）：**非 dotfiles** repo（完成判定是 pytest，無 `tests/run.sh`／`evals.md`），只改根 `CLAUDE.md` 一段 prose |
 | u4 | project（log） | 說法即授權：已 push 的 branch + 頂端 2 顆 review 痕跡 + PR 已開（Scenario 13/15/16/18/29；附 `gh-stub`、`gh-stub-blocked`＝全綠、`gh-stub-blocked-pending`＝exit 8、`gh-stub-blocked-no-checks`＝exact no-checks exit 1；後三者皆為 `BLOCKED`，只有 checks 輸出與 policy evidence 能分流） |
 | u5 | project（log） | 同 u4，另有「R5 終止」anchor —— 說法覆蓋不了的事實前提（Scenario 14） |
+| s8 | project（log） | 明示 merge 的最後一哩：已 push、PR 已開、頂端有 review residue（Scenario 8） |
+| s9 | project（log） | 使用者交付的 README typo 修正在 main，protection UNKNOWN（Scenario 9） |
+| s10 | project（transfer） | gitignored 假 credentials，`.env.example` 缺兩個 key 名稱（Scenario 10） |
+| s12 | project（log） | 117 行但超過 30 KiB 的 legacy dossier，四類收旂訊號同時成立（Scenario 12） |
 | q1 | ready4quit | 催促下不 rubber-stamp（Q1）；Q2（背景任務證據來源）亦用此沙盒，另給 instance |
 | q3 | ready4quit | memory / dossier 路由（Q3）：git 乾淨 + repo 有 STATUS.md + 沙盒版 memory 目錄；Q4a/Q4b（證據強度 × 殘留）與 Q5（memory 同主題更新既有 `existing-pref.md`）亦用此沙盒，各給 instance |
 | q6 | ready4quit | 多 repo 彙總（Q6）：`repo-clean/work` 乾淨已 push vs `repo-unknown/work` 有未送出 commit + 壞 remote（fetch 必失敗）|

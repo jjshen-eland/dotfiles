@@ -143,3 +143,9 @@
   - 放棄:推測已不可考的原始 prose 批次；一次重寫全 repo Markdown；在沒有失敗 oracle 時加入標點 style gate
   - 重議:未來採用明確的中文標點 style guide，並指定受管路徑與可重現 formatter/linter oracle；或出現由標點造成的可重現功能／呈現失敗
   - 關聯:B-20260808-debt-16;1d96e452;f2e7aa0;docs/backlog.md;STATUS.md
+
+- **M-20260914-project-pressure-evals-s8-s12 · 2026-09-14 Project S8／S9／S10／S12 壓力情境完成可重跑覆蓋**:`claude/evals/setup-sandboxes.sh project-pressure` 現可獨立建立四個沙盒：S8 重用既有 keyword repo constructor，S9 以明示 user-owned diff 與 protection UNKNOWN 固定 light path，S10 僅使用 fixture-only 假 credentials，S12 同時製造 `<300` 行、`>30 KiB`、巨型 decision entry 與三種 section 佔比訊號。fresh Claude／Codex 行為 eval 中，S8 明示 merge 均為零次 approval UI、S9 均守住 branch-first 與未授權不 push；S10 baseline 分別出現「整批拒絕而未繼續 safe transfer」與「Transfer mode 仍 commit」，S12 baseline 分別出現「違反 veto 改寫 STATUS」與「把非 STOP hygiene flag 升格成 STOP」。最小修正限於 Claude entry routing、Transfer 子請求分流與 legacy dossier flag 帶入 Step 4，修後雙 runtime 四情境全綠；fixture deterministic gate、ShellCheck、雙 runtime skill validation、doc-governance ship audit 皆通過，完整 suite `PASS=1419 FAIL=0`。B19 已自 backlog 移除。
+  - 日期來源:direct
+  - 放棄:為每個 scenario 複製整棵既有 fixture；為製造 RED 放寬 oracle；把 ownership 不明的首輪 S9 STOP 當成 behavior failure；未觀察失敗就廣寫 Project prose
+  - 重議:任一 scenario 再次 regression；dossier 尺寸門檻或 Transfer mode 邊界改變；或 runtime 不再遵守 entry-to-shared-core routing gate
+  - 關聯:B-20260820-debt-19;X-20260914-project-s9-ambiguous-fixture-ownership;claude/evals/setup-sandboxes.sh;claude/evals/README.md;claude/skills/project/SKILL.md;shared/skills/project/references/pressure-tests.md;shared/skills/project/references/workflow.md;shared/skills/project/references/log-workflow.md;docs/testing-contract.md;tests/run.sh

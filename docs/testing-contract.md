@@ -192,6 +192,13 @@ remote branch 題改用使用者可合理提供的機制詞，並驗證未出現
 
 含 resolve 子指令、dossier 簽章偵測、bootstrap 判定、殘留 branch 衛生。protection 判定用 gh stub。
 
+`claude/evals/setup-sandboxes.sh project-pressure` 另建互不共用狀態的 S8／S9／S10／S12 沙盒；
+S8 只重用 `seed_keyword_repo` 建構元件，S9 明示預置 README diff 為 user-delivered current task 並以 stub
+固定 protection UNKNOWN，S10 只放顯眼的 fixture-only 假值且讓兩個指定 key 缺於 `.env.example`，S12
+同時滿足 `<300` 行、`>30720` bytes、巨型 decision entry 與 active／milestone／decision 三種 section 佔比訊號。
+`tests/run.sh` 只守這些可重建前提；runtime 的實際行為結論與 RED／GREEN 證據仍以
+`shared/skills/project/references/pressure-tests.md` 為 oracle，兩者不可互相冒充。
+
 ### dossier 尺寸訊號
 
 總量 bytes／最長行／決策·里程碑條目 bytes（條目附**行號**、全檔附**建議收斂目標**、

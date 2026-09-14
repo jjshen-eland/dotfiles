@@ -20,3 +20,5 @@ allowed-tools: Bash, Read, Glob, Grep, Edit, Write, AskUserQuestion
    解析。若從 worktree 測試，必須使用 worktree 這份，不得跳去全域安裝副本。
 3. **完整讀取 [references/workflow.md](references/workflow.md)，再依它分派模式並執行。** 核心
    lifecycle、授權、STOP 與 mutation contract 只在 shared references/scripts；本入口不得另建一套。
+   不得在讀取 shared workflow 前就依 arguments 整體拒絕 invocation；可拒絕的子要求、
+   以及拒絕後是繼續還是 STOP，一律由 core 的 mode contract 決定。
