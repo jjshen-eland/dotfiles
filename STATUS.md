@@ -6,13 +6,25 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 # STATUS.md
 
-個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-09-14)
+個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-09-15)
 
 ---
 
 ## 進行中
 
-（目前無進行中項目。）
+### B-20260820-debt-20：重新評估 Codex Claude plugin 的現行價值與去留 ⏳
+
+- **Writer**：`codex:codex-plugin-reassessment`
+- **Workspace**：`branch=chore/codex-plugin-reassessment`
+- **Write Scope**：`STATUS.md`, `docs/backlog.md`, `docs/archive/decisions-2026-09.md`
+- **Dossier Steward**：`codex:codex-plugin-reassessment`
+- **Context**：B20 原先假設 headless `codex exec` 接管 review 後 plugin 只剩 `/codex:transfer`；現機已安裝 v1.0.6，必須依實際 commands、skills、hooks、runtime 與使用紀錄重估。
+- **Goal**：逐項對照 plugin v1.0.6 與 repo-local exec／skills，決定保留、官方支援的局部縮減或完整移除，不沿用舊前提。
+- **Acceptance Criteria**：盤點八個 commands、三個 bundled skills、hooks、broker/state 與安裝更新入口；區分 session transfer、Project owner transfer 與 handoff；以 clean-room 測試及實際使用證據評估三條路徑，寫 event-time decision 並結清 B20。
+- **Constraints**：盤點期間不解除安裝、不刪 plugin cache／marketplace／data；不虛構 plugin 未支援的 per-command disable；只有 observed behavior failure 才修改 repo-local skill。
+- **進度**：已確認 plugin v1.0.6 setup ready/direct、Stop review gate 關閉；本機有 24 筆 completed task jobs，無 review jobs；upstream 隔離 suite 91/91、repo suite 1419/1419 通過。`transfer` 與 `rescue` 仍有獨有 bridge 價值，review commands 則與 repo-native workflow 重疊。
+- **下一步**：記錄「完整保留為按需 bridge、canonical review 仍走 repo-local workflow」的決策，移除 B20 並送出。
+- **關聯**：`B-20260820-debt-20`, `D-20260823-portable-deep-review`, `D-20260823-portable-handoff-skill`, `M-20260824-memory-independent-transfer`
 
 ---
 
