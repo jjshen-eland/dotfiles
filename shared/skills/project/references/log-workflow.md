@@ -240,6 +240,9 @@ completed active item。一般 milestone、只完成其中一項工作或單純�
 **Legacy repo**（兩個 adoption 檔都無）：沿用 `ship-state.sh` 印出的 `dossier:`／`dossier-flag:`／
 `dossier-sections:`／`backlog-flag:`。逐 flag 照訊息處置；簽章不符或 backlog 缺必要章節就 STOP。
 `dossier: NONE` 只在摘要建議建立，不自動回填。只有一個 adoption 檔存在時是 BROKEN，不得走本段。
+使用者若明示拒絕修改 `STATUS.md`，必須保持它 byte-identical；將原始 flag 事實與分節數字寫入 Step 4
+附註並標成「未處理」，不得宣稱衛生檢查通過，也不得把單純 size／style flag 自行升級為
+STOP。只有 helper 本身印出 `verdict: STOP` 或上述簽章／章節完整性等硬條件失敗才停。
 
 `always-on:` 與 doc report 的 bytes 都是資訊，不在一般 ship 順手壓縮；真正 blocking 的 budget 已由 adopted audit 判定。
 

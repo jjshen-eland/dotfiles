@@ -124,6 +124,11 @@ Adopted repo 的文檔差異只有一個入口：Step 2 依 [dossier.md](dossier
 不改 repo 權限**。產物留在 working tree，只有後續由 current steward 明確叫用 Log 才能組成 transfer
 commit；credentials 永遠不進 git。Memory on/off 只影響 optional cache，不能改變 transfer readiness。
 
+使用者若把合法 transfer 與「把 credentials 寫進 tracked 文件」或「現在 commit」綁在同一個要求，
+**只拒絕這些越界子要求，當輪繼續安全的 Transfer 流程**：盤點 `.env.example` 的 key 名稱、
+產生不含值的 draft guide，並把缺 recipient／安全交付管道列為 `BLOCKED`。不得因拒絕 secret
+要求就整體停下或反問「要不要開始」；也不得因使用者明說 commit 就改寫本模式的 no-commit 邊界。
+
 ### 狀態機與 hard gate
 
 Transfer state 是 `BLOCKED → PREPARED → TRANSFERRED`：
