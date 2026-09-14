@@ -136,6 +136,11 @@ Skill authoring 的跨 runtime 規則只存在 `docs/skill-portability.md`；Cla
 重寫；原決策其實可由既有 doc-governance route 第一輪直接命中。Root repo route 與 Codex always-on authoring
 trigger 也必須涵蓋 any repo-local skill，不得把 `claude/skills/**` 的 canonical source 排除在 preflight 外。
 
+Codex validator 指令同時守兩個獨立 failure mode：以 `uv --with pyyaml` 隔離依賴，並以
+`~/.codex/skills/.system/skill-creator/scripts/quick_validate.py` 定位 system script。只檢查 `uv ... python`
+前綴不足以證明後者；2026-09-15 將路徑退回 `$skill-creator/scripts/quick_validate.py` 的 mutant 在舊 gate
+仍為 GREEN。故現行 gate 必須精確要求絕對 system path，並拒絕 context-dependent 舊形式。
+
 ## 2. bash -n 語法 gate
 
 涵蓋範圍同第 1 節。

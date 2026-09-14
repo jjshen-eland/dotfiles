@@ -793,11 +793,14 @@ if grep -q 'G7 template placeholder missing' "$ROOT/claude/evals/setup-sandboxes
 else
     bad "G7 fixture builder 的 str.replace miss 仍會靜默產生空 oracle"
 fi
-if grep -q 'uv run --no-project --with pyyaml python' "$ROOT/codex/skill-building-guide.md" \
+# shellcheck disable=SC2016 # 比對 Markdown 裡的舊 $skill-creator 字面，不做變數展開
+if grep -Fq 'uv run --no-project --with pyyaml python ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py <skill-dir>' \
+        "$ROOT/codex/skill-building-guide.md" \
+    && ! grep -Fq '$skill-creator/scripts/quick_validate.py' "$ROOT/codex/skill-building-guide.md" \
     && grep -q '不要假設 system Python 已安裝 PyYAML' "$ROOT/codex/skill-building-guide.md"; then
-    ok "skill validator 以 uv 隔離 PyYAML，不依賴 system Python"
+    ok "skill validator 使用絕對 system path 並以 uv 隔離 PyYAML"
 else
-    bad "skill validator 指令仍會因 system Python 缺 PyYAML 而失敗"
+    bad "skill validator 路徑依賴呼叫 context，或仍會因 system Python 缺 PyYAML 而失敗"
 fi
 portable_skill_contract="$ROOT/docs/skill-portability.md"
 if [ -f "$portable_skill_contract" ] \
