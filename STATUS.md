@@ -12,7 +12,19 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-（目前無進行中項目。）
+### B-20260815-debt-11：結案 Linux 完整 suite 無流程驗證的技術債 ⏳
+
+- **Writer**：`codex:close-linux-ci-debt`
+- **Workspace**：`branch=docs/close-linux-ci-debt`
+- **Write Scope**：`STATUS.md`, `docs/backlog.md`, `docs/archive/milestones-2026-09.md`
+- **Dossier Steward**：`codex:close-linux-ci-debt`
+- **Context**：B11 原先記錄 `tests/run.sh` 只有 macOS 日常執行、Linux 無任何固定流程；PR #179 已建立 macOS 15＋Ubuntu 24.04 完整 suite，PR #183 再次證明兩個 required checks 實際通過。
+- **Goal**：核對現行 workflow、測試契約與 GitHub required-check 證據，將已解決的 B11 正式結案。
+- **Acceptance Criteria**：PR workflow 固定在 macOS 15＋Ubuntu 24.04 執行 `./tests/run.sh`；cross-platform regression gate 存在；兩個 check contexts 仍為 `main` required；有 event-time milestone；B11 自 backlog 移除；doc-governance 與完整 suite 全綠。
+- **Constraints**：不新增 merge 後 `push: main` 的重複完整 run；不降低 macOS 或 Ubuntu 覆蓋；不把單次本機 Linux 測試冒充持續驗證。
+- **進度**：已確認 repo 內 workflow／contract／既有 CI 里程碑符合原始缺口的解法；待重驗 GitHub protection、補結案紀錄與回歸驗證。
+- **下一步**：取得 required-check 現況，加入 milestone、移除 B11，執行完整 suite 與 ship audit。
+- **關聯**：`B-20260815-debt-11`, `M-20260912-cross-runtime-portability`, `M-20260912-ci-run-34676591841-repair`, `D-20260913-project-merge-authorization-ci`
 
 ---
 
