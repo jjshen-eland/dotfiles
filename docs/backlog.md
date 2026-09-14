@@ -114,10 +114,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
 - **B-20260817-debt-07** · [ ] **`deep-plan/evals.md` 未經 2026-08-17 那場 `/deep-review`**(batch 條款禁止 eval 檔進 reviewer
   prompt)。要不要單獨審是獨立決定,尚未做。⚠️ 2026-08-18 該檔又大幅擴充(P8–P12 ＋ 八次實跑紀錄),
   未審的面積比當初更大。
-- **B-20260808-debt-16** · [ ] R4 non-blocking 餘一項:**新增 prose 的中文半形標點與既有全形混排**。2026-08-08 未做——
-  「新增 prose」指哪一批已不可考,純風格、無失敗案例,且該日又寫入大量中文 prose(移動標靶)。
-  要做就一次全檔統一,不要逐批追。其餘三項(Transfer 模式 commit 歸屬、evals/README 路徑基準、
-  handoff evals H4 排序)已於 2026-08-08 修畢。
 - **B-20260820-debt-17** · [ ] **「tests/stub 有覆蓋、實戰未驗」一組**(遇到對應情境時順手確認即可,不必專程做):
   SessionStart hook 落後提醒(真實落後的 clone);autocodex exec 的 resume 分支(exit 4 救援階梯,
   三輪實跑皆一次成功、只有 stub 覆蓋,F15(b) 待真實空報告);review-anchor 的 stale STOP 與
