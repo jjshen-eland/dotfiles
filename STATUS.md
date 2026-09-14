@@ -12,7 +12,19 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-（目前無進行中項目。）
+### B-20260820-debt-15：結案已被 testing contract 吸收的兩條判準 ⏳
+
+- **Writer**：`codex:close-b15-retained-test-criteria`
+- **Workspace**：`branch=docs/close-b15-retained-test-criteria`
+- **Write Scope**：`STATUS.md`, `docs/backlog.md`, `docs/archive/milestones-2026-09.md`
+- **Dossier Steward**：`codex:close-b15-retained-test-criteria`
+- **Context**：2026-08-10 將已結案技術債歸檔時，另開一項要求保留「repo-local 測試權威」與「便宜 gate 趁乾淨加入」兩條判準；`d5c1564` 已於翌日把兩者移入 `docs/testing-contract.md`，但 item 未同步結案，2026-08-16 又被機械搬進 backlog。
+- **Goal**：依現行 repo 與歷史證據判定 B15 是否仍有實作缺口；若既有權威與 gate 仍有效，移除 stale backlog item，避免製造重複規則。
+- **Acceptance Criteria**：確認 repo-local test authority 仍由 root `CLAUDE.md`／`AGENTS.md` 承接、root import 有機檢、xref audit 通過；確認 shellcheck gate 仍涵蓋 `claude/evals/*.sh` 且設計理由保留；新增 milestone 記錄既已滿足與不新增重複 gate 的理由；B15 自 backlog 移除；doc audit 通過。
+- **Constraints**：不為已滿足項新增行為規則、skill instruction 或重複 gate；不改寫 2026-08 歷史記錄；不擴張到其他 backlog item。
+- **進度**：歷史與現況已核對；`d5c1564` 是實質完成點，現行 xref audit 為 0 findings，root import 與 shellcheck coverage 均仍有對應機制。
+- **下一步**：記錄 B15 stale-state 結案 milestone、移除 backlog item並跑 doc audit。
+- **關聯**：`B-20260820-debt-15`, `d5c1564`, `3c7e0a6`, `f2e7aa0`
 
 ---
 
