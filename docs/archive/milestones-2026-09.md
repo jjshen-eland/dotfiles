@@ -137,3 +137,9 @@
   - 放棄:再新增一份 always-on 規則或重複 gate；只因 backlog 未勾選就假設 2026-08-11 的落地不存在；把 literal 路徑 `CLAUDE.md` 固化成不允許 root 原生 import 的舊架構
   - 重議:root `CLAUDE.md` 不再原生載入 repo-local 測試契約；xref／kernel gate 被移除；或 shellcheck coverage 不再包含 `claude/evals/*.sh`
   - 關聯:B-20260820-debt-15;3c7e0a6;d5c1564;f2e7aa0;CLAUDE.md;AGENTS.md;docs/testing-contract.md;tests/kernel-gate.py;tests/run.sh
+
+- **M-20260914-b16-obsolete-punctuation-debt-closed · 2026-09-14 B16 中文標點風格債因失去可辨識範圍而結案**:`B-20260808-debt-16` 最早只是 2026-07-16 R4 non-blocking 清單中一句「新增 prose」的風格建議，未指名檔案、批次、希望格式或失敗案例；2026-08-08 已明記其 target 不可考且會隨新 prose 移動。現況的寬鬆掃描在 54 個 Markdown 檔、約 1,734 行命中中文與 ASCII 標點相鄰，其中包含指令、識別字與 Markdown 結構，無法從命中反推原始缺口。Repo 也沒有以行為 oracle 或風格契約要求全形／半形統一；因此不做大面積 prose churn、不新增主觀 lint gate，將 B16 以不再適用結案並從 backlog 移除。
+  - 日期來源:direct
+  - 放棄:推測已不可考的原始 prose 批次；一次重寫全 repo Markdown；在沒有失敗 oracle 時加入標點 style gate
+  - 重議:未來採用明確的中文標點 style guide，並指定受管路徑與可重現 formatter/linter oracle；或出現由標點造成的可重現功能／呈現失敗
+  - 關聯:B-20260808-debt-16;1d96e452;f2e7aa0;docs/backlog.md;STATUS.md
