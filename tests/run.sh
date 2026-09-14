@@ -3981,6 +3981,27 @@ if grep -q 'handoff invocation 本身不授權編輯' "$ROOT/shared/skills/hando
         "$HFS_CLAUDE/references/workflow.md"; then
     ok "handoff 續寫 oracle 不把 durable-doc repo mutation 當隱性授權"
 else bad "handoff 續寫 workflow／eval 仍可能未授權改 repo"; fi
+handoff_write_contract="$(sed -n '/^## Write mode/,/^## Resume mode/p' \
+    "$HFS_CLAUDE/references/workflow.md")"
+handoff_write_order="$(awk '
+    /^### W2：沉澱 durable facts$/ { route = NR }
+    /^### W3：蓋最終錨點$/ { anchor = NR }
+    /^### W4：寫檔$/ { artifact = NR }
+    END { printf "%d %d %d\n", route + 0, anchor + 0, artifact + 0 }
+' "$HFS_CLAUDE/references/workflow.md")"
+read -r handoff_route_line handoff_anchor_line handoff_artifact_line <<< "$handoff_write_order"
+handoff_stale_dirty_claim='anchor 的 '
+handoff_stale_dirty_claim="${handoff_stale_dirty_claim}\`dirty=1\` 就是上述兩個未 commit 檔案"
+if [ "$handoff_route_line" -gt 0 ] \
+    && [ "$handoff_route_line" -lt "$handoff_anchor_line" ] \
+    && [ "$handoff_anchor_line" -lt "$handoff_artifact_line" ] \
+    && grep -q '所有已授權的 repo mutation.*anchors 前完成' <<< "$handoff_write_contract" \
+    && grep -q 'H5b — write-side：已授權 durable mutation 必須先於最終錨點' \
+        "$ROOT/shared/skills/handoff/evals.md" \
+    && grep -qF "$handoff_stale_dirty_claim" \
+        "$ROOT/shared/skills/handoff/evals.md"; then
+    ok "handoff durable mutation 先於最終 anchors，且 H5b 釘住 dirty 敘述回歸"
+else bad "handoff 仍可能在 anchors 後修改 repo，讓 dirty=N 與交接敘述過期"; fi
 if grep -q 'H14 — cross-host' "$ROOT/shared/skills/handoff/evals.md" \
     && grep -q 'Memory availability' "$HFS_CLAUDE/references/workflow.md" \
     && grep -q 'authorization.*不得.*carry' "$HFS_CLAUDE/references/workflow.md"; then
@@ -4441,7 +4462,7 @@ if echo "$out" | grep -q "predecessor: NONE"; then ok "無命中印 NONE"; else 
 out="$("$HA_SCRIPT" find-predecessor '*' "$FP")"
 if echo "$out" | grep -q "predecessor: NONE"; then ok "slug 含 glob 字元不誤匹配"; else bad "glob 字元被展開"; fi
 
-# active 檔名就是 <slug>.md，**不得**剝任何前綴——W3 只禁 YYYYMMDD-HHMMSS- 開頭，
+# active 檔名就是 <slug>.md，**不得**剝任何前綴——W4 只禁 YYYYMMDD-HHMMSS- 開頭，
 # 日期-only 的 slug 合法；剝了會把它比成 `foo`、判成首輪，接著整檔覆寫、前一輪內容無聲蒸發
 fp_mk "20260804-dated-slug.md" "20260804-dated-slug"
 out="$("$HA_SCRIPT" find-predecessor "20260804-dated-slug" "$FP")"
@@ -4472,7 +4493,7 @@ assert_eq "legacy 檔的 slug 恰以 6 位數字開頭 → 仍定位得到" \
     "$FP/archive/20260807-120000-ambig.md" "$(echo "$out" | sed -n 's/^predecessor: //p')"
 
 # frontmatter 判定只掃第一個 --- 到下一個 ---：正文／code fence 裡的 `slug:` 不算數
-# （W3 模板本身就長那樣，交接檔在講 handoff skill 時會把它貼進正文）
+# （W4 模板本身就長那樣，交接檔在講 handoff skill 時會把它貼進正文）
 # shellcheck disable=SC2016  # 三個反引號是 fixture 的字面 markdown code fence，不是命令替換
 printf -- '---\ncreated: 2026-08-01\n---\n# Handoff\n\n```\nslug: other-line\n```\n' \
     > "$FP/archive/20260808-110000-fenced.md"
@@ -4514,7 +4535,7 @@ assert_rc "list 目錄不存在 → exit 0（回報 NONE）" 0 $?
 if echo "$out" | grep -q "handoffs: NONE"; then ok "list 無目錄 → NONE"; else bad "list 無目錄輸出錯誤"; fi
 
 # --- survey（W1／R1 單一入口：清理 → active → worklines → predecessor）---
-# 存在理由是機制取代散文契約：W1 曾把 `list` 寫成「只在未指定 slug 時跑」，W4 的 EXPIRED 回報
+# 存在理由是機制取代散文契約：W1 曾把 `list` 寫成「只在未指定 slug 時跑」，W5 的 EXPIRED 回報
 # 與 archive 保留期清理在 `/handoff <slug>` 路徑上雙雙沉默失效。單一無條件呼叫讓該分支不存在。
 SV="$TMP/ha-sv"; mkdir -p "$SV/archive"
 sv_mk() { printf -- '---\nslug: %s\ncreated: %s\n---\n# Handoff: %s\n' "$2" "$3" "$2" > "$SV/$1"; }

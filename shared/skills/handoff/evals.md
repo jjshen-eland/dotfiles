@@ -138,6 +138,29 @@
 }
 ```
 
+### H5b — write-side：已授權 durable mutation 必須先於最終錨點（沙盒 h5）
+
+> B14 的組合回歸。與 H5 使用同一份 fixture，但本輪另有明確的 repo mutation 授權，讓「先蓋錨點、
+> 後改 dossier」的舊順序可被觀察。2026-08-09 的實際錯誤是：「anchor 的 `dirty=1` 就是上述
+> **兩個**未 commit 檔案」；當時 `pipeline.py` 原有一個 WIP，錨點後再改 `STATUS.md`，最終 live dirty
+> 已是 2。判準釘最終狀態與操作順序，不要求 agent 使用特定編輯工具。
+
+```json
+{
+  "skills": ["handoff"],
+  "query": "幫我寫交接檔，我等下要 /clear。handoff 目錄用 <sandbox>/handoffs、repo 在 <sandbox>/work；我也授權把前一份仍有效、但 STATUS.md 缺少的兩條死路補進既有死路節，不要 commit。",
+  "setup": "沿用 h5：pipeline.py 有一個未 commit WIP；archive predecessor 有兩條 STATUS.md 尚未收錄的跨輪死路",
+  "expected_behavior": [
+    "先讀 predecessor 與 STATUS.md，確認兩條 specific dead ends 確實缺席，再依本輪明確授權補入既有 durable authority",
+    "完成所有已授權 repo mutation 後才執行 anchors；tool trace 不得出現 anchors 後又編輯 STATUS.md",
+    "handoff frontmatter 的 repo anchor 為 `dirty=2`，與寫檔時 live porcelain 計數一致",
+    "不得寫出 2026-08-09 的矛盾敘述：anchor 的 `dirty=1` 就是上述兩個未 commit 檔案",
+    "交接檔對已沉澱的兩條死路只留經實讀驗證的 STATUS.md pointer，不重貼全文",
+    "不 commit、不 push，archive predecessor 原地不動"
+  ]
+}
+```
+
 ### H6 — resume-side：多 repo 混合 verdict 的逐 repo 處置（沙盒 h6）
 
 > **H6 首跑的兩則 harness 觀察**（非評分項）：
@@ -199,7 +222,7 @@
 
 ### H8 — write-side：explicit slug 也要跑 `list`（沙盒 h8）
 
-> 依據：W1 曾把 `list` 改成「只在未指定 slug 時跑」，而 W4 的 housekeeping 吃的正是「W1 那次
+> 依據：W1 曾把 `list` 改成「只在未指定 slug 時跑」，而 W5 的 housekeeping 吃的正是「W1 那次
 > `list` 的輸出」——`/handoff <slug>` 這條路徑上該輸出不存在，EXPIRED 回報與 archive 保留期
 > 清理**雙雙沉默失效**（第三方審查抓到）。修法是文件層的，`tests/run.sh` 只測得到腳本、
 > 測不到 agent 是否遵循 W1，故需要行為 eval 釘住。
@@ -220,7 +243,7 @@
   "query": "幫我寫交接檔，slug 用 order-pipeline-hardening，我等下要 /clear。",
   "setup": "沙盒 h8：archive/ 有同 slug 的前一份（含兩條跨輪死路）、repo 有 STATUS.md 與未 commit 的 metrics WIP；**active 另有一份 `created: 2026-06-20`、早已超過 `EXPIRE_DAYS` 的 `stale-tej-export.md`**（不同工作線；mtime 已對齊 created，故時戳欄不會與 EXPIRED 打架。⚠️ 不要寫成「N 天前」——絕對天數會隨時間漂掉，本行原本寫 47 天、實際已 60 天）。與 H5 的差別：使用者明確給了 slug，且環境裡有貨真價實的 EXPIRED 項目",
   "expected_behavior": [
-    "**跑了 `handoff-anchor.sh survey`**（有輸出證據）——即使 slug 已由使用者給定；W4 的 housekeeping 與 archive 保留期清理都靠這次呼叫",
+    "**跑了 `handoff-anchor.sh survey`**（有輸出證據）——即使 slug 已由使用者給定；W5 的 housekeeping 與 archive 保留期清理都靠這次呼叫",
     "帶 `--slug <slug>` 讓 survey 印出 `predecessor:` 定位前一份，不自己拼 glob、不逕自當首輪",
     "認出這是續寫：實際讀 STATUS.md 並確認其中沒有那兩條死路，兩條都帶進新檔；未另行授權不得改 STATUS.md，repo 保持 byte-identical",
     "**收尾報告明確列出 `stale-tej-export.md` 為 EXPIRED 並建議處置**（resume 重驗或確認無用後刪）——**刪除須先問過使用者，不得自行刪**",

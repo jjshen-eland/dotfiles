@@ -435,6 +435,14 @@ stderr），而 `verify` 只在**完全無錨點**時才判 UNVERIFIABLE——�
 `anchors` 記 `--show-toplevel` **絕對路徑**：相對輸入原樣寫進錨點會讓跨 session 的 verify 對到
 別的 repo、還誤報成 DIVERGED。空白檢查對解析後的 toplevel 而非原輸入。
 
+### write-side anchors 必須是最後 repo snapshot
+
+W2 的 durable routing／任何已另行授權的 repo mutation 必須先完成，W3 才能蓋 anchors，W4 才寫
+machine-local artifact。2026-08-09 H5 的失敗是先記 `dirty=1`、再修改 `STATUS.md`，最後卻把兩個
+uncommitted files 說成同一個 `dirty=1`；H5b 以該逐字矛盾作 behavior oracle。`tests/run.sh` 的 source-order
+gate 只守住三個階段與 hard ordering；是否正確讀 predecessor、取得 mutation 授權並寫出一致 artifact，仍由
+H5／H5b 行為 eval 判定。`handoff-anchor.sh` 的 dirty 計數語意不變。
+
 ### `survey` 是 W1／R1 單一入口
 
 **清理必須先於任何 archive 衍生輸出**，否則剛好過 TTL 的 predecessor 會被先印後刪、讀取端拿到
@@ -448,7 +456,7 @@ awk 聚合兩個坑：`$2 > k[$1]` 在 k 未初始化時是數值比較，key `0
 
 時戳欄取 **mtime**、`Nd` 取 **created**，兩欄來源不同。用 mtime 的理由是 **created 只有日粒度**
 （`cmd_anchors` 寫 `date +%Y-%m-%d`），同日多份必然平手。**不要寫成「created 不隨續寫更新」**——
-那是假的：W2 每輪都跑、W3 原樣貼入，created 恆等於最後一次蓋錨點的日期（81 份真實交接檔實測，
+那是假的：W3 每輪都跑、W4 原樣貼入，created 恆等於最後一次蓋錨點的日期（81 份真實交接檔實測，
 與 mtime 的日期 0 份不一致）。mtime 買到的只有**同日的時分解析度**。
 
 排序 fixture 的 **mtime 順序必須與檔名字典序相反**——否則現行 glob（字典序升冪）也剛好答對，

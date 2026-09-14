@@ -43,7 +43,7 @@
 - Writing a shared rule or project fact only into private memory because memory happens to be enabled. Memory availability is cache capability, not authority.
 - Routing cross-host continuation into a machine-local handoff — the other host will never see it. Route it to the repo (STATUS.md).
 - Committing a throwaway HANDOFF.md into the repo. The add→delete churn and the rotting consumed-handoff (the general-rag-cs failure mode) are exactly what this forbids — repo-side state lives in STATUS.md, updated in place.
-- Dropping earlier rounds' dead-ends when re-handing off the same slug because "they're in archive/ anyway" — nothing reads archive/ on resume. Carry them forward, or sink them into STATUS.md (see W3 續寫交接).
+- Dropping earlier rounds' dead-ends when re-handing off the same slug because "they're in archive/ anyway" — nothing reads archive/ on resume. Carry them forward, or sink them into STATUS.md (see W2 durable facts routing).
 - Replacing an earlier decision/dead-end with a pointer merely because the repo has STATUS/decision docs → first read that authority and verify the specific item is actually there. A plausible section name or related topic is not evidence; absent or uncertain items must be carried forward.
 - Claiming a repo has no durable authority without checking its contract and actual root documentation in this session. Lack of conversation memory is not repo evidence.
 - Concluding "no active handoff with this slug, so this is round 1" — a consumed handoff sits in archive/, which is exactly where round 2+ normally finds its predecessor. Check archive before deciding (W1).
@@ -51,7 +51,7 @@
 - Reporting "no handoff exists" when `survey` listed the workline under `archive/`. It was consumed, not absent (R1).
 - Treating a FRESH verdict on an archive-sourced handoff as permission to act on it directly. Archive provenance caps it at clue (R3).
 - Relaying a next-step's blocking reason that names another repo, without having looked at that repo in this session. "That repo is another session's / read-only for this line" is a scope statement, not a reason to skip checking it (R3).
-- Pasting `anchors` output into the frontmatter after a non-zero exit. It prints nothing on failure — whatever you are looking at is from an earlier run (W2).
+- Pasting `anchors` output into the frontmatter after a non-zero exit. It prints nothing on failure — whatever you are looking at is from an earlier run (W3).
 - Consuming an active handoff or editing the repo before the resume batch has been affirmatively authorized because the invocation said "finish it" or the artifact says a previous session had permission.
 
 ## Write mode（session 結束／context reset 前）
@@ -66,16 +66,40 @@
 <handoff-anchor> survey [--slug <slug>] <handoff-directory>
 ```
 
-單一呼叫涵蓋四件事：清掉過保留期的 archive（先做）、`active:` 清單（含 EXPIRED，**W4 的 housekeeping 吃的就是這份輸出**）、`workline:` 既有工作線（archive 依 slug 聚合，附輪數與最近日期）、以及給了 `--slug` 時的 `predecessor:` 判定。
+單一呼叫涵蓋四件事：清掉過保留期的 archive（先做）、`active:` 清單（含 EXPIRED，**W5 的 housekeeping 吃的就是這份輸出**）、`workline:` 既有工作線（archive 依 slug 聚合，附輪數與最近日期）、以及給了 `--slug` 時的 `predecessor:` 判定。
 
 - **slug 已定** → 直接 `survey --slug <slug> <handoff-directory>`。
 - **slug 未定** → 先以 `survey <handoff-directory>` 跑，從 `workline:` 看本次工作屬不屬於既有工作線：屬於就**沿用該 slug**、確定是全新工作線才自取；定出後再跑一次 `survey --slug <slug> <handoff-directory>` 確認。
 
-`predecessor:` 有值（不是 `NONE`）→ **續寫**，把該路徑帶進 W3 的「續寫交接」；本 session 稍早 resume 過同一條工作線亦然。
+`predecessor:` 有值（不是 `NONE`）→ **續寫**，把該路徑帶進 W2 的 durable facts routing；本 session 稍早 resume 過同一條工作線亦然。
 
 兩個誤判方向都要防：只查 active 會把第 N 輪當成首輪（前一份通常已被消費進 archive）；不看既有工作線就自取新 slug，等於讓同一條工作線改名重啟。**定位一律走 `survey`，不要自己拼 glob**——`archive/*-<slug>.md` 看似尾錨定，`*` 卻吃得下中間的工作線名（查 `foo` 會撈到 `bar-foo`）。精確判準與 archive 檔名的身分解析政策以腳本檔頭為準，勿在此重組。
 
-### W2：蓋錨點
+### W2：沉澱 durable facts
+
+先完成內容盤點與 durable routing，才可產生最終錨點。對本 session 仍需保留的 repo facts、跨輪決策與死路，
+先讀 W1 找到的 repo authority 與 predecessor，再決定是沉澱到 repo 或留在 machine-local artifact：
+
+- repo 有 canonical project docs 時，報告每項 durable fact 應落到哪個既有 authority（adopted repo 可用
+  repo-local `record-path` 定位 event-time shard；legacy repo 依自己的 dossier）。只有使用者已另行授權該 repo mutation 時才寫入；否則不得改 repo。
+- **所有已授權的 repo mutation 必須在 anchors 前完成。** 這包含把 predecessor 的仍有效決策／死路沉澱到
+  STATUS／decision authority，以及本輪其他合法的 durable write。完成後重新讀取實際 repo status，供 W3
+  產生唯一的最終 `dirty=N`。
+- 未另行授權、repo 無 durable authority，或 specific item 尚未實讀確認已沉澱時，把仍有效內容留在本輪
+  handoff；不得用 plausible pointer 取代內容。
+
+#### 續寫交接（同 slug 第 2 輪起）
+
+整檔覆寫意味著**前一份的內容不會自動留下**——resume 端沒有任何機制會去讀 archive。讀 W1 掃到的那一份
+（active 或 archive 皆可能），取其「死路」「關鍵決策」兩節，逐條套用上面的 durable routing：
+
+- 已獲另行 repo mutation 授權且實讀確認 authority 缺少該項 → 在本步寫入既有 authority；W4 的 handoff
+  只留 verified stable ID／path pointer。
+- 未獲授權或沒有合法 sink → 仍有效者逐條帶進新檔，並報告待沉澱的 authority／stable ID 建議。
+- 只有已實際讀取 authority、逐條確認 specific decision／dead end 已存在時，才可改留 pointer；只有相關主題、
+  沒有對應項目或不確定時都必須 carry forward。不要憑本輪記憶重寫。
+
+### W3：蓋最終錨點
 
 ```
 <handoff-anchor> anchors <repo1> <repo2> ...
@@ -83,14 +107,18 @@
 
 輸出的 `created:` + `anchor:` 行原樣放進 frontmatter。`anchors` 是**全有或全無**：任一 repo 的前提不成立（路徑不是 repo、含空白、repo 尚無 commit、status 讀不到）就一行都不印、exit 非零——**非零退出時不得使用本次任何輸出**，依 stderr 修正該 repo 的前提後重跑。錨點含 `dirty=N`：N>0 時在報告提醒「未 commit 內容只存在 working tree，session reset 不影響它、但它不受 commit 錨點保護」。可以建議另走 target repo 的 shipping workflow；本 skill 不代為 commit 或 ship。
 
-### W3：寫檔
+W3 的輸出是 artifact 寫入前的最終 repo snapshot。從 `anchors` 成功到 W4 寫檔之間不得再修改任何已錨定 repo；
+若外部變更或漏掉的合法 mutation 使 status 改變，丟棄舊輸出、完成 mutation 後重跑 `anchors`，不得在內文解釋
+一個已過期的 `dirty=N`。
+
+### W4：寫檔
 
 寫到 `<handoff-directory>/<slug>.md`；**同 slug 已存在 → 整檔覆寫**（更新錨點與內容），不 append、不留多版本。slug 勿以 `YYYYMMDD-HHMMSS-` 時戳格式開頭——那是 `consume` 判定「已歸檔」的保留命名空間，撞名會被拒收。模板：
 
 ```markdown
 ---
 slug: <slug>
-<W2 anchors 輸出原樣貼入：created 一行 + 逐 repo 的 anchor 行，行首即 created:/anchor:，不另加前綴>
+<W3 anchors 輸出原樣貼入：created 一行 + 逐 repo 的 anchor 行，行首即 created:/anchor:，不另加前綴>
 ---
 
 # Handoff: <一句話標題>
@@ -119,14 +147,7 @@ slug: <slug>
 
 內容規則（Critical 已定硬約束，這裡是品質要點）：死路一節是交接檔最值錢的部分，新 session 最容易在這裡重蹈覆轍；「下一步」寫到可直接執行，不寫「繼續完成」這種空話。多 repo 時「下一步」條目必須**看得出所屬 repo**——resume 端是逐 repo 對帳（R3），歸屬只藏在 `cd <path>` 指令裡就對不上帳。
 
-#### 續寫交接（同 slug 第 2 輪起）
-
-整檔覆寫意味著**前一份的內容不會自動留下**——resume 端沒有任何機制會去讀 archive。跨輪仍有效的死路與決策必須主動處理，否則多輪之後「防重工」就空了：
-
-- **先判定 durable 落點，不擅自寫入**：repo 有 canonical project docs 時，報告跨輪仍有效的決策／死路應落到哪個既有 authority（adopted repo 可用 repo-local `record-path` 定位 event-time shard；legacy repo 依自己的 dossier）。只有使用者已另行授權該 repo mutation 時才寫入；否則不得改 repo。
-- **未另行授權／repo 無 durable authority 的 fallback**：Read W1 掃到的那一份（active 或 archive 皆可能），取其「死路」「關鍵決策」兩節，仍有效者逐條帶進新檔，並報告待沉澱的 authority／stable ID 建議。只有已實際讀取該 authority、逐條確認特定決策／死路已存在時，才可在新 handoff 改留 stable pointer；只有相關主題、沒有對應項目或不確定時都必須 carry forward。不要憑本輪記憶重寫。
-
-### W4：收尾報告
+### W5：收尾報告
 
 報告：檔案路徑、錨點摘要（含 dirty 提醒）、durable 事實路由結果。拿 W1 那次 `survey` 的 `active:` 區段做 housekeeping（不必重跑）——有 EXPIRED 的舊交接檔就列出，建議處置（resume 重驗或確認無用後刪；**刪除先經使用者同意**）。最後用目前 runtime 的 invocation 形式提醒如何 resume 該 slug。
 
