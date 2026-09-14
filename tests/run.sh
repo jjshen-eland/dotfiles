@@ -365,6 +365,10 @@ cat > "$XR/rev/docs/dead-ends.md" <<'XREFFIX'
 
 這一行是會被內文比對命中的規則原文。
 
+## 證據分層
+
+舊節名「分工」仍是內文裡的通用詞。
+
 ## 沒人指的節
 
 推導內容。
@@ -380,6 +384,7 @@ cat > "$XR/rev/STATUS.md" <<'XREFFIX'
 
 - **甲**:結論一句。推導見 `docs/dead-ends.md`「有人指名的節」。
 - **乙**:結論一句。見 `docs/dead-ends.md`「這一行是會被內文比對命中的規則原文」。
+- **丙**:結論一句。舊指標見 `docs/dead-ends.md`「分工」。
 XREFFIX
 cat > "$XR/nolayer/README.md" <<'XREFFIX'
 # 未採用分層的 repo
@@ -390,6 +395,7 @@ xref_capture_at "$XR/rev"
 xref_rev="$xref_out"; xref_rev_rc=$xref_rc
 if [ "$xref_rev_rc" -eq 0 ] && grep -q '沒人指的節' <<< "$xref_rev"; then ok "反向 gate：無人指名的節 → 命中孤兒"; else bad "節級孤兒漏抓（exit ${xref_rev_rc}）"; fi
 if [ "$xref_rev_rc" -eq 0 ] && grep -q '只被內文引用的節' <<< "$xref_rev"; then ok "反向 gate：只被內文引用（非節名）→ 仍算孤兒"; else bad "把 has_body 命中當成入邊，或 scanner 失敗（exit ${xref_rev_rc}）"; fi
+if [ "$xref_rev_rc" -eq 0 ] && grep -q '證據分層' <<< "$xref_rev" && ! grep -q 'STATUS.md.*分工' <<< "$xref_rev"; then ok "反向 gate：舊節名只剩 body 命中 → 改名後 heading 仍報孤兒"; else bad "body fallback 掩蓋節名改壞，或 scanner 失敗（exit ${xref_rev_rc}）"; fi
 if [ "$xref_rev_rc" -eq 0 ] && ! grep -q '有人指名的節' <<< "$xref_rev"; then ok "反向 gate：被節名指到 → 不報"; else bad "入邊未記錄，或 scanner 失敗（exit ${xref_rev_rc}）"; fi
 if [ "$xref_rev_rc" -eq 0 ] && ! grep -q '節內細分' <<< "$xref_rev"; then ok "反向 gate：level 3 不納入（不是一條結論的證據層）"; else bad "h2_sections 收了非 level-2 heading，或 scanner 失敗（exit ${xref_rev_rc}）"; fi
 xref_capture_at "$XR/rev" "$XR/rev/STATUS.md"
