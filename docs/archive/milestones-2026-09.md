@@ -119,3 +119,9 @@
   - 放棄:收窄成 heading-only（會打壞合法的逐行內文規則引用）；要求突變同時刪掉 target 內文的同詞（只是讓測試避開真實失效面）；重複實作第三層 scanner
   - 重議:`requires_inbound` 反向掃描被移除；`docs/dead-ends.md` 不再是證據層；或合法 body fallback 語意改變
   - 關聯:B-20260814-debt-12;docs/dead-ends.md;scripts/doc-governance.py;tests/run.sh;docs/testing-contract.md
+
+- **M-20260914-printf-grep-pipeline-retirement · 2026-09-14 tests/run.sh 的 printf-to-grep-q 潛伏 pipeline 完成清除**:`B-20260811-debt-13` 於 2026-08-11 記錄 20 處，本次重新盤點為 21 處；新增的第 21 處來自後續 stub 參數判斷，失效機制與原債相同。先新增拆開 scanner token 以避免自命中的 source gate，修前精確列出 21 hits 並回 1；再將 21 處等價改為 `grep -q ... <<< "$value"`，pattern、fixture 輸出與斷言正反向皆不變，修後 source gate 為 0 hits。`bash -n`、repo 參數的 ShellCheck 與完整 suite `PASS=1404 FAIL=0` 均通過；B13 自 backlog 移除。
+  - 日期來源:direct
+  - 放棄:關閉 `pipefail`；只修目前輸入較大的局部位置；把本項擴張成所有 `echo`/`find`/`sed` producer pipeline 的無邊界清理
+  - 重議:source gate 被移除或收窄；或其他 producer 出現大輸入 SIGPIPE 的可重現證據，屆時以新 work item 處理而不重開 B13
+  - 關聯:B-20260811-debt-13;M-20260914-cqs-grep-pipefail-repair;tests/run.sh;docs/testing-contract.md
