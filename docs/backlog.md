@@ -114,10 +114,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
 - **B-20260817-debt-07** · [ ] **`deep-plan/evals.md` 未經 2026-08-17 那場 `/deep-review`**(batch 條款禁止 eval 檔進 reviewer
   prompt)。要不要單獨審是獨立決定,尚未做。⚠️ 2026-08-18 該檔又大幅擴充(P8–P12 ＋ 八次實跑紀錄),
   未審的面積比當初更大。
-- **B-20260814-debt-12** · [ ] **xref-gate 的判準是「heading **或**內文」,故通用詞當節名會讓保護降級**(2026-08-14 做
-  突變測試時發現):把 `docs/dead-ends.md` 的 `## 分工` 改名,gate 仍綠——因為該檔另一處指標句
-  裡也有「分工」二字。**節名撞通用詞時,突變測試必須改 heading 與內文兩處才測得準**;想真正
-  修就得收窄成只比對 heading,但那會犧牲「權威搬進內文段落」的情境。未定,先記。
 - **B-20260811-debt-13** · [ ] **`tests/run.sh` 尚有 20 處 `printf … | grep -q`**(對照 117 處已改 herestring,2026-08-11 盤點)。
   CLAUDE.md 地雷要求存在性比對一律用 herestring:大輸入下 `grep -q` 命中即退出,上游 printf
   吃 SIGPIPE、pipefail 讓整條判偽 → 斷言結論反轉。**目前 20 處都安全**——全在 stub 輸出比對上,

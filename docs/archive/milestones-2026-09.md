@@ -113,3 +113,9 @@
   - 放棄:直接 rerun 等 timing 偶然轉綠；停用 `pipefail`；縮短或吞掉 600-source fixture 輸出；順手擴張成全部 B13 pipeline debt 的機械清理
   - 重議:`cqs_grep` 再引入 early-exit pipeline；或其他大型輸出 assertion 出現同型 SIGPIPE 證據
   - 關聯:B-20260815-debt-11;B-20260811-debt-13;M-20260914-linux-suite-continuous-verification;PR #184;tests/run.sh
+
+- **M-20260914-xref-heading-body-fallback-composition · 2026-09-14 xref 節名改壞與 body fallback 的組合防線完成驗證**:`B-20260814-debt-12` 原始突變是將 `docs/dead-ends.md` 的 `## 分工` 改名，因 target 內文仍含「分工」而讓正向 xref 假綠。後續加入的 `requires_inbound` 反向節級孤兒 gate 已實際封住此形狀：在 `--no-local` 隔離 clone 將該 heading 改為「證據分層」後，只掃 `STATUS.md` 的正向檢查零 finding，完整 repo scan 則精確報「證據分層—節級孤兒」。`tests/run.sh` 新增同型組合 fixture，同時釘住合法 body fallback 不誤報、改名後 heading 仍報孤兒；完整 suite `PASS=1403 FAIL=0`。因現行實作已滿足缺口，本批不改 scanner，B12 自 backlog 移除。
+  - 日期來源:direct
+  - 放棄:收窄成 heading-only（會打壞合法的逐行內文規則引用）；要求突變同時刪掉 target 內文的同詞（只是讓測試避開真實失效面）；重複實作第三層 scanner
+  - 重議:`requires_inbound` 反向掃描被移除；`docs/dead-ends.md` 不再是證據層；或合法 body fallback 語意改變
+  - 關聯:B-20260814-debt-12;docs/dead-ends.md;scripts/doc-governance.py;tests/run.sh;docs/testing-contract.md
