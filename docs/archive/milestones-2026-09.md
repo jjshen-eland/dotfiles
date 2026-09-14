@@ -125,3 +125,9 @@
   - 放棄:關閉 `pipefail`；只修目前輸入較大的局部位置；把本項擴張成所有 `echo`/`find`/`sed` producer pipeline 的無邊界清理
   - 重議:source gate 被移除或收窄；或其他 producer 出現大輸入 SIGPIPE 的可重現證據，屆時以新 work item 處理而不重開 B13
   - 關聯:B-20260811-debt-13;M-20260914-cqs-grep-pipefail-repair;tests/run.sh;docs/testing-contract.md
+
+- **M-20260914-handoff-final-anchor-order · 2026-09-14 handoff 的 dirty 錨點改為 durable mutation 後的最終 snapshot**:`B-20260809-debt-14` 的 root cause 由 2026-08-09 H5 實查、同輪 H8 對照與現行 control flow 確認：舊 W2 先蓋 `dirty=1`，舊 W3 再獲授權修改 `STATUS.md`，因此 artifact 寫出「`dirty=1` 就是兩個未 commit 檔案」的矛盾。新增 H5b 組合行為 oracle，並將 shared write flow 重排為 W2 durable routing／所有合法 repo mutation → W3 final anchors → W4 artifact；anchors 後 repo state 若改變必須丟棄舊輸出重跑。source-order gate 修前為 `route=0 anchor=0 artifact=0`、exit 1，修後為 `78 < 102 < 114`；雙 runtime validator、Bash syntax、repo 參數 ShellCheck、doc audit 與完整 suite `PASS=1405 FAIL=0` 均通過。未授權 repo mutation 與 portable topology 不變；B14 自 backlog 移除。
+  - 日期來源:direct
+  - 放棄:只加一條「記得更新 dirty」告誡；修改 `handoff-anchor.sh` 的計數語意；以 2026-08-23 未授權零 mutation 契約宣稱所有合法寫入路徑都已消失
+  - 重議:write mode 重新允許 anchors 後的 repo mutation；或 live H5b 顯示 ordering 契約仍無法讓 artifact 與 final porcelain 一致
+  - 關聯:B-20260809-debt-14;M-20260823-portable-handoff-skill;shared/skills/handoff/evals.md;shared/skills/handoff/references/workflow.md;tests/run.sh
