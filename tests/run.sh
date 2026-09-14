@@ -6751,7 +6751,8 @@ CQS="$ROOT/claude/skills/check-crawl-quality/scripts/crawl-quality-scan.py"
 CQS_DIR="$TMP/cqs"
 mkdir -p "$CQS_DIR"
 # cqs_grep <名稱> <輸出> <pattern>
-cqs_grep() { if echo "$2" | grep -q "$3"; then ok "$1"; else bad "$1"; fi; }
+# 用 herestring 避免大型輸出在 pipefail 下因 grep -q 提早退出而讓 echo 收到 SIGPIPE。
+cqs_grep() { if grep -q "$3" <<< "$2"; then ok "$1"; else bad "$1"; fi; }
 
 # fixture：20 筆、雙來源。各 check 的觸發筆數經手算對準扣分表：
 #   4a noise 前綴 10/20=50%（>30% 嚴重 -20）、4b 重複 4/20=20%（5-20% 警告 -10）、
