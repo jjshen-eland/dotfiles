@@ -12,7 +12,19 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-（目前無進行中項目。）
+### B-20260809-debt-14：讓 handoff dirty 錨點反映最終 repo 狀態 ⏳
+
+- **Writer**：`codex:handoff-final-anchor-order`
+- **Workspace**：`branch=fix/handoff-final-anchor-order`
+- **Write Scope**：`STATUS.md`, `shared/skills/handoff/references/workflow.md`, `shared/skills/handoff/evals.md`, `tests/run.sh`, `docs/testing-contract.md`, `docs/backlog.md`, `docs/archive/milestones-2026-09.md`
+- **Dossier Steward**：`codex:handoff-final-anchor-order`
+- **Context**：歷史 H5 實查證明 W2 先蓋 `dirty=1` 錨點、W3 再沉澱 `STATUS.md` 後 live dirty 變 2；2026-08-23 的授權收緊只排除未授權 repo mutation，合法另授權的 durable write 仍可重現時序缺陷。
+- **Goal**：讓所有已授權 durable repo mutation 在最終 anchors 前完成，使 handoff frontmatter 的 `dirty=N` 與寫檔時 repo 狀態一致。
+- **Acceptance Criteria**：新增使用 2026-08-09 逐字錯誤的行為 oracle；workflow 明定 durable routing／repo mutation 先於 anchors；source-order gate 能在舊順序下失敗、修後通過；未授權 handoff 仍不得改 repo；雙 runtime 共用 topology 不變；validator、ShellCheck、完整 suite 與 doc audit 全綠；有 milestone，B14 自 backlog 移除。
+- **Constraints**：不修改 `handoff-anchor.sh` 的 dirty 定義；不放寬 handoff 的 repo mutation 授權；不重構 runtime adapters 或 shared linkage。
+- **進度**：實作與驗證已完成於尚未送出的 local candidate `e325c62`；現依 prompt-bound recovery 建立 active contract 並重建 candidate。
+- **下一步**：提交 active contract、重建完成內容、重驗 authority 與最終 tree，然後接續 `$project --merge`。
+- **關聯**：`B-20260809-debt-14`, `M-20260823-portable-handoff-skill`, `D-20260825-portable-skill-authoring-default`
 
 ---
 
