@@ -131,3 +131,9 @@
   - 放棄:只加一條「記得更新 dirty」告誡；修改 `handoff-anchor.sh` 的計數語意；以 2026-08-23 未授權零 mutation 契約宣稱所有合法寫入路徑都已消失
   - 重議:write mode 重新允許 anchors 後的 repo mutation；或 live H5b 顯示 ordering 契約仍無法讓 artifact 與 final porcelain 一致
   - 關聯:B-20260809-debt-14;M-20260823-portable-handoff-skill;shared/skills/handoff/evals.md;shared/skills/handoff/references/workflow.md;tests/run.sh
+
+- **M-20260914-b15-retained-test-criteria-already-satisfied · 2026-09-14 B15 的兩條 testing 判準確認早已進入現行權威**:`B-20260820-debt-15` 源自 2026-08-10 將已結案技術債歸檔時留下的「仍須保留兩條 live 判準」項目；翌日 commit `d5c1564` 已把 repo-local 測試權威與「便宜 gate 趁乾淨加入」的理由移入 `docs/testing-contract.md`，但 item 未同步結案，2026-08-16 又隨 dossier/backlog 分流被搬成未結案債。現況重驗：root `CLAUDE.md` 的首行 `@AGENTS.md` 由 kernel gate 的四個 RED fixture 守住，`AGENTS.md` Repo specifics 仍承接必跑時機與 exit-code 契約，xref audit 為零 finding；shellcheck gate 仍涵蓋 `claude/evals/*.sh`，其「納入時零 findings」與便宜守門理由仍在 testing contract。B15 無剩餘實作，從 backlog 移除。
+  - 日期來源:direct
+  - 放棄:再新增一份 always-on 規則或重複 gate；只因 backlog 未勾選就假設 2026-08-11 的落地不存在；把 literal 路徑 `CLAUDE.md` 固化成不允許 root 原生 import 的舊架構
+  - 重議:root `CLAUDE.md` 不再原生載入 repo-local 測試契約；xref／kernel gate 被移除；或 shellcheck coverage 不再包含 `claude/evals/*.sh`
+  - 關聯:B-20260820-debt-15;3c7e0a6;d5c1564;f2e7aa0;CLAUDE.md;AGENTS.md;docs/testing-contract.md;tests/kernel-gate.py;tests/run.sh
