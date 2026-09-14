@@ -12,7 +12,19 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-（目前無進行中項目。）
+### B-20260814-debt-12：驗證 xref 節名完整性的反向守門 ⏳
+
+- **Writer**：`codex:close-xref-heading-debt`
+- **Workspace**：`branch=test/close-xref-heading-debt`
+- **Write Scope**：`STATUS.md`, `docs/backlog.md`, `docs/archive/milestones-2026-09.md`, `tests/run.sh`
+- **Dossier Steward**：`codex:close-xref-heading-debt`
+- **Context**：B12 記錄 xref 正向比對允許 heading 或 body，通用詞節名被改壞時可能被 body 假綠；後續已加入 `requires_inbound` 證據層的反向節級孤兒檢查。
+- **Goal**：以 B12 原始 `docs/dead-ends.md`「分工」節名突變驗證現行 gate，補上組合回歸 oracle 並正式結案。
+- **Acceptance Criteria**：正向 body fallback 仍可放行合法內文引用；完整 repo xref scan 必須因反向孤兒檢查抓到節名改壞；`tests/run.sh` 有精確組合回歸；完整 suite 與 doc-governance ship audit 全綠；有 event-time milestone，B12 自 backlog 移除。
+- **Constraints**：保留合法 body fallback；不把 xref 收窄成 heading-only；不擴張到其他 xref 債項。
+- **進度**：隔離突變已證明現行反向 gate 擋下原始失效形狀；組合回歸、里程碑與 backlog 結案已完成，完整 suite `PASS=1403 FAIL=0`、ship audit `OK`。
+- **下一步**：由 Project Log 重建尚未送出的 candidate，再依 `$project --merge` 送出。
+- **關聯**：`B-20260814-debt-12`, `M-20260914-xref-heading-body-fallback-composition`
 
 ---
 
