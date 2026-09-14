@@ -107,3 +107,9 @@
   - 放棄:把 `tests/run.sh` 掛進 dotsync／brewup（散佈流程過重且失敗語意混雜）；只以一次本機 Linux run 結案（沒有持續性）；恢復 `push: main` 同套重跑（成本重複且壞 main 已發生）
   - 重議:PR workflow 不再跑 Ubuntu 完整 suite；required contexts 被移除或改名；或 Linux 支援基線離開 Ubuntu 24.04
   - 關聯:B-20260815-debt-11;M-20260912-cross-runtime-portability;M-20260912-ci-run-34676591841-repair;D-20260913-project-merge-authorization-ci;.github/workflows/test.yml;docs/testing-contract.md;tests/run.sh
+
+- **M-20260914-cqs-grep-pipefail-repair · 2026-09-14 crawl-quality assertion 的 macOS pipefail 偽失敗完成根因修復**:B11 結案 PR #184 首輪 Ubuntu 24.04 通過、macOS 15 卻在 600-source assertion 得到 `PASS=1401 FAIL=1`；job `103824000828` 同行先報 `tests/run.sh:6754: echo: write error: Broken pipe`。`cqs_grep` 原以 `echo "$out" | grep -q` 搜尋約 28KB 輸出，`grep -q` 命中後提早退出會讓上游 `echo` 收到 SIGPIPE，`pipefail` 因此把真命中翻成失敗。受控大型輸出重現 pipeline rc=141、herestring rc=0；修復只把 helper 改為 `grep -q ... <<< "$out"`，不動 crawl-quality engine 或抽樣演算法。原 assertion 與本地完整 suite `PASS=1402 FAIL=0`、ship audit `OK`；PR 的雙平台 required checks 仍作最終 merge gate。
+  - 日期來源:direct
+  - 放棄:直接 rerun 等 timing 偶然轉綠；停用 `pipefail`；縮短或吞掉 600-source fixture 輸出；順手擴張成全部 B13 pipeline debt 的機械清理
+  - 重議:`cqs_grep` 再引入 early-exit pipeline；或其他大型輸出 assertion 出現同型 SIGPIPE 證據
+  - 關聯:B-20260815-debt-11;B-20260811-debt-13;M-20260914-linux-suite-continuous-verification;PR #184;tests/run.sh
