@@ -5,7 +5,7 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
 
 # Backlog
 
-待辦清單:技術債與已知缺口(更新日期:2026-09-14)
+待辦清單:技術債與已知缺口(更新日期:2026-09-15)
 
 > **為什麼與 `STATUS.md`／history 分家**：三者生命週期不同。STATUS 只留 active／paused；history
 > event 發生後 append-only；backlog 只留未結案狀態，直到做掉或明確放棄才會消失。
@@ -121,8 +121,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   覆蓋,待多輪 autofix 確認弱模型不會退回每輪帶 `--autofix`)
 - **B-20260820-debt-18** · [ ] Scenario 11 的「merge 但無 PR」分支只在 SKILL body 一行指標帶到 ship-paths,GREEN 實測中
   弱模型未展開讀——非違規故未補;重現才加明示(Iron Law)
-- **B-20260820-debt-20** · [ ] codex plugin 去留待定:實質只當傳輸管道,exec 接管後僅剩 `/codex:transfer` 獨有——
-  exec 路徑跑穩數輪後重新評估 uninstall
 - **B-20260721-debt-21** · [ ] codex C2 轉交 findings 餘項(2026-07-21 代收):F6 skill-building-guide 的
   `$skill-creator/scripts/quick_validate.py` 路徑解析(context-dependent)。F5(多輪 autofix
   死鎖)已於 2026-08-03 判 true positive 並修復
