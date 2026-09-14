@@ -101,3 +101,9 @@
   - 放棄:只刪腳本而留下呼叫點；只刪行為測試而不留下退役契約；順手移除仍服務其他 helper 的 warning aggregate
   - 重議:dotfiles 再次移轉 owner 且需要 bounded fleet migration；屆時建立新的 migration item，不復活舊 helper
   - 關聯:B-20260815-debt-09;scripts/brewup.sh;scripts/dotfiles-sync.sh;tests/run.sh
+
+- **M-20260914-linux-suite-continuous-verification · 2026-09-14 Linux 完整 suite 已納入每個 PR 的持續驗證，B11 結案**:`B-20260815-debt-11` 原先記錄 Linux 分支雖可手動執行、卻沒有任何固定流程。現行 GitHub Actions 已在每個 PR 以 macOS 15＋Ubuntu 24.04 matrix 執行完整 `./tests/run.sh`，test contract 與 section 25 regression gate 禁止移除任一平台或恢復 merge 後 `push: main` 的重複 run；`main` protection 仍要求 `suite (macos-15)` 與 `suite (ubuntu-24.04)`（GitHub Actions app 15368，`strict=false`）。PR #183 再次實證 Ubuntu `1m10s`、macOS `1m47s` 均成功；本地最終 suite `PASS=1402 FAIL=0`、ship audit `OK`。因此 Linux failure 不再依賴人工碰巧執行才會被看見，B11 已自 backlog 移除。
+  - 日期來源:direct
+  - 放棄:把 `tests/run.sh` 掛進 dotsync／brewup（散佈流程過重且失敗語意混雜）；只以一次本機 Linux run 結案（沒有持續性）；恢復 `push: main` 同套重跑（成本重複且壞 main 已發生）
+  - 重議:PR workflow 不再跑 Ubuntu 完整 suite；required contexts 被移除或改名；或 Linux 支援基線離開 Ubuntu 24.04
+  - 關聯:B-20260815-debt-11;M-20260912-cross-runtime-portability;M-20260912-ci-run-34676591841-repair;D-20260913-project-merge-authorization-ci;.github/workflows/test.yml;docs/testing-contract.md;tests/run.sh
