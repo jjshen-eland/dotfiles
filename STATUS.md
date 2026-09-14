@@ -12,7 +12,19 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-（目前無進行中項目。）
+### B-20260808-debt-16：結案已失去可辨識範圍的中文標點風格債 ⏳
+
+- **Writer**：`codex:close-b16-obsolete-punctuation-debt`
+- **Workspace**：`branch=docs/close-b16-obsolete-punctuation-debt`
+- **Write Scope**：`STATUS.md`, `docs/backlog.md`, `docs/archive/milestones-2026-09.md`
+- **Dossier Steward**：`codex:close-b16-obsolete-punctuation-debt`
+- **Context**：B16 源自 2026-07-16 一條未指名檔案或批次的 R4 non-blocking 風格建議；2026-08-08 已明記「新增 prose」範圍不可考、無失敗案例，且標靶會隨中文文檔持續移動。現行 repo 也沒有將中文全形／半形標點定為正確性契約。
+- **Goal**：確認 B16 現在沒有可實作的局部缺口，以「不再適用」結案，而不進行全 repo 文案標點正規化。
+- **Acceptance Criteria**：歷史追溯證明原始建議沒有可定位 target；現況掃描證明半形標點混用是跨文檔的廣泛 prose 風格，非局部 regression；新增 milestone 記錄不做全 repo churn 的理由；B16 自 backlog 移除；doc audit 通過。
+- **Constraints**：不批次重寫現有 Markdown prose；不新增沒有行為失敗支持的 style rule 或 lint gate；不改寫 2026-07／08 歷史記錄；不擴張到其他 backlog item。
+- **進度**：已追溯原始與搬遷記錄；當前 54 個 Markdown 檔、約 1,734 行可命中寬鬆的中文與 ASCII 標點相鄰模式，顯示強制統一會是大面積文案 churn，而非修復可重現缺陷。
+- **下一步**：記錄 B16 不再適用的結案 milestone，移除 backlog item，並執行 doc audit。
+- **關聯**：`B-20260808-debt-16`, `1d96e452`, `f2e7aa0`
 
 ---
 
