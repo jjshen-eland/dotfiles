@@ -121,9 +121,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   覆蓋,待多輪 autofix 確認弱模型不會退回每輪帶 `--autofix`)
 - **B-20260820-debt-18** · [ ] Scenario 11 的「merge 但無 PR」分支只在 SKILL body 一行指標帶到 ship-paths,GREEN 實測中
   弱模型未展開讀——非違規故未補;重現才加明示(Iron Law)
-- **B-20260721-debt-21** · [ ] codex C2 轉交 findings 餘項(2026-07-21 代收):F6 skill-building-guide 的
-  `$skill-creator/scripts/quick_validate.py` 路徑解析(context-dependent)。F5(多輪 autofix
-  死鎖)已於 2026-08-03 判 true positive 並修復
 - **B-20260805-debt-22** · [ ] 輪次隱蔽的框架效應只有**弱證據**(2026-08-05):A/B 盲測每組 n=3、B 組內變異大(2/4/2),
   blocking 平均 3.67→2.67 方向一致但未達證實;質性佐證較強(B 組把 README 已揭露的缺口讀成
   「已承認故不算」而降級,A 組三個零出現)。**擴大樣本才能定論**——全文見 deep-review `evals.md`。
