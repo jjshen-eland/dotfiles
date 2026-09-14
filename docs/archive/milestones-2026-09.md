@@ -149,3 +149,9 @@
   - 放棄:為每個 scenario 複製整棵既有 fixture；為製造 RED 放寬 oracle；把 ownership 不明的首輪 S9 STOP 當成 behavior failure；未觀察失敗就廣寫 Project prose
   - 重議:任一 scenario 再次 regression；dossier 尺寸門檻或 Transfer mode 邊界改變；或 runtime 不再遵守 entry-to-shared-core routing gate
   - 關聯:B-20260820-debt-19;X-20260914-project-s9-ambiguous-fixture-ownership;claude/evals/setup-sandboxes.sh;claude/evals/README.md;claude/skills/project/SKILL.md;shared/skills/project/references/pressure-tests.md;shared/skills/project/references/workflow.md;shared/skills/project/references/log-workflow.md;docs/testing-contract.md;tests/run.sh
+
+- **M-20260915-b21-validator-path-regression-guard · 2026-09-15 quick_validate.py 的 context-independent 路徑與防回歸證據完成**:`B-20260721-debt-21` 的執行期問題已由 2026-08-24 commit `e2f1afec` 修正：文件改用 `uv run --no-project --with pyyaml python ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py <skill-dir>`。2026-09-15 從 repo root 與無關 `/tmp` 各實跑一次，兩者皆以同一 system validator 驗證 `codex/skills/project` 並回 `Skill is valid!`。但既有 gate 只 grep `uv ... python` 前綴與 PyYAML 說明；把絕對 script path 退回舊 `$skill-creator/scripts/quick_validate.py` 的不落盤 mutant 仍假綠，證明原 failure mode 未受保護。最小修正只讓 gate 精確要求絕對 system path 並拒絕 context-dependent 舊形式；同一 mutant 轉為 RED、正常 guide 維持 GREEN，未修改 guide、system validator 或任何 repo-local skill。B21 已自 backlog 移除。
+  - 日期來源:direct
+  - 放棄:因現行指令能跑就直接結案（路徑仍可無聲退化）；重寫已正確的 authoring guide；新增另一支 validator wrapper；安裝 PyYAML 到 system Python；擴張其他 skill-authoring 規則
+  - 重議:Codex system skill discovery root 或 `CODEX_HOME` 契約改變；`quick_validate.py` 移出 system skill；或 gate 再次無法攔下 context-dependent mutant
+  - 關聯:B-20260721-debt-21;M-20260824-memory-independent-transfer;e2f1afec;codex/skill-building-guide.md;docs/testing-contract.md;tests/run.sh
