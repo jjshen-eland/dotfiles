@@ -285,6 +285,8 @@ marker 後**須有空白**，否則 `**粗體** ✅` 這種散文強調行被當
 
 `printf | grep -q` 早退觸發 SIGPIPE ＋ pipefail 判偽。守門 fixture 的**命中點須在前段**才逼得出來，
 置於檔尾則 printf 已寫完、測試形同虛設。
+`tests/run.sh` 另以 source gate 要求自身的 `printf … | grep -q` 為零；掃描 token 在測試碼中拆開，
+避免 gate 自己被自己命中。此 gate 只處理 B13 已盤點的 `printf` producer，不宣稱其他 producer 已全數安全。
 
 ### bootstrap 判定
 

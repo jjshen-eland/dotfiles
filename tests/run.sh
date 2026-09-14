@@ -5,6 +5,7 @@
 # 用法：./tests/run.sh
 # 涵蓋：
 #   1. shellcheck / bash -n 全腳本 gate（含 shared/skills/*/scripts/ 與兩個 runtime adapter）
+# 1cc. tests/run.sh 禁止 printf 經 pipeline 喂給 grep -q（pipefail/SIGPIPE 假判）
 #  1h. known-hazards 的 pipeline 狀態指引標明 Bash／zsh 差異與跨 shell 首選
 #   2. bash -n 語法 gate
 #   3. scripts/lib/inventory.sh 解析
@@ -210,6 +211,22 @@ if [ -z "$hd_hits" ]; then
 else
     bad "有 unquoted heredoc 的 body 含反引號（一律改 <<'EOF'，變數走 os.environ/sys.argv）"
     printf '%s\n' "$hd_hits" | sed 's/^/     /'
+fi
+
+echo "▶ 1cc. printf-to-grep-q early-exit pipeline gate"
+# `grep -q` 命中後會提早關閉 pipe；輸入變大時，上游 printf 可收到 SIGPIPE，
+# `set -o pipefail` 便把真命中翻成失敗。將掃描 token 拆開，避免 gate 自己成為命中。
+pipe_grep_q_probe='| grep -'
+pipe_grep_q_probe="${pipe_grep_q_probe}q"
+printf_probe='print'
+printf_probe="${printf_probe}f "
+printf_grep_q_hits="$(awk -v producer="$printf_probe" -v consumer="$pipe_grep_q_probe" \
+    'index($0, producer) && index($0, consumer) { print NR ":" $0 }' "$ROOT/tests/run.sh")"
+if [ -z "$printf_grep_q_hits" ]; then
+    ok "tests/run.sh 無 printf-to-grep-q early-exit pipeline"
+else
+    bad "tests/run.sh 仍有 printf-to-grep-q pipeline（改用 grep -q ... <<< \"\$value\"）"
+    printf '%s\n' "$printf_grep_q_hits" | sed 's/^/     /'
 fi
 
 echo "▶ 1d. 交叉引用完整性 gate"
@@ -5476,7 +5493,7 @@ cer_cwd="$TMP/cer-resume.cwd"
 cer_env_resume="$TMP/cer-resume.env"
 cer_out="$(CODEX_STUB_ARGV="$cer_argv" CODEX_STUB_CWD="$cer_cwd" CODEX_STUB_ENV="$cer_env_resume" cer_run resume --job-dir "$cer_job2" 2>/dev/null)"
 assert_rc "resume 救回報告 → exit 0" 0 $?
-if printf '%s\n' "$cer_out" | grep -qF "resume session: sess-fixture-1"; then
+if grep -qF "resume session: sess-fixture-1" <<< "$cer_out"; then
     ok "resume 沿用 job 記錄的 session id"
 else bad "resume 未使用記錄的 session id"; fi
 
@@ -5505,7 +5522,7 @@ assert_eq "resume 在受審 repo 的工作目錄下執行" "$(cd "$cer_repo" && 
 # 失敗現場可見（B1）
 if [ -f "$cer_job2/cmd-resume" ]; then ok "resume 記錄實際指令（cmd-resume）"; else bad "resume 未記錄 cmd-resume"; fi
 cer_status_r="$(cer_run status --job-dir "$cer_job2" 2>/dev/null)"
-if printf '%s\n' "$cer_status_r" | grep -q '^codex-exit-resume='; then
+if grep -q '^codex-exit-resume=' <<< "$cer_status_r"; then
     ok "status 印出 resume 的 exit code"
 else bad "status 未涵蓋 resume（失敗原因看不到）"; fi
 
@@ -5572,8 +5589,8 @@ assert_rc "無引數 → exit 2" 2 $?
 # (7) status 可讀出關鍵欄位
 cer_status="$(cer_run status --job-dir "$cer_job" 2>/dev/null)"
 assert_rc "status → exit 0" 0 $?
-if printf '%s\n' "$cer_status" | grep -q '^codex-exit='; then ok "status 印出 codex-exit"; else bad "status 缺 codex-exit"; fi
-if printf '%s\n' "$cer_status" | grep -q '^report=.*bytes'; then ok "status 印出報告大小"; else bad "status 缺報告資訊"; fi
+if grep -q '^codex-exit=' <<< "$cer_status"; then ok "status 印出 codex-exit"; else bad "status 缺 codex-exit"; fi
+if grep -q '^report=.*bytes' <<< "$cer_status"; then ok "status 印出報告大小"; else bad "status 缺報告資訊"; fi
 
 # (8) 錯誤分支：status / resume 的前置檢查
 cer_run status --job-dir "$cer_base/no-such-job" >/dev/null 2>&1
@@ -5671,7 +5688,7 @@ ecs_out="$(PATH="$ecs_ro/bin:$PATH" SRC_ROOT="$ecs_ro/src" DST_ROOT="$ecs_ro/dst
     LEGACY_ROOT="$ecs_ro/legacy" BACKUP_ROOT="$ecs_ro/bak" bash "$ECS" 2>&1)"
 ecs_rc=$?
 assert_rc "ln 失敗 → exit 非 0（不報成功）" 1 "$ecs_rc"
-if printf '%s\n' "$ecs_out" | grep -q '⚠️'; then ok "ln 失敗印出警告（stdout，不被 2>/dev/null 吞）"; else bad "ln 失敗無警告"; fi
+if grep -q '⚠️' <<< "$ecs_out"; then ok "ln 失敗印出警告（stdout，不被 2>/dev/null 吞）"; else bad "ln 失敗無警告"; fi
 if [ -L "$ecs_ro/legacy/s1" ]; then ok "新 links 未全綠時不清 legacy"; else bad "新 link 失敗卻刪了 legacy fallback"; fi
 
 # 重跑幂等：已是正確 symlink → 不動檔（比對 inode 確認沒有 rm+重建）
@@ -5711,27 +5728,27 @@ else bad "fixture 抽取失效——下列斷言不具意義，請檢查 sync_re
 
 ecs_out="$(FAKE_RESULT="OK" bash "$ecs_report" hostA 2>&1)"
 assert_rc "無 ↻ 告知時 → 回報段仍正常結束" 0 $?
-if printf '%s\n' "$ecs_out" | grep -q '✅ hostA'; then ok "無 ↻ 時仍印出主機結果（不被 pipefail 吃掉）"; else bad "回報被 pipeline 吃掉——同步失敗會變靜默成功"; fi
+if grep -q '✅ hostA' <<< "$ecs_out"; then ok "無 ↻ 時仍印出主機結果（不被 pipefail 吃掉）"; else bad "回報被 pipeline 吃掉——同步失敗會變靜默成功"; fi
 ecs_out="$(FAKE_RESULT="$(printf '↻ 接管 x\nOK\n')" bash "$ecs_report" hostB 2>&1)"
-if printf '%s\n' "$ecs_out" | grep -q 'hostB: ↻ 接管 x'; then ok "有 ↻ 時撈出並冠上主機名"; else bad "↻ 告知未被撈出"; fi
-if printf '%s\n' "$ecs_out" | grep -q '✅ hostB'; then ok "有 ↻ 時成敗回報不受影響"; else bad "有 ↻ 時成敗回報消失"; fi
+if grep -q 'hostB: ↻ 接管 x' <<< "$ecs_out"; then ok "有 ↻ 時撈出並冠上主機名"; else bad "↻ 告知未被撈出"; fi
+if grep -q '✅ hostB' <<< "$ecs_out"; then ok "有 ↻ 時成敗回報不受影響"; else bad "有 ↻ 時成敗回報消失"; fi
 # ssh 失敗（主機不可達）→ 必須印 ❌，不可整段靜默
 ecs_out="$(FAKE_RESULT="" FAKE_RC=255 bash "$ecs_report" hostC 2>&1)"
 assert_rc "ssh 失敗 → sync_remote 回非零供聚合" 1 $?
-if printf '%s\n' "$ecs_out" | grep -q '❌ hostC'; then ok "ssh 失敗 → 印出連線失敗（不靜默）"; else bad "ssh 失敗被 set -e 吞掉——同步失敗變靜默成功"; fi
+if grep -q '❌ hostC' <<< "$ecs_out"; then ok "ssh 失敗 → 印出連線失敗（不靜默）"; else bad "ssh 失敗被 set -e 吞掉——同步失敗變靜默成功"; fi
 ecs_out="$(FAKE_RESULT="NO_DOTFILES" bash "$ecs_report" hostD 2>&1)"
-if printf '%s\n' "$ecs_out" | grep -q 'hostD'; then ok "NO_DOTFILES → 印出警告"; else bad "NO_DOTFILES 回報消失"; fi
+if grep -q 'hostD' <<< "$ecs_out"; then ok "NO_DOTFILES → 印出警告"; else bad "NO_DOTFILES 回報消失"; fi
 # helper 部署失敗（codex C2）：終判不得仍是 ✅——自動化只讀終判會誤認部署成功
 ecs_out="$(FAKE_RESULT="$(printf '⚠️ 無法建立 symlink x\nOK_HELPER_WARN\n')" bash "$ecs_report" hostE 2>&1)"
-if printf '%s\n' "$ecs_out" | grep -q '✅ hostE'; then
+if grep -q '✅ hostE' <<< "$ecs_out"; then
     bad "helper 失敗仍判 ✅（部署失敗被誤報成功）"
 else
     ok "helper 失敗不判 ✅"
 fi
-if printf '%s\n' "$ecs_out" | grep -q '⚠️.*hostE'; then ok "helper 失敗 → 終判 ⚠️"; else bad "helper 失敗無 ⚠️ 終判"; fi
+if grep -q '⚠️.*hostE' <<< "$ecs_out"; then ok "helper 失敗 → 終判 ⚠️"; else bad "helper 失敗無 ⚠️ 終判"; fi
 # C3（codex）：↩ 還原告知也要撈出——操作者須知道原 guidance 已恢復，避免不必要的人工復原
 ecs_out="$(FAKE_RESULT="$(printf '⚠️ 無法建立 symlink x\n↩ 已還原原檔 x\nOK_HELPER_WARN\n')" bash "$ecs_report" hostF 2>&1)"
-if printf '%s\n' "$ecs_out" | grep -q 'hostF: ↩'; then ok "↩ 還原告知冠主機名撈出"; else bad "↩ 還原告知被摘要 grep 丟棄"; fi
+if grep -q 'hostF: ↩' <<< "$ecs_out"; then ok "↩ 還原告知冠主機名撈出"; else bad "↩ 還原告知被摘要 grep 丟棄"; fi
 
 echo "▶ 18b. ensure-codex-guidance.sh 幂等連結全域 Codex guidance"
 ECG="$ROOT/scripts/ensure-codex-guidance.sh"
@@ -5771,7 +5788,7 @@ chmod +x "$ecg/bin/ln"
 ecg_out="$(PATH="$ecg/bin:$PATH" SOURCE_FILE="$ecg/source/AGENTS.md" CODEX_DIR="$ecg/fail-codex" BACKUP_ROOT="$ecg/fail-backup" bash "$ECG" 2>&1)"
 ecg_rc=$?
 assert_rc "guidance ln 失敗 → exit 非 0" 1 "$ecg_rc"
-if printf '%s\n' "$ecg_out" | grep -q '⚠️'; then ok "guidance ln 失敗印警告"; else bad "guidance ln 失敗無警告"; fi
+if grep -q '⚠️' <<< "$ecg_out"; then ok "guidance ln 失敗印警告"; else bad "guidance ln 失敗無警告"; fi
 # ln 失敗且原檔已被搬去備份 → 必須還原，原有 guidance 不得從生效位置消失（codex C2）
 mkdir -p "$ecg/restore-codex"
 echo "# precious guidance" > "$ecg/restore-codex/AGENTS.md"
@@ -5855,7 +5872,7 @@ chmod +x "$elr/bin/ln"
 elr_out="$(PATH="$elr/bin:$PATH" SOURCE_FILE="$elr/source/lftprc" TARGET_HOME="$elr/fail-home" BACKUP_ROOT="$elr/fail-backup" bash "$ELR" 2>&1)"
 elr_rc=$?
 assert_rc "lftprc ln 失敗 → exit 非 0" 1 "$elr_rc"
-if printf '%s\n' "$elr_out" | grep -q '⚠️'; then ok "lftprc ln 失敗印警告"; else bad "lftprc ln 失敗無警告"; fi
+if grep -q '⚠️' <<< "$elr_out"; then ok "lftprc ln 失敗印警告"; else bad "lftprc ln 失敗無警告"; fi
 mkdir -p "$elr/restore-home"
 echo "# precious lftprc" > "$elr/restore-home/.lftprc"
 PATH="$elr/bin:$PATH" SOURCE_FILE="$elr/source/lftprc" TARGET_HOME="$elr/restore-home" \
@@ -5925,7 +5942,7 @@ bup_make_helpers() {   # $1=失敗的 helper 名（空字串＝全部成功）
 bup_make_helpers ensure-codex-guidance
 bup_out="$(DOTFILES_DIR="$bup/dotfiles" HOME="$bup/home" PATH="$bup/bin:$PATH" bash "$BUP" 2>&1)"
 assert_rc "helper 失敗 → brewup 仍 exit 0（不擋套件更新）" 0 $?
-if printf '%s\n' "$bup_out" | grep -q '⚠️'; then
+if grep -q '⚠️' <<< "$bup_out"; then
     ok "helper 失敗 → 終判印出警告（不誤報完成）"
 else
     bad "helper 失敗被靜默——symlink 未更新卻顯示正常完成"
@@ -5993,7 +6010,7 @@ rm -f "$bup/marks/"*.log
 bup_make_helpers ""
 bup_out="$(DOTFILES_DIR="$bup/dotfiles" HOME="$bup/home" PATH="$bup/bin:$PATH" bash "$BUP" 2>&1)"
 assert_rc "全部成功 → exit 0" 0 $?
-if printf '%s\n' "$bup_out" | grep -q '⚠️'; then bad "全部成功卻仍印警告"; else ok "全部成功 → 無警告"; fi
+if grep -q '⚠️' <<< "$bup_out"; then bad "全部成功卻仍印警告"; else ok "全部成功 → 無警告"; fi
 
 # 隔離自證：cp 落在沙盒 HOME，真實 $HOME/.ssh/known_hosts 一個 byte 未動
 if [ -f "$bup/home/.ssh/known_hosts" ]; then ok "known_hosts 寫進沙盒 HOME"; else bad "known_hosts 未寫進沙盒——隔離可能失效"; fi
@@ -6169,7 +6186,7 @@ chmod 644 "$esc/src/config"
 assert_rc "產出不完整 → exit 1" 1 "$esc_rc"
 # 兩道防線任一先攔到都可以（cat 失敗 / bytes 不符），但**不得靜默**——
 # 靜默失敗會讓 dotsync 的 helper warn 有理由、使用者卻看不到是哪一項壞了
-if printf '%s\n' "$esc_out" | grep -q '⚠️'; then ok "失敗有明確訊息"; else bad "失敗卻靜默"; fi
+if grep -q '⚠️' <<< "$esc_out"; then ok "失敗有明確訊息"; else bad "失敗卻靜默"; fi
 assert_eq "不完整時原檔未動" "$esc_before" "$(cksum < "$esc/home/.ssh/config")"
 if find "$esc/home/.ssh" -name '.config.dotfiles.*' | grep -q .; then bad "殘留暫存檔"; else ok "暫存檔已清"; fi
 
@@ -6183,8 +6200,8 @@ esc_before="$(cksum < "$esc/legacy/.ssh/config")"
 esc_out="$(SOURCE_FILE="$esc/src/config" TARGET_HOME="$esc/legacy" BACKUP_ROOT="$esc/backup" bash "$ESC" 2>&1)"
 assert_rc "新 config 的 key 缺席且舊 key 仍在 → 拒絕（exit 1）" 1 $?
 assert_eq "拒絕時原 config 一個 byte 未動" "$esc_before" "$(cksum < "$esc/legacy/.ssh/config")"
-if printf '%s\n' "$esc_out" | grep -q 'id_new'; then ok "訊息點名缺席的 key"; else bad "沒說是哪一把 key 缺席"; fi
-if printf '%s\n' "$esc_out" | grep -q 'cp'; then ok "訊息給出處置（cp 不 mv）"; else bad "訊息無處置指引"; fi
+if grep -q 'id_new' <<< "$esc_out"; then ok "訊息點名缺席的 key"; else bad "沒說是哪一把 key 缺席"; fi
+if grep -q 'cp' <<< "$esc_out"; then ok "訊息給出處置（cp 不 mv）"; else bad "訊息無處置指引"; fi
 # 補上新 key 之後就該放行——守門不能變成永久卡死
 touch "$esc/legacy/.ssh/id_new"
 SOURCE_FILE="$esc/src/config" TARGET_HOME="$esc/legacy" BACKUP_ROOT="$esc/backup" bash "$ESC" >/dev/null 2>&1
@@ -7939,7 +7956,7 @@ mkdir -p "$ccm/bin"
 ccm_real_yq="$(command -v yq)"
 cat > "$ccm/bin/yq" <<'CCMYQ'
 #!/usr/bin/env bash
-if printf '%s\n' "$*" | grep -q -- '-p json'; then
+if grep -q -- '-p json' <<< "$*"; then
     : > "$CCM_RACE_READY"
     i=0
     while [ ! -e "$CCM_RACE_RELEASE" ] && [ "$i" -lt 500 ]; do
