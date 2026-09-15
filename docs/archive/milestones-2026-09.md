@@ -155,3 +155,9 @@
   - 放棄:因現行指令能跑就直接結案（路徑仍可無聲退化）；重寫已正確的 authoring guide；新增另一支 validator wrapper；安裝 PyYAML 到 system Python；擴張其他 skill-authoring 規則
   - 重議:Codex system skill discovery root 或 `CODEX_HOME` 契約改變；`quick_validate.py` 移出 system skill；或 gate 再次無法攔下 context-dependent mutant
   - 關聯:B-20260721-debt-21;M-20260824-memory-independent-transfer;e2f1afec;codex/skill-building-guide.md;docs/testing-contract.md;tests/run.sh
+
+- **M-20260915-b22-old-round-ab-no-decision-value · 2026-09-15 擴大舊 Sonnet 輪次 A/B 已無現行決策價值**:`B-20260805-debt-22` 要求為 2026-08-05 每組 `n=3` 的盲測擴樣，以判斷「最後一輪」提示是否導致 reviewer 降低 blocking 數量。現行設計已不以該效應量為前提：2026-08-04 的收件 transcript 直接證明後期 prompt 曾洩漏 review cap、把任務從發現問題改成收旂判斷；`D-20260823-portable-deep-review` 後的 portable workflow 則以 fresh-context independence 排除 prior findings、pass number 與 remaining budget，P5／P15 為其 behavior oracle，`D-20260912-neutral-portable-skill-core` 又將其收旂為雙 runtime neutral core。決策矩陣三格皆不改變契約：正向結果只增強現狀；零效應不能推翻已觀察的 cap 洩漏與任務放寬；反向的 finding／blocking 數量增加也不證明正確率或召回率較高——舊實驗未驗證 findings，且六個樣本全部判 FAIL。因此不為舊模型與舊編排預註冊或執行新樣本，不修改 skill、gate 或 eval；舊 A/B 仍保留為「方向一致但未證實」的歷史證據，B22 自 backlog 移除。
+  - 日期來源:direct
+  - 放棄:擴大舊 Sonnet 樣本；把同一 `n=3` 設計原樣搬到當代模型；以未驗證真假的 finding 數量作為改寫隔離契約的門檻；把舊弱證據改寫成「已證實」或「無效應」
+  - 重議:觀察到隱藏 pass 資訊會降低已獨立驗證的 true-positive recall，或新的產品需求要求 reviewer 感知階段；屆時以新 work item 預註冊直接量測正確率／召回率的當代實驗，不重開舊的 count-only A/B
+  - 關聯:B-20260805-debt-22;D-20260823-portable-deep-review;M-20260823-portable-deep-review;D-20260912-neutral-portable-skill-core;shared/skills/deep-review/references/workflow.md;shared/skills/deep-review/evals.md
