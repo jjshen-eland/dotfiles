@@ -12,19 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### B-20260820-debt-17：重驗四個 stub-only 情境的現行實戰證據 ⏳
-
-- **Writer**：`codex:revalidate-b17-real-world-gaps`
-- **Workspace**：`branch=test/revalidate-b17-real-world-gaps`
-- **Write Scope**：`STATUS.md`, `docs/backlog.md`, `docs/archive/milestones-2026-09.md`
-- **Dossier Steward**：`codex:revalidate-b17-real-world-gaps`
-- **Context**：B17 合併四個 deterministic stub 已覆蓋、但尚無實戰證據的候選；後續 deep-review portable migration 可能已使其中部分路徑退役。
-- **Goal**：依現行 production entry、deterministic gate 與可歸因的真實事件，逐項判定已實證、已退役、仍待自然觸發或存在 observed gap。
-- **Acceptance Criteria**：建立四項 evidence matrix；不以 stub 冒充 field evidence；只對可重現的現行缺口先取得 RED 後最小修正；將尚有決策價值的自然觸發拆成精確 backlog，其餘以 milestone 結案，並通過 doc audit 與完整 suite。
-- **Constraints**：不人工製造 remote drift、空 reviewer 報告、付費 review 或破壞性 rebase；不修改不可達的舊 production path；`claude/settings.json` runtime drift 不屬本項範圍。
-- **進度**：已建立 feature branch，並以 repo router 召回 B17 與相關歷史契約；尚未改動 production hook、skill、eval 或 test。
-- **下一步**：盤點四條現行 reachability 與 event-time 證據，再依 evidence matrix 收旂。
-- **關聯**：`B-20260820-debt-17`, `docs/testing-contract.md`, `shared/skills/deep-review/references/workflow.md`
+（目前無進行中項目。）
 
 ---
 

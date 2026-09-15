@@ -5,7 +5,7 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
 
 # Backlog
 
-待辦清單:技術債與已知缺口(更新日期:2026-09-15)
+待辦清單:技術債與已知缺口(更新日期:2026-09-16)
 
 > **為什麼與 `STATUS.md`／history 分家**：三者生命週期不同。STATUS 只留 active／paused；history
 > event 發生後 append-only；backlog 只留未結案狀態，直到做掉或明確放棄才會消失。
@@ -32,11 +32,13 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   - **觸發條件**：跨帳號操作變成常態、或同一個症狀再查錯方向一次。屆時傾向做成
     **唯讀提示**（進錯帳號時警告，不自動切），先驗證偵測那半是否可靠。
 
-- **B-20260820-debt-17** · [ ] **「tests/stub 有覆蓋、實戰未驗」一組**(遇到對應情境時順手確認即可,不必專程做):
-  SessionStart hook 落後提醒(真實落後的 clone);autocodex exec 的 resume 分支(exit 4 救援階梯,
-  三輪實跑皆一次成功、只有 stub 覆蓋,F15(b) 待真實空報告);review-anchor 的 stale STOP 與
-  codex-next 冪等(F16 b/c,待 autofix 迭代中真的 rebase/重試);repo-review 新契約(F16–F18 規格
-  覆蓋,待多輪 autofix 確認弱模型不會退回每輪帶 `--autofix`)
+- **B-20260916-sessionstart-behind-warning-field-observation** · [ ] **SessionStart 落後提醒尚無可歸因的真實事件證據**。
+  現行 hook 與 deterministic multi-remote fixture 都仍有效，未觀察到行為缺口；但 hook 不留持久 log，Git reflog
+  也沒有能同時證明「由 SessionStart 執行」與「當時 HEAD 真的落後」的日後記錄。
+  **精確觸發**：下次在某 clone 的當前 branch 已設 upstream、remote 自然多出 commit，且正常啟動 Claude
+  session 時，當下保留 hook stdout 以及 `HEAD..@{u}` 計數；若提醒正確則結案，若漏報或誤報則以該事件先取得
+  RED 再修。不為清 backlog 人工推遠端、不新增持久監控或啟動噪音。此項由
+  `B-20260820-debt-17` 拆出。
 - **B-20260820-debt-18** · [ ] Scenario 11 的「merge 但無 PR」分支只在 SKILL body 一行指標帶到 ship-paths,GREEN 實測中
   弱模型未展開讀——非違規故未補;重現才加明示(Iron Law)
 ## 已知缺口
