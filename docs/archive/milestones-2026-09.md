@@ -239,3 +239,9 @@
   - 放棄:直接 rerun CI；加入固定 sleep；把不可穩定重現的假紅當作 production process-tree leak；放寬成所有 `ps` failure 都判已退出；修改 launcher signal handler
   - 重議:同一 fixture 顯示 PID 維持非 zombie；`ps` failure 後第二次 `kill -0` 仍成功卻被放行；launcher 沒有輸出 fail-closed manifest；或 macOS required check 在新診斷下再次失敗
   - 關聯:supersedes:M-20260915-b07-timeout-zombie-oracle-fixed;PR#204;34995859432;docs/testing-contract.md;tests/run.sh;tests/fixtures/deep-plan-hanging-stub.py;codex/skills/deep-plan/scripts/launch-reviewers.py
+
+- **M-20260916-b18-no-pr-merge-guidance-revalidated · 2026-09-16 Project 無 PR merge 的兩選項導引完成現行弱模型重驗**:`B-20260820-debt-18` 源自 2026-07-22 Scenario 11 的非違規觀察：當時 Sonnet 只說「走 PR 或其他安全方式」，沒有把無 PR merge 的兩條路列成可選項。Git history 與同檔 Scenario 8 的事件註記確認，2026-08-06 起 `ship-paths.md` 已明列 default 存在、feature branch 無 PR 時必須用 runtime user-input primitive 提供「開 PR 再 merge（建議）」與「只推 branch、由使用者自行合併」，Claude／Codex thin entries 現在共用該 neutral core。2026-09-16 以移除 pressure-test 答案檔的 sanitized skill copy、兩份新建 `u3` fixture 與相同壓力訊息重驗：Claude Sonnet 5 與 Haiku 4.5 都列出兩個選項，拒絕直推或本地 merge default；兩份 bare remote 實查均只有 `main`，零 feature push、零 default mutation。Haiku 第一個 control 因 harness 沒有放入字面 `/project` 而停在 explicit-invocation gate，未當成行為 RED；以 fresh fixture 補正輸入形狀後通過。沒有 observed gap，故不修改 Project workflow／entry／scripts 或新增 regression gate，B18 自 backlog 與 active state 移除。
+  - 日期來源:direct
+  - 放棄:把無效 invocation fixture 當成 skill RED；因 Haiku 少寫「由你自行合併」但終態已明確停在 branch push 就擴寫規則；重跑過時 Sonnet alias／舊版 core；把既有兩選項再複製到 thin entries；為純 prose completeness 增加 static grep gate
+  - 重議:現行樓層或弱模型在有效 explicit invocation 下未列兩個互斥選項；自行選擇其中一路；直推／本地 merge default；或 Claude／Codex entry 不再解析到同一 `ship-paths.md` canonical source。屆時先保存 fresh fixture、raw output 與 refs，再取得 RED
+  - 關聯:B-20260820-debt-18;D-20260825-portable-skill-authoring-default;D-20260912-neutral-portable-skill-core;shared/skills/project/references/pressure-tests.md;shared/skills/project/references/ship-paths.md;claude/evals/README.md;claude/evals/setup-sandboxes.sh

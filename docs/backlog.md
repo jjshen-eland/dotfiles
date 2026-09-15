@@ -39,8 +39,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   session 時，當下保留 hook stdout 以及 `HEAD..@{u}` 計數；若提醒正確則結案，若漏報或誤報則以該事件先取得
   RED 再修。不為清 backlog 人工推遠端、不新增持久監控或啟動噪音。此項由
   `B-20260820-debt-17` 拆出。
-- **B-20260820-debt-18** · [ ] Scenario 11 的「merge 但無 PR」分支只在 SKILL body 一行指標帶到 ship-paths,GREEN 實測中
-  弱模型未展開讀——非違規故未補;重現才加明示(Iron Law)
 ## 已知缺口
 
 - **B-20260824-remote-human-contributor-path** · **單一 Dossier Steward 模型尚未定義跨機器真人
