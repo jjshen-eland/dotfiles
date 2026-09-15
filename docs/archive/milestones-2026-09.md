@@ -191,3 +191,9 @@
   - 放棄:把舊 expected path 當永恆 oracle；以全域翻譯字典修四題；恢復已證偽的 H1／IDF／H3 ranking 候選；只改固定 800 boost 而忽略正文被當 title 的共同根因
   - 重議:history label／body 邊界或 reason-query source diversity 回歸；至少三個獨立 repo 出現同型跨語言 miss；或作者改用承重 H2 後仍有可重現、會影響實際查找的 miss
   - 關聯:B-20260821-debt-27;B-20260822-debt-30;D-20260915-b27-cross-language-boundary;X-20260822-doc-h1-token-signal;X-20260823-retrieval-idf-and-h3-chunking;scripts/doc-governance.py;tests/test_doc_governance.py;tests/fixtures/doc-governance/b27-current-baseline.tsv;docs/document-governance.md;docs/testing-contract.md
+
+- **M-20260915-b01-history-recall-current-routes-sufficient · 2026-09-15 現行 always-on 路由已能阻止重走 outward hook 死路**:以不洩漏 stable ID、archive 標題或舊結論的真實任務重驗 B01：要求將 Claude Code 與 Codex 的 push／send-pack／PR merge 統一掛上同一個 PreToolUse hook。先以相同自然語言手動執行 `doc-governance.py find`，前五筆內即召回 `D-20260913-project-merge-authorization-ci`，證明 lexical retrieval 不是缺口。Claude Code 2.1.272／Sonnet fresh plan-mode baseline 雖先寬搜現行檔案、未以 `find` 作第一個命令，但在任何 repo 改動前找到 D-20260912 與取代它的 D-20260913，正確拒絕重掛 Claude hook；Codex CLI 0.154.0 fresh read-only baseline 先讀 root `AGENTS.md`，再實際執行 `doc-governance.py find`，同樣以零 repo 改動保留 Claude Auto、Project `--merge` 零額外 approval UI 與 Codex outward gate。雙 runtime 都沒有出現「因未主動查歷史而做錯」的 observed miss；Claude 的檢索順序偏差沒有改變處置，不足以依 Iron Law 新增 deny hook、路徑倒排索引或更長 prose。B01 自 backlog 移除，現行 classifier／hook 不修改。
+  - 日期來源:direct
+  - 放棄:沒有 observed failure 仍實作舊 PreToolUse deny＋路徑倒排索引；對 Claude Auto 重掛無 Project invocation context 的 outward hook；把未改變結果的首次檢索順序偏差當成行為 RED；引入 embedding／向量庫
+  - 重議:出現可重現的「相關歷史可被 `find` 召回，但 Claude 或 Codex 在任何檢索前就執行相衝突改動」，且 lookup 會改變最終處置；屆時以該真實案例取得 RED，不自動復活舊 hook／index 設計
+  - 關聯:B-20260819-debt-01;D-20260811-symmetric-rules-as-signal;X-20260825-deep-plan-duplicate-port;D-20260912-cross-runtime-outward-gate;D-20260913-project-merge-authorization-ci;AGENTS.md;scripts/doc-governance.py;docs/testing-contract.md;tests/run.sh
