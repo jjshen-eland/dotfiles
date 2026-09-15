@@ -167,3 +167,9 @@
   - 放棄:直接重跑舊 d1／d2／d3 三模型批次；把 Haiku 或 Opus 一律升成發布門檻；在每份 eval oracle 複製模型政策；因 Codex validator 不接受 Claude 專屬 frontmatter 就刪除 `/project` 必要欄位
   - 重議:現行 portable fixture 在 Haiku 出現會影響使用者安全或核心功能的可重現 RED；Opus／更強模型出現造成錯誤行為或顯著成本的過度解釋；或 `claude/evals/README.md` 的模型樓層權威正式改版。屆時為該具體決策預註冊最小實驗，不恢復全套三模型必跑
   - 關聯:B-20260820-debt-23;D-20260823-portable-deep-review;D-20260825-portable-skill-authoring-default;M-20260915-b22-old-round-ab-no-decision-value;claude/evals/README.md;claude/skill-building-guide.md;shared/skills/deep-plan/evals.md;shared/skills/deep-review/evals.md;shared/skills/root-cause-first/evals.md;shared/skills/project/references/pressure-tests.md
+
+- **M-20260915-b24-spec-flow-validated · 2026-09-15 Project spec 到實作的即時記錄契約實戰驗證完成**:以剛完成的 B23 當代實戰重建時序：active contract 在實作前已寫入 Context、Goal、Acceptance Criteria、Constraints 與四個 coordination fields；feature branch、skill-authoring preflight、八份 canonical eval 盤點、決策矩陣、驗證結果與下一步都在 active item 存續期間更新，並非到 shipping 才首次重建。PR #194 的最終 commit `41ed4e1f53cb0656cfe2928577398390cb10f4d6` 只改七個已宣告 scope 內檔案；當 B23 舊的「三模型全測」前提被現行模型樓層政策推翻後，實作收旂為 pointer 漂移修正，沒有為完成過時 spec 而執行 d1／d2／d3 批次。Doc-governance 自然語言路由與 repo 全文關鍵詞搜尋沒有找到其他「照過時 spec 執行」或「擅自擴 scope」的 observed failure；後續曾固定的 Project RED 屬 shipping hint、steward lifecycle 等其他契約，不觸發 B24 的改規則門檻。因此依 Iron Law 不新增程序、指令或 eval，B24 自 backlog 移除。
+  - 日期來源:direct
+  - 放棄:為增加心理安全感而重放舊 spec 情境或擴大樣本；在沒有 observed failure 時補 project prose／behavior eval；把 B23 單次成功外推成所有 mid-work re-spec 情境都已窮盡驗證
+  - 重議:後續出現可重現的「active spec 已被新證據推翻，agent 仍照舊驗收執行」／「未先更新 contract 就擴大實作 scope」／「進度只在 ship 時從記憶補寫」的 observed RED；屆時以新 work item 固定最小重現，不復活泛化的「多跑幾次」待辦
+  - 關聯:B-20260721-debt-24;M-20260915-b23-model-floor-policy-reconciled;PR#194;41ed4e1f53cb0656cfe2928577398390cb10f4d6;docs/archive/decisions-2026-07.md
