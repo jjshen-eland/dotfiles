@@ -12,19 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### B-20260817-debt-07：修正 deep-plan timeout fixture 的 zombie 誤判 ⏳
-
-- **Writer**：`codex:reassess-b07-deep-plan-eval-review`
-- **Workspace**：`branch=test/reassess-b07-deep-plan-eval-review`
-- **Write Scope**：`STATUS.md`, `docs/archive/milestones-2026-09.md`, `docs/testing-contract.md`, `tests/**`
-- **Dossier Steward**：`codex:reassess-b07-deep-plan-eval-review`
-- **Context**：B07 初次盤點與本機完整 suite 均未見 RED；shipping 時 required macOS job 唯一失敗於 deep-plan timeout process-tree fixture。該 job 約一秒即完成 launcher timeout，而測試隨即以 `kill -0` 判 descendant 存活；macOS 控制實驗證明已退出但尚未回收的 zombie 同時會讓 `kill -0` 成功並呈現 `ps state=Z`，故現行 oracle 會把不再持有 pipe 的退出程序誤判為 live descendant。
-- **Goal**：讓 timeout／signal cleanup regression gate 量測仍可執行的 descendant，而不把已退出的 zombie 當成 process-tree leak。
-- **Acceptance Criteria**：保留 launcher fail-closed、兩個 descendant PID 與零 live descendant 的原判準；以跨 macOS／Linux 可用的 process-state 判定排除 zombie，且仍把任何非-zombie PID 視為失敗；更新 B07 milestone 的現場 RED 與最小修正，通過完整 suite、doc-governance ship audit及 required macOS＋Ubuntu checks。
-- **Constraints**：不放寬 production launcher cleanup 契約；不以 sleep 或 CI retry 掩蓋 race；只修 fixture oracle，不修改 deep-plan skill、eval 或 launcher；`claude/settings.json` 的未提交 runtime drift 不屬本項範圍。
-- **進度**：已保存 required macOS job `34989144024` 的 `PASS=1418 FAIL=1` 與唯一失敗訊息；同版 Ubuntu、前序 macOS runs 及本機 macOS 完整 suite 通過；本機控制確認 `kill -0` 對 `Z` state 回傳成功，根因定位為 zombie 誤判。
-- **下一步**：先提交重新開啟的 active contract，再最小修正 timeout／signal PID 判定並重跑完整驗證。
-- **關聯**：`B-20260817-debt-07`, `M-20260915-b07-deep-plan-eval-review-reassessed`, `docs/testing-contract.md`, `tests/run.sh`
+（目前無進行中項目。）
 
 ---
 
