@@ -4,7 +4,8 @@
 
 Each non-ignored Markdown, including untracked, is `loaded`, `active`, `routed`, `history`, `derived`, or
 `governance`. Only loaded is size-limited; others need location/retrieval/lifecycle. History is append-only;
-derived has rebuild; `requires_inbound` is evidence-only.
+derived has rebuild; `requires_inbound` is evidence-only and applies to every tracked file matched by the class paths,
+including globs.
 
 Cross-repo pointers: `external_reference_targets` declares reference targets that live in sibling repos.
 An exact-target match that fails to resolve is skipped instead of flagged, and the declaration is itself

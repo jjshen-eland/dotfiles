@@ -945,14 +945,11 @@ def xref_scan(root, files, *, full_scan, evidence_layers, skip_sources=None, sec
 def evidence_layers(config):
   if config is None:
     return ['docs/dead-ends.md']
-  layers = []
-  for cls in config.classes:
-    if not cls.requires_inbound:
-      continue
-    for pattern in cls.paths:
-      if not any(char in pattern for char in '*?['):
-        layers.append(pattern)
-  return layers
+  return sorted({
+    rel
+    for rel in tracked_markdown(config.root)
+    if any(cls.requires_inbound for cls in matching_classes(rel, config))
+  })
 
 def unchanged_legacy_plans(config):
   if config is None:

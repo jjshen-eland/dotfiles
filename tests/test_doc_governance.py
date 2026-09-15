@@ -2184,6 +2184,29 @@ hidden active prose
         self.assertEqual(allowed.returncode, 0, allowed.stderr)
         self.assertEqual(allowed.stdout, "")
 
+    def test_requires_inbound_expands_glob_classes(self) -> None:
+        self.write("docs/evidence/one.md", "# One\n\n## 第一條孤立證據\n\n內容。\n")
+        self.write("docs/evidence/two.md", "# Two\n\n## 第二條孤立證據\n\n內容。\n")
+        self.configure(
+            base_config(
+                [
+                    {
+                        "name": "evidence",
+                        "mode": "routed",
+                        "paths": ["docs/evidence/*.md"],
+                        "requires_inbound": True,
+                    }
+                ]
+            )
+        )
+        self.track()
+
+        result = self.run_tool("audit", "--check", "xref")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("docs/evidence/one.md:3: ## 第一條孤立證據 — 節級孤兒", result.stdout)
+        self.assertIn("docs/evidence/two.md:3: ## 第二條孤立證據 — 節級孤兒", result.stdout)
+
     def test_governance_surface_marker_config_is_enforced(self) -> None:
         self.write("README.md", "# Fixture\n")
         self.write("script.sh", "# begin\nmeasured\n# end\n")
