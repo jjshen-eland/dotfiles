@@ -32,41 +32,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   - **觸發條件**：跨帳號操作變成常態、或同一個症狀再查錯方向一次。屆時傾向做成
     **唯讀提示**（進錯帳號時警告，不自動切），先驗證偵測那半是否可靠。
 
-- **B-20260822-debt-30** · [ ] **文檔治理收尾順序:先釘正確性、再用真 repo 逼出缺口、最後才調 ranking**(2026-08-22 加)。
-  依序:① immutability 刪除軸兩格 oracle(**2026-08-22 完成**,見 `M-20260822-immutability-removal-oracles`)
-  → ② canary rollout(**2026-08-22 完成**,見 `M-20260822-doc-governance-adopted`,缺口已回填 checklist)
-  → ③ 檢索 ranking:`B-20260821-debt-28`(單檔洗版)**已於 2026-08-22 關閉**;`B-20260821-debt-27`(程序型
-  文件召回)仍開,但已分成「跨語言」與「權重形狀」兩個子問題,見該條。
-  ⚠️ **順序理由**:27/28 打到的正是「不知道標題時找不找得到」,而那是第二個 repo 第一次用才會撞到的面;
-  沒有真實 rollout 語料就調 ranking,等於對 dotfiles 自己的語料過擬合。
-  ⚠️ **原 plan §6 的 steady-state rollout gate 已由 `D-20260822-rollout-gate-replacement` 取代**:canary
-  (dotfiles 之後的第一個採用者)可立即開始;qualifying ship 記入 `docs/rollout-ledger.md`,**canary 之後的
-  其餘 repo** 才要求 steady-state 證據。月份 shard 正確性不受影響,維持 blocking。
-  ⚠️ 該記錄以「batch 1」指稱 canary,與 checklist 的形狀批次序是不同軸,已由
-  `D-20260823-canary-role-not-batch-number` 校正——**讀到「batch 1」一律讀作「canary repo」**。(舊敘述以 `git log --merges` 為證據,在 squash merge 下恆為 0,
-  已證偽:採用 commit 後實際有 2 次 ship。)
-
-- **B-20260821-debt-27** · [ ] **檢索對程序型文件的語意召回偏弱**。Round 6 以 20 條不複製標題的
-  query 探測 reference／policy／skill／eval／plan／backlog，僅 4/20 命中；本批八列 oracle 必須使用
-  高辨識度 body 詞才能穩定進 top 5。後續需另以行為需求設計 ranking 改進，禁止把目標標題塞回 query
-  製造假綠。
-  ⚠️ **2026-08-22 用兩個語料（dotfiles ＋ canary）重量：hit@5 12/20 → 13/20**（per-file cap 帶來的，
-  見 `M-20260822-retrieval-source-diversity`）。剩下的 miss **不是同一個問題，要分開處理**：
-  - **跨語言**：`docs/document-governance.md` 全篇英文（語言政策要求），中文問題與它 token 交集為零
-    ——**任何 ranking 改動都碰不到這一格**，要嘛加別名層、要嘛接受它只能用英文問。
-  - **權重形狀**：title 命中 ×200、body ×20，而程序型文件的 section 標題是結構性的
-    （「0. 前置」「2. history 遷移」），主題詞只在 body；history 條目的短標題塞滿領域詞，於是恆勝。
-  - 已試過並否決：文件 H1 當弱訊號（`X-20260822-doc-h1-token-signal`，淨零）、body 覆蓋率取代全含加分
-    （單獨無增益，疊在 cap 上反而 −1）、IDF 加權與兩種 H3 分節（`X-20260823-retrieval-idf-and-h3-chunking`，
-    dotfiles 那半 hit@5 由 7 退到 4/5/5）。
-  ⚠️ **2026-08-23 診斷再收窄一次：主因是分節方式，不是權重比值。** 實測 canary 的
-    「重訊分類判準只有一份」是 **H3**，埋在 H2「MOPS 重訊爬蟲知識」底下；查「分類規則的正本放在哪一份」
-    時，它的 H2 母節排第 26、標題命中數 0——**H2 才是檢索單位，H3 標題只是 body（每命中 ×20 而非 ×200）**。
-    這一格**改排序治不好**，正解在作者面：要被找到的東西放 H2。已寫進 `docs/document-governance.md`。
-  - **下一步候選（未做）**：canary 的 `CLAUDE.md` 有四條陷阱是 H3，值得提為 H2 再量一次——那會是
-    「作者面修正能不能取代 ranking 修正」的第一個直接證據。
-  - 現有 ratchet：`tests/fixtures/doc-governance/title-free-recall.tsv`（dotfiles 那 10 條，hit@5 ≥6）。
-    **提高門檻只能用新寫的 query 重新量。**
 - **B-20260819-debt-01** · [ ] **決策/死路的機械召回**(2026-08-19 加,**獨立候選**)。現況是檢索靠人自覺、沒有機械觸發。
   領域索引(本批要做的那個)是**人工維護、粗粒度**的版本;機械化版本是
   **`PreToolUse` hook + 以檔案路徑為鍵的倒排索引**——要動 `xref-gate.py` 時,自動把
