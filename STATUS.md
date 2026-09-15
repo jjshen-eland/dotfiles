@@ -12,7 +12,19 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-（目前無進行中項目。）
+### B-20260819-debt-02：重驗 handoff survey／list 等價 gate ⏳
+
+- **Writer**：`codex:reassess-b02-handoff-equivalence`
+- **Workspace**：`branch=test/reassess-b02-handoff-equivalence`
+- **Write Scope**：`STATUS.md`, `shared/skills/handoff/**`, `claude/skills/handoff/**`, `codex/skills/handoff/**`, `tests/**`, `docs/backlog.md`, `docs/archive/milestones-2026-09.md`
+- **Dossier Steward**：`codex:reassess-b02-handoff-equivalence`
+- **Context**：B02 在 2026-08 因 handoff `survey`／`list` 等價 gate 只比對 `active:`、`path:`、`title:` 固定前綴而建立，當時預想未來可能新增 `repos:` 子行；現行輸出與 portable handoff topology 已演進，舊候選是否仍代表真實行為風險需重新驗證。
+- **Goal**：以現行 handoff shared implementation、雙 runtime 薄入口、eval oracle 與 regression gate，確認固定前綴是否仍會讓 `survey`／`list` 的實際輸出漂移卻通過驗證；不因舊提案直接新增 `repos:` 或擴大 gate。
+- **Acceptance Criteria**：逐項盤點兩個入口的 active 輸出來源、現行所有子行與等價 gate 覆蓋；只有可重現且會讓兩介面行為漂移卻仍通過 gate 的案例，才先取得 RED 並做最小修正；若目前沒有新增子行需求或實際風險，移除 B02、追加結案 milestone，並通過 handoff behavior eval、doc-governance ship audit 與完整 suite。
+- **Constraints**：先完成 skill-authoring preflight 並以 behavior eval 為 oracle；重用既有 fixture，不製造只為證明 mutation 的人工欄位；維持 Claude／Codex portable topology，不改 Claude Auto approval lifecycle 或 Project `--merge` 零重問契約；`claude/settings.json` 的未提交 runtime drift 不屬本項範圍。
+- **進度**：已完成 skill-authoring preflight、portable topology、shared `emit_active`、現行輸出、既有 gate、Git history／blame、eval oracle 與完整 suite盤點；未找到第四種 active 子行、分叉輸出或可重現 behavior gap，判定不需修改 handoff skill、eval 或測試。
+- **下一步**：以 commit-aware stewardship gate 驗證 contract parent，再移除 active item、寫入 B02 結案 milestone並從 backlog 移除，重跑 ship audit 與完整 suite。
+- **關聯**：`B-20260819-debt-02`, `D-20260819-handoff-active-mtime`, `D-20260819-handoff-no-ranking`, `docs/plans/2026-08-19-handoff-active-mtime.md`
 
 ---
 
