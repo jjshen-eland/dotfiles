@@ -197,3 +197,9 @@
   - 放棄:沒有 observed failure 仍實作舊 PreToolUse deny＋路徑倒排索引；對 Claude Auto 重掛無 Project invocation context 的 outward hook；把未改變結果的首次檢索順序偏差當成行為 RED；引入 embedding／向量庫
   - 重議:出現可重現的「相關歷史可被 `find` 召回，但 Claude 或 Codex 在任何檢索前就執行相衝突改動」，且 lookup 會改變最終處置；屆時以該真實案例取得 RED，不自動復活舊 hook／index 設計
   - 關聯:B-20260819-debt-01;D-20260811-symmetric-rules-as-signal;X-20260825-deep-plan-duplicate-port;D-20260912-cross-runtime-outward-gate;D-20260913-project-merge-authorization-ci;AGENTS.md;scripts/doc-governance.py;docs/testing-contract.md;tests/run.sh
+
+- **M-20260915-b02-handoff-equivalence-gate-revalidated · 2026-09-15 handoff survey／list 等價 gate 舊候選完成重驗**:`B-20260819-debt-02` 原本只為未實作的 `repos:` 子欄預留，並非已觀察到的介面漂移。現行 `emit_active` 仍是 `list` 與 `survey` 的單一 active 輸出來源，完整輸出只有 `active:`、`path:`、`title:` 三種行，既有 gate 的固定前綴恰好覆蓋全部現行欄位；Git history／blame 亦確認 B02 建立後未新增 active 子欄或分叉輸出。portable topology、兩端薄入口、shared script／eval oracle 與完整 suite `PASS=1419 FAIL=0` 均重驗通過，沒有可重現且具行為成本的 RED。因此不加入 `repos:`、不擴白名單、不修改 handoff skill／eval／測試，B02 自 backlog 移除。
+  - 日期來源:direct
+  - 放棄:為未實作的 `repos:` 欄預先修改 gate；以人工注入未存在的子欄製造 mutation-only RED；把單一 `emit_active` 重構成更複雜的區段 parser；在沒有 observed behavior gap 時增加 skill prose 或 eval
+  - 重議:active 清單實際新增第四種輸出行；`list`／`survey` 不再共用 `emit_active`；或出現兩入口對同一 active store 產生不同可觀察結果但現行 gate 仍放過的真實案例
+  - 關聯:B-20260819-debt-02;D-20260819-handoff-active-mtime;D-20260819-handoff-no-ranking;docs/plans/2026-08-19-handoff-active-mtime.md;shared/skills/handoff/scripts/handoff-anchor.sh;shared/skills/handoff/evals.md;tests/run.sh
