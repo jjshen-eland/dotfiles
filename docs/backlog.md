@@ -32,13 +32,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   - **觸發條件**：跨帳號操作變成常態、或同一個症狀再查錯方向一次。屆時傾向做成
     **唯讀提示**（進錯帳號時警告，不自動切），先驗證偵測那半是否可靠。
 
-- **B-20260819-debt-02** · [ ] **handoff `survey`／`list` 等價 gate 的前綴白名單是寫死的**(2026-08-19 加)。
-  `tests/run.sh` 那條「survey 的 active 區段與 list 逐字等價」用
-  `grep -E '^(active: |  path: |  title: )'` 兩邊比對,**任何新增的縮排子行都不在名單內、
-  天生豁免於這道 gate**。本次(mtime 時戳)只加欄位、未加子行故未受影響,但附錄評估過的
-  「錨點 repo 欄」(`repos: dotfiles, krepo`——多份 active 時最強的辨識訊號)一旦要做,
-  必須連同這個缺陷一起處理:擴白名單、或改成「比對兩邊全部 active 相關行」。
-  ⇒ 該欄本次刻意不做,理由與取捨見 `docs/plans/2026-08-19-handoff-active-mtime.md`。
 - **B-20260819-debt-05** · [ ] **`deep-plan` 的模型層級待一個獨立決定**(2026-08-19 加,與下一條同型)。2026-08-19 首次真實執行
   跑在 **Opus**(session 模型),而全部 evals 校準在 **Sonnet**(樓層)。兩個後果性質不同:①**成本**
   ——第二輪與 N 都動不得(理由見 `shared/skills/deep-plan/field-log.md`「C2 — 第二輪不能砍，但它審的是處置而非計畫」),
