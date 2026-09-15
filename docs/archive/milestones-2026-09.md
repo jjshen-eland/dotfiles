@@ -233,3 +233,9 @@
   - 放棄:人工推一個真實 remote 來觸發落後提醒；刻意產生空 reviewer 報告或新增付費輪次；對真實 branch 做破壞性 rebase 來驗 stale anchor；因舊 scripts／references 還存在就把不可達路徑當成 production；以 stub 綠燈或 2026-08-20 前產物冒充 B17 後 field evidence
   - 重議:portable entry 重新引入 `codex-exec-review.sh`、`review-anchor.sh` 或每輪 model-facing autofix 參數；或 `B-20260916-sessionstart-behind-warning-field-observation` 的自然觸發顯示漏報／誤報。後者以當時 stdout 與 `HEAD..@{u}` 證據先取得 RED，不復活其餘三個舊情境
   - 關聯:B-20260820-debt-17;B-20260916-sessionstart-behind-warning-field-observation;1b39f632;290a6a0;claude/scripts/session-pull-check.sh;shared/skills/deep-review/references/workflow.md;shared/skills/deep-review/evals.md;docs/testing-contract.md;tests/run.sh
+
+- **M-20260916-deep-plan-signal-pid-race-oracle-fixed · 2026-09-16 PR #204 macOS signal cleanup 假紅的 PID 回收競態已固定**:PR #204 required Ubuntu check 通過，macOS run `34995859432` 則以 `PASS=1418 FAIL=1` 唯一失敗於 deep-plan SIGHUP cleanup gate。相同 signal path 在本機連跑 100 次與既有 timeout／signal fixture 都未留下 live descendant；進一步把 liveness helper 的時間序固定後取得唯一 RED：第一次 `kill -0` 看見 PID，但程序在後續 `ps` 前被回收時，舊 helper 直接把 `ps` failure 當作 live，產生 false positive。最小修正將 hanging stub 抽成 tracked fixture、加入失敗時的 rc／manifest／PID／state 診斷，並要求 `ps` failure 後重查 `kill -0`：已消失判退出，仍存在才維持 fail closed。RED 為 `PASS=1419 FAIL=1`，修後完整 suite 為 `PASS=1420 FAIL=0`；production launcher、shared workflow、模型與 reviewer 數均未修改。
+  - 日期來源:direct
+  - 放棄:直接 rerun CI；加入固定 sleep；把不可穩定重現的假紅當作 production process-tree leak；放寬成所有 `ps` failure 都判已退出；修改 launcher signal handler
+  - 重議:同一 fixture 顯示 PID 維持非 zombie；`ps` failure 後第二次 `kill -0` 仍成功卻被放行；launcher 沒有輸出 fail-closed manifest；或 macOS required check 在新診斷下再次失敗
+  - 關聯:supersedes:M-20260915-b07-timeout-zombie-oracle-fixed;PR#204;34995859432;docs/testing-contract.md;tests/run.sh;tests/fixtures/deep-plan-hanging-stub.py;codex/skills/deep-plan/scripts/launch-reviewers.py
