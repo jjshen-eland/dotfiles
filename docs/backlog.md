@@ -67,10 +67,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
     「作者面修正能不能取代 ranking 修正」的第一個直接證據。
   - 現有 ratchet：`tests/fixtures/doc-governance/title-free-recall.tsv`（dotfiles 那 10 條，hit@5 ≥6）。
     **提高門檻只能用新寫的 query 重新量。**
-- **B-20260821-debt-26** · [ ] **文檔治理 Round 3 非阻斷後續**。本批不順手擴張核心：xref 待處理
-  ignored dirs、alias stale 的 finding/error 語意、正反向 section 比對、shell heredoc fence 與兩份
-  `alias_sources` 推導；CLI 待決定 positional files、ship 輸出順序與 adoption 診斷；測試待解除固定
-  backlog ID、補 repo-wide audit 與 route portability；另須讓 Codex always-on 接上 event-time 記錄規則。
 - **B-20260819-debt-01** · [ ] **決策/死路的機械召回**(2026-08-19 加,**獨立候選**)。現況是檢索靠人自覺、沒有機械觸發。
   領域索引(本批要做的那個)是**人工維護、粗粒度**的版本;機械化版本是
   **`PreToolUse` hook + 以檔案路徑為鍵的倒排索引**——要動 `xref-gate.py` 時,自動把

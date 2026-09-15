@@ -10,6 +10,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import shlex
 import subprocess
 import sys
 import unicodedata
@@ -97,6 +98,9 @@ class Document:
 
   def source_lines(self):
     masked = fence_mask(self.lines)
+    if self.rel.endswith('.sh'):
+      shell_masked = shell_heredoc_mask(self.lines)
+      masked = [markdown or shell for markdown, shell in zip(masked, shell_masked)]
     for index, line in enumerate(self.lines):
       if line and not masked[index]:
         yield (index + 1, line)
@@ -250,6 +254,19 @@ def tracked_markdown(root, *, xref=False):
   output = run_git(root, ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', *patterns])
   return sorted(item for item in output.split('\x00') if item and (root / item).is_file())
 
+def full_xref_files(root, config):
+  if config is not None:
+    return tracked_markdown(root, xref=True)
+  top = run_git(root, ['rev-parse', '--show-toplevel'], allow_failure=True).strip()
+  if top and Path(top).resolve() == root:
+    return tracked_markdown(root, xref=True)
+  return sorted(
+    str(path.relative_to(root))
+    for pattern in ('*.md', '*.sh')
+    for path in root.rglob(pattern)
+    if '.git' not in path.parts
+  )
+
 def missing_tracked_markdown(root):
   output = run_git(root, ['ls-files', '-z', '--cached', '--', '*.md'])
   return sorted(item for item in output.split('\x00') if item and not (root / item).is_file())
@@ -300,6 +317,43 @@ def fence_mask(lines):
       mask[index] = True
     else:
       mask[index] = True
+  return mask
+
+def shell_heredoc_mask(lines):
+  mask = [False] * len(lines)
+  pending = []
+  for index, line in enumerate(lines):
+    if pending:
+      delimiter, strip_tabs = pending[0]
+      candidate = line.lstrip('\t') if strip_tabs else line
+      mask[index] = True
+      if candidate == delimiter:
+        pending.pop(0)
+      continue
+    try:
+      tokens = list(shlex.shlex(line, posix=True, punctuation_chars='<>'))
+    except ValueError:
+      continue
+    cursor = 0
+    while cursor < len(tokens):
+      if tokens[cursor] != '<<':
+        cursor += 1
+        continue
+      cursor += 1
+      if cursor >= len(tokens):
+        break
+      delimiter = tokens[cursor]
+      strip_tabs = False
+      if delimiter == '-' and cursor + 1 < len(tokens):
+        cursor += 1
+        delimiter = tokens[cursor]
+        strip_tabs = True
+      elif delimiter.startswith('-') and len(delimiter) > 1:
+        delimiter = delimiter[1:]
+        strip_tabs = True
+      if delimiter and not delimiter.isdecimal():
+        pending.append((delimiter, strip_tabs))
+      cursor += 1
   return mask
 
 def visible_lines(text):
@@ -1303,7 +1357,7 @@ def main(argv):
           except ValueError as exc:
             raise ScannerError(f'input escapes --root: {path}') from exc
       else:
-        files = tracked_markdown(root, xref=True) if config else sorted(str(path.relative_to(root)) for pattern in ('*.md', '*.sh') for path in root.rglob(pattern) if '.git' not in path.parts)
+        files = full_xref_files(root, config)
       alias_sources = {rel for rel in files if config and any(cls.mode == 'history' for cls in matching_classes(rel, config))}
       findings = xref_scan(root, files, full_scan=not args.files, evidence_layers=evidence_layers(config), skip_sources=hidden_legacy_plans(config), section_aliases=xref_section_aliases(config), alias_sources=alias_sources, external_targets=external_reference_targets(config))
       for finding in findings:

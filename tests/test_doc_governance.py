@@ -1337,6 +1337,44 @@ class DocGovernanceTests(RepoCase):
         heads = [line for line in found.stdout.splitlines() if line and not line.startswith("  ")]
         self.assertEqual(len(heads), 5, found.stdout)
 
+    def test_backlog_retrieval_uses_a_synthetic_item_not_live_repo_debt(self) -> None:
+        self.write(
+            "docs/backlog.md",
+            """# Backlog
+
+## 技術債
+
+- **B-20260821-fixture** · [ ] ignored dirs、alias stale、positional files 與 adoption 診斷。
+
+## 已知缺口
+""",
+        )
+        self.configure(
+            base_config(
+                [
+                    {
+                        "name": "backlog",
+                        "mode": "active",
+                        "paths": ["docs/backlog.md"],
+                        "unit": "top_level_bullet",
+                    }
+                ]
+            )
+        )
+        self.track()
+
+        semantic = self.run_tool(
+            "find", "ignored dirs alias stale positional files adoption 診斷"
+        )
+        by_id = self.run_tool("find", "B-20260821-fixture")
+
+        self.assertEqual(semantic.returncode, 0, semantic.stderr)
+        self.assertIn("docs/backlog.md:5", semantic.stdout)
+        self.assertIn("B-20260821-fixture", semantic.stdout)
+        self.assertEqual(by_id.returncode, 0, by_id.stderr)
+        self.assertIn("docs/backlog.md:5", by_id.stdout)
+        self.assertIn("B-20260821-fixture", by_id.stdout)
+
     def test_xref_compatibility_contract(self) -> None:
         self.write("target.md", "# Target\n\n## 真實章節（補充）\n\n本文規則。\n")
         self.write("source.md", "見 `target.md`「真實章節」。\n")
@@ -1387,6 +1425,44 @@ class DocGovernanceTests(RepoCase):
         shell_comment = self.run_tool("audit", "--check", "xref")
         self.assertIn("check.sh", shell_comment.stdout)
         self.assertIn("不存在的 shell 指標", shell_comment.stdout)
+
+    def test_xref_full_scan_skips_gitignored_files_without_config(self) -> None:
+        self.write(".gitignore", "ignored/\n")
+        self.write("target.md", "# Target\n\n## 現行章節\n")
+        self.write(
+            "ignored/generated.md",
+            "見 `target.md`「生成內容裡不存在的章節」。\n",
+        )
+        self.track()
+
+        result = self.run_tool("audit", "--check", "xref")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "")
+
+    def test_xref_ignores_shell_heredoc_payloads(self) -> None:
+        self.write("target.md", "# Target\n\n## 現行章節\n")
+        self.write(
+            "script.sh",
+            """#!/usr/bin/env bash
+cat <<'EXAMPLE'
+# 範例見 `target.md`「heredoc 裡不存在的章節」。
+EXAMPLE
+# 真實規則見 `target.md`「heredoc 結束後不存在的章節」。
+""",
+        )
+        self.configure(
+            base_config(
+                [{"name": "docs", "mode": "routed", "paths": ["target.md"]}]
+            )
+        )
+        self.track()
+
+        result = self.run_tool("audit", "--check", "xref")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("heredoc 裡不存在的章節", result.stdout)
+        self.assertIn("heredoc 結束後不存在的章節", result.stdout)
 
     def test_declared_external_reference_is_not_a_broken_xref(self) -> None:
         # A sibling repo's doc is a legitimate target the scanner cannot resolve;
@@ -2406,12 +2482,11 @@ class RealRetrievalCorpusTests(unittest.TestCase):
         with fixture.open(encoding="utf-8", newline="") as handle:
             return [row for row in csv.reader(handle, delimiter="\t") if row and not row[0].startswith("#")]
 
-    def test_retrieval_corpus_covers_required_families(self) -> None:
+    def test_retrieval_corpus_covers_persistent_families(self) -> None:
         required = {
             "decision",
             "dead-end",
             "milestone",
-            "backlog",
             "plan",
             "policy",
             "skill",
@@ -2422,6 +2497,18 @@ class RealRetrievalCorpusTests(unittest.TestCase):
         rows = self.retrieval_rows()
         self.assertTrue(all(len(row) == 5 for row in rows), "every retrieval row must declare its family")
         self.assertEqual({row[4] for row in rows}, required)
+
+    def test_current_repo_ship_audit_is_clean(self) -> None:
+        result = subprocess.run(
+            ["python3", str(TOOL), "--root", str(ROOT), "audit", "--ship"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout, "doc-governance: OK\n")
 
     def test_retrieval_oracle_does_not_embed_answer_aliases(self) -> None:
         spec = importlib.util.spec_from_file_location("doc_governance_no_alias", TOOL)
@@ -2529,33 +2616,6 @@ class RealRetrievalCorpusTests(unittest.TestCase):
                     any(f"section={expected_section}" in line for line in matching),
                     f"{query!r} did not return section {expected_section!r}\n{cache[query]}",
                 )
-
-    def test_backlog_stable_id_returns_its_own_bullet(self) -> None:
-        stable_id = "B-20260819-debt-02"
-        expected_line = next(
-            index
-            for index, line in enumerate(
-                (ROOT / "docs" / "backlog.md").read_text(encoding="utf-8").splitlines(),
-                start=1,
-            )
-            if stable_id in line
-        )
-        result = subprocess.run(
-            ["python3", str(TOOL), "--root", str(ROOT), "find", stable_id],
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=False,
-        )
-        self.assertEqual(result.returncode, 0, result.stderr)
-        header = next(
-            line for line in result.stdout.splitlines() if line.startswith("docs/backlog.md:")
-        )
-        self.assertTrue(
-            header.startswith(f"docs/backlog.md:{expected_line} "),
-            result.stdout,
-        )
-        self.assertIn(stable_id, header)
 
     def test_unique_canonical_titles_rank_top_one(self) -> None:
         spec = importlib.util.spec_from_file_location("doc_governance", TOOL)

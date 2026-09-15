@@ -12,19 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### B-20260821-debt-26：重驗 doc-governance Round 3 非阻斷後續 ⏳
-
-- **Writer**：`codex:reassess-b26-doc-governance-round3`
-- **Workspace**：`branch=docs/reassess-b26-doc-governance-round3`
-- **Write Scope**：`STATUS.md`, `.doc-governance.json`, `scripts/doc-governance.py`, `tests/test_doc_governance.py`, `tests/fixtures/doc-governance/**`, `docs/document-governance.md`, `docs/testing-contract.md`, `docs/backlog.md`, `docs/archive/milestones-2026-09.md`
-- **Dossier Steward**：`codex:reassess-b26-doc-governance-round3`
-- **Context**：B26 是 2026-08-21 Round 3 留下的集合型非阻斷候選；後續 doc-governance 與 regression gates 已演進，不能把舊清單直接視為現行缺口。
-- **Goal**：逐項以現行實作、文件與 regression gate 判定已解決、已淘汰或仍有 observed behavior gap；只修最後一類。
-- **Acceptance Criteria**：十二個候選各有可追溯判定；仍有效的缺口先取得 RED，再做最小修正並取得 GREEN；完成時記錄 milestone、移除 B26 與本 active item，且通過 doc-governance ship audit 與完整測試。
-- **Constraints**：behavior eval 與 deterministic regression gate 是 oracle；不沿用舊集合直接開發，不為未觀察成本新增程序；不修改任何 repo-local skill surface。
-- **進度**：四個可重現缺口已先取得 RED 並完成最小修正；其餘八項已有現行 gate 或不具新增規則的決策價值。doc-governance 84 tests 與完整 suite `PASS=1419 FAIL=0`。
-- **下一步**：提交本 active contract 後，在下一顆受控 lifecycle commit 移除 active/backlog、保留 milestone 與實作，並完成 PR／merge。
-- **關聯**：`B-20260821-debt-26`, `M-20260914-xref-heading-body-fallback-composition`, `M-20260915-doc-governance-round2-revalidated`
+（目前無進行中項目。）
 
 ---
 

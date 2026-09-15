@@ -153,12 +153,14 @@ Codex validator 指令同時守兩個獨立 failure mode：以 `uv --with pyyaml
 synthetic repos 固定 config 錯誤、tracked／untracked 分類、零／多重分類、H2 前頂層 bullet、mixed legacy entry shapes、空 H2、
 archive-month／event-month 日期語意、新 record type/month mismatch、plan lifecycle、xref compatibility、
 commit range 內 history／frozen plan／legacy plan removal（含取消追蹤但保留 working-tree 檔案，及 branch
-內建立、凍結後刪除）、Unicode slug、STATUS staleness、trusted scanner、ship fail-closed、deterministic tie
-與 8 KiB 輸出上限。
+內建立、凍結後刪除）、Git ignored full-scan 邊界、shell heredoc payload、Unicode slug、STATUS staleness、
+trusted scanner、ship fail-closed、deterministic tie 與 8 KiB 輸出上限。Suite 另直接執行當前 repo 的
+`audit --ship`，避免 synthetic cases 全綠但實際 config／文件分類已壞。
 真實 corpus 的 query 不得複製目標 entry／section 的標題核心詞，避免 oracle 把答案直接嵌進輸入；每列
-宣告 family，集合必須完整覆蓋 decision、dead end、milestone、backlog、plan、policy、skill body、
-skill reference、eval 與 archive。每題必須在 top 5 命中預期 path＋entry，需驗定位語意者另釘 expected
-section。query 逐字包含 expected entry 的可判定形狀由測試守門；其餘「標題核心詞」的模糊重疊邊界
+宣告 family；其中會永久存在的集合必須完整覆蓋 decision、dead end、milestone、plan、policy、skill body、
+skill reference、eval 與 archive。Backlog entry 具有關閉即移除的生命週期，語意與 stable-ID retrieval 改由
+synthetic repo 固定，不把 oracle 綁在任何 live `B-*`。每題必須在 top 5 命中預期 path＋entry，需驗定位
+語意者另釘 expected section。query 逐字包含 expected entry 的可判定形狀由測試守門；其餘「標題核心詞」的模糊重疊邊界
 仍靠人工審 fixture，刻意不機檢：詞彙偶然重疊與標題複製沒有可靠的機械分界，近似 gate 會誤殺正常 query。
 
 ranking 只能由 observed RED 驅動。Oracle 的 query／expected answer 只存在 TSV，不得從 config 注入答案詞；

@@ -10,7 +10,6 @@ review-terminal 說法覆蓋不了 STOP AskUserQuestion	shared/skills/project/re
 WIP snapshot review-anchor squash-cmd tests-baseline	claude/skills/deep-review/references/modes-and-scope.md	Autofix 模式	Autofix 模式	reference
 為什麼不把已知缺口定義收窄成我方可解？	docs/archive/dead-ends-2026-08.md	X-20260820-narrow-known-gap	事件記錄（event-time）	dead-end
 文件治理 pilot 完成了哪些能力與驗收？	docs/archive/milestones-2026-08.md	M-20260820-doc-governance-pilot	事件記錄（event-time）	milestone
-ignored dirs alias stale positional files adoption 診斷	docs/backlog.md	B-20260821-debt-26	技術債	backlog
 計畫目標書定義要解什麼，不含解法提案，範圍含全部 dossier 類型	docs/plans/2026-08-20-doc-governance-goals.md	文檔治理 — 目標、現況、問題、困難	file-preamble	plan
 maintenance ceiling correctness ratchet round binary tier	docs/document-governance.md	Surface budget	Surface budget	policy
 跨 harness project 收尾前要載入哪個完整 workflow 與 Critical Step 0–5	shared/skills/project/references/workflow.md	Project shared workflow	file-preamble	skill
