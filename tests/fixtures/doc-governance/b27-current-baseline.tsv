@@ -1,0 +1,15 @@
+# B27 2026-09-15 現行重驗的事前固定題組；不是 regression oracle，首次量測前先寫入。
+# dotfiles baseline=8341350；canary main=5b6db0c。rank=— 表示未進 top 5。
+# corpus<TAB>category<TAB>query<TAB>expected_path_prefix<TAB>before_rank<TAB>fixed_rank<TAB>disposition
+dotfiles	cross-language	治理機制維護面超過上限時，哪些修正可把門檻升到下一個二進位級距	docs/document-governance.md	—	—	lexical language boundary; Chinese decision sources returned
+dotfiles	cross-language	舊版計畫結案後還會不會進入搜尋或作為交叉引用來源	docs/document-governance.md	—	—	lexical language boundary; Chinese testing and history sources returned
+dotfiles	cross-language	技術債結案時，待辦與歷史紀錄要如何同步	docs/document-governance.md	—	—	lexical language boundary; Chinese dossier sources returned
+dotfiles	cross-language	進行中的工作需要記錄哪些協作欄位才能通過治理檢查	docs/document-governance.md	—	—	lexical language boundary; Chinese active-state sources returned
+canary	author-h2	同一筆資料的 DD 標記為何會隨寫入路徑改變	CLAUDE.md	4	4	already hit
+canary	author-h2	每日 CSV 同步為何會漏掉分類欄位	CLAUDE.md	—	—	author-side H2 promotion simulation => rank 1
+canary	author-h2	抓到多列卻全部解析失敗時，怎麼避免被當成上游沒資料	CLAUDE.md	—	—	author-side H2 promotion simulation => rank 1
+canary	author-h2	91 開頭為什麼不能直接判定為 KY 公司	CLAUDE.md	—	1	core reason/history crowd-out fixed
+canary	weight-shape	多個代理平行補歷史資料時，worker 數與每分鐘速率怎麼限制	docs/runbooks/major-news-ops.md	4	4	already hit
+canary	weight-shape	正式回補空值前怎麼先估算筆數	docs/runbooks/major-news-ops.md	2	2	already hit
+canary	weight-shape	即時同步上線前要檢查哪些資料與排程條件	docs/runbooks/major-news-ops.md	—	—	rank 6; realtime versus 即時同步 vocabulary
+canary	weight-shape	公開資料端點每分鐘多少請求開始容易被封鎖	docs/mops-crawler-reference.md	—	—	invalid expected; threshold is in docs/runbooks/major-news-ops.md

@@ -164,7 +164,10 @@ synthetic repo 固定，不把 oracle 綁在任何 live `B-*`。每題必須在 
 仍靠人工審 fixture，刻意不機檢：詞彙偶然重疊與標題複製沒有可靠的機械分界，近似 gate 會誤殺正常 query。
 
 ranking 只能由 observed RED 驅動。Oracle 的 query／expected answer 只存在 TSV，不得從 config 注入答案詞；
-remote branch 題改用使用者可合理提供的機制詞，並驗證未出現在 query 的 canonical title 片段。
+remote branch 題改用使用者可合理提供的機制詞，並驗證未出現在 query 的 canonical title 片段。History
+record 的粗體 label／冒號後 body 邊界由 synthetic fixture 固定；reason query 另有五個弱相關 history
+來源對一份多詞命中 live guide 的 crowd-out RED，防止 history preference 變成固定相關性下限。
+`b27-current-baseline.tsv` 保存 B27 事前固定的跨語言、作者 H2 與權重形狀量測，不是新門檻或全綠 oracle。
 
 ---
 
