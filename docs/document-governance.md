@@ -20,6 +20,9 @@ its pointer. Prefixes and globs are deliberately absent: they would silence whol
   stdout ≤8 KiB, hit/miss/error 0/1/2.
 - `audit [--shadow|--ship]`: clean/findings/error 0/1/2; shadow findings 0; ship starts
   `doc-governance: OK|FINDINGS|BROKEN`; xref findings/error 0/2.
+- `audit --check xref [files...]`: a full scan at a Git root includes tracked and non-ignored untracked Markdown and
+  shell files; explicit files remain caller-selected. Shell scanning reads real comment lines but excludes heredoc
+  payloads, where `#` is data rather than a source comment.
 - `report`: measure; `record-path`: path/ID/heading.
 
 `--root`: Git toplevel default. No network/index; find is pointer-free; xrefs checked.
