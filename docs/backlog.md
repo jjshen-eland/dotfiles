@@ -71,10 +71,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   ignored dirs、alias stale 的 finding/error 語意、正反向 section 比對、shell heredoc fence 與兩份
   `alias_sources` 推導；CLI 待決定 positional files、ship 輸出順序與 adoption 診斷；測試待解除固定
   backlog ID、補 repo-wide audit 與 route portability；另須讓 Codex always-on 接上 event-time 記錄規則。
-- **B-20260820-debt-25** · [ ] **文檔治理 Round 2 非阻斷後續**（2026-08-20 加）。本批只修會讓
-  gate、檢索、ship 或 agent 行為失真的 blocking findings；其餘待獨立處理：補 `supersedes` 反向邊的
-  搜尋呈現、定義 glob class 的 `requires_inbound` 語意、決定 `mode: governance` 是否保留、提供
-  worktree trusted-core mismatch 的操作指引，以及縮短 canonical-title 檢索測試的成長成本。
 - **B-20260819-debt-01** · [ ] **決策/死路的機械召回**(2026-08-19 加,**獨立候選**)。現況是檢索靠人自覺、沒有機械觸發。
   領域索引(本批要做的那個)是**人工維護、粗粒度**的版本;機械化版本是
   **`PreToolUse` hook + 以檔案路徑為鍵的倒排索引**——要動 `xref-gate.py` 時,自動把
