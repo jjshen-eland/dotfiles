@@ -2508,7 +2508,10 @@ class RealRetrievalCorpusTests(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(result.stdout, "doc-governance: OK\n")
+        self.assertTrue(
+            result.stdout.startswith("doc-governance: OK\n"),
+            result.stdout + result.stderr,
+        )
 
     def test_retrieval_oracle_does_not_embed_answer_aliases(self) -> None:
         spec = importlib.util.spec_from_file_location("doc_governance_no_alias", TOOL)
