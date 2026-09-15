@@ -121,9 +121,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   覆蓋,待多輪 autofix 確認弱模型不會退回每輪帶 `--autofix`)
 - **B-20260820-debt-18** · [ ] Scenario 11 的「merge 但無 PR」分支只在 SKILL body 一行指標帶到 ship-paths,GREEN 實測中
   弱模型未展開讀——非違規故未補;重現才加明示(Iron Law)
-- **B-20260820-debt-23** · [ ] evals 從未做**系統性多模型覆蓋**:skill-building-guide 發布前 checklist 要求
-  Haiku+Sonnet+Opus 都測,實際執行紀錄以 Sonnet 為主、其餘零散;d1/d2/d3 沙盒跑一次多模型
-  批次才算補齊(現有紀錄多為單模型單次)。
 - **B-20260721-debt-24** · [ ] /project 手感驗證後半段:spec→實作(即時記錄)待驗;mid-work re-spec 2026-07-21 研究後
   判維持不改(Iron Law:no failing scenario, no instruction)——除非觀察到照過時 spec 執行或
   擅自擴大範圍,才補程序+RED eval

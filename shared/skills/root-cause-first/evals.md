@@ -3,7 +3,7 @@
 > 開發/迭代用的評測集，**不從 SKILL.md body 連結**（避免 runtime 被載入）。
 > 收斂判準（oracle）：通過本 evals，不是「再 review 一次 prose 找不找得到東西」。
 > 沙盒建置：`claude/evals/setup-sandboxes.sh`；手動執行方式見 `claude/evals/README.md`。
-> **三模型都要測**（Haiku / Sonnet / Opus）——本 skill 的目標樓層是 Sonnet，Haiku PASS 為加分。
+> 模型角色與驗收門檻同樣以該 README 的「模型樓層政策」為準。
 
 ---
 

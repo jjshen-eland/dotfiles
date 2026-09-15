@@ -161,3 +161,9 @@
   - 放棄:擴大舊 Sonnet 樣本；把同一 `n=3` 設計原樣搬到當代模型；以未驗證真假的 finding 數量作為改寫隔離契約的門檻；把舊弱證據改寫成「已證實」或「無效應」
   - 重議:觀察到隱藏 pass 資訊會降低已獨立驗證的 true-positive recall，或新的產品需求要求 reviewer 感知階段；屆時以新 work item 預註冊直接量測正確率／召回率的當代實驗，不重開舊的 count-only A/B
   - 關聯:B-20260805-debt-22;D-20260823-portable-deep-review;M-20260823-portable-deep-review;D-20260912-neutral-portable-skill-core;shared/skills/deep-review/references/workflow.md;shared/skills/deep-review/evals.md
+
+- **M-20260915-b23-model-floor-policy-reconciled · 2026-09-15 多模型 eval 指引收斂至現行模型樓層政策**:`B-20260820-debt-23` 的實際原文建立於 2026-08-05，以當時「Haiku／Sonnet／Opus 全測」為發布門檻並要求跑舊 deep-review d1／d2／d3 三模型批次；2026-08-07 後的唯一權威已改為 Sonnet 是 PASS 樓層、Haiku 是加分、Opus／更強模型只診斷過度解釋。八份 canonical skill eval 盤點確認 deep-review、root-cause-first、project 仍殘留舊必跑措辭，deep-plan 重複現行規則，其餘五份沒有另立門檻；四個指引與 skill-building guide 的兩處規則已改為只指向 `claude/evals/README.md`，真正需要樓層模型判定規則作用的 project Scenario 17 仍保留 Sonnet-specific 要求。舊 d1／d3 又屬 2026-08-23 已退役的 legacy 編排，d2 的現行 scope gate 已由 portable P2 承接；Haiku PASS／FAIL、Opus 有／無過度解釋與跨模型分歧都不能由該批次直接改變現行驗收或產品規則。因此不預註冊、不執行舊多模型批次，也不新增 behavior rule／gate；靜態 drift RED 已轉 GREEN，七個適用的 system validator、canonical linkage、doc-governance 與完整 suite `PASS=1419 FAIL=0`，B23 自 backlog 移除。
+  - 日期來源:direct
+  - 放棄:直接重跑舊 d1／d2／d3 三模型批次；把 Haiku 或 Opus 一律升成發布門檻；在每份 eval oracle 複製模型政策；因 Codex validator 不接受 Claude 專屬 frontmatter 就刪除 `/project` 必要欄位
+  - 重議:現行 portable fixture 在 Haiku 出現會影響使用者安全或核心功能的可重現 RED；Opus／更強模型出現造成錯誤行為或顯著成本的過度解釋；或 `claude/evals/README.md` 的模型樓層權威正式改版。屆時為該具體決策預註冊最小實驗，不恢復全套三模型必跑
+  - 關聯:B-20260820-debt-23;D-20260823-portable-deep-review;D-20260825-portable-skill-authoring-default;M-20260915-b22-old-round-ab-no-decision-value;claude/evals/README.md;claude/skill-building-guide.md;shared/skills/deep-plan/evals.md;shared/skills/deep-review/evals.md;shared/skills/root-cause-first/evals.md;shared/skills/project/references/pressure-tests.md
