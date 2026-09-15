@@ -1,8 +1,7 @@
 # Deep Plan — Evals
 
 > 開發/迭代用的評測集，**不從 SKILL.md body 連結**（避免 runtime 被載入）。
-> 執行方式、沙盒建置、模型樓層政策、transcript 截獲法：`~/.dotfiles/claude/evals/README.md`（唯一權威）。
-> **Sonnet = PASS 門檻**；Haiku PASS 加分；Opus 用來檢查是否過度解釋。
+> 執行方式、沙盒建置、模型樓層政策、transcript 截獲法：repo-relative `claude/evals/README.md`（唯一權威）。
 
 ---
 

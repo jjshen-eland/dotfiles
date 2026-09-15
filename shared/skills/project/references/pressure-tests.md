@@ -9,7 +9,7 @@ TDD-for-skills：先在**無 skill / 弱 skill** 下跑這些情境，逐字記�
 
 > 判卷註記：2026-07-21 起 branch-first 已下沉為 `branch-first.sh`（見 `log-workflow.md`「Step 1：逐 repo 狀態 + 流程偵測（先於任何 commit）」，情況 A/B 皆走腳本）——各情境 Expected 裡的 `git switch -c` 手打指令，agent 改為執行腳本並得到 `exec: git switch -c` 輸出時**同樣合規**；反之情況 B 徒手重組救援序列記偏離（S5 已明文）。
 
-跨模型各跑一次（Haiku / Sonnet / Opus）：Opus 不需過度解釋，Haiku 可能需更明確指引。
+模型角色與驗收門檻以 `claude/evals/README.md`「模型樓層政策」為唯一權威。
 
 ## 目錄
 

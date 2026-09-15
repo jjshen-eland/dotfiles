@@ -3,7 +3,7 @@
 > 開發/迭代用的評測集，**不從 SKILL.md body 連結**（避免 runtime 被載入）。
 > 依 Anthropic「Build evaluations first」方法論：先量無 skill 的 baseline，再對照有 skill 的表現。
 > 目前無內建 runner，手動執行：在乾淨 session 載入 skill → 跑 query → 對照 `expected_behavior` 打分。
-> **三模型都要測**（Haiku / Sonnet / Opus）：Haiku 看指引夠不夠、Opus 看有沒有過度解釋。
+> 模型角色與驗收門檻依 repo-relative `claude/evals/README.md`「模型樓層政策」（唯一權威）。
 
 > **現行 portable oracle**：2026-08-23 起以文末 `Portable behavior oracle` 的 P1–P13
 > 為跨 Claude Code／Codex 的完成判定。下方既有 F 系列、舊 sandbox 與執行紀錄保留為歷史

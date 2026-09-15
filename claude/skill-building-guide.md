@@ -189,7 +189,7 @@ eval 結構（JSON）：`{skills, query, files, expected_behavior[]}`。platform
 
 1. **Triggering**：明確任務觸發、改述觸發、無關主題不觸發
 2. **Functional**：輸出正確、API 成功、錯誤處理、邊界覆蓋
-3. **跨模型**：**Haiku / Sonnet / Opus 都要測**（Opus 不需過度解釋，Haiku 可能需更多指引）
+3. **模型樓層**：執行角色與驗收門檻以 `claude/evals/README.md`「模型樓層政策」為唯一權威
 
 ### Claude A / Claude B 迭代法
 
@@ -298,7 +298,7 @@ blocking finding **不觸發 autofix loop**，改依可驗證性分流：能建�
 
 **核心品質**：description 具體含觸發詞且第三人稱 ／ body < 500 行 ／ 細節在獨立檔 ／ 無 time-sensitive 資訊 ／ 術語一致 ／ 範例具體 ／ 引用一層深 ／ workflow 步驟清楚
 **程式與腳本**：腳本自己解決不 punt ／ 顯式錯誤處理 ／ 無 voodoo constants ／ 列依賴 ／ forward slash ／ critical 操作有驗證 ／ 含 feedback loop
-**測試**：≥ 3 個 eval ／ **Sonnet 為 PASS 門檻、Haiku PASS 加分、Opus 用來檢查是否過度解釋**（樓層政策的單一來源是 `claude/evals/README.md`；本行 2026-08-07 由「三模型都測」改為與它一致，避免兩處打架）／ 真實情境測過 ／ 納入團隊回饋 ／ **改動紀律型 skill 的 Critical・rationalization table・red flags 區塊後，重跑受影響的 eval 情境**（Iron Law 的顯性化：防護區塊的修改沒有 GREEN 重跑紀錄就不算完成）
+**測試**：≥ 3 個 eval ／ 模型角色與驗收門檻依 `claude/evals/README.md`「模型樓層政策」／ 真實情境測過 ／ 納入團隊回饋 ／ **改動紀律型 skill 的 Critical・rationalization table・red flags 區塊後，重跑受影響的 eval 情境**（Iron Law 的顯性化：防護區塊的修改沒有 GREEN 重跑紀錄就不算完成）
 
 ## 撰寫語言政策（定向英文）★ 維護本檔與所有 skill 時一律遵循
 
