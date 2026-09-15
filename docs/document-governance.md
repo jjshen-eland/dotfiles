@@ -16,7 +16,10 @@ its pointer. Prefixes and globs are deliberately absent: they would silence whol
 
 - `find <query>`: H1 preamble/H2 (history: top bullet), five 240-byte hits max, `file-preamble` without H2,
   at most two hits per file. **H2 is the retrieval unit — a heading buried at H3 is body text, worth a tenth
-  of a title hit. Put what must be findable at H2.**
+  of a title hit. Put what must be findable at H2, and give that H2 subject-bearing vocabulary rather than a
+  structural label.** A D/X/M record's bold label is its search title; text after the colon remains body.
+  Reason queries may boost relevant history in proportion to its base score, but the boost never establishes
+  relevance on its own.
   stdout ≤8 KiB, hit/miss/error 0/1/2.
 - `audit [--shadow|--ship]`: clean/findings/error 0/1/2; shadow findings 0; ship starts
   `doc-governance: OK|FINDINGS|BROKEN`; xref findings/error 0/2.

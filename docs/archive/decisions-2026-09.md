@@ -81,3 +81,9 @@
   - 放棄:沿用「只剩 transfer」舊前提直接移除（漏掉已實際使用的 rescue 與其 session-aware orchestration）；把八個 commands／三個 skills 的數量本身當保留理由；把重疊的 plugin review 升為 canonical workflow；手改 plugin cache、command files 或 hooks 假造細粒度縮減；開啟 Stop review gate（目前無需求且會增加每次 Stop 的時延與阻擋面）；因歷史 broker 問題移除整個 plugin（2026-07-20 證據只支持 deep-review 改走 headless exec）
   - 重議:Claude Code 或 Codex 提供等價的 native session import／session-aware delegation；plugin 正式支援 per-capability enable/disable；bridge 再出現無 watchdog 的卡死／idle 成本；或到 2026-12-31 仍沒有新的 rescue／transfer 使用證據
   - 關聯:B-20260820-debt-20;docs/archive/decisions-2026-07.md;D-20260823-portable-deep-review;D-20260823-portable-handoff-skill;M-20260824-memory-independent-transfer;claude/settings.json;scripts/brewup.sh;scripts/claude-plugin-install-hints.sh
+
+- **D-20260915-b27-cross-language-boundary · 2026-09-15 B27 不以全域翻譯層修單一英文政策的中文查詢**:事前固定的四條中文 query 對全英文 `docs/document-governance.md` 均未直接命中，但 top 5 已回傳中文的 decision、dossier、testing contract 或 template，可回答其中三類問題；樣本只涵蓋一份語言政策要求英文的文件，不能支持一套全域翻譯字典。B27 保留 lexical、pointer-free 的 `find`，不新增 `query_aliases`、答案詞注入或中英對照 ranking；跨語言問題先由同語言權威／關聯來源承接，真正必須直達的主題仍應使用承重且具主題詞的 H2。
+  - 日期來源:direct
+  - 放棄:以四題建立全域中英字典（過擬合且沒有未知詞行為）；在 config 注入 query 對 answer path（oracle 洩漏）；把英文治理規範改成雙語（違反既有定向英文政策）
+  - 重議:至少三個獨立真實 repo 持續出現「同語言替代來源也無法回答」的跨語言 miss，且有可預註冊、非答案注入的共同詞彙層
+  - 關聯:B-20260821-debt-27;tests/fixtures/doc-governance/b27-current-baseline.tsv;X-20260822-doc-h1-token-signal;X-20260823-retrieval-idf-and-h3-chunking

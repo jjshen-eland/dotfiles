@@ -793,6 +793,65 @@ class DocGovernanceTests(RepoCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("精確且唯一的標題", result.stdout.splitlines()[0])
 
+    def test_history_record_title_stops_before_its_body(self) -> None:
+        self.write(
+            "docs/archive/decisions-2026-01.md",
+            "# History\n\n## 事件記錄（event-time）\n\n"
+            "- **D-20260101-example · 精確標題**:2026-01-01 正文專有詞只屬於 body。\n",
+        )
+        self.configure(
+            base_config(
+                [
+                    {
+                        "name": "history",
+                        "mode": "history",
+                        "paths": ["docs/archive/*.md"],
+                        "unit": "top_level_bullet",
+                    }
+                ]
+            )
+        )
+        self.track()
+
+        found = self.run_tool("find", "正文專有詞")
+
+        self.assertEqual(found.returncode, 0, found.stdout + found.stderr)
+        self.assertNotIn("正文專有詞", found.stdout.splitlines()[0])
+        self.assertIn("正文專有詞", found.stdout.splitlines()[1])
+        self.assertIn("event_date=2026-01-01", found.stdout.splitlines()[0])
+
+    def test_reason_history_bonus_does_not_crowd_out_a_relevant_live_guide(self) -> None:
+        for index in range(5):
+            self.write(
+                f"docs/archive/decisions-2026-0{index + 1}.md",
+                "# History\n\n## 事件記錄（event-time）\n\n"
+                f"- **D-20260{index + 1}01-weak · 2026-0{index + 1}-01 弱相關紀錄**:不能。\n",
+            )
+        self.write(
+            "docs/guide.md",
+            "# Guide\n\n## 操作參考\n\n91 開頭不能直接代表 KY 公司類型，這只是 heuristic。\n",
+        )
+        self.configure(
+            base_config(
+                [
+                    {
+                        "name": "history",
+                        "mode": "history",
+                        "paths": ["docs/archive/*.md"],
+                        "unit": "top_level_bullet",
+                    },
+                    {"name": "guide", "mode": "routed", "paths": ["docs/guide.md"]},
+                ]
+            )
+        )
+        self.track()
+
+        found = self.run_tool("find", "為什麼 91 開頭不能當成 KY 公司判定")
+
+        self.assertEqual(found.returncode, 0, found.stdout + found.stderr)
+        headers = [line for line in found.stdout.splitlines() if line and not line.startswith("  ")]
+        self.assertTrue(any(line.startswith("docs/guide.md:") for line in headers), found.stdout)
+
     def test_classification_zero_and_multiple_are_blocking(self) -> None:
         self.write("README.md", "# Read me\n")
         self.write("OTHER.md", "# Other\n")

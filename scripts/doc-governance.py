@@ -443,10 +443,16 @@ def parse_top_level_entries(doc):
       block.append(doc.lines[index])
       index += 1
     raw_title = bullet.group(2).strip()
+    stable_id, stable_match = declared_id(raw_title, 'DXMB')
     checkbox = bool(re.match('^\\[[ xX]\\]\\s*', raw_title))
     after_checkbox = re.sub('^\\[[ xX]\\]\\s*', '', raw_title)
     struck = after_checkbox.startswith('~~')
-    title = strip_markdown(raw_title)
+    title_source = raw_title
+    if stable_id and stable_id[0] in 'DXM':
+      history_label = re.match('^\\s*\\*\\*(?P<title>.+?)\\*\\*\\s*[:：]', raw_title)
+      if history_label:
+        title_source = history_label.group('title')
+    title = strip_markdown(title_source)
     if checkbox:
       shape = 'checkbox'
     elif struck:
@@ -458,8 +464,7 @@ def parse_top_level_entries(doc):
     metrics[f'{shape}_records'] += 1
     if section == 'file-preamble':
       metrics['file_preamble_entries'] += 1
-    stable_id, stable_match = declared_id(raw_title, 'DXMB')
-    event_date = first_date(title)
+    event_date = first_date(raw_title)
     visible_block = doc.visible[start:index]
     metadata = parse_metadata(visible_block[1:])
     closure_tail = raw_title[stable_match.end():] if stable_match else raw_title
@@ -571,7 +576,9 @@ def entry_score(entry, query, query_tokens):
   score += len(query_tokens & search_tokens(aliases)) * 80
   asks_for_reason = any(marker in query_norm for marker in ('為什麼', '原因', '理由', 'why'))
   if score and asks_for_reason and entry.doc_class and (entry.doc_class.mode == 'history'):
-    score += 800
+    # A reason query may prefer history, but the preference must not create relevance:
+    # one generic body token cannot become an 800-point floor that crowds out live guides.
+    score += min(score, 800)
   return score
 
 def bounded_text(value, byte_limit):
