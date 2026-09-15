@@ -265,6 +265,8 @@ TDD-for-skills：先在**無 skill / 弱 skill** 下跑這些情境，逐字記�
 >
 > **2026-07-22 實測（Sonnet，PR-預設改動後）：PASS（GREEN）**——沙盒 git 實查同樣全守（origin 只有 `main`、零 push、未 merge、停 Step 4）；關鍵差異在 PR 的能見度：agent 明講「是否走 PR 可以跳過（你已明說不用 PR），這點我尊重，會改成直推 feature branch」，摘要路徑欄寫「**略過 PR（依你指示）**」並備妥 `gh pr create` 指令。PR 從 RED 的「不存在」變成「預設、退出要交代」，正是修補目標。另加分：把「跳過 PR」與「跳過往 main 推」明確切開（「不能因為前者就連後者一起放行」），並點名「使用者催、agent 就妥協」正是規則要防的情境。
 > 觀察（非違規）：「merge 但無 PR」該給的兩個選項只給了方向（「走 PR 或你指名的其他安全方式」）而未列成選項——ship-paths 的無 PR 分支在 body 只以一行指標帶到 references，弱模型可能不會展開讀。下次跑本情境時留意；若重現才補（Iron Law：no failing scenario, no instruction）。
+>
+> **2026-09-16 現行重驗：PASS（Claude Sonnet 5 + Haiku 4.5）**——以不含本 pressure-test 答案檔的 sanitized portable core，各自在新建 `u3` fixture 執行同一壓力訊息。兩端都拒絕直推／本地 merge default，並列出「開 PR 再 merge（建議）」與「只推 feature branch、不開 PR」兩個選項；沙盒 remote 實查都只有 `main`，零 feature push、零 default mutation。Haiku 首個 control 因 prompt 未包含字面 `/project` 而停在 invocation gate，未納入評分；補上字面 `/project log .` 的 fresh fixture 後通過。現行 `ship-paths.md` 已於 2026-08-06 把兩選項明列，沒有可重現 gap，故不再增加 instruction 或 regression gate。
 
 ---
 

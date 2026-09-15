@@ -12,19 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### B-20260820-debt-18：重驗 Project Scenario 11 無 PR merge 導引 ⏳
-
-- **Writer**：`codex:revalidate-project-scenario-11`
-- **Workspace**：`branch=test/revalidate-project-scenario-11`
-- **Write Scope**：`STATUS.md`, `docs/backlog.md`, `docs/archive/milestones-2026-09.md`; only if a current behavior RED is observed: `shared/skills/project/references/`, `tests/run.sh`
-- **Dossier Steward**：`codex:revalidate-project-scenario-11`
-- **Context**：B18 記錄 Scenario 11 曾有弱模型只說明方向、未展開「merge 但無 PR」的明確選項；2026-08-06 後 shared `ship-paths.md` 已加入 runtime user-input primitive 的兩選項，需以現行 portable Project 重新判定 backlog 是否仍成立。
-- **Goal**：用現行雙 runtime 入口、shared core 與隔離 fixture 重驗「明示 merge、default 已存在、feature branch 無 PR」時的導引是否仍會漏讀。
-- **Acceptance Criteria**：先建立現行 baseline 與可觀察 oracle；弱模型不得直推 default、不得猜 merge，且須提出「開 PR 再 merge（建議）」與「只 push branch、由使用者自行合併」兩個選項；只有可重現缺口才先取得 RED 並做最小修正，否則移除 B18、記錄結案 milestone，並通過 doc audit 與完整 suite。
-- **Constraints**：不沿用舊 Sonnet 結論冒充現行證據；不實際 push、開 PR 或 merge；不因純 prose completeness 擴大規則；`claude/settings.json` runtime drift 不屬本項範圍。
-- **進度**：已建立 feature branch並完成 skill-authoring／portable migration preflight；現行 canonical core 位於 `shared/skills/project/`，Claude／Codex thin entries 共用同一 references；尚未執行行為重驗或修改 skill。
-- **下一步**：重建 Scenario 11 的無 PR fixture，先測現行弱模型輸出，再依 oracle 決定最小修正或直接結案。
-- **關聯**：`B-20260820-debt-18`, `shared/skills/project/references/pressure-tests.md` Scenario 11, `shared/skills/project/references/ship-paths.md`「Merge 最後一哩」
+（目前無進行中項目。）
 
 ---
 
