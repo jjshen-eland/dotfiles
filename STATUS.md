@@ -12,7 +12,19 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-（目前無進行中項目。）
+### PR-204：修正 deep-plan SIGHUP cleanup 的 macOS regression ⏳
+
+- **Writer**：`codex:revalidate-b17-real-world-gaps`
+- **Workspace**：`branch=test/revalidate-b17-real-world-gaps`
+- **Write Scope**：`STATUS.md`, `tests/run.sh`, `tests/fixtures/deep-plan-hanging-stub.py`, `docs/testing-contract.md`, `docs/archive/milestones-2026-09.md`
+- **Dossier Steward**：`codex:revalidate-b17-real-world-gaps`
+- **Context**：PR #204 required Ubuntu check 通過；macOS check 唯一失敗於 deep-plan launcher 的 SIGHUP descendant-cleanup gate。前次只修正 zombie 誤判，這次 signal path 已再次觸發其重議條件。
+- **Goal**：以可觀測 RED 定位 signal cleanup 的真實失敗 invariant，做最小修正並保持 timeout、fail-closed manifest 與雙 runtime portable 契約不變。
+- **Acceptance Criteria**：失敗輸出可區分 exit code、manifest、PID 數與 live descendant；重現根因後先保留 RED，再修到 targeted signal／timeout fixtures、doc audit 與完整 suite 全綠；`claude/settings.json` 不進入本項 diff。
+- **Constraints**：不以重跑 CI 或固定 sleep 掩蓋 race；不修改 production launcher、shared workflow、reviewer prompt、模型或 reviewer 數；不改 skill topology；沒有新 push 授權前不更新遠端 branch。
+- **進度**：已完成 skill-authoring preflight、portable topology／歷史／eval baseline 盤點；正在建立 targeted macOS signal-cleanup 診斷。
+- **下一步**：讓既有 fixture 在失敗時輸出各 conjunct 與 process state，重複執行 signal path以取得 RED。
+- **關聯**：`PR#204`, `M-20260915-b07-timeout-zombie-oracle-fixed`, `docs/testing-contract.md`, `shared/skills/deep-plan/evals.md`
 
 ---
 
