@@ -382,6 +382,8 @@ in-memory stdin/stdout pipes（不可要求 parent sandbox 寫 temp），固定 
 fingerprint 與 plan/brief/schema hashes 不變；partial failure、schema failure、遞迴或 mutation 一律 fail closed。
 所有 artifact/repo inputs 都必須是 absolute，raw 與 symlink-resolved path 都拒絕控制字元；timeout／signal
 （至少 SIGINT／SIGTERM／SIGHUP／SIGQUIT）必須收掉整棵 reviewer process tree，不能留下持有 stdout pipe 的 descendant。
+Cleanup fixture 以 process state 判定存活：`kill -0` 成功但 state 為 `Z` 只代表已退出、等待系統回收，不算 live
+descendant；無法取得 state 或任何非 zombie state 仍 fail closed，避免以等待或 retry 掩蓋真正 leak。
 Claude round 同樣 fail closed：必須恰有 N 份可歸因的完整 results；Agent error、partial、缺 section 或 finding
 欄位缺漏都不得進 synthesis。Eval oracle 不得殘留 Codex 已退役的 `fork_turns`／spawn／wait backend。
 Shared workflow 判定為放行／攔下判準類計畫時，Codex adapter 必須用顯式 flag 讓 launcher 加入同一份

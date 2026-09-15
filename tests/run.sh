@@ -3477,6 +3477,18 @@ pid_dir = Path(os.environ["DEEP_PLAN_DESCENDANT_PID_DIR"])
 time.sleep(60)
 PY
 chmod +x "$TMP/deep-plan-hanging-stub"
+# `kill -0` only proves that a PID still has a process-table entry. On macOS an
+# exited orphan can remain as `Z` until launchd reaps it, even though it no
+# longer executes or holds the inherited pipe. Keep unknown/non-zombie states
+# fail-closed, but do not report an exited zombie as a launcher leak.
+pid_is_live_non_zombie() {
+    local pid="$1"
+    local state
+    kill -0 "$pid" 2>/dev/null || return 1
+    state="$(ps -o stat= -p "$pid" 2>/dev/null)" || return 0
+    state="${state//[[:space:]]/}"
+    [[ "$state" != Z* ]]
+}
 dps_timeout_out="$(DEEP_PLAN_DESCENDANT_PID_DIR="$TMP/deep-plan-descendant-pids" \
     "$DPS_CODEX/scripts/launch-reviewers.py" \
     --plan "$dps_fixture/docs/plans/plan.md" \
@@ -3490,7 +3502,7 @@ dps_descendant_count="$(find "$TMP/deep-plan-descendant-pids" -name '*.pid' -typ
 dps_descendants_alive=0
 for pid_file in "$TMP/deep-plan-descendant-pids"/*.pid; do
     descendant_pid="$(< "$pid_file")"
-    if kill -0 "$descendant_pid" 2>/dev/null; then
+    if pid_is_live_non_zombie "$descendant_pid"; then
         dps_descendants_alive=$((dps_descendants_alive + 1))
     fi
 done
@@ -3521,7 +3533,7 @@ dps_signal_rc=$?
 dps_signal_descendants_alive=0
 for pid_file in "$TMP/deep-plan-signal-pids"/*.pid; do
     descendant_pid="$(< "$pid_file")"
-    if kill -0 "$descendant_pid" 2>/dev/null; then
+    if pid_is_live_non_zombie "$descendant_pid"; then
         dps_signal_descendants_alive=$((dps_signal_descendants_alive + 1))
     fi
 done
