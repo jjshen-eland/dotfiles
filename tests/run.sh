@@ -3459,24 +3459,7 @@ if [ "$dps_mutation_rc" -eq 1 ] \
     ok "deep-plan launcher 以 content fingerprint 抓到 status 字串不變的 dirty-file mutation"
 else bad "deep-plan launcher 只比 HEAD/status，漏掉 dirty evidence drift"; fi
 mkdir -p "$TMP/deep-plan-descendant-pids"
-cat > "$TMP/deep-plan-hanging-stub" <<'PY'
-#!/usr/bin/env python3
-import os
-from pathlib import Path
-import subprocess
-import sys
-import time
-
-child = subprocess.Popen(
-    [sys.executable, "-c", "import time; time.sleep(60)"],
-    stdout=sys.stdout,
-    stderr=sys.stderr,
-)
-pid_dir = Path(os.environ["DEEP_PLAN_DESCENDANT_PID_DIR"])
-(pid_dir / f"{os.getpid()}.pid").write_text(str(child.pid), encoding="utf-8")
-time.sleep(60)
-PY
-chmod +x "$TMP/deep-plan-hanging-stub"
+dps_hanging_stub="$ROOT/tests/fixtures/deep-plan-hanging-stub.py"
 # `kill -0` only proves that a PID still has a process-table entry. On macOS an
 # exited orphan can remain as `Z` until launchd reaps it, even though it no
 # longer executes or holds the inherited pipe. Keep unknown/non-zombie states
@@ -3485,17 +3468,34 @@ pid_is_live_non_zombie() {
     local pid="$1"
     local state
     kill -0 "$pid" 2>/dev/null || return 1
-    state="$(ps -o stat= -p "$pid" 2>/dev/null)" || return 0
+    if ! state="$(ps -o stat= -p "$pid" 2>/dev/null)"; then
+        # The PID can be reaped between kill -0 and ps. Only keep the
+        # fail-closed verdict when a second liveness check still sees it.
+        kill -0 "$pid" 2>/dev/null || return 1
+        return 0
+    fi
     state="${state//[[:space:]]/}"
     [[ "$state" != Z* ]]
 }
+dps_mock_kill_calls=0
+kill() {
+    dps_mock_kill_calls=$((dps_mock_kill_calls + 1))
+    [ "$dps_mock_kill_calls" -eq 1 ]
+}
+ps() {
+    return 1
+}
+if ! pid_is_live_non_zombie 999999; then
+    ok "deep-plan cleanup gate 不把 kill／ps 間消失的 PID 誤判為 live"
+else bad "deep-plan cleanup gate 對 PID 回收 race 產生 false live"; fi
+unset -f kill ps
 dps_timeout_out="$(DEEP_PLAN_DESCENDANT_PID_DIR="$TMP/deep-plan-descendant-pids" \
     "$DPS_CODEX/scripts/launch-reviewers.py" \
     --plan "$dps_fixture/docs/plans/plan.md" \
     --repo "$dps_fixture" \
     --brief "$DPS_CODEX/references/planner-brief.md" \
     --schema "$DPS_CODEX/assets/reviewer-output.schema.json" \
-    --codex-bin "$TMP/deep-plan-hanging-stub" \
+    --codex-bin "$dps_hanging_stub" \
     --timeout-seconds 1)"
 dps_timeout_rc=$?
 dps_descendant_count="$(find "$TMP/deep-plan-descendant-pids" -name '*.pid' -type f | wc -l | tr -d ' ')"
@@ -3519,7 +3519,7 @@ DEEP_PLAN_DESCENDANT_PID_DIR="$TMP/deep-plan-signal-pids" \
     --repo "$dps_fixture" \
     --brief "$DPS_CODEX/references/planner-brief.md" \
     --schema "$DPS_CODEX/assets/reviewer-output.schema.json" \
-    --codex-bin "$TMP/deep-plan-hanging-stub" \
+    --codex-bin "$dps_hanging_stub" \
     --timeout-seconds 30 > "$TMP/deep-plan-signal.out" &
 dps_signal_launcher_pid=$!
 for _ in {1..50}; do
@@ -3531,18 +3531,28 @@ kill -HUP "$dps_signal_launcher_pid"
 wait "$dps_signal_launcher_pid"
 dps_signal_rc=$?
 dps_signal_descendants_alive=0
+dps_signal_process_states=""
 for pid_file in "$TMP/deep-plan-signal-pids"/*.pid; do
     descendant_pid="$(< "$pid_file")"
+    descendant_state="$(ps -o stat= -p "$descendant_pid" 2>/dev/null)"
+    descendant_state="${descendant_state//[[:space:]]/}"
+    [ -n "$descendant_state" ] || descendant_state="missing"
+    dps_signal_process_states="${dps_signal_process_states}${dps_signal_process_states:+,}${descendant_pid}:${descendant_state}"
     if pid_is_live_non_zombie "$descendant_pid"; then
         dps_signal_descendants_alive=$((dps_signal_descendants_alive + 1))
     fi
 done
+dps_signal_has_failure_manifest=0
+grep -q '"ok":false' "$TMP/deep-plan-signal.out" && dps_signal_has_failure_manifest=1
 if [ "$dps_signal_rc" -eq 1 ] \
-    && grep -q '"ok":false' "$TMP/deep-plan-signal.out" \
+    && [ "$dps_signal_has_failure_manifest" -eq 1 ] \
     && [ "$dps_signal_pid_count" -eq 2 ] \
     && [ "$dps_signal_descendants_alive" -eq 0 ]; then
     ok "deep-plan launcher 收到 SIGHUP 會收掉 reviewer process tree"
-else bad "deep-plan launcher signal cleanup 未 fail closed 或留下 descendant"; fi
+else
+    echo "  signal diagnostics: rc=$dps_signal_rc manifest=$dps_signal_has_failure_manifest pid_count=$dps_signal_pid_count live=$dps_signal_descendants_alive states=${dps_signal_process_states:-none}" >&2
+    bad "deep-plan launcher signal cleanup 未 fail closed 或留下 descendant"
+fi
 
 echo "▶ 12bb. deep-review skill 跨 Claude Code／Codex 共用核心"
 DRS_CLAUDE="$ROOT/claude/skills/deep-review"
