@@ -677,6 +677,13 @@ local 覆寫 global）。同樣明列、不假裝擋得住。
 - 完整 suite 可把彼此獨立且唯讀 repo 的 slow gates（目前為 ShellCheck 與 doc-governance deterministic
   suite）和 fixture-heavy 主流程並行，但必須逐 pid 收 exit code、彙總原始失敗輸出，且 EXIT cleanup
   終止未收斂的 child；並行只縮短 critical path，不得縮小掃描檔案或測試集合。
+- CI 以 `tests/run-parallel.sh` 在每個 OS job 內同時跑 `core`、`ship_state`、`integration`；三者是
+  `tests/run.sh` 中互斥且聯集完整的連續 assertion 區段，各自建立 temp/state/output。開發者仍可直接執行
+  `./tests/run.sh`，其預設 `all` 會依原順序跑完全套。
+- `tests/shard-manifest.tsv` 固定每個 shard 的成功 assertion 數；聚合器要求每個 child rc 為零、每份 log
+  恰有一條身分相符的 `SHARD_RESULT`、計數與 manifest 相符，且不接受缺件或額外 result artifact。任何
+  signal、漏寫 completion artifact、重複 summary、計數漂移或聚合器錯誤都使 OS job 非零；shard log 以
+  身分前綴完整輸出，不用縮減診斷換速度。
 
 ## 26. outward-action gate
 

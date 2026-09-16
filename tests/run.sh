@@ -3,6 +3,7 @@
 # tests/run.sh — dotfiles 腳本驗證（shellcheck + 語法 + 純邏輯行為測試）
 #
 # 用法：./tests/run.sh
+# CI shard：DOTFILES_TEST_SHARD=core|ship_state|integration ./tests/run.sh
 # 涵蓋：
 #   1. shellcheck / bash -n 全腳本 gate（含 shared/skills/*/scripts/ 與兩個 runtime adapter）
 # 1cc. tests/run.sh 禁止 printf 經 pipeline 喂給 grep -q（pipefail/SIGPIPE 假判）
@@ -57,7 +58,7 @@ cd "$ROOT" || exit 1   # 相對路徑的 source 解析與 git 操作以 repo 根
 shopt -s nullglob
 # nullglob 是 process-wide 的，代價是**其他** glob 若哪天失效會靜默窄化（gate 照樣全綠、
 # 實際少掃一批檔）。用下界斷言把那個代價擋回來：數字取保守下界，新增腳本只會讓它更寬鬆。
-_gate_files=("$ROOT"/scripts/*.sh "$ROOT"/shared/skills/*/scripts/*.sh "$ROOT"/claude/skills/*/scripts/*.sh)   # nullglob 下無匹配即空陣列
+_gate_files=("$ROOT"/scripts/*.sh "$ROOT"/shared/skills/*/scripts/*.sh "$ROOT"/claude/skills/*/scripts/*.sh "$ROOT"/tests/*.sh)   # nullglob 下無匹配即空陣列
 if [ "${#_gate_files[@]}" -lt 15 ]; then
     echo "❌ gate 檔案數異常少（${#_gate_files[@]}）——glob 可能已靜默窄化，先修再跑" >&2
     exit 1
@@ -85,6 +86,45 @@ trap cleanup EXIT
 
 PASS=0
 FAIL=0
+TEST_SHARD="${DOTFILES_TEST_SHARD:-all}"
+case "$TEST_SHARD" in
+    all|core|ship_state|integration) ;;
+    *) echo "未知 DOTFILES_TEST_SHARD：${TEST_SHARD}" >&2; exit 2 ;;
+esac
+suite_started_at="$(date +%s)"
+GITC=(git -c user.name=test -c user.email=test@test -c commit.gpgsign=false)
+SS_SCRIPT="$ROOT/claude/skills/project/scripts/ship-state.sh"
+
+shard_enabled() {
+    [ "$TEST_SHARD" = all ] || [ "$TEST_SHARD" = "$1" ]
+}
+
+# section 9 與 9b+ 都只讀這個 local-only fixture；獨立 shard 不可依賴 core 的副作用。
+if [ "$TEST_SHARD" = ship_state ] || [ "$TEST_SHARD" = integration ]; then
+    git init -q -b main "$TMP/gh-local"
+    (cd "$TMP/gh-local" && echo x > a.txt && "${GITC[@]}" add a.txt && "${GITC[@]}" commit -qm init)
+fi
+
+# Section 19 has a few cross-contract assertions against ship-state. In the serial suite it reuses
+# section 9 fixtures; the integration shard recreates only that immutable baseline locally.
+if [ "$TEST_SHARD" = integration ]; then
+    cat > "$TMP/gh-open" <<'STUB'
+#!/usr/bin/env bash
+case "$*" in
+    *nameWithOwner*) echo "acme/widget" ;;
+    *viewerPermission*) echo "READ" ;;
+    *"api repos/acme/widget --jq .default_branch"*) echo "main" ;;
+    *"/protection"*) echo "gh: Branch not protected (HTTP 404)"; exit 1 ;;
+    *"rules/branches"*) echo '[]' ;;
+esac
+STUB
+    chmod +x "$TMP/gh-open"
+    git init --bare -q -b main "$TMP/sb-origin.git"
+    git init -q -b main "$TMP/sb-seed"
+    (cd "$TMP/sb-seed" \
+        && echo hi > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
+        && git remote add origin "$TMP/sb-origin.git" && git push -qu origin main)
+fi
 
 ok()   { PASS=$((PASS + 1)); echo "  ✅ $1"; }
 bad()  { FAIL=$((FAIL + 1)); echo "  ❌ $1"; }
@@ -102,6 +142,7 @@ assert_rc() {
     if [ "$2" -eq "$3" ]; then ok "$1"; else bad "$1（期望 exit=$2，實際 exit=$3）"; fi
 }
 
+if shard_enabled core; then
 echo "▶ 1. shellcheck gate（背景執行，結尾彙總）"
 shellcheck_out="$TMP/shellcheck.out"
 shellcheck -x -P "SCRIPTDIR:$ROOT/scripts" \
@@ -114,7 +155,7 @@ shellcheck -x -P "SCRIPTDIR:$ROOT/scripts" \
     "$ROOT/shell/functions.sh" \
     "$ROOT/setup-mac-env.sh" "$ROOT/setup-linux-env.sh" "$ROOT/write-mac-defaults.sh" \
     "$ROOT"/claude/evals/*.sh \
-    "$ROOT/tests/run.sh" >"$shellcheck_out" 2>&1 &
+    "$ROOT"/tests/*.sh >"$shellcheck_out" 2>&1 &
 shellcheck_pid=$!
 background_pids="$background_pids $shellcheck_pid"
 
@@ -123,6 +164,10 @@ doc_test_out="$TMP/doc-governance-tests.out"
 python3 "$ROOT/tests/test_doc_governance.py" >"$doc_test_out" 2>&1 &
 doc_test_pid=$!
 background_pids="$background_pids $doc_test_pid"
+
+echo "▶ 2c. shard aggregation fail-closed suite"
+python3 "$ROOT/tests/test_shard_aggregate.py"
+assert_rc "shard aggregation 行為測試全部通過" 0 $?
 
 echo "▶ 1b. 全形標點吞變數名 gate"
 # bash 在部分 locale 下會把緊接在 $var 後的多位元組字元併進變數名：
@@ -142,7 +187,7 @@ fullwidth_hits="$(LC_ALL=C grep -nE '\$[A-Za-z_][A-Za-z0-9_]*[^[:print:][:space:
     "$ROOT/.githooks/dispatcher" \
     "$ROOT/shell/functions.sh" \
     "$ROOT"/claude/evals/*.sh \
-    "$ROOT/tests/run.sh")"
+    "$ROOT"/tests/*.sh)"
 fullwidth_rc=$?
 # grep 的 exit：0=有命中、1=無命中、>1=執行錯誤（後者必須大聲失敗，不可當成乾淨）
 fullwidth_hits="$(printf '%s\n' "$fullwidth_hits" | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' || true)"
@@ -205,7 +250,7 @@ hd_hits="$(awk -f "$HD_GATE" \
     "$ROOT/shell/functions.sh" \
     "$ROOT/setup-mac-env.sh" "$ROOT/setup-linux-env.sh" "$ROOT/write-mac-defaults.sh" \
     "$ROOT"/claude/evals/*.sh \
-    "$ROOT/tests/run.sh")"
+    "$ROOT"/tests/*.sh)"
 if [ -z "$hd_hits" ]; then
     ok "無 unquoted heredoc 的 body 含反引號"
 else
@@ -920,7 +965,8 @@ for f in "$ROOT"/scripts/*.sh "$ROOT/scripts/lib/inventory.sh" \
          "$ROOT/.githooks/dispatcher" \
          "$ROOT/shell/functions.sh" \
          "$ROOT/setup-mac-env.sh" "$ROOT/setup-linux-env.sh" "$ROOT/write-mac-defaults.sh" \
-         "$ROOT"/claude/evals/*.sh; do
+         "$ROOT"/claude/evals/*.sh \
+         "$ROOT"/tests/*.sh; do
     bash -n "$f" || { syntax_fail=1; echo "     syntax fail: $f"; }
 done
 if [ "$syntax_fail" -eq 0 ]; then ok "bash -n 全部通過"; else bad "bash -n 有語法錯誤"; fi
@@ -1033,7 +1079,6 @@ assert_rc "dry-run 重複 alias 被拒 → exit 1" 1 $?
 
 echo "▶ 8. git-hygiene.sh verdict 判定"
 GH_SCRIPT="$ROOT/claude/skills/ready4quit/scripts/git-hygiene.sh"
-GITC=(git -c user.name=test -c user.email=test@test -c commit.gpgsign=false)
 
 # fixture：bare origin + clone（有 upstream 的正常 repo）
 git init --bare -q -b main "$TMP/gh-origin.git"
@@ -1371,8 +1416,9 @@ mrepo_out="$(GIT_HYGIENE_GH=/usr/bin/false "$GH_SCRIPT" "$TMP/mrepo-clean" "$TMP
 mrepo_rc=$?
 assert_rc "多 repo：全部 CLEAN → exit 0" 0 "$mrepo_rc"
 
+fi
+if shard_enabled ship_state; then
 echo "▶ 9. ship-state.sh 偵測與 protection 判定"
-SS_SCRIPT="$ROOT/claude/skills/project/scripts/ship-state.sh"
 BS_BASELINE_SCRIPT="$ROOT/claude/skills/project/scripts/bootstrap-baseline.sh"
 
 # gh stub 三態：PROTECTED / OPEN(404 Branch not protected) / Not Found(身分分離)
@@ -2970,6 +3016,8 @@ git init -q -b main "$TMP/ds-stale"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-stale")"
 if echo "$out" | grep -q "dossier-flag:.*落後 repo 活動"; then ok "STATUS.md 落後 repo 活動 >30 天 → 過期 flag"; else bad "過期未偵測"; fi
 
+fi
+if shard_enabled integration; then
 echo "▶ 9b. branch-first.sh 情況 A/B 判定與救援序列"
 BF_SCRIPT="$ROOT/claude/skills/project/scripts/branch-first.sh"
 
@@ -7831,11 +7879,13 @@ CI_FILE="$ROOT/.github/workflows/test.yml"
 if [ -f "$CI_FILE" ] \
     && grep -q 'macos-15' "$CI_FILE" \
     && grep -q 'ubuntu-24.04' "$CI_FILE" \
-    && grep -q './tests/run.sh' "$CI_FILE" \
+    && grep -q './tests/run-parallel.sh' "$CI_FILE" \
+    && grep -q 'SHARDS=(core ship_state integration)' "$ROOT/tests/run-parallel.sh" \
+    && grep -q 'shard-manifest.tsv' "$ROOT/tests/run-parallel.sh" \
     && grep -q 'contents: read' "$CI_FILE"; then
-    ok "GitHub Actions 以唯讀權限跑 macOS 15 + Ubuntu 24.04 完整 suite"
+    ok "GitHub Actions 以唯讀權限在 macOS 15 + Ubuntu 24.04 跑完整三 shard suite"
 else
-    bad "缺少雙 OS GitHub Actions contract"
+    bad "缺少雙 OS 或完整三 shard GitHub Actions contract"
 fi
 if grep -q '^  pull_request:$' "$CI_FILE" \
     && ! grep -q '^  push:$' "$CI_FILE"; then
@@ -8235,6 +8285,8 @@ if grep -q 'DST_ROOT=.*\.agents/skills' "$ROOT/scripts/ensure-codex-skills.sh" \
     ok "Codex personal skill discovery 收旂到 ~/.agents/skills"
 else bad "Codex skill discovery 仍依賴 legacy ~/.codex/skills"; fi
 
+fi
+if shard_enabled core; then
 echo "▶ 背景 slow gates 彙總"
 wait "$shellcheck_pid"; shellcheck_rc=$?
 if [ "$shellcheck_rc" -eq 0 ]; then
@@ -8251,9 +8303,12 @@ else
     sed 's/^/     /' "$doc_test_out"
 fi
 background_pids=""
+fi
 
 echo ""
 echo "════════════════════════════"
 echo "PASS=$PASS FAIL=$FAIL"
+suite_elapsed=$(( $(date +%s) - suite_started_at ))
+echo "SHARD_RESULT name=$TEST_SHARD pass=$PASS fail=$FAIL elapsed_s=$suite_elapsed"
 [ "$FAIL" -eq 0 ] && echo "✅ 全部通過" || echo "❌ 有失敗"
 exit "$([ "$FAIL" -eq 0 ] && echo 0 || echo 1)"
