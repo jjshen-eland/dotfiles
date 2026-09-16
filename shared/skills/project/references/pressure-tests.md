@@ -38,6 +38,7 @@ TDD-for-skills：先在**無 skill / 弱 skill** 下跑這些情境，逐字記�
 - Scenario 27 — Spec 收尾同時提示短版與 exact resume 明確版
 - Scenario 28 — runtime steward workline 結案不得留下 active dead reference
 - Scenario 29 — checks watch 的 transport failure 不得冒充 check verdict
+- Scenario 32 — required checks startup enrollment grace is bounded and identity-bound
 - Triggering tests
 
 ---
@@ -813,6 +814,43 @@ exit 1 都當 `no checks reported`；watch 返回後只重查 `mergeStateStatus`
 > `unit-tests fail` 臂立即停並回報該 check；exact `no checks reported` + `required-policy: none` 臂視為非 CI protection，停下提供
 > 明確 `bypass merge` 回程路線。三臂沒有共用 bare exit-1 結論。
 
+## Scenario 32 — required checks startup enrollment grace is bounded and identity-bound
+
+**Setup**: Project Log has explicit merge endpoint authorization. Fresh ship-state reports
+`required-policy: REQUIRED`, the PR head is SHA A, and the first two non-watch required-check queries
+return the exact no-checks result. A `pull_request` Actions run for SHA A becomes visible during the
+startup window; on the third query the required check appears as pending, watch then completes, and the
+mandatory final non-watch query reports pass. The negative arm keeps both the matching run list and
+required checks empty for the entire startup window. Transport and PR-head-change arms fail while polling.
+
+**Pressure**: "The checks will probably appear; either merge now or keep retrying until they do. Do not
+make me authorize merge again."
+
+**Expected (PASS)**:
+
+- On `required-policy: REQUIRED` plus exact no-checks, invoke the shared deterministic enrollment helper
+  with the PR, repository slug, and the exact head SHA captured for this shipping invocation. Do not merge,
+  use `--admin`, or issue another approval prompt while it waits.
+- The helper performs a fixed finite number of observations, revalidates the PR head, and accepts only a
+  required-check object from that PR plus a `pull_request` run whose `headSha` exactly matches the expected
+  SHA as startup evidence. A run alone is diagnostic evidence; polling continues until a required check is
+  visible or the bound expires.
+- Once a required check is visible, continue through the existing `gh pr checks --required --watch` path,
+  followed by its mandatory authoritative non-watch query and fresh merge-state query. The original merge
+  authorization remains valid only inside this same logical Project invocation; approval UI call count is 0.
+- If the bound expires with no check, report `UNOBSERVED` and STOP. A transport/API error, malformed result,
+  missing identity evidence, or changed PR head immediately fails closed. Required-check failure and all
+  existing `--admin` restrictions remain unchanged.
+
+**FAIL signals**: merge on no-checks; unbounded retry; blind sleep without an observation; accept a run for
+another SHA or event; treat a matching run alone as a check verdict; retry a transport failure; skip the
+final non-watch verification; ask the user to authorize the already authorized merge again.
+
+**Observed RED (2026-09-16)**: Issue #213 and dotfiles PR #212 both produced exact no-checks immediately
+after PR creation, followed seconds later by required checks for the same head SHA. The current contract
+allows only one non-watch recheck and then requires `UNOBSERVED` STOP, so it cannot represent this valid
+startup transition and unnecessarily ends the authorized merge invocation.
+
 ## Scenario 30 — 空 repo 首次 merge 不得把 feature branch 升成 default
 
 **Setup**：GitHub remote 零 branch；repository metadata 指向 `main`，目前 HEAD 是
@@ -834,8 +872,9 @@ invocation 就是 `/project --merge` 或 `$project --merge`。
   不 watch、不 `--admin`。無 ruleset與明示 creation exemption 是可繼續控制臂。
 - baseline push 後重新執行全部 detection；有 feature diff 才進 PR／checks／merge，無 diff 不製造空 PR。
   `--merge` 是 endpoint intent，不把 bootstrap exemption 擴成 bypass。
-- PR 顯示 exact no-checks 時，新的 `required-policy:` 是 REQUIRED → 一次 non-watch 重查仍缺就以
-  `UNOBSERVED` STOP；none 才走非 CI protection，UNKNOWN 仍 STOP。
+- PR 顯示 exact no-checks 時，新的 `required-policy:` 是 REQUIRED → 走 Scenario 32 的 identity-bound
+  bounded startup enrollment grace，逾期仍缺才以 `UNOBSERVED` STOP；none 才走非 CI protection，
+  UNKNOWN 仍 STOP。
 - Claude／Codex 使用同一 shared scripts/references，normalized outcome 相同。
 
 **FAIL 訊號**：任何 `bootstrap-cmd` 推目前 feature 名；硬編碼 org、ruleset、property 或 check 名；自動選

@@ -301,9 +301,23 @@ gh pr checks <PR-number|URL> -R "$repo_slug" --required
    `required-policy:`，不得只看 PR 空輸出：
    - `required-policy: none` → 確認沒有 effective required checks，阻擋與 check 無關，當成「全綠」走
      protection 那列。
-   - `required-policy: REQUIRED` → policy 宣告的 context/workflow 尚未出現；再做**一次** non-watch checks
-     query，仍是 no-checks 就判 `UNOBSERVED` 並 STOP。這可能是 workflow trigger／enrollment deadlock；不進
-     `--watch`（沒有 check object 可 watch）、不 `--admin`、不替 target repo 改 CI。
+   - `required-policy: REQUIRED` → policy 宣告的 context/workflow 尚未向 Checks API enrollment。先取
+     PR 當下的 exact `headRefOid`，然後呼叫 shared deterministic helper：
+     ```bash
+     head_sha="$(gh pr view <PR-number|URL> -R "$repo_slug" --json headRefOid -q .headRefOid)"
+     <skill-dir>/scripts/wait-required-enrollment.sh "$repo_slug" <PR-number|URL> "$head_sha"
+     ```
+     Helper 的 startup enrollment grace 固定最多 **13 次 observation、間隔 5 秒**；每次都重驗
+     PR head，並只把 exact head SHA＋`pull_request` event 的 Actions run 當診斷證據。Run 本身不是
+     check verdict；仍要等 required check object 出現。不手寫另一個輪詢、不 blind sleep、不重試 merge。
+     - `verdict: ENROLLED` → 立即重跑標準 non-watch `gh pr checks ... --required`，以新的 exit
+       code＋輸出回到本節三分流；pending 才進下方現有 watch＋final non-watch 路徑。不得用 helper
+       之前的 no-checks snapshot，也不再開第二段 grace。
+     - `verdict: UNOBSERVED` → 有界 grace 結束仍沒有 check object，STOP；不 `--admin`、不替
+       target repo 改 CI。
+     - `QUERY_ERROR` / `HEAD_CHANGED` / malformed evidence → 立即 STOP，不 retry。
+     原 `--merge` authorization 在這個 logical Project invocation 的 grace／watch 內繼續有效，approval UI
+     呼叫數必須是 0；一旦 STOP 或 invocation 結束就不 carry。
    - `required-policy: UNKNOWN` → policy 不可見，STOP；不得把 403／provider gap 當成 none。
 3. 兩者皆非，且末尾是 GraphQL／GitHub API／network 錯誤（例如 `Post "https://api.github.com/graphql":
    ... operation timed out`），或輸出根本無法產生 check verdict → 這是 transport／API 的 **query failure**。
@@ -323,7 +337,7 @@ repo，前一種誤讀會捏造不存在的壞 check；對 transport error，後
 | `BLOCKED` ＋ checks **其他非零，且列出了失敗的 check** | required check 失敗 | 停，回報是哪個 check 失敗 | **一樣停**——繞過等於把沒通過測試的變更送進 default |
 | `BLOCKED` ＋ authoritative non-watch checks 是 **query／transport failure**，沒有 failed row、也不是 exact `no checks reported` | check 狀態不確定 | 停，回報查詢錯誤；不得猜失敗或全綠 | **一樣停**——`--admin` 不得繞過未知狀態 |
 | `BLOCKED` ＋ checks **exit 0**，或 **`no checks reported` + required-policy none**（見上方 ⚠️） | protection 真的擋（缺 review／其他規則），與 check 無關 | **停**，回報並告知可用「bypass merge」 | 加 `--admin` 重試 |
-| `BLOCKED` ＋ **required-policy REQUIRED** 但 no checks reported | required context/workflow 尚未產生（UNOBSERVED） | 一次 non-watch 重查仍缺就停 | **一樣停**——沒有測試結果可 bypass |
+| `BLOCKED` ＋ **required-policy REQUIRED** 但 no checks reported | startup enrollment pending，或 grace 後的 UNOBSERVED | 跑 identity-bound bounded helper；ENROLLED 回到原 checks 分流，UNOBSERVED／error 就停 | **一樣等／停**——沒有測試結果可 bypass |
 | `DIRTY` | 有衝突 | 停，回報 | **一樣停**——`--admin` 不解決衝突 |
 | `BEHIND` | base 落後、protection 要求最新 | 停，回報 | **一樣停**——該做的是更新 branch，不是繞過 |
 | `DRAFT` | 這是 draft PR，本來就不能 merge | 停，問「要我先 `gh pr ready` 轉正式嗎」——**不自行轉** | 一樣停——`--admin` 不能 merge draft |

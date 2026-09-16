@@ -1,0 +1,1 @@
+../../../../shared/skills/project/scripts/wait-required-enrollment.sh
