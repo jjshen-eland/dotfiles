@@ -12,33 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### B-20260807-gap-02
-
-- **Context**：ready4quit 的 Q4c 在 2026-08-07 因 deferred tools 無法於隔離 subagent 取得而未能構造；
-  現行 Claude Code、Codex 與雙 runtime ready4quit 已經演進，舊 provider／harness 前提可能失效。
-- **Goal**：以現行工具模型與 `shared/skills/ready4quit/evals.md` v3 程序重驗 Q4c，分開判定 provider
-  限制、eval harness 缺口與已淘汰前提；只修正仍具決策價值且會讓錯誤契約通過的可重現缺口。
-- **Acceptance Criteria**：
-  1. 以現行 Claude main session、general-purpose subagent 與 Codex runtime 實測 deferred tool 能力，拒絕
-     allow-list／permission boundary 造成的假陰性。
-  2. 在隔離 clean fixture 執行 Claude Q4c 與 Codex 能力邊界 control，核對 verdict 與證據語彙。
-  3. 只有仍具決策價值、可重現且會讓錯誤契約通過的 harness 缺口才先取得 RED 並做最小修正。
-  4. 若現行工具模型已改變或 Q4c 不再需要舊 deferred-tool 前提，更新 eval oracle、移除 backlog 並記錄
-     結案 milestone，不新增多餘 production 行為。
-  5. 通過 ready4quit validator、doc-governance ship audit、`git diff --check` 與完整 `./tests/run.sh`。
-- **Constraints**：behavior eval 是 oracle；不因舊候選直接修改 provider adapter 或 production workflow；
-  不把 Codex 未提供的 schedule listing 假裝成可驗證，也不把 Claude permission denial 當 provider 限制。
-- **Progress**：現行能力與隔離行為已完成重驗；Claude Q4c 為 GREEN，Codex 依能力邊界正確回報 PARTIAL；
-  無 production 行為缺口，完整 suite 為 `PASS=1420 FAIL=0`，待完成 lifecycle commits 與送出。
-- **Next step**：提交 active contract 作為 durable parent evidence，再以結案 commit 原子移除本項、移除
-  backlog、追加 milestone 並更新 ready4quit eval oracle。
-- **Writer**：`codex:gap-02-deferred-tools`
-- **Workspace**：`branch=docs/gap-02-deferred-tools`
-- **Write Scope**：`shared/skills/ready4quit/evals.md`、`docs/backlog.md`、
-  `docs/archive/milestones-2026-09.md`
-- **Dossier Steward**：`codex:gap-02-deferred-tools`
-- **Related IDs**：`B-20260807-gap-02`、`M-20260823-portable-ready4quit-skill`、
-  `D-20260825-portable-skill-authoring-default`
+（目前無進行中項目。）
 
 ---
 

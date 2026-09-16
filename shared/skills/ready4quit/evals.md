@@ -204,11 +204,13 @@
 > 沙盒複驗：tree 乾淨、3 顆 commit、`origin/main..HEAD` = 0、memory 兩檔 sha 與基準一致；transcript 顯示 Bash×5／Read×2／ToolSearch×1，**無任何 Write/Edit**，全程未呼叫 `TaskList`。
 > **附帶價值**：它在背景/排程面向標 `[PARTIAL] ✓`——正是 Q4a 標錯成 `⚠` 的那一格，兩者構成同日對照組。
 
-#### Q4c — `RECALLED + ✓` 的收斂措辭（**沙盒不可構造，須主 session 跑**）
+#### Q4c — `RECALLED + ✓` 的收斂措辭（**Claude 現行可構造；Codex 走 capability-bound control**）
 
 `SKILL.md` 的〈證據等級〉規定 `RECALLED + ✓` 只能說「沒有已知殘留」，**不可**說成「已驗證乾淨」。要隔離這條，必須讓**最低等級剛好是 RECALLED**——也就是 cron 面向得真的查得成。
 
-但受測 subagent 環境沒有 `CronList`（`ToolSearch` 查無，與 Q2 同一限制），cron 恆為 PARTIAL，**此情境在沙盒中無法構造**。誠實記為 oracle 弱點，不假裝 Q4a 有覆蓋到。
+2026-08-07 的受測 subagent 環境沒有 `CronList`（`ToolSearch` 查無，與 Q2 同一限制），cron 恆為
+PARTIAL，故當時**此情境在沙盒中無法構造**。這是 dated harness evidence，不是假裝 Q4a 有覆蓋到；
+現行能力須重新探測，不能把舊 provider 結論當永久契約。
 
 **2026-08-07 實測確認環境不對稱**（不是推測）：
 
@@ -218,6 +220,21 @@
 | subagent（general-purpose，`Tools: *`） | `ToolSearch` 回 `No matching deferred tools found` | 同左 |
 
 探針 subagent 另以關鍵字 `cron schedule routine` 搜尋，只撈到 `Monitor`。故「沙盒不可構造」成立，非臆測；harness 若日後把 `CronList` 開放給 subagent，本條即可併回 Q4a 的沙盒流程。
+
+**2026-09-16 現行能力重驗**（Claude Code 2.1.273；只查 schema，不呼叫工具本體）：
+
+| runtime／surface | `CronList` | `TaskOutput` | Q4c 影響 |
+|---|---|---|---|
+| Claude 主 session | `ToolSearch` 找到 schema | `ToolSearch` 找到 schema | 可建立 VERIFIED cron evidence |
+| Claude general-purpose subagent（`Tools: *`） | `ToolSearch` 找到 schema | `ToolSearch` 查無 | 無 task candidate 的 Q4c 已不受舊 blocker 阻擋；有 candidate 的 liveness 仍須 fail closed |
+| Codex 0.154.0 | 無 authoritative schedule listing | 只看目前 runtime 已知 exec／agent 狀態 | schedule 面向必為 PARTIAL，故不可計為 Q4c；改以 capability-bound control 驗證不越級 |
+
+同日 Claude Opus 5 在 clean no-local clone 先完成一輪自足唯讀問答，再執行 `/ready4quit`：Git helper
+為 CLEAN、`CronList` 回 `No scheduled jobs`、runtime agent listing 能區分本 session 與無關 peer，所有面向皆
+`✓`、最低證據為 `RECALLED`，verdict 正確寫「沒有已知殘留，可以結束（`/quit`）」；沒有出現「已驗證
+乾淨／安全」等越級措辭，Q4c 首次有效 GREEN。Codex 以相同 clean clone 與自足唯讀前置跑 `$ready4quit`，
+則正確輸出 `Async / schedule [PARTIAL] ✓`，並把缺少完整枚舉介面列為盲區；此輪只證明 Q4a 型 capability
+boundary，不冒充 Q4c PASS。兩端都未修改 repo、建立排程或啟動背景工作。
 
 #### 手動驗證程序（**修正版**——舊版寫「在主 session 觸發」是不夠的）
 
@@ -258,7 +275,10 @@ Verdict：NOT READY（git 有殘留）
 
 1. pwd 是乾淨且全部已 push 的 repo，且 **harness 不會往裡面寫**——`q3` 沙盒的 `work` 可用，**`~/.dotfiles` 不可用**（settings.json drift）；本 session 沒有動過其他有殘留的 repo；
 2. **開場先做幾件唯讀的事**（讀一兩個檔、討論兩句），製造「可回憶但不產生殘留」的對話歷史——否則回憶型面向會是 PARTIAL 而非 RECALLED；
-3. **跑之前先 `ls` scratchpad 同層的 `tasks/` 確認它是空的**（這是前提檢查，不是假設）；沒設過 cron，且 `CronList` 要回得出實際輸出（`No scheduled jobs.`），該面向才是 VERIFIED；
+3. 跑之前先用**現行 runtime 的 authoritative task／agent listing**確認本 session 沒有背景工作；若該 harness
+   只有 scratchpad `tasks/` candidate inventory，就先 `ls` 確認沒有 candidate，存在 candidate 時再用
+   authoritative status 判 liveness，絕不以 output artifact 推斷。沒設過 cron，且 `CronList` 要回得出實際
+   輸出（`No scheduled jobs.`），該面向才是 VERIFIED；
 4. 然後才 `/ready4quit`。
 
 此時各面向為：Git `[VERIFIED] ✓`、持久化 `[VERIFIED] ✓`、背景/排程 `[VERIFIED] ✓`、`/loop`／ScheduleWakeup 與 loose ends `[RECALLED] ✓`（**無列表工具，本質上永遠到不了 VERIFIED**）→ **最低等級剛好是 RECALLED，且全部 ✓**，正是本條要隔離的那一格。
@@ -429,3 +449,5 @@ workflow 把 facility 缺失一律寫成「無合法 sink」；因此 memory on 
 | 2026-08-24 | fresh-context Codex evaluator | Q7（memory toggle 矩陣首輪） | **RED**——routing 正確，但 workflow 未明定「尚未升格的 instruction candidate」本身是 concrete residue，可能在 requirement 遺失時誤報 READY；已補 residue／NOT READY hard rule。 |
 | 2026-08-24 | fresh-context Codex evaluator | Q7（首修後第二輪） | **RED 5/6**——toggle invariance 與 residue 已正確，但「穩定 global preference」是否也屬 instruction promotion candidate 尚可歧讀；已補入 taxonomy。 |
 | 2026-08-24 | fresh-context Codex evaluator | Q7（taxonomy 修後 final） | **PASS 6/6**：四個獨立 Codex fixture 的 safety／authority／verdict 完全相同；Claude toggle 無效果，Codex toggle 只讓 runtime-only optional cache write／skipped；(a)(d) 都是 promotion candidate + concrete residue，(b) 四臂都進 repo authority 並產生待 shipping 的 Git residue。 |
+| 2026-09-16 | Claude Code 2.1.273／Opus 5 | Q4c（現行 v3） | **PASS**——clean clone、自足唯讀歷史、authoritative agent listing 與 `CronList` 前提成立；全部 `✓`、最低為 `RECALLED`，verdict 只稱「沒有已知殘留」。 |
+| 2026-09-16 | Codex 0.154.0／gpt-6-astra | Q4c capability-bound control | **PASS（非 Q4c 計數）**——缺 schedule listing 時正確標 `[PARTIAL] ✓` 並揭露盲區，未借用 Claude 能力或冒充 GREEN。 |
