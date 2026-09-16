@@ -45,10 +45,14 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   contributor 的 commit 傳遞路徑**(2026-08-24 發現)。`D-20260824-cross-runtime-dossier-stewardship`
   的 v1 只實證同機 Claude／Codex worker：非 steward 不改 shared dossier、不 push，交 semantic commit
   給 steward cherry-pick；但真人同事在另一台機器時，若不能 push 專屬 feature branch，就沒有自然的
-  commit 交換媒介。未決：是否新增受限 remote-contributor path（只推專屬 branch／開 PR、禁止改 shared
-  dossier 與自行 merge、PR 附 Dossier delta，由 steward 補 canonical state），以及它與既有 branch
-  protection、scope ownership、`project transfer` 後協作如何進 behavior eval。**在新決策與 RED oracle
-  出現前，不把這個候選路徑當成已生效規則。**
+  commit 交換媒介。2026-09-16 以現行 feature branch／PR、Project authority gate 與可取得的 rollout repo
+  紀錄重驗：Git 傳遞媒介存在，steward 評估 candidate commit 時也能列出 shared-surface 越界；但 worker
+  no-push 契約與不辨 contributor 身分的 PR CI 尚不能合成一條已驗證的新路徑。可取得的 PR／commit 紀錄沒有
+  remote-human contributor 實例，未觀察到實際傳遞阻塞或 authority drift，故不新增程序、eval 或 provider
+  gate，也不把候選路徑宣告生效。**精確觸發**：第一位具名、跨主機真人 contributor 需要交付 commit，或
+  首次出現非 steward PR；當下保留 exact SHA、declared scope 與 Dossier delta，實測 steward 能否 fetch、
+  以現行 helper 排除 shared-surface 越界並 cherry-pick。任一步受阻，或越權 shared dossier mutation 未被攔下，
+  才以該事件取得 RED 並設計最小 remote-contributor path。
 
 - **B-20260807-gap-02** · **eval 的受測 subagent 拿不到 deferred tools,部分契約在沙盒中無法構造**:2026-08-07 實測——
   主 session 的 `CronList`／`TaskOutput` 正常,探針 subagent(`Tools: *`)對同一批 `select:` 一律得
