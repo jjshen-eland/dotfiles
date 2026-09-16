@@ -13,5 +13,6 @@ description: "Manages a work item's repository-resident lifecycle in three expli
    使用者自述的姓名。
 2. 以本 `SKILL.md` 的實際位置解析 skill directory；`references/`、`scripts/` 與 `templates/` 是指向
    neutral shared core 的 links。若從 worktree 測試，必須使用 worktree 這份，不得跳去其他 checkout。
-3. **完整讀取 [references/workflow.md](references/workflow.md)，再依它分派模式並執行。** 核心
-   lifecycle、授權、STOP 與 mutation contract 只在 shared references/scripts；本入口不得另建一套。
+3. 先用 `<skill-dir>/scripts/read-reference.py` 逐段讀取 `workflow.md`，每次只接收一個 chunk；看見該檔 `EOF` 前不得執行任何 repo mutation。
+   依每段 `NEXT` 接續，完整讀取 [references/workflow.md](references/workflow.md) 後再由它分派模式並執行。
+   核心 lifecycle、授權、STOP 與 mutation contract 只在 shared references/scripts；本入口不得另建一套。

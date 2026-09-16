@@ -10,6 +10,27 @@ arguments** 與它自己的 skill directory；先把該目錄下的 `scripts/`�
 跨 runtime／harness 的 project 收尾前，由本檔分派 Log 模式並完整載入 `log-workflow.md` 的 Critical
 與 Step 0–5；薄入口不得用摘要或自身記憶替代。
 
+## 必讀 reference 的有界讀取協定
+
+薄入口已先用 `<project-scripts>/read-reference.py` 讀取本檔；本節也 governs 後續所有必讀 reference。
+每次 tool call 只讀一個檔案的一個 chunk，不得把多檔、多段或其他命令合併／平行塞進同一份回傳。
+從 `--start 1` 開始，逐段核對 `REFERENCE`、固定不變的 `SHA256`、連續且不重複的 `Lnnnnnn` 行號，並依
+`NEXT` 接續；只有看見該檔的 `EOF` 才算完整讀取。若同一檔的 SHA 改變，從 line 1 重新讀取。
+
+每輪一律完整讀取 `dossier.md`。Log 另完整讀取 `log-workflow.md` 與 `ship-paths.md`；Spec 或 Transfer
+只有在 workflow／dossier 明確導向其他 reference 時才以相同協定載入。不得以摘要、runtime memory、搜尋命中
+或前一輪讀取取代本輪要求。典型呼叫如下，`NEXT` 的值成為下一次 `--start`：
+
+```sh
+python3 "<project-scripts>/read-reference.py" dossier.md --start 1
+```
+
+若 host 在 `NEXT`／`EOF` 前截斷輸出，該 chunk 不完整：從最後一個**完整收到**的 `Lnnnnnn` 下一行恢復；
+半行不算。若連一個完整編號行都沒有，降低 `--max-bytes` 並以同一 cursor 重試。正常分段不需向使用者報告；
+只有實際發生 host 截斷才簡短說明恢復。所有當輪必讀檔案都出現 `EOF` 前，不得修改 repo、commit、push、
+開 PR、merge 或 cleanup；read-only 盤點可以繼續。這個 transport 協定不放寬任何 mode、授權、STOP 或
+shipping 規則。
+
 ## 模式分派
 
 normalized invocation arguments 的第一個 token 分派模式，其餘 token 傳給該模式：

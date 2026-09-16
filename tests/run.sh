@@ -788,6 +788,71 @@ if grep -q 'STATUS-legacy-template.md' "$ROOT/claude/skills/project/references/w
 else
     bad "project spec 把 adopted-only STATUS template 無條件發給 legacy repo"
 fi
+project_reader="$ROOT/shared/skills/project/scripts/read-reference.py"
+if [ -f "$project_reader" ]; then
+    ok "project bounded reference reader 存在"
+    reader_cursor=1
+    reader_round=0
+    reader_lines="$TMP/project-reader-lines"
+    reader_content="$TMP/project-reader-content"
+    : > "$reader_lines"
+    : > "$reader_content"
+    reader_ok=1
+    while [ "$reader_round" -lt 100 ]; do
+        reader_out="$(python3 "$project_reader" workflow.md --start "$reader_cursor" --max-bytes 700)"
+        reader_rc=$?
+        if [ "$reader_rc" -ne 0 ]; then
+            reader_ok=0
+            break
+        fi
+        printf '%s\n' "$reader_out" | awk -F '\t' '/^L[0-9][0-9][0-9][0-9][0-9][0-9]\t/ { print $1 }' >> "$reader_lines"
+        printf '%s\n' "$reader_out" | awk '/^L[0-9][0-9][0-9][0-9][0-9][0-9]\t/ { sub(/^[^\t]*\t/, ""); print }' >> "$reader_content"
+        reader_next="$(printf '%s\n' "$reader_out" | awk -F '\t' '$1 == "NEXT" { print $2 }')"
+        if printf '%s\n' "$reader_out" | awk -F '\t' '$1 == "EOF" { found = 1 } END { exit !found }'; then
+            break
+        fi
+        if [ -z "$reader_next" ] || [ "$reader_next" -le "$reader_cursor" ]; then
+            reader_ok=0
+            break
+        fi
+        reader_cursor="$reader_next"
+        reader_round=$((reader_round + 1))
+    done
+    reader_total="$(wc -l < "$ROOT/shared/skills/project/references/workflow.md" | tr -d ' ')"
+    awk -v n="$reader_total" 'BEGIN { for (i = 1; i <= n; i++) printf "L%06d\n", i }' > "$TMP/project-reader-expected-lines"
+    if [ "$reader_ok" -eq 1 ] \
+        && cmp -s "$TMP/project-reader-expected-lines" "$reader_lines" \
+        && cmp -s "$ROOT/shared/skills/project/references/workflow.md" "$reader_content"; then
+        ok "project reader 小額度逐段讀到 EOF，內容完整且無重複"
+    else
+        bad "project reader chunk cursor 有缺行／重複、未到 EOF 或內容漂移"
+    fi
+    reader_resume="$(python3 "$project_reader" log-workflow.md --start 37 --max-bytes 700)"
+    if printf '%s\n' "$reader_resume" | awk -F '\t' '$1 == "L000037" { found = 1 } END { exit !found }' \
+        && ! printf '%s\n' "$reader_resume" | awk -F '\t' '$1 == "L000036" { found = 1 } END { exit !found }'; then
+        ok "project reader 可從最後完整行的下一行續讀，不必回到檔首"
+    else
+        bad "project reader resume cursor 未精確從指定行開始"
+    fi
+    python3 "$project_reader" ../workflow.md >/dev/null 2>&1
+    assert_rc "project reader 拒絕 path traversal" 2 $?
+else
+    bad "project bounded reference reader 缺失"
+fi
+# shellcheck disable=SC2016 # 比對 Markdown backtick 字面，不做 expansion
+project_reader_bootstrap='read-reference.py` 逐段讀取 `workflow.md`，每次只接收一個 chunk；看見該檔 `EOF` 前不得執行任何 repo mutation'
+if grep -Fq "$project_reader_bootstrap" "$ROOT/claude/skills/project/SKILL.md" \
+    && grep -Fq "$project_reader_bootstrap" "$ROOT/codex/skills/project/SKILL.md"; then
+    ok "Project 雙入口共用同一個 bounded workflow bootstrap"
+else
+    bad "Project 雙入口未在 workflow EOF 前 fail closed，或 bootstrap 漂移"
+fi
+if grep -q '^## 必讀 reference 的有界讀取協定' "$ROOT/shared/skills/project/references/workflow.md" \
+    && grep -q '^## Scenario 31 — 必讀 references' "$ROOT/shared/skills/project/references/pressure-tests.md"; then
+    ok "Project reader protocol 與 behavior oracle 已接線"
+else
+    bad "Project reader protocol 或 Scenario 31 oracle 缺失"
+fi
 if grep -q 'G7 template placeholder missing' "$ROOT/claude/evals/setup-sandboxes.sh"; then
     ok "G7 fixture builder 對模板替換 no-op fail closed"
 else
@@ -3647,7 +3712,7 @@ echo "▶ 12c. project skill 跨 Claude Code／Codex 共用核心"
 PJS_CLAUDE="$ROOT/claude/skills/project"
 PJS_CODEX="$ROOT/codex/skills/project"
 project_scripts_shared=1
-for script_name in bootstrap-baseline.sh branch-first.sh cleanup-stale-branch.sh doc-governance.py ship-state.sh steward-authority.py; do
+for script_name in bootstrap-baseline.sh branch-first.sh cleanup-stale-branch.sh doc-governance.py read-reference.py ship-state.sh steward-authority.py; do
     [ "$PJS_CLAUDE/scripts/$script_name" -ef "$ROOT/shared/skills/project/scripts/$script_name" ] \
         && [ "$PJS_CODEX/scripts/$script_name" -ef "$ROOT/shared/skills/project/scripts/$script_name" ] \
         || project_scripts_shared=0
