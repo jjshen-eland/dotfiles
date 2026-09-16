@@ -50,10 +50,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   protection、scope ownership、`project transfer` 後協作如何進 behavior eval。**在新決策與 RED oracle
   出現前，不把這個候選路徑當成已生效規則。**
 
-- **B-20260813-gap-01** · **codex reviewer 跑得動測試、但跑不完**(2026-08-13 C1 實測):PR #94 的 profile 解決了「建不了 cache」
-  (events 實查真跑了三次),但 sandbox 內 `PASS=956` vs 主機 `983`,伴隨 `cloned an empty repository`
-  ——建 git fixture 在 `:read-only`+tmpdir-write 下仍受限。**「能啟動」≠「跑得完」**;那個中途計數正是同輪
-  假 `verification: executed` 的來源(被讀成「全部通過」,漏掉 `TEST_RC=1`)。調 profile 前先看這條。
 - **B-20260807-gap-02** · **eval 的受測 subagent 拿不到 deferred tools,部分契約在沙盒中無法構造**:2026-08-07 實測——
   主 session 的 `CronList`／`TaskOutput` 正常,探針 subagent(`Tools: *`)對同一批 `select:` 一律得
   `No matching deferred tools found`。凡「該工具查得成」才成立的情境因此做不出來,ready4quit
