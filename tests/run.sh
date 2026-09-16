@@ -3500,18 +3500,28 @@ dps_timeout_out="$(DEEP_PLAN_DESCENDANT_PID_DIR="$TMP/deep-plan-descendant-pids"
 dps_timeout_rc=$?
 dps_descendant_count="$(find "$TMP/deep-plan-descendant-pids" -name '*.pid' -type f | wc -l | tr -d ' ')"
 dps_descendants_alive=0
+dps_timeout_process_states=""
 for pid_file in "$TMP/deep-plan-descendant-pids"/*.pid; do
     descendant_pid="$(< "$pid_file")"
+    descendant_state="$(ps -o stat= -p "$descendant_pid" 2>/dev/null)"
+    descendant_state="${descendant_state//[[:space:]]/}"
+    [ -n "$descendant_state" ] || descendant_state="missing"
+    dps_timeout_process_states="${dps_timeout_process_states}${dps_timeout_process_states:+,}${descendant_pid}:${descendant_state}"
     if pid_is_live_non_zombie "$descendant_pid"; then
         dps_descendants_alive=$((dps_descendants_alive + 1))
     fi
 done
+dps_timeout_has_failure_manifest=0
+grep -q '"ok":false' <<< "$dps_timeout_out" && dps_timeout_has_failure_manifest=1
 if [ "$dps_timeout_rc" -eq 1 ] \
-    && grep -q '"ok":false' <<< "$dps_timeout_out" \
+    && [ "$dps_timeout_has_failure_manifest" -eq 1 ] \
     && [ "$dps_descendant_count" -eq 2 ] \
     && [ "$dps_descendants_alive" -eq 0 ]; then
     ok "deep-plan launcher timeout 會收掉 reviewer process tree，不留持 pipe descendant"
-else bad "deep-plan launcher timeout 未完整 fail closed 或留下 descendant"; fi
+else
+    echo "  timeout diagnostics: rc=$dps_timeout_rc manifest=$dps_timeout_has_failure_manifest pid_count=$dps_descendant_count live=$dps_descendants_alive states=${dps_timeout_process_states:-none}" >&2
+    bad "deep-plan launcher timeout 未完整 fail closed 或留下 descendant"
+fi
 mkdir -p "$TMP/deep-plan-signal-pids"
 DEEP_PLAN_DESCENDANT_PID_DIR="$TMP/deep-plan-signal-pids" \
     "$DPS_CODEX/scripts/launch-reviewers.py" \
