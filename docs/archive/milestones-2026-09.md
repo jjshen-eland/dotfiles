@@ -269,3 +269,9 @@
   - 放棄:用 blind sleep 猜 enrollment；看到同 SHA workflow run 就當 required check 已成立；無界輪詢；重試 merge；為 grace 再發 approval UI；放寬 `--admin` 或 final non-watch gate
   - 重議:GitHub 改變 required-check enrollment／Actions run schema；helper 無法穩定綁定 PR head；有效 workflow 超過有界 grace 才註冊且形成可重現實害；或 runtime 在同一次 `--merge` grace／watch 期間重新要求 push／merge 授權
   - 關聯:Issue#213;PR#212;D-20260913-project-merge-authorization-ci;Scenario29;Scenario32;shared/skills/project/scripts/wait-required-enrollment.sh;shared/skills/project/references/ship-paths.md;shared/skills/project/references/pressure-tests.md;docs/testing-contract.md;tests/run.sh
+
+- **M-20260916-deep-review-self-report-gap-closed · 2026-09-16 B-20260811-gap-03 依真實紀錄重驗後以接受限制結案**:現行 deep-review 契約、F22／F23、結構 gate、2026-08-11 後相關 commits 與 merged PR corpus 均已重驗；沒有案例同時證明完整同型處置表、實際同型漏修與流程放行。未修改 skill、eval 或 gate，改以 `D-20260916-deep-review-self-report-accepted-limit` 固定可觀察的重議條件，並移除 backlog 與 active item。
+  - 日期來源:direct
+  - 放棄:為清 backlog 製造行為 fixture；把 PR #123 的缺證據候選冒充 RED；擴寫無法機檢的 prose 規則
+  - 重議:同 `D-20260916-deep-review-self-report-accepted-limit`
+  - 關聯:B-20260811-gap-03;D-20260916-deep-review-self-report-accepted-limit;PR#123;shared/skills/deep-review/evals.md;tests/run.sh
