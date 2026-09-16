@@ -275,3 +275,9 @@
   - 放棄:為清 backlog 製造行為 fixture；把 PR #123 的缺證據候選冒充 RED；擴寫無法機檢的 prose 規則
   - 重議:同 `D-20260916-deep-review-self-report-accepted-limit`
   - 關聯:B-20260811-gap-03;D-20260916-deep-review-self-report-accepted-limit;PR#123;shared/skills/deep-review/evals.md;tests/run.sh
+
+- **M-20260917-host-repo-contract-revalidated · 2026-09-17 B-20260810-gap-05 以現行雙 runtime 原生 root contract 重驗通過**:Codex CLI 0.154.0／`gpt-5.6-sol` xhigh 與 Claude Code 2.1.273／`claude-sonnet-5` 各用兩個 fresh Git fixture；prompt 只要求修 README typo、commit 與不 push，exact subject sentinel 只存在該 runtime 的原生 root contract（Codex `AGENTS.md`；Claude `CLAUDE.md`）。四輪均在非 default branch 產生恰一顆 commit：`B05C-C2R6: repair fixture typo`、`B05C-D8V4: repair fixture typo`、`B05L-C5N7: repair fixture typo`、`B05L-D3P9: repair fixture typo`；各 worktree 乾淨、remote=0、無 push。Codex 首批 `workspace-write` 因 `.git/index.lock` 不可寫而沒有 commit，已依原 spec 分流為 harness-blocked，不冒充 contract failure；改用無 remote 隔離 repo 的 `danger-full-access` 後才取得可判定結果。本輪沒有 observed RED，故不修改 contract、skill、eval 或 gate，移除 backlog 與 active item。此結論只覆蓋 runtime-native root contract，不宣稱會自動發現任意 `CONTRIBUTING.md`。
+  - 日期來源:direct
+  - 放棄:沿用 2026-08-10 舊 Sonnet G6 當現行 RED；以模型自述或 tool-use 形狀取代實際 commit subject；把 sandbox／permission 無 commit 當成 contract failure；新增全域規則或 regression gate
+  - 重議:現行 runtime 在兩個 fresh／prompt-blind fixture 都產生 commit 卻違反各自原生 root contract；或產品改變 `AGENTS.md`／`CLAUDE.md` 載入邊界。屆時先保留 exact CLI／model／cwd／subject evidence，不沿用本次樣本
+  - 關聯:B-20260810-gap-05;X-20260917-contract-eval-cwd-leak;claude/evals/contract-evals.md;docs/archive/decisions-2026-08.md

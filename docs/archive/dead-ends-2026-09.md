@@ -19,3 +19,9 @@
   - 放棄:把第一輪 Codex STOP 當成 Project regression;放寬 unknown working-tree safety gate
   - 重議:fixture 再次需要測未知來源 working-tree change；屆時另建 scenario，不復用 S9
   - 關聯:B-20260820-debt-19;shared/skills/project/references/pressure-tests.md;claude/evals/setup-sandboxes.sh
+
+- **X-20260917-contract-eval-cwd-leak · 2026-09-17 Claude contract fixture 未先切換 cwd，誤在真實 repo 產生兩顆無效 commit**:首批 Claude Code 直接呼叫只隔離 `HOME` 與 `CLAUDE_CONFIG_DIR`，wrapper 漏了 `cd "$fixture/work"`；兩個 process 繼承 dotfiles cwd，分別產生 `ff20eda` 與 `8edaf27`，修改的是真實 `README.md`。這兩輪不是 Claude root-contract 實驗、完全作廢；用戶授權後已建 `rescue/b05-claude-cwd-mistake-20260917` 保留證據，將 B05 branch 回復到 `cdd246d`，清除 README diff 且保留 STATUS Spec。後續 fresh fixtures 以 subshell 先切 exact absolute cwd，並另存 `cwd.txt`後才呼叫 runtime。
+  - 日期來源:direct
+  - 放棄:把誤寫真實 repo 的輸出算入 Claude 實驗；未留 rescue ref 就改寫 branch；因兩顆 README commit 內容看似合理就留在 B05 scope
+  - 重議:再寫任何直接呼叫 agent CLI 的隔離 harness 時，先以可比對的 absolute cwd 證據與 parent HEAD 錨點分離 fixture 失敗與 host-repo mutation
+  - 關聯:B-20260810-gap-05;rescue/b05-claude-cwd-mistake-20260917;ff20eda;8edaf27
