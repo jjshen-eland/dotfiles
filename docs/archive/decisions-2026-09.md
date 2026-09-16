@@ -87,3 +87,9 @@
   - 放棄:以四題建立全域中英字典（過擬合且沒有未知詞行為）；在 config 注入 query 對 answer path（oracle 洩漏）；把英文治理規範改成雙語（違反既有定向英文政策）
   - 重議:至少三個獨立真實 repo 持續出現「同語言替代來源也無法回答」的跨語言 miss，且有可預註冊、非答案注入的共同詞彙層
   - 關聯:B-20260821-debt-27;tests/fixtures/doc-governance/b27-current-baseline.tsv;X-20260822-doc-h1-token-signal;X-20260823-retrieval-idf-and-h3-chunking
+
+- **D-20260916-deep-review-self-report-accepted-limit · 2026-09-16 deep-review 同型處置表的內容誠實度維持人工證據、接受不可機檢限制**:盤點現行契約與 2026-08-11 後可取得的 Git／GitHub 實證，未找到同時具備「終態表完整、實際殘留同型問題、流程仍放行」的案例。最接近的 PR #123 確有後輪補 removal axis，但持久紀錄未保存完整終態表，且合併前另以九格機械重驗收斂，不能倒推成填表敷衍。F22／F23 已覆蓋可構造的修復行為；R5 預造未實際執行的四輪修復仍只會測到 fixture 缺陷。因此維持結構 gate 與人工查證，不新增內容評分器或 R5 behavior eval。
+  - 日期來源:direct
+  - 放棄:以自然語言完整度評分冒充行為 oracle；預造無法誠實填寫的 R5 修復歷史；把缺少持久終態表自行補推為失敗證據
+  - 重議:保留下來的真實終態報告三軸皆填，之後卻證明同一規則仍有漏修且當時流程放行；屆時以該 exact report、commit 與殘留取得 RED
+  - 關聯:B-20260811-gap-03;PR#123;docs/archive/decisions-2026-08.md;shared/skills/deep-review/evals.md;shared/skills/deep-review/references/report-templates.md;tests/run.sh
