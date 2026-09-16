@@ -61,9 +61,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   技術上可行,但前提已被負面結果動搖、代價卻是確定的(拿不到 tarball 簽章身分)——
   **用確定的代價換不確定的效果,暫不做**,優先靠已實證的復原路徑。
 
-- **B-20260820-gap-06** · **`codex/AGENTS.md` 與 root `AGENTS.md` 同名不同角色**(來源檔 vs repo-resident 契約):改
-  `codex/**` 時兩份都被當 guidance 餵進 reviewer——**重複但無害,改名已 DROP、此實害就這樣接受**
-  (理由見 `docs/archive/decisions-2026-08.md`)。
 - **B-20260820-gap-07** · 爬蟲配置類 STATUS.md 撞名(npm-cs/knowledge-builder):源頭在 general-rag-cs template,
   改名(CRAWL-CONFIG.md)需動 template 腳本——另開工作項。
 - **B-20260820-gap-08** · biz-chat 移交檔三台路徑漂移(tmp/ vs handoff/,皆已 gitignored)+credentials 明文散於三台。
