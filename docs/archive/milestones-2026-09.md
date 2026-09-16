@@ -287,3 +287,9 @@
   - 放棄:任意加大固定 grace；blind retry／blind sleep；把 workflow run success 當 required-check verdict；用 `QUERY_ERROR` 描述單純尚未 enrollment；繞過 watch、final non-watch、fresh merge-state 或重新要求既有 merge 授權
   - 重議:GitHub Actions run／Checks schema 改變；exact-head active run 長期卡住而需要獨立 lifecycle timeout；required aggregation check 在 schema-valid run 結束後才正常建立；或同一 logical `--merge` invocation 再出現 approval UI
   - 關聯:Issue#217;elandcomtw/ais-infra#66;Issue#213;PR#214;Scenario32;M-20260916-issue-213-ci-check-enrollment-grace;D-20260913-project-merge-authorization-ci;shared/skills/project/scripts/wait-required-enrollment.sh;shared/skills/project/references/ship-paths.md;shared/skills/project/references/pressure-tests.md;docs/testing-contract.md;tests/run.sh;tests/shard-manifest.tsv
+
+- **M-20260917-gap-06-accepted-limit-retired · 2026-09-17 `codex/AGENTS.md` 同名已接受限制自 backlog 退役**:`B-20260820-gap-06` 重驗後沒有待開發內容；2026-08-10 的歷史決策已明確 DROP 改名方案，並把 root `AGENTS.md` 與 `codex/AGENTS.md` 同時進入 `codex/**` reviewer context 的重複判定為無害、可接受限制。現行 `ensure-codex-guidance.sh` 仍需後者作為全域 Codex guidance 來源，root 前者則是 repo-resident contract，角色沒有漂移；backlog 條目只是舊「已知缺口」搬遷時將已結案決策誤留為未結案狀態。本次不改名、不改 reviewer 收集邏輯、不新增 gate，只移除矛盾的 backlog 狀態。
+  - 日期來源:direct
+  - 放棄:重新啟動已 DROP 的改名與全機隊 symlink migration；為沒有 observed harm 的 context 重複新增 reviewer filter 或 gate；把已有決策的項目繼續當作 open debt
+  - 重議:reviewer 因兩份 `AGENTS.md` 的同名內容產生可重現的衝突指令、錯誤 finding 或 scope 漂移；或 Codex 提供不再需要 `codex/AGENTS.md` 來源檔的原生全域 guidance 部署機制
+  - 關聯:B-20260820-gap-06;docs/archive/decisions-2026-08.md;codex/AGENTS.md;AGENTS.md;scripts/ensure-codex-guidance.sh
