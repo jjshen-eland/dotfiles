@@ -12,7 +12,43 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-（目前無進行中項目。）
+### B-20260824-remote-human-contributor-path
+
+- **Context**：現行單一 Dossier Steward 契約已實證同機 Claude／Codex worker 以隔離 branch／worktree、
+  semantic commit 與 Dossier delta 交付，再由 steward 驗證並 cherry-pick；Project transfer 也已有
+  remote-visible endpoint 與原子 ownership switch。Backlog 仍保留「跨機器真人 contributor 若不能推專屬
+  feature branch，就缺少自然 commit 傳遞媒介」的舊候選，但尚未證明目前存在真人協作需求、現行 PR 路徑
+  真的阻塞，或會造成 stewardship 漂移。
+- **Goal**：以現行 GitHub PR／專屬 feature branch、Project stewardship 與 regression gates 重新驗證跨機器
+  真人 contributor 的安全交付路徑；只處理可重現且影響實際協作的缺口，不把舊候選直接升格成新規則。
+- **Acceptance Criteria**：
+  1. 建立現行 evidence matrix，分開核對實際真人協作需求、feature branch／PR 的 commit 傳遞能力、shared
+     dossier mutation 邊界、Dossier delta、steward 驗證／cherry-pick，以及 default branch／merge authority。
+  2. 若判定有缺口，先保存一個可重現 RED：安全的 remote contributor commit 無法抵達 steward，或現行 gate
+     會放過 contributor 自改 shared surfaces／自行取得 steward authority；只靠理論風險不算 RED。
+  3. 只有 RED 成立才做單一最小修正，且不得授予 contributor 修改 shared dossier、自行 merge、沿用 shipping
+     authorization 或繞過 branch protection 的權力。
+  4. 修正時先以沙盒行為 eval 固定 RED，再通過相關 targeted gate、doc-governance ship audit 與完整
+     `./tests/run.sh`；沒有 RED 時不新增 skill prose、程序、eval 或 provider 設定。
+  5. 若目前沒有使用需求或 observed failure，保留 `B-20260824-remote-human-contributor-path`，補上精確、可觀察
+     的恢復條件，不寫結案 milestone、不移除 backlog。
+- **Constraints**：不把「能開 PR」自行等同完整安全流程；不操作真實外部 contributor 帳號、repo 權限或
+  branch protection 來製造案例；不建立 machine-local lease；不讓 handoff／memory 取得 authority；若需修改
+  repo-local Project skill，先執行 skill-authoring preflight 並以 behavior eval 為 oracle。
+- **Progress**：已確認 repo 為 adopted governance、trusted core byte-identical，且目前無其他 active writer；
+  已定位既有單一 steward、memory-independent transfer 與 deterministic authority 決策，尚未開始實作或建立
+  新規則。
+- **Next step**：盤點現行 contracts、Project Scenario 23／authority gates 與既有 PR 實例，建立需求／行為／
+  風險矩陣；只有發現可達且具實害的缺口後，才設計最小沙盒 RED。
+- **Writer**：`codex:remote-human-contributor-path`
+- **Workspace**：`branch=docs/remote-human-contributor-path`
+- **Write Scope**：`shared/skills/project/references/{workflow,dossier,pressure-tests}.md`、
+  `shared/skills/project/scripts/steward-authority.py`、`claude/evals/setup-sandboxes.sh`、`tests/run.sh`、
+  `docs/testing-contract.md`
+- **Dossier Steward**：`codex:remote-human-contributor-path`
+- **Related IDs**：`B-20260824-remote-human-contributor-path`、`D-20260824-cross-runtime-dossier-stewardship`、
+  `D-20260824-memory-independent-transfer`、`D-20260824-project-steward-authority`、
+  `M-20260824-cross-runtime-dossier-core`
 
 ---
 
