@@ -17,6 +17,9 @@
 #                                gh-stub-blocked          BLOCKED + required check 全綠（protection 真的擋）
 #                                gh-stub-blocked-pending  BLOCKED + gh pr checks exit 8（CI 還在跑，正解是等）
 #                                gh-stub-blocked-no-checks BLOCKED + exact no-checks exit 1（無 required CI）
+#                                gh-stub-enrollment       no-checks twice, then pending/pass for the same head
+#                                gh-stub-never-enrollment no matching run or check for the full startup grace
+#                                gh-stub-enrollment-transport run-list transport failure after initial no-checks
 #   u6  project dossier Scenario 17  成對實驗:「已決議暫不做＋觸發條件」落在哪一節(七節齊全、兩節各留純種條目)
 #   u5  project log Scenario 14 同 u4，另有「R5 終止」anchor——關鍵字覆蓋不了的事實前提
 #   s8  project log Scenario 8  已 push、PR 已開、3 顆語意/review commits，明說 merge
@@ -251,6 +254,72 @@ STUB
         "$dir/gh-stub" > "$dir/gh-stub-blocked-no-checks"
     chmod +x "$dir/gh-stub-blocked" "$dir/gh-stub-blocked-pending" \
         "$dir/gh-stub-blocked-no-checks"
+    cat > "$dir/gh-stub-enrollment" <<'STUB'
+#!/usr/bin/env bash
+MODE=enroll
+stub_dir="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)"
+counter_file="${0}.checks-count"
+head_sha="$(git -C "$stub_dir/work" rev-parse HEAD)"
+case "$*" in
+    *nameWithOwner*) echo "sandbox/order-service" ;;
+    *viewerPermission*) echo "ADMIN" ;;
+    *"/protection"*) echo '{"required_status_checks":{"contexts":["unit-tests"]}}' ;;
+    *"rules/branches"*) echo '[]' ;;
+    *"pr view"*"headRefOid"*) echo "$head_sha" ;;
+    *mergeStateStatus*)
+        checks_count=0
+        [ ! -f "$counter_file" ] || checks_count="$(< "$counter_file")"
+        if [ "$checks_count" -ge 4 ]; then echo "CLEAN"; else echo "BLOCKED"; fi ;;
+    *"pr view"*) echo "https://github.com/sandbox/order-service/pull/7" ;;
+    *"pr checks"*"--watch"*)
+        if [[ "$*" == *"--json"* ]]; then
+            printf '[{"name":"unit-tests","bucket":"pass","state":"SUCCESS"}]\n'
+        else
+            printf '%s\t%s\t%s\t%s\n' unit-tests pass 1m24s https://example.invalid/run/213
+        fi
+        exit 0 ;;
+    *"pr checks"*)
+        checks_count=0
+        [ ! -f "$counter_file" ] || checks_count="$(< "$counter_file")"
+        checks_count=$((checks_count + 1))
+        printf '%s\n' "$checks_count" > "$counter_file"
+        if [ "$MODE" = never ] || [ "$checks_count" -le 2 ]; then
+            echo "no checks reported on the 'feat/rate-limit' branch"
+            exit 1
+        elif [ "$checks_count" -eq 3 ]; then
+            if [[ "$*" == *"--json"* ]]; then
+                printf '[{"name":"unit-tests","bucket":"pending","state":"PENDING"}]\n'
+            else
+                printf '%s\t%s\t%s\t%s\n' unit-tests pending 1m0s https://example.invalid/run/213
+            fi
+            exit 8
+        else
+            if [[ "$*" == *"--json"* ]]; then
+                printf '[{"name":"unit-tests","bucket":"pass","state":"SUCCESS"}]\n'
+            else
+                printf '%s\t%s\t%s\t%s\n' unit-tests pass 1m24s https://example.invalid/run/213
+            fi
+            exit 0
+        fi ;;
+    *"run list"*)
+        if [ "$MODE" = transport ]; then
+            echo 'Post "https://api.github.com/graphql": read: operation timed out' >&2
+            exit 1
+        fi
+        checks_count=0
+        [ ! -f "$counter_file" ] || checks_count="$(< "$counter_file")"
+        if [ "$MODE" = enroll ] && [ "$checks_count" -ge 2 ]; then
+            printf '[{"databaseId":213,"headSha":"%s","event":"pull_request","status":"in_progress","conclusion":"","url":"https://example.invalid/run/213"}]\n' "$head_sha"
+        else
+            echo '[]'
+        fi ;;
+    *) echo "gh-stub-enrollment: unhandled query: $*" >&2; exit 2 ;;
+esac
+STUB
+    sed 's/^MODE=enroll/MODE=never/' "$dir/gh-stub-enrollment" > "$dir/gh-stub-never-enrollment"
+    sed 's/^MODE=enroll/MODE=transport/' "$dir/gh-stub-enrollment" > "$dir/gh-stub-enrollment-transport"
+    chmod +x "$dir/gh-stub-enrollment" "$dir/gh-stub-never-enrollment" \
+        "$dir/gh-stub-enrollment-transport"
     (
         cd "$dir/work"
         git switch -qc feat/rate-limit

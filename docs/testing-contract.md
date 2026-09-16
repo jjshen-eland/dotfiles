@@ -209,6 +209,19 @@ S8 只重用 `seed_keyword_repo` 建構元件，S9 明示預置 README diff 為 
 `tests/run.sh` 只守這些可重建前提；runtime 的實際行為結論與 RED／GREEN 證據仍以
 `shared/skills/project/references/pressure-tests.md` 為 oracle，兩者不可互相冒充。
 
+### required-check startup enrollment
+
+`wait-required-enrollment.sh` 只解決 PR 建立後 required check object 還沒向 Checks API 登記的
+空窗，不取代後續 watch 或 final non-watch verdict。U4 的狀態型 fixtures 固定四條邊界：
+
+- 前兩次 exact no-checks，同 head SHA 的 `pull_request` run 出現，第三次 check 轉 pending。
+- matching run 只是診斷 evidence，check 全程缺席時固定次數後仍回 `UNOBSERVED`。
+- run-list transport failure 立即非零，不因 startup grace 獲得 retry。
+- PR head 與 invocation 錨定 SHA 不同立即非零，不採信別的 run/check。
+
+測試以 PATH 內的 no-op `sleep` 只壓縮時間，不改 helper 的次數上限或狀態轉移；正向組合
+另真實呼叫 fixture 的 watch 與 final non-watch，避免只測到 prose 而漏掉舊終態 gate。
+
 ### dossier 尺寸訊號
 
 總量 bytes／最長行／決策·里程碑條目 bytes（條目附**行號**、全檔附**建議收斂目標**、

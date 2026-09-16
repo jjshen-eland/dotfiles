@@ -3760,7 +3760,7 @@ echo "▶ 12c. project skill 跨 Claude Code／Codex 共用核心"
 PJS_CLAUDE="$ROOT/claude/skills/project"
 PJS_CODEX="$ROOT/codex/skills/project"
 project_scripts_shared=1
-for script_name in bootstrap-baseline.sh branch-first.sh cleanup-stale-branch.sh doc-governance.py read-reference.py ship-state.sh steward-authority.py; do
+for script_name in bootstrap-baseline.sh branch-first.sh cleanup-stale-branch.sh doc-governance.py read-reference.py ship-state.sh steward-authority.py wait-required-enrollment.sh; do
     [ "$PJS_CLAUDE/scripts/$script_name" -ef "$ROOT/shared/skills/project/scripts/$script_name" ] \
         && [ "$PJS_CODEX/scripts/$script_name" -ef "$ROOT/shared/skills/project/scripts/$script_name" ] \
         || project_scripts_shared=0
@@ -4043,6 +4043,81 @@ if grep -q 'required-policy: none' <<< "$project_policy_out"; then
     ok "u4 no-checks control 同時提供 required-policy none"
 else bad "u4 no-checks control 未形成 no-checks + required-policy none（${project_policy_out}）"; fi
 
+project_enrollment_wait="$PJS_CLAUDE/scripts/wait-required-enrollment.sh"
+project_enrollment_scenario="$(sed -n '/^## Scenario 32 /,/^## Scenario 30 /p' "$PJS_CLAUDE/references/pressure-tests.md")"
+mkdir -p "$project_eval_root/no-sleep"
+cat > "$project_eval_root/no-sleep/sleep" <<'STUB'
+#!/usr/bin/env bash
+exit 0
+STUB
+chmod +x "$project_eval_root/no-sleep/sleep"
+project_head_sha="$(git -C "$project_u4/work" rev-parse HEAD)"
+rm -f "$project_u4/gh-stub-enrollment.checks-count"
+project_enrollment_out="$(PATH="$project_eval_root/no-sleep:$PATH" \
+    PROJECT_ENROLLMENT_GH="$project_u4/gh-stub-enrollment" \
+    "$project_enrollment_wait" sandbox/order-service 7 "$project_head_sha" 2>&1)"
+project_enrollment_rc=$?
+assert_rc "project startup enrollment: no-checks 後同 head check 出現" 0 "$project_enrollment_rc"
+if grep -q '^verdict: ENROLLED$' <<< "$project_enrollment_out" \
+    && grep -q '^attempts: 3/13$' <<< "$project_enrollment_out" \
+    && grep -q '^run-observed: yes$' <<< "$project_enrollment_out" \
+    && grep -q '^checks-exit: 8$' <<< "$project_enrollment_out"; then
+    ok "project enrollment helper 只在對應 run/check 出現後交回既有 watch 路徑"
+else bad "project enrollment helper 沒有保留有界、identity-bound 證據（${project_enrollment_out}）"; fi
+project_watch_out="$("$project_u4/gh-stub-enrollment" pr checks 7 -R sandbox/order-service \
+    --required --watch --interval 15 --fail-fast 2>&1)"
+project_watch_rc=$?
+assert_rc "project enrollment 後沿用 checks watch" 0 "$project_watch_rc"
+project_final_out="$("$project_u4/gh-stub-enrollment" pr checks 7 -R sandbox/order-service --required 2>&1)"
+project_final_rc=$?
+assert_rc "project watch 後 authoritative non-watch 全綠" 0 "$project_final_rc"
+if grep -q $'unit-tests\tpass' <<< "$project_watch_out" \
+    && grep -q $'unit-tests\tpass' <<< "$project_final_out"; then
+    ok "project enrollment 組合路徑保留 watch + final non-watch verification"
+else bad "project enrollment 組合路徑缺 watch 或 final verdict"; fi
+
+rm -f "$project_u4/gh-stub-never-enrollment.checks-count"
+project_never_out="$(PATH="$project_eval_root/no-sleep:$PATH" \
+    PROJECT_ENROLLMENT_GH="$project_u4/gh-stub-never-enrollment" \
+    "$project_enrollment_wait" sandbox/order-service 7 "$project_head_sha" 2>&1)"
+project_never_rc=$?
+assert_rc "project startup enrollment: grace 內真正未觸發 → UNOBSERVED" 1 "$project_never_rc"
+if grep -q '^verdict: UNOBSERVED$' <<< "$project_never_out" \
+    && grep -q '^attempts: 13/13$' <<< "$project_never_out" \
+    && grep -q '^run-observed: no$' <<< "$project_never_out"; then
+    ok "project enrollment grace 有界且逾期 fail closed"
+else bad "project enrollment grace 逾期未來到 UNOBSERVED（${project_never_out}）"; fi
+
+rm -f "$project_u4/gh-stub-enrollment-transport.checks-count"
+project_transport_out="$(PATH="$project_eval_root/no-sleep:$PATH" \
+    PROJECT_ENROLLMENT_GH="$project_u4/gh-stub-enrollment-transport" \
+    "$project_enrollment_wait" sandbox/order-service 7 "$project_head_sha" 2>&1)"
+project_transport_rc=$?
+assert_rc "project startup enrollment: run-list transport error 立即 STOP" 2 "$project_transport_rc"
+if grep -q '^verdict: QUERY_ERROR$' <<< "$project_transport_out" \
+    && grep -q '^stage: run-list$' <<< "$project_transport_out"; then
+    ok "project enrollment 不重試 transport failure"
+else bad "project enrollment transport failure 未 fail closed（${project_transport_out}）"; fi
+
+project_head_out="$(PATH="$project_eval_root/no-sleep:$PATH" \
+    PROJECT_ENROLLMENT_GH="$project_u4/gh-stub-enrollment" \
+    "$project_enrollment_wait" sandbox/order-service 7 0000000000000000000000000000000000000000 2>&1)"
+project_head_rc=$?
+assert_rc "project startup enrollment: PR head 不符 expected SHA → STOP" 3 "$project_head_rc"
+if grep -q '^verdict: HEAD_CHANGED$' <<< "$project_head_out"; then
+    ok "project enrollment 不把其他 head 的 run/check 當成命中"
+else bad "project enrollment 缺 head identity fail-closed 證據（${project_head_out}）"; fi
+
+if grep -q 'shared deterministic enrollment helper' <<< "$project_enrollment_scenario" \
+    && grep -q 'fixed finite number' <<< "$project_enrollment_scenario" \
+    && grep -q 'approval UI call count is 0' <<< "$project_enrollment_scenario" \
+    && grep -q 'wait-required-enrollment.sh' <<< "$project_check_routing" \
+    && grep -q 'startup enrollment' <<< "$project_check_routing" \
+    && grep -q '13.*5' <<< "$project_check_routing" \
+    && grep -q 'final non-watch' <<< "$project_check_routing"; then
+    ok "project shipping contract 區分 startup enrollment pending 與 UNOBSERVED"
+else bad "project shipping contract 尚未接上 bounded enrollment grace 與原有終態 gate"; fi
+
 "$ROOT/claude/evals/setup-sandboxes.sh" "$project_eval_root" b19 project-pressure >/dev/null
 assert_rc "project eval builder 可獨立建立 S8/S9/S10/S12 fixtures" 0 $?
 project_s8="$project_eval_root/s8-b19"
@@ -4110,7 +4185,7 @@ if grep -q 'Scenario 30 — 空 repo 首次 merge 不得把 feature branch 升�
     && grep -q '目前 HEAD full SHA' <<< "$project_bootstrap_contract" \
     && grep -q 'required-policy: REQUIRED' <<< "$project_check_routing" \
     && grep -q 'UNOBSERVED' <<< "$project_check_routing" \
-    && grep -q '沒有 check object 可 watch' <<< "$project_check_routing" \
+    && grep -q 'wait-required-enrollment.sh' <<< "$project_check_routing" \
     && grep -q '重新取得.*required-policy' "$PJS_CLAUDE/references/log-workflow.md"; then
     ok "project 空 repo bootstrap 採確認型 baseline UX、effective policy 與 post-push re-detection"
 else bad "project 空 repo bootstrap contract 未完整接上 #153 state machine"; fi
