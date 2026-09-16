@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Wait only for the first required-check object after PR creation.
-# Exit 0: ENROLLED; 1: bounded UNOBSERVED; 2: query/transport error; 3: PR head changed.
+# Exit 0: ENROLLED; 1: bounded UNOBSERVED; 2: query/transport error;
+# 3: PR head changed; 4: exact-head run ended unsuccessfully before enrollment.
 
 set -u
 
@@ -33,9 +34,10 @@ query_error() {
 }
 
 run_observed=no
+active_run_observed=no
 command -v jq >/dev/null 2>&1 || query_error dependency "jq not found"
 attempt=1
-while [ "$attempt" -le "$MAX_ATTEMPTS" ]; do
+while :; do
     current_head="$("$GH_BIN" pr view "$pr_ref" -R "$repo_slug" --json headRefOid -q .headRefOid 2>&1)"
     head_rc=$?
     [ "$head_rc" -eq 0 ] || query_error pr-head "$current_head"
@@ -59,6 +61,7 @@ while [ "$attempt" -le "$MAX_ATTEMPTS" ]; do
             echo "verdict: ENROLLED"
             echo "attempts: ${attempt}/${MAX_ATTEMPTS}"
             echo "run-observed: $run_observed"
+            echo "active-run-observed: $active_run_observed"
             echo "checks-exit: $checks_rc"
             printf 'checks-json: %s\n' "$checks_output"
             exit 0
@@ -78,19 +81,61 @@ while [ "$attempt" -le "$MAX_ATTEMPTS" ]; do
         --json databaseId,headSha,event,status,conclusion,url 2>&1)"
     runs_rc=$?
     [ "$runs_rc" -eq 0 ] || query_error run-list "$runs_output"
-    matching_runs="$(printf '%s\n' "$runs_output" | jq -er --arg head "$expected_head" \
-        'if type == "array" then map(select(.headSha == $head and .event == "pull_request")) | length else error("not an array") end' \
+    matching_runs_json="$(printf '%s\n' "$runs_output" | jq -cer --arg head "$expected_head" \
+        'if type == "array" then map(select(.headSha == $head and .event == "pull_request")) else error("not an array") end' \
         2>/dev/null)"
     runs_json_rc=$?
     [ "$runs_json_rc" -eq 0 ] || query_error run-list "$runs_output"
+    invalid_runs="$(printf '%s\n' "$matching_runs_json" | jq -er '
+        [ .[]
+          | .status as $status
+          | select(
+              (.databaseId | type) != "number"
+              or (.status | type) != "string"
+              or (.conclusion | type) != "string"
+              or (["queued", "in_progress", "waiting", "requested", "pending", "completed"] | index($status)) == null
+              or ($status == "completed" and .conclusion == "")
+              or ($status != "completed" and .conclusion != "")
+            )
+        ] | length' 2>/dev/null)"
+    invalid_runs_rc=$?
+    [ "$invalid_runs_rc" -eq 0 ] && [ "$invalid_runs" -eq 0 ] \
+        || query_error run-list "$runs_output"
+    run_summary="$(printf '%s\n' "$matching_runs_json" | jq -cer '
+        {
+          count: length,
+          active: ([.[] | select(.status != "completed")] | length),
+          terminal_conclusions: (
+            [.[] | select(.status == "completed" and .conclusion != "success") | .conclusion]
+            | unique | sort | join(",")
+          )
+        }' 2>/dev/null)"
+    run_summary_rc=$?
+    [ "$run_summary_rc" -eq 0 ] || query_error run-list "$runs_output"
+    matching_runs="$(printf '%s\n' "$run_summary" | jq -r '.count')"
+    active_runs="$(printf '%s\n' "$run_summary" | jq -r '.active')"
+    terminal_conclusions="$(printf '%s\n' "$run_summary" | jq -r '.terminal_conclusions')"
     if [ "$matching_runs" -gt 0 ]; then
         run_observed=yes
     fi
+    if [ "$active_runs" -gt 0 ]; then
+        active_run_observed=yes
+    fi
 
-    if [ "$attempt" -eq "$MAX_ATTEMPTS" ]; then
+    if [ -n "$terminal_conclusions" ]; then
+        echo "verdict: RUN_TERMINAL"
+        echo "attempts: ${attempt}/${MAX_ATTEMPTS}"
+        echo "run-observed: $run_observed"
+        echo "active-run-observed: $active_run_observed"
+        echo "run-conclusions: $terminal_conclusions"
+        exit 4
+    fi
+
+    if [ "$attempt" -ge "$MAX_ATTEMPTS" ] && [ "$active_runs" -eq 0 ]; then
         echo "verdict: UNOBSERVED"
         echo "attempts: ${attempt}/${MAX_ATTEMPTS}"
         echo "run-observed: $run_observed"
+        echo "active-run-observed: $active_run_observed"
         exit 1
     fi
 

@@ -18,6 +18,11 @@
 #                                gh-stub-blocked-pending  BLOCKED + gh pr checks exit 8（CI 還在跑，正解是等）
 #                                gh-stub-blocked-no-checks BLOCKED + exact no-checks exit 1（無 required CI）
 #                                gh-stub-enrollment       no-checks twice, then pending/pass for the same head
+#                                gh-stub-delayed-enrollment exact-head run stays active beyond startup grace
+#                                gh-stub-run-failure      active exact-head run ends in failure without a check
+#                                gh-stub-run-cancelled    active exact-head run is cancelled without a check
+#                                gh-stub-run-success      successful run still does not stand in for a check
+#                                gh-stub-run-malformed    malformed run evidence fails closed as query error
 #                                gh-stub-never-enrollment no matching run or check for the full startup grace
 #                                gh-stub-enrollment-transport run-list transport failure after initial no-checks
 #   u6  project dossier Scenario 17  成對實驗:「已決議暫不做＋觸發條件」落在哪一節(七節齊全、兩節各留純種條目)
@@ -283,10 +288,14 @@ case "$*" in
         [ ! -f "$counter_file" ] || checks_count="$(< "$counter_file")"
         checks_count=$((checks_count + 1))
         printf '%s\n' "$checks_count" > "$counter_file"
-        if [ "$MODE" = never ] || [ "$checks_count" -le 2 ]; then
+        enrollment_after=2
+        [ "$MODE" != delayed ] || enrollment_after=15
+        if [ "$MODE" = never ] || [ "$MODE" = run-failure ] \
+            || [ "$MODE" = run-cancelled ] || [ "$MODE" = run-success ] \
+            || [ "$MODE" = run-malformed ] || [ "$checks_count" -le "$enrollment_after" ]; then
             echo "no checks reported on the 'feat/rate-limit' branch"
             exit 1
-        elif [ "$checks_count" -eq 3 ]; then
+        elif [ "$checks_count" -eq $((enrollment_after + 1)) ]; then
             if [[ "$*" == *"--json"* ]]; then
                 printf '[{"name":"unit-tests","bucket":"pending","state":"PENDING"}]\n'
             else
@@ -308,18 +317,46 @@ case "$*" in
         fi
         checks_count=0
         [ ! -f "$counter_file" ] || checks_count="$(< "$counter_file")"
-        if [ "$MODE" = enroll ] && [ "$checks_count" -ge 2 ]; then
-            printf '[{"databaseId":213,"headSha":"%s","event":"pull_request","status":"in_progress","conclusion":"","url":"https://example.invalid/run/213"}]\n' "$head_sha"
-        else
-            echo '[]'
-        fi ;;
+        case "$MODE" in
+            enroll)
+                if [ "$checks_count" -ge 2 ]; then
+                    printf '[{"databaseId":213,"headSha":"%s","event":"pull_request","status":"in_progress","conclusion":"","url":"https://example.invalid/run/213"}]\n' "$head_sha"
+                else
+                    echo '[]'
+                fi ;;
+            delayed)
+                printf '[{"databaseId":217,"headSha":"%s","event":"pull_request","status":"in_progress","conclusion":"","url":"https://example.invalid/run/217"}]\n' "$head_sha" ;;
+            run-failure|run-cancelled)
+                if [ "$checks_count" -lt 13 ]; then
+                    printf '[{"databaseId":218,"headSha":"%s","event":"pull_request","status":"in_progress","conclusion":"","url":"https://example.invalid/run/218"}]\n' "$head_sha"
+                else
+                    conclusion="${MODE#run-}"
+                    printf '[{"databaseId":218,"headSha":"%s","event":"pull_request","status":"completed","conclusion":"%s","url":"https://example.invalid/run/218"}]\n' "$head_sha" "$conclusion"
+                fi ;;
+            run-success)
+                if [ "$checks_count" -lt 13 ]; then
+                    printf '[{"databaseId":219,"headSha":"%s","event":"pull_request","status":"in_progress","conclusion":"","url":"https://example.invalid/run/219"}]\n' "$head_sha"
+                else
+                    printf '[{"databaseId":219,"headSha":"%s","event":"pull_request","status":"completed","conclusion":"success","url":"https://example.invalid/run/219"}]\n' "$head_sha"
+                fi ;;
+            run-malformed)
+                printf '[{"databaseId":220,"headSha":"%s","event":"pull_request","status":"completed","conclusion":"","url":"https://example.invalid/run/220"}]\n' "$head_sha" ;;
+            *) echo '[]' ;;
+        esac ;;
     *) echo "gh-stub-enrollment: unhandled query: $*" >&2; exit 2 ;;
 esac
 STUB
     sed 's/^MODE=enroll/MODE=never/' "$dir/gh-stub-enrollment" > "$dir/gh-stub-never-enrollment"
     sed 's/^MODE=enroll/MODE=transport/' "$dir/gh-stub-enrollment" > "$dir/gh-stub-enrollment-transport"
+    sed 's/^MODE=enroll/MODE=delayed/' "$dir/gh-stub-enrollment" > "$dir/gh-stub-delayed-enrollment"
+    sed 's/^MODE=enroll/MODE=run-failure/' "$dir/gh-stub-enrollment" > "$dir/gh-stub-run-failure"
+    sed 's/^MODE=enroll/MODE=run-cancelled/' "$dir/gh-stub-enrollment" > "$dir/gh-stub-run-cancelled"
+    sed 's/^MODE=enroll/MODE=run-success/' "$dir/gh-stub-enrollment" > "$dir/gh-stub-run-success"
+    sed 's/^MODE=enroll/MODE=run-malformed/' "$dir/gh-stub-enrollment" > "$dir/gh-stub-run-malformed"
     chmod +x "$dir/gh-stub-enrollment" "$dir/gh-stub-never-enrollment" \
-        "$dir/gh-stub-enrollment-transport"
+        "$dir/gh-stub-enrollment-transport" "$dir/gh-stub-delayed-enrollment" \
+        "$dir/gh-stub-run-failure" "$dir/gh-stub-run-cancelled" \
+        "$dir/gh-stub-run-success" "$dir/gh-stub-run-malformed"
     (
         cd "$dir/work"
         git switch -qc feat/rate-limit

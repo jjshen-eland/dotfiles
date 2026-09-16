@@ -212,10 +212,17 @@ S8 只重用 `seed_keyword_repo` 建構元件，S9 明示預置 README diff 為 
 ### required-check startup enrollment
 
 `wait-required-enrollment.sh` 只解決 PR 建立後 required check object 還沒向 Checks API 登記的
-空窗，不取代後續 watch 或 final non-watch verdict。U4 的狀態型 fixtures 固定四條邊界：
+空窗，不取代後續 watch 或 final non-watch verdict。U4 的狀態型 fixtures 固定下列邊界：
 
 - 前兩次 exact no-checks，同 head SHA 的 `pull_request` run 出現，第三次 check 轉 pending。
-- matching run 只是診斷 evidence，check 全程缺席時固定次數後仍回 `UNOBSERVED`。
+- dependency-gated aggregation arm 在 13 次 startup observation 後仍維持 exact-head active run，直到第 16 次
+  required check 才出現；run 只延續 observation，不提供 verdict。
+- failure／cancelled arms 先呈現 active exact-head run，再於 check 缺席時結束，必須分類為
+  `RUN_TERMINAL`，不得誤報 `QUERY_ERROR` 或繼續等待。
+- matching run 只提供 lifecycle route；沒有 active matching run，或 run 成功結束而 check 仍缺席時回
+  `UNOBSERVED`，不把 run success 當 check verdict。
+- malformed run schema 立即以含 `stage`／`detail` 的 `QUERY_ERROR` fail closed，不用缺欄位或矛盾 lifecycle
+  猜測 active／terminal 狀態。
 - run-list transport failure 立即非零，不因 startup grace 獲得 retry。
 - PR head 與 invocation 錨定 SHA 不同立即非零，不採信別的 run/check。
 
