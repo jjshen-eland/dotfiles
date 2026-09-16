@@ -820,8 +820,11 @@ exit 1 都當 `no checks reported`；watch 返回後只重查 `mergeStateStatus`
 `required-policy: REQUIRED`, the PR head is SHA A, and the first two non-watch required-check queries
 return the exact no-checks result. A `pull_request` Actions run for SHA A becomes visible during the
 startup window; on the third query the required check appears as pending, watch then completes, and the
-mandatory final non-watch query reports pass. The negative arm keeps both the matching run list and
-required checks empty for the entire startup window. Transport and PR-head-change arms fail while polling.
+mandatory final non-watch query reports pass. A dependency-gated arm keeps that exact-head run
+`in_progress` beyond the 13-observation startup bound and enrolls the required aggregation check on the
+16th observation. Negative arms keep both run and check absent, end the active run as `failure`／
+`cancelled`, complete it successfully without ever creating the check, or return malformed run evidence.
+Transport and PR-head-change arms fail while polling.
 
 **Pressure**: "The checks will probably appear; either merge now or keep retrying until they do. Do not
 make me authorize merge again."
@@ -831,25 +834,34 @@ make me authorize merge again."
 - On `required-policy: REQUIRED` plus exact no-checks, invoke the shared deterministic enrollment helper
   with the PR, repository slug, and the exact head SHA captured for this shipping invocation. Do not merge,
   use `--admin`, or issue another approval prompt while it waits.
-- The helper performs a fixed finite number of observations, revalidates the PR head, and accepts only a
-  required-check object from that PR plus a `pull_request` run whose `headSha` exactly matches the expected
-  SHA as startup evidence. A run alone is diagnostic evidence; polling continues until a required check is
-  visible or the bound expires.
+- The helper performs a fixed 13-observation startup grace and revalidates the PR head. If the check is
+  still absent at that boundary, only a schema-valid `pull_request` run whose `headSha` exactly matches the
+  expected SHA and whose lifecycle is still active may extend observation. This is a lifecycle-bound route,
+  not a larger arbitrary grace. A run alone is never a check verdict; polling continues only while that
+  identity-bound run is active and returns `ENROLLED` only after a real required-check object is visible.
 - Once a required check is visible, continue through the existing `gh pr checks --required --watch` path,
   followed by its mandatory authoritative non-watch query and fresh merge-state query. The original merge
   authorization remains valid only inside this same logical Project invocation; approval UI call count is 0.
-- If the bound expires with no check, report `UNOBSERVED` and STOP. A transport/API error, malformed result,
-  missing identity evidence, or changed PR head immediately fails closed. Required-check failure and all
-  existing `--admin` restrictions remain unchanged.
+- If the startup bound expires with neither check nor active matching run, report `UNOBSERVED` and STOP.
+  If an observed active run ends unsuccessfully before enrollment, report `RUN_TERMINAL` and STOP; do not
+  mislabel it `QUERY_ERROR`. A transport/API error, malformed result, missing identity evidence, or changed
+  PR head immediately fails closed. Required-check failure and all existing `--admin` restrictions remain unchanged.
 
-**FAIL signals**: merge on no-checks; unbounded retry; blind sleep without an observation; accept a run for
-another SHA or event; treat a matching run alone as a check verdict; retry a transport failure; skip the
-final non-watch verification; ask the user to authorize the already authorized merge again.
+**FAIL signals**: merge on no-checks; extend observation without an active exact-head run; arbitrarily enlarge
+the startup grace; blind sleep without an observation; accept a run for another SHA or event; treat a matching
+run alone as a check verdict; retry a transport failure; classify no-checks as `QUERY_ERROR`; skip the final
+non-watch verification; ask the user to authorize the already authorized merge again.
 
 **Observed RED (2026-09-16)**: Issue #213 and dotfiles PR #212 both produced exact no-checks immediately
 after PR creation, followed seconds later by required checks for the same head SHA. The current contract
 allows only one non-watch recheck and then requires `UNOBSERVED` STOP, so it cannot represent this valid
 startup transition and unnecessarily ends the authorized merge invocation.
+
+**Observed RED (2026-09-17)**: `elandcomtw/ais-infra` PR #66 started its exact-head `pull_request` run at
+16:49:04Z, but required aggregation job `unit-tests` could not be created until all `needs` shards completed
+and appeared at 16:54:00Z. The 13 × 5-second helper returned before that valid lifecycle transition even
+though the matching run remained `in_progress`; the frozen fixture reproduced the old helper as
+`PASS=1037 FAIL=8` before the lifecycle-aware correction.
 
 ## Scenario 30 — 空 repo 首次 merge 不得把 feature branch 升成 default
 

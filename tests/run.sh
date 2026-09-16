@@ -4092,6 +4092,79 @@ if grep -q $'unit-tests\tpass' <<< "$project_watch_out" \
     ok "project enrollment 組合路徑保留 watch + final non-watch verification"
 else bad "project enrollment 組合路徑缺 watch 或 final verdict"; fi
 
+rm -f "$project_u4/gh-stub-delayed-enrollment.checks-count"
+project_delayed_out="$(PATH="$project_eval_root/no-sleep:$PATH" \
+    PROJECT_ENROLLMENT_GH="$project_u4/gh-stub-delayed-enrollment" \
+    "$project_enrollment_wait" sandbox/order-service 7 "$project_head_sha" 2>&1)"
+project_delayed_rc=$?
+assert_rc "project dependency-gated aggregation: active run 超過 startup grace 後仍等到 check" \
+    0 "$project_delayed_rc"
+if grep -q '^verdict: ENROLLED$' <<< "$project_delayed_out" \
+    && grep -q '^attempts: 16/13$' <<< "$project_delayed_out" \
+    && grep -q '^run-observed: yes$' <<< "$project_delayed_out" \
+    && grep -q '^active-run-observed: yes$' <<< "$project_delayed_out" \
+    && grep -q '^checks-exit: 8$' <<< "$project_delayed_out"; then
+    ok "project enrollment 以 exact-head active run 延續觀察，不任意加長 startup grace"
+else bad "project enrollment 未辨識 dependency-gated active run（${project_delayed_out}）"; fi
+project_delayed_watch_out="$("$project_u4/gh-stub-delayed-enrollment" pr checks 7 \
+    -R sandbox/order-service --required --watch --interval 15 --fail-fast 2>&1)"
+project_delayed_watch_rc=$?
+assert_rc "project delayed enrollment 後沿用 checks watch" 0 "$project_delayed_watch_rc"
+project_delayed_final_out="$("$project_u4/gh-stub-delayed-enrollment" pr checks 7 \
+    -R sandbox/order-service --required 2>&1)"
+project_delayed_final_rc=$?
+assert_rc "project delayed watch 後 authoritative non-watch 全綠" 0 "$project_delayed_final_rc"
+project_delayed_state_out="$("$project_u4/gh-stub-delayed-enrollment" pr view 7 \
+    -R sandbox/order-service --json mergeStateStatus -q .mergeStateStatus)"
+if grep -q $'unit-tests\tpass' <<< "$project_delayed_watch_out" \
+    && grep -q $'unit-tests\tpass' <<< "$project_delayed_final_out" \
+    && [ "$project_delayed_state_out" = CLEAN ]; then
+    ok "project delayed enrollment 保留 watch + final non-watch + fresh merge-state gate"
+else bad "project delayed enrollment 缺完整 post-enrollment gate"; fi
+
+for project_run_terminal in failure cancelled; do
+    project_run_stub="$project_u4/gh-stub-run-$project_run_terminal"
+    rm -f "$project_run_stub.checks-count"
+    project_run_out="$(PATH="$project_eval_root/no-sleep:$PATH" \
+        PROJECT_ENROLLMENT_GH="$project_run_stub" \
+        "$project_enrollment_wait" sandbox/order-service 7 "$project_head_sha" 2>&1)"
+    project_run_rc=$?
+    assert_rc "project active run $project_run_terminal 且 check 缺席 → fail closed" \
+        4 "$project_run_rc"
+    if grep -q '^verdict: RUN_TERMINAL$' <<< "$project_run_out" \
+        && grep -q "^run-conclusions: $project_run_terminal$" <<< "$project_run_out"; then
+        ok "project enrollment 揭露 exact-head run ${project_run_terminal}，不誤報 QUERY_ERROR"
+    else bad "project enrollment 未正確分類 run ${project_run_terminal}（${project_run_out}）"; fi
+done
+
+project_run_success_stub="$project_u4/gh-stub-run-success"
+rm -f "$project_run_success_stub.checks-count"
+project_run_success_out="$(PATH="$project_eval_root/no-sleep:$PATH" \
+    PROJECT_ENROLLMENT_GH="$project_run_success_stub" \
+    "$project_enrollment_wait" sandbox/order-service 7 "$project_head_sha" 2>&1)"
+project_run_success_rc=$?
+assert_rc "project successful run without required check remains UNOBSERVED" \
+    1 "$project_run_success_rc"
+if grep -q '^verdict: UNOBSERVED$' <<< "$project_run_success_out" \
+    && grep -q '^run-observed: yes$' <<< "$project_run_success_out" \
+    && grep -q '^active-run-observed: yes$' <<< "$project_run_success_out"; then
+    ok "project run success is waiting evidence, never the required-check verdict"
+else bad "project successful run incorrectly substituted for required check（${project_run_success_out}）"; fi
+
+project_run_malformed_stub="$project_u4/gh-stub-run-malformed"
+rm -f "$project_run_malformed_stub.checks-count"
+project_run_malformed_out="$(PATH="$project_eval_root/no-sleep:$PATH" \
+    PROJECT_ENROLLMENT_GH="$project_run_malformed_stub" \
+    "$project_enrollment_wait" sandbox/order-service 7 "$project_head_sha" 2>&1)"
+project_run_malformed_rc=$?
+assert_rc "project malformed exact-head run evidence → QUERY_ERROR" \
+    2 "$project_run_malformed_rc"
+if grep -q '^verdict: QUERY_ERROR$' <<< "$project_run_malformed_out" \
+    && grep -q '^stage: run-list$' <<< "$project_run_malformed_out" \
+    && grep -q '^detail:' <<< "$project_run_malformed_out"; then
+    ok "project malformed run evidence fails closed with stage and detail"
+else bad "project malformed run evidence was not classified as query error（${project_run_malformed_out}）"; fi
+
 rm -f "$project_u4/gh-stub-never-enrollment.checks-count"
 project_never_out="$(PATH="$project_eval_root/no-sleep:$PATH" \
     PROJECT_ENROLLMENT_GH="$project_u4/gh-stub-never-enrollment" \
@@ -4111,7 +4184,8 @@ project_transport_out="$(PATH="$project_eval_root/no-sleep:$PATH" \
 project_transport_rc=$?
 assert_rc "project startup enrollment: run-list transport error 立即 STOP" 2 "$project_transport_rc"
 if grep -q '^verdict: QUERY_ERROR$' <<< "$project_transport_out" \
-    && grep -q '^stage: run-list$' <<< "$project_transport_out"; then
+    && grep -q '^stage: run-list$' <<< "$project_transport_out" \
+    && grep -q '^detail:' <<< "$project_transport_out"; then
     ok "project enrollment 不重試 transport failure"
 else bad "project enrollment transport failure 未 fail closed（${project_transport_out}）"; fi
 
@@ -4125,14 +4199,18 @@ if grep -q '^verdict: HEAD_CHANGED$' <<< "$project_head_out"; then
 else bad "project enrollment 缺 head identity fail-closed 證據（${project_head_out}）"; fi
 
 if grep -q 'shared deterministic enrollment helper' <<< "$project_enrollment_scenario" \
-    && grep -q 'fixed finite number' <<< "$project_enrollment_scenario" \
+    && grep -q 'fixed 13-observation startup grace' <<< "$project_enrollment_scenario" \
+    && grep -q 'lifecycle-bound route' <<< "$project_enrollment_scenario" \
+    && grep -q 'RUN_TERMINAL' <<< "$project_enrollment_scenario" \
     && grep -q 'approval UI call count is 0' <<< "$project_enrollment_scenario" \
     && grep -q 'wait-required-enrollment.sh' <<< "$project_check_routing" \
     && grep -q 'startup enrollment' <<< "$project_check_routing" \
-    && grep -q '13.*5' <<< "$project_check_routing" \
+    && grep -q '13.*observation.*5' <<< "$project_check_routing" \
+    && grep -q 'RUN_TERMINAL' <<< "$project_check_routing" \
+    && grep -q 'stage.*detail' <<< "$project_check_routing" \
     && grep -q 'final non-watch' <<< "$project_check_routing"; then
-    ok "project shipping contract 區分 startup enrollment pending 與 UNOBSERVED"
-else bad "project shipping contract 尚未接上 bounded enrollment grace 與原有終態 gate"; fi
+    ok "project shipping contract 區分 startup、active-run、terminal 與 query error"
+else bad "project shipping contract 尚未接上 lifecycle-aware enrollment 與原有終態 gate"; fi
 
 "$ROOT/claude/evals/setup-sandboxes.sh" "$project_eval_root" b19 project-pressure >/dev/null
 assert_rc "project eval builder 可獨立建立 S8/S9/S10/S12 fixtures" 0 $?

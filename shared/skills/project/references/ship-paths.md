@@ -307,15 +307,20 @@ gh pr checks <PR-number|URL> -R "$repo_slug" --required
      head_sha="$(gh pr view <PR-number|URL> -R "$repo_slug" --json headRefOid -q .headRefOid)"
      <skill-dir>/scripts/wait-required-enrollment.sh "$repo_slug" <PR-number|URL> "$head_sha"
      ```
-     Helper 的 startup enrollment grace 固定最多 **13 次 observation、間隔 5 秒**；每次都重驗
-     PR head，並只把 exact head SHA＋`pull_request` event 的 Actions run 當診斷證據。Run 本身不是
-     check verdict；仍要等 required check object 出現。不手寫另一個輪詢、不 blind sleep、不重試 merge。
+     Helper 的 startup enrollment grace 固定 **13 次 observation、間隔 5 秒**；每次都重驗 PR head。
+     第 13 次仍沒有 check 時，只有 schema-valid、exact head SHA＋`pull_request` event 且 lifecycle 仍 active
+     的 Actions run 能延續觀察；沒有 active matching run 就結束，不把 fixed grace 任意拉長。Run 本身不是
+     check verdict；helper 只在真正 required check object 出現時回 `ENROLLED`。不手寫另一個輪詢、
+     不 blind sleep、不重試 merge。
      - `verdict: ENROLLED` → 立即重跑標準 non-watch `gh pr checks ... --required`，以新的 exit
        code＋輸出回到本節三分流；pending 才進下方現有 watch＋final non-watch 路徑。不得用 helper
        之前的 no-checks snapshot，也不再開第二段 grace。
-     - `verdict: UNOBSERVED` → 有界 grace 結束仍沒有 check object，STOP；不 `--admin`、不替
-       target repo 改 CI。
-     - `QUERY_ERROR` / `HEAD_CHANGED` / malformed evidence → 立即 STOP，不 retry。
+     - `verdict: UNOBSERVED` → startup grace 結束時沒有 active matching run，或 run 正常結束後仍沒有
+       check object；STOP，不 `--admin`、不替 target repo 改 CI。
+     - `verdict: RUN_TERMINAL` → exact-head active run 在 check enrollment 前以 failure／cancelled／其他
+       non-success conclusion 結束；STOP 並回報 `run-conclusions`，不得誤稱 query error。
+     - `QUERY_ERROR` / `HEAD_CHANGED` / malformed evidence → 立即 STOP，不 retry；`QUERY_ERROR` 必須保留
+       helper 的 `stage`／`detail`，不能用「尚未看到 check」代替真正錯誤。
      原 `--merge` authorization 在這個 logical Project invocation 的 grace／watch 內繼續有效，approval UI
      呼叫數必須是 0；一旦 STOP 或 invocation 結束就不 carry。
    - `required-policy: UNKNOWN` → policy 不可見，STOP；不得把 403／provider gap 當成 none。
@@ -337,7 +342,7 @@ repo，前一種誤讀會捏造不存在的壞 check；對 transport error，後
 | `BLOCKED` ＋ checks **其他非零，且列出了失敗的 check** | required check 失敗 | 停，回報是哪個 check 失敗 | **一樣停**——繞過等於把沒通過測試的變更送進 default |
 | `BLOCKED` ＋ authoritative non-watch checks 是 **query／transport failure**，沒有 failed row、也不是 exact `no checks reported` | check 狀態不確定 | 停，回報查詢錯誤；不得猜失敗或全綠 | **一樣停**——`--admin` 不得繞過未知狀態 |
 | `BLOCKED` ＋ checks **exit 0**，或 **`no checks reported` + required-policy none**（見上方 ⚠️） | protection 真的擋（缺 review／其他規則），與 check 無關 | **停**，回報並告知可用「bypass merge」 | 加 `--admin` 重試 |
-| `BLOCKED` ＋ **required-policy REQUIRED** 但 no checks reported | startup enrollment pending，或 grace 後的 UNOBSERVED | 跑 identity-bound bounded helper；ENROLLED 回到原 checks 分流，UNOBSERVED／error 就停 | **一樣等／停**——沒有測試結果可 bypass |
+| `BLOCKED` ＋ **required-policy REQUIRED** 但 no checks reported | startup enrollment pending、dependency-gated active run，或 grace 後的 UNOBSERVED | 跑 identity-bound helper；ENROLLED 回到原 checks 分流，UNOBSERVED／RUN_TERMINAL／error 就停 | **一樣等／停**——沒有測試結果可 bypass |
 | `DIRTY` | 有衝突 | 停，回報 | **一樣停**——`--admin` 不解決衝突 |
 | `BEHIND` | base 落後、protection 要求最新 | 停，回報 | **一樣停**——該做的是更新 branch，不是繞過 |
 | `DRAFT` | 這是 draft PR，本來就不能 merge | 停，問「要我先 `gh pr ready` 轉正式嗎」——**不自行轉** | 一樣停——`--admin` 不能 merge draft |
