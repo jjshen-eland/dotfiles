@@ -12,42 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### ci-test-sharding
-
-- **Context**：PR #211 的 required checks 在相同測試集合下為 Ubuntu 1m14s、macOS 3m02s；既有 workflow
-  已讓兩個 OS 並行、取消 merge 後重跑，`tests/run.sh` 內也已把 ShellCheck 與 doc-governance 放到背景，
-  但 macOS 仍受串行 fixture-heavy 區段主導。
-- **Goal**：把完整測試集合拆成彼此隔離、可在每個 OS job 內平行執行的 shards，聚合所有結果並縮短
-  macOS required check 的 wall time。
-- **Acceptance Criteria**：
-  1. 先保存現行 serial baseline、各區段耗時與 assertion manifest；以 RED 證明現行 runner 沒有隔離 shard／
-     fail-closed aggregation 能力，再實作。
-  2. macOS 15 與 Ubuntu 24.04 都執行與 serial baseline 相同的完整 assertion 集合；不得以 path filter、平台
-     分流或抽樣減少覆蓋，且每項 assertion 恰執行一次、無遺漏或重複。
-  3. 每個 shard 使用獨立 temp/state/output；任一 shard 非零、未產出完整 manifest、被 signal 中止或 aggregation
-     本身失敗，都使整個 OS job 非零。失敗輸出保留 shard 身分與原始診斷。
-  4. 保留既有 required contexts `suite (macos-15)`、`suite (ubuntu-24.04)` 與本地 `./tests/run.sh` 完整驗證入口；
-     不恢復 `push: main` 的重複完整 run。
-  5. 在完整集合與 fail-closed gates 全綠後，以 macOS required job 實測 wall time 對照 PR #211 的 3m02s；只有
-     實測縮短才宣稱效能改善，runner noise 無法判定時保留數據並重測，不以推估冒充結果。
-- **Constraints**：只改執行拓撲與必要的 test harness；不放寬 assertion、不改 production 行為、不把 macOS
-  降成 smoke test。先辨識跨 section 的共享狀態與順序依賴，只有證明隔離的群組才能平行。
-- **進度**：baseline 為 PR #211 Ubuntu 1m14s／macOS 3m02s；section 9 `ship-state.sh` 是 macOS 最大單一
-  耗時來源（前次實測約 99.7s，含 46 次 `git init`、約 80 個 fixture roots 與 122 次相關呼叫）。2026-09-16
-  已取得兩層 RED：`DOTFILES_TEST_SHARD=ship_state ./tests/run.sh` 仍從 section 1 開始，證明現行 runner 無隔離
-  邊界；新聚合器行為測試 6/6 因 implementation 尚不存在而失敗，固定非零 rc、signal-like rc、缺 completion
-  artifact、缺／重複 summary、身分錯置及 assertion count 漂移都必須 fail closed。最小實作已把 runner 切成
-  `core=164`、`ship_state=239`、`integration=1024`，三者各自 0 FAIL，聚合 manifest 為 1427；serial 同樣為
-  1427/0。相同本機環境下 serial wall time 135s、parallel 60s（縮短 75s，約 56%），未以此冒充 GitHub
-  macOS runner 的結果。
-- **下一步**：檢查 final diff 與 governance audit；待明示 `$project --pr` 後送 PR，以 required macOS job
-  實測對照 PR #211 的 3m02s，通過後才記錄 completion milestone 並移除 active item。
-- **關聯**：D-20260913-project-merge-authorization-ci
-- **Writer**：codex:ci-test-sharding
-- **Workspace**：branch=perf/ci-test-sharding
-- **Write Scope**：tests/, .github/workflows/test.yml, STATUS.md, docs/testing-contract.md,
-  docs/archive/milestones-2026-09.md
-- **Dossier Steward**：codex:ci-test-sharding
+（目前無進行中項目。）
 
 ---
 
