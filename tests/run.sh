@@ -169,6 +169,22 @@ echo "▶ 2c. shard aggregation fail-closed suite"
 python3 "$ROOT/tests/test_shard_aggregate.py"
 assert_rc "shard aggregation 行為測試全部通過" 0 $?
 
+parallel_cleanup_results="$TMP/run-parallel-cleanup-results"
+parallel_cleanup_probe="$TMP/run-parallel-cleanup-probe.sh"
+mkdir -p "$parallel_cleanup_results"
+{
+    printf '%s\n' '#!/bin/bash' 'set -u' \
+        "RESULTS='$parallel_cleanup_results'" 'child_pids=()'
+    sed -n '/^cleanup() {$/,/^}$/p' "$ROOT/tests/run-parallel.sh"
+    printf '%s\n' 'cleanup'
+} > "$parallel_cleanup_probe"
+if /bin/bash "$parallel_cleanup_probe" >/dev/null 2>&1 \
+    && [ ! -e "$parallel_cleanup_results" ]; then
+    ok "parallel cleanup 在 Bash 3.2 的空 child array 下仍成功"
+else
+    bad "parallel cleanup 在 Bash 3.2 的空 child array 下失敗"
+fi
+
 echo "▶ 1b. 全形標點吞變數名 gate"
 # bash 在部分 locale 下會把緊接在 $var 後的多位元組字元併進變數名：
 #   echo "（exit=$rc）"  →  set -u 下噴 `rc）: unbound variable`

@@ -11,10 +11,12 @@ child_pids=()
 
 cleanup() {
     local pid
-    for pid in "${child_pids[@]}"; do
-        kill -0 "$pid" >/dev/null 2>&1 && kill "$pid" >/dev/null 2>&1
-        wait "$pid" >/dev/null 2>&1 || true
-    done
+    if [ "${#child_pids[@]}" -gt 0 ]; then
+        for pid in "${child_pids[@]}"; do
+            kill -0 "$pid" >/dev/null 2>&1 && kill "$pid" >/dev/null 2>&1
+            wait "$pid" >/dev/null 2>&1 || true
+        done
+    fi
     rm -rf "$RESULTS"
 }
 trap cleanup EXIT
