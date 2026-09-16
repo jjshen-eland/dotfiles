@@ -54,13 +54,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   以現行 helper 排除 shared-surface 越界並 cherry-pick。任一步受阻，或越權 shared dossier mutation 未被攔下，
   才以該事件取得 RED 並設計最小 remote-contributor path。
 
-- **B-20260807-gap-02** · **eval 的受測 subagent 拿不到 deferred tools,部分契約在沙盒中無法構造**:2026-08-07 實測——
-  主 session 的 `CronList`／`TaskOutput` 正常,探針 subagent(`Tools: *`)對同一批 `select:` 一律得
-  `No matching deferred tools found`。凡「該工具查得成」才成立的情境因此做不出來,ready4quit
-  **Q4c**(`RECALLED + ✓`,需最低證據等級剛好是 RECALLED)至今無 GREEN 證據。symlink 前置已解除,
-  但手動驗證二度失敗,並暴露原程序自身兩個錯(`~/.dotfiles` 當 pwd 讓 Git 衛生恆 ⚠;「全新且安靜的
-  session」自相矛盾——無對話歷史時回憶型面向只會落 PARTIAL)。**v3 程序見
-  `shared/skills/ready4quit/evals.md`,別再照舊程序跑。**
 - **B-20260811-gap-03** · **同型處置的 self-report 擋得住靜默跳過,擋不住填了但敷衍**(2026-08-11 落地兩軸拆分＋五個終態
   報告必填「同型處置紀錄」表之後的殘留面):**表格內容無法機檢**,`tests/run.sh` 第 1f 節只驗
   **結構**(模板覆蓋率、表頭形狀、引用行不複述軸名等,逐項以該節為準)。R5 終止路徑為何不補
