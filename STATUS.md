@@ -12,30 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### B-20260820-gap-08
-
-- **Context**：三機 metadata-only 盤點已重現 biz-chat 移交路徑與 credential artifact 權限漂移；本 workline
-  只修 dotfiles 的通用 Project transfer guard，biz-chat repo-local remediation 另需該 repo authority。
-- **Goal**：讓 Project transfer 對 repo-local credential artifact 只以 metadata 驗證 untracked、gitignored、
-  非 symlink 與 private mode，不讀值、不輸出值、不自行改權限。
-- **Acceptance Criteria**：先取得 0644 artifact 的 RED；最小修正 shared workflow、template、helper 與雙 runtime
-  packaging；integration、完整 suite、clean clone 與 doc audit 全綠；B08 backlog 保留並寫明後續觸發條件。
-- **Constraints**：不讀取、輸出、搬運或修改 secret values；外部 biz-chat 與三台機器維持 read-only；不把
-  dotfiles guard 冒充 project-local remediation 或 rotation。
-- **Progress**：已取得 integration `PASS=1050 FAIL=2` RED，修後 integration `PASS=1057 FAIL=0`；完整 suite 與
-  clean no-local clone 均為 `PASS=1461 FAIL=0`，doc-governance 與 ShellCheck 通過。原 candidate 因 active contract
-  未先進 Git history 而被 stewardship gate 擋下，現依 prompt-bound recovery 建立 durable parent 後受控重建。
-- **Next step**：以已保存的 rescue candidate 重建 completion commit，驗 tree identity、authority、audit 與
-  ship-state，之後沿用本輪明示 `$project --merge` 完成 PR、required checks 與 merge。
-- **Writer**：`codex:gap-08-biz-chat-transfer`
-- **Workspace**：`branch=docs/gap-08-biz-chat-transfer`
-- **Write Scope**：`STATUS.md`、`docs/backlog.md`、`docs/archive/milestones-2026-09.md`、
-  `shared/skills/project/references/workflow.md`、`shared/skills/project/references/pressure-tests.md`、
-  `shared/skills/project/templates/transfer-guide-template.md`、
-  `shared/skills/project/scripts/verify-transfer-credential.sh`、
-  `claude/skills/project/scripts/verify-transfer-credential.sh`、`claude/evals/setup-sandboxes.sh`、`tests/run.sh`
-- **Dossier Steward**：`codex:gap-08-biz-chat-transfer`
-- **Related IDs**：`B-20260820-gap-08`、`shared/skills/project/references/pressure-tests.md:Scenario 10`
+（目前無進行中項目。）
 
 ---
 

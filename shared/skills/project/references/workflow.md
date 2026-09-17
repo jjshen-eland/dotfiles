@@ -179,9 +179,14 @@ Transfer state 是 `BLOCKED → PREPARED → TRANSFERRED`：
 5. Safety/Git/shared behavior 與 user/global preference 不屬 project transfer：列 instruction promotion candidate，
    不寫 project dossier；runtime-only noncritical convenience 可 skip。任何 push／PR／merge／deploy／message
    authorization 都排除在移交內容外，**authorization 不隨 session、runtime 或 owner 移交**。
-6. 盤點 `.env.example` 或等價設定範本、掃描硬編碼 secrets；秘密走 gitignored 檔與安全通道。以 fresh clone
-   可取得的 contract、docs、commands 與非秘密 fixture 驗證接手者能 setup、跑 QA、定位 active state 與歷史；
-   不把「兩邊 memory 都開著」當 self-contained evidence。
+6. 盤點 `.env.example` 或等價設定範本、掃描硬編碼 secrets；秘密走 gitignored 檔與安全通道。Credential
+   plan 若選 repo-local artifact，只把 repo 與相對 path 傳給
+   `<project-scripts>/verify-transfer-credential.sh <repo> <repo-relative-artifact>`：helper 只驗
+   tracked／ignore／symlink／mode metadata，不讀或輸出內容。exit 0 且 `verdict: PASS`（group／other 無任何權限，
+   即 private mode）才可通過；exit 1 維持 `BLOCKED`，exit 2 是 BROKEN。Transfer mode 不自行 `chmod` 或改權限；
+   改走密碼管理器且沒有 local artifact 時不建立檔案或臆造 mode gate。以 fresh clone 可取得的 contract、docs、
+   commands 與非秘密 fixture 驗證接手者能 setup、跑 QA、定位 active state 與歷史；不把「兩邊 memory 都開著」
+   當 self-contained evidence。
 7. 每個 active writer 的 in-flight／未整合工作都必須在 `PREPARED` 前二選一：已由 current steward 驗證
    semantic commit／Dossier delta 並透過另一次明確的 integration／Project Log 工作 cherry-pick 納入 transfer
    line，或由使用者／current steward 以 durable decision 明確放棄並記理由。Transfer mode 自己不 cherry-pick、
