@@ -12,44 +12,6 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### deep-plan-timeout-cleanup-flake
-
-- **Context**：PR #222 final head `d84877a` 的 required run `35246416742` 在 Ubuntu 24.04 通過，
-  macOS 15 則唯一失敗於 timeout cleanup：`rc=2`、無 canonical `ok:false` manifest、兩個
-  descendant PID 都已 `missing`。同一 run 的 SIGHUP 與 single-cleanup fixtures 皆通過，精確命中
-  暫停項原訂的 `timeout diagnostics:` 恢復條件。
-- **Goal**：找出 timeout 路徑在 descendants 已清除後仍以 rc 2 退出、無法輸出 canonical
-  failure manifest 的第一因果差異，並做不改 reviewer／timeout 語意的最小修正。
-- **Acceptance Criteria**：
-  1. 先保留 run `35246416742` 的 exact RED，並讓 timeout failure diagnostics 可區分 raw launcher
-     output、exception／cleanup phase、rc、manifest、PID count 與 live states；不以重跑同一 commit
-     或接受機率綠取代根因證據。
-  2. 用 deterministic RED 證明同一第一因果差異，再做單一最小修正；修後 timeout
-     必須回 exit 1、canonical `ok:false`、恰好兩個 PID 且零 live descendants。
-  3. SIGHUP、single-cleanup 與既有 process-tree contract 不得回歸；受影響壓力、integration、
-     parallel／serial、no-local clean clone、ShellCheck、doc audit 全綠，且 PR required
-     macOS＋Ubuntu 皆通過後才結案。
-- **Constraints**：不放寬 rc／manifest／PID／liveness oracle；不把 rc 2 當可接受；不改
-  reviewer 數量、timeout 政策或 signal semantics；不以 `--admin`、rerun failed job 或移除 macOS
-  required check 繞過。
-- **Progress**：remote RED 固定為 run `35246416742`：Ubuntu 1m16s 通過，macOS 2m17s
-  失敗；`timeout diagnostics: rc=2 manifest=0 pid_count=2 live=0`，而 signal 相關兩項全綠。本機 120 次、
-  12 路 timeout 壓測重現相同 rc 2，raw output 確認為 cleanup 的 `PermissionError: [Errno 1]
-  Operation not permitted` 逃出內層 handler。新增 force-signal fault fixture 先取得 deterministic RED
-  （rc 2、無 canonical manifest、零 live descendants），再把各 cleanup phase 的次級例外收進原 manifest
-  後轉綠；修後同規模壓測 120/120 皆回 rc 1 canonical failure。完整 serial `PASS=1468 FAIL=0`
-  （137s）、parallel `SHARD_AGGREGATE pass=1468 fail=0 shards=3`，以及 no-local clean clone
-  `PASS=1468 FAIL=0`（135s）皆通過。
-- **Next step**：依本輪 `$project --merge` 提交並推送候選；PR required macOS＋Ubuntu 皆通過後才結案。
-- **Writer**：`codex:gap-08-biz-chat-transfer`
-- **Workspace**：`branch=docs/gap-08-biz-chat-transfer`
-- **Write Scope**：`STATUS.md`、`codex/skills/deep-plan/scripts/launch-reviewers.py`、
-  `tests/fixtures/deep-plan-*`、`tests/run.sh`、`tests/shard-manifest.tsv`、
-  `docs/archive/{decisions,dead-ends,milestones}-2026-09.md`
-- **Dossier Steward**：`codex:gap-08-biz-chat-transfer`
-- **Related IDs**：`PR#222`、`run:35246416742`、`M-20260917-deep-plan-signal-single-cleanup`、
-  `M-20260918-pr222-macos-signal-fixture-synchronized`
-
 ## 暫停中
 
 - **B-20260902-gh-account-autoswitch**：pending；維持 backlog 既有觸發條件，在條件實際發生前不開發、

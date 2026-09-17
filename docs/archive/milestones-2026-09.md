@@ -329,3 +329,9 @@
   - 放棄:把 rc=2 或缺 manifest 納入可接受結果；只重跑失敗 CI；繼續改 production cleanup 追逐不存在的 live descendant；以 PID 檔出現代理未完成的 stdin dispatch
   - 重議:任一 supported OS 再現完整讀取 stdin 後仍非 canonical rc／manifest，或留下 live descendant；屆時保留 raw launcher output、PID count 與 process states 後重現
   - 關聯:PR#222;run:35243167732;run:35245607280;M-20260917-deep-plan-signal-single-cleanup;tests/fixtures/deep-plan-hanging-stub.py;tests/run.sh
+
+- **M-20260918-deep-plan-timeout-cleanup · 2026-09-18 deep-plan timeout cleanup 次級例外保留 canonical failure manifest**:PR #222 run `35246416742` 的 macOS timeout fixture 在兩個 descendants 都已消失後仍回 rc 2；120 次、12 路本機壓測重現同型 `PermissionError: [Errno 1] Operation not permitted`，確認第一因果差異是 force-signal cleanup 的次級例外逃出既有 failure-manifest handler，而非 process tree 未清除。先加入 deterministic process-group fault fixture，取得 rc 2、無 canonical manifest、零 live descendants 的 RED；最小修正逐 phase 收集 cleanup errors 並繼續清理，將它們納入原 `ok:false` manifest、維持 exit 1 fail closed。修後壓測 120/120、integration `1064/0`、serial／parallel／no-local clean clone 均為 `1468/0`。Exact head `f132e1d` 的 required run `35254111643` 中 Ubuntu 24.04 為 59 秒、macOS 15 為 2m54s；mandatory non-watch recheck 全綠，PR merge state 為 `CLEAN`，因此移除 active item。
+  - 日期來源:direct
+  - 放棄:把 rc 2 或缺 manifest 視為可接受；只重跑失敗 CI；把 macOS process-group permission race 當 runner noise；吞掉 cleanup error；移除 force-kill、放寬 descendant liveness oracle，或改 reviewer／timeout／signal 語意
+  - 重議:任一 supported OS 再出現 cleanup 次級例外逃出 canonical manifest、exit 非 1、live descendant，或 phase diagnostics 無法定位失敗；屆時保留 raw output、cleanup phase、rc、PID count 與 process states 再重現
+  - 關聯:PR#222;run:35246416742;run:35254111643;M-20260917-deep-plan-signal-single-cleanup;M-20260918-pr222-macos-signal-fixture-synchronized;f132e1d;codex/skills/deep-plan/scripts/launch-reviewers.py;tests/fixtures/deep-plan-cleanup-fault/sitecustomize.py;tests/run.sh
