@@ -311,3 +311,15 @@
   - 放棄:重跑同一失敗 CI；只調整 manifest 掩蓋 Ubuntu 行為失敗；用 OS 分支複製 permission policy；吞掉 `stat` transport failure；因 dotfiles CI 修正就假結案 B08
   - 重議:GNU／BSD mode probe 再回 `mode-malformed`；required OS 的完整 assertion 集合或 manifest 漂移；helper 洩漏 credential 內容、修改權限或放寬 fail-closed 契約
   - 關聯:M-20260917-gap-08-dotfiles-transfer-guard;M-20260815-linux-stat-fix;B-20260820-gap-08;PR#222;run:35205077128;shared/skills/project/scripts/verify-transfer-credential.sh;tests/run.sh;tests/shard-manifest.tsv
+
+- **M-20260917-deep-plan-signal-single-cleanup · 2026-09-17 deep-plan signal 中止改由單一路徑清理**:PR #222 run `35210169602` 的 Ubuntu required check 通過，但 macOS 在 SIGHUP fixture 已清除兩個 descendants 後仍回 launcher `rc=2`，而不是 canonical `ok:false` manifest／exit 1。既有單次重播 50/50 與多 Python 版本壓力測試皆綠，故先加入只針對 reviewer process、在主執行緒第三次 `wait` 時失敗的 deterministic guard；現行 signal handler 先清理、再由共用 `except BaseException` 重複清理，穩定取得 `rc=2` RED。最小修正讓 handler 只記錄首次 shutdown request 並提出中止，所有 process-tree cleanup 統一由共用 exception path 執行一次；後續 signal 不再重入。修後 signal test 回 exit 1、canonical failure manifest、兩個 PID 且零 live descendant。Integration `1063/0`、parallel aggregate `1467/0`、serial `1467/0`（142 秒）及 no-local clean clone `1467/0`（147 秒）均通過。
+  - 日期來源:direct
+  - 放棄:把低頻 CI 紅當 runner noise；只重跑失敗 job；在 signal handler 與 exception handler 各保留一份 cleanup；放寬 rc／manifest oracle；修改 reviewer 數量或 timeout 語意
+  - 重議:任一 supported OS 再出現 signal cleanup 非 canonical rc／manifest、live descendant，或第二個 signal 能中斷既有 cleanup；屆時保留 signal、rc、manifest、pid count 與 process states 再重現
+  - 關聯:PR#222;run:35210169602;M-20260916-deep-plan-signal-pid-race-oracle-fixed;codex/skills/deep-plan/scripts/launch-reviewers.py;tests/fixtures/deep-plan-wait-guard/sitecustomize.py;tests/run.sh
+
+- **M-20260917-issue-219-required-empty-state · 2026-09-17 gh 2.101 empty-required 訊息已精確納入 enrollment lifecycle**:`elandcomtw/ais-infra` PR #70 已有三個 workers 通過、兩個執行中，但 dependency-gated required aggregator 尚未建立時，gh 2.101.0 回 `no required checks reported on the '<branch>' branch`；helper 只接受舊版 `no checks reported ...`，因此在查詢 exact-head Actions run 前誤回 `QUERY_ERROR`，中斷已授權的 merge invocation。新增新版字串且 branch 含合法單引號的組合 fixture，先取得兩個 assertion RED；最小 parser 只接受 gh 的新舊兩種完整句型、拒絕多行與空 branch，再沿用既有 exact-head lifecycle。另加未知 exit-1 control，證明它仍以 `stage: required-checks`／原始 detail fail closed；transport、malformed run、failure／cancelled、head drift、watch、final non-watch、fresh merge-state 與 approval UI=0 契約均未放寬。與 signal 修正合併驗證為 integration `1063/0`、parallel／serial／clean clone各 `1467/0`。Issue #219 保持 open，等修正進入 `main` 後才結案。
+  - 日期來源:direct
+  - 放棄:把所有 `gh pr checks` exit 1 視為 pending；模糊比對 `no.*checks`；略過 exact-head run 查詢；延長任意 grace；重新要求同一 logical invocation 的 merge 授權；在進 main 前先關 Issue #219
+  - 重議:gh 再次改變官方 empty-required 輸出；合法 ref 名仍被 parser 誤拒；未知 exit 1 被誤放行；或 enrollment 後任一 watch／final／fresh-state gate 被跳過
+  - 關聯:Issue#219;elandcomtw/ais-infra#70;M-20260917-required-aggregation-enrollment;shared/skills/project/scripts/wait-required-enrollment.sh;shared/skills/project/references/ship-paths.md;shared/skills/project/references/pressure-tests.md;tests/run.sh
