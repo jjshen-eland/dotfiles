@@ -3689,7 +3689,7 @@ if [ "$dps_signal_rc" -eq 1 ] \
     && [ "$dps_signal_descendants_alive" -eq 0 ]; then
     ok "deep-plan launcher 收到 SIGHUP 會收掉 reviewer process tree"
 else
-    echo "  signal diagnostics: rc=$dps_signal_rc manifest=$dps_signal_has_failure_manifest pid_count=$dps_signal_pid_count live=$dps_signal_descendants_alive states=${dps_signal_process_states:-none}" >&2
+    echo "  signal diagnostics: rc=$dps_signal_rc manifest=$dps_signal_has_failure_manifest pid_count=$dps_signal_pid_count live=$dps_signal_descendants_alive states=${dps_signal_process_states:-none} output=$(< "$TMP/deep-plan-signal.out")" >&2
     bad "deep-plan launcher signal cleanup 未 fail closed 或留下 descendant"
 fi
 mkdir -p "$TMP/deep-plan-single-cleanup-pids"
