@@ -12,30 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### B-20260809-gap-10
-
-- **Context**：兩部 MacBook 長期未納入 `inventory.conf`；現有 candidate 已根據現行本機更新路徑與
-  identity rollout 證據，判定這是刻意的終端邊界並準備移除 backlog，但該 shared backlog/history 變更
-  缺少事前 active contract，shipping authority gate 因而停止。
-- **Goal**：在不改變既有技術判定的前提下，以可驗證的 dossier steward 受控重建尚未 push 的 candidate，
-  讓 backlog 移除與 decision record 具有 durable parent evidence。
-- **Acceptance Criteria**：
-  1. 本 active contract 先成為 candidate 的 parent commit，writer／workspace／scope／steward 可由 helper 驗證。
-  2. 重建後的結案 commit 僅恢復原 candidate 的 `docs/backlog.md` 與
-     `docs/archive/decisions-2026-09.md` 內容，並原子移除本 active item。
-  3. `steward-authority.py` 對新 candidate 回報 exact actor 與合法 authority source。
-  4. `doc-governance.py audit --ship`、`git diff --check` 與完整 `./tests/run.sh` 通過。
-- **Constraints**：只重建使用者確認的未送出 candidate `cc4accdfc652fd1063bb0c040e7a49debc98c8e9`；
-  不改寫已在其 parent 的其他 commit，不改變 B-20260809-gap-10 的既有結論或擴大 write scope。
-- **Progress**：已凍結原 candidate OID、確認 working tree clean、確認 remote 無 branch／PR，並取得
-  prompt-bound active-contract recovery 確認。
-- **Next step**：提交本 active contract，從其上重建原 candidate 與原子結案，再重跑 authority、治理與測試 gates。
-- **Writer**：`codex:close-gap-06`
-- **Workspace**：`branch=docs/close-gap-06`
-- **Write Scope**：`docs/backlog.md`、`docs/archive/decisions-2026-09.md`
-- **Dossier Steward**：`codex:close-gap-06`
-- **Related IDs**：`B-20260809-gap-10`、`D-20260917-terminal-macbooks-outside-inventory`、
-  `D-20260913-company-mac-nonblocking-identity-rollout`、`M-20260913-identity-fleet-rollout-complete`
+（目前無進行中項目。）
 
 ---
 

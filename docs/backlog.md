@@ -69,12 +69,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   後果:新機器跑 setup 不會裝、macmini/m4mini 目前也沒有。該 cask 標 `auto_updates`,故 `brewup`
   不會升它(除非 `--greedy`)。**它沒有 `generate_completions_from_executable`,不會踩 codex 那個
   Gatekeeper 坑**,但首次執行仍會走核可流程——要裝就在該機 console 前跑一次。
-- **B-20260809-gap-10** · **兩部個人 MacBook 不在 `inventory.conf`**(公司／家中,經 VPN ssh 進 macs),`dotsync`／`allup`
-  涵蓋不到——兩機已各自補齊,**留下的是結構性事實**:要跟上得在該機本地跑 `brewup`,不會有人幫
-  它們 pull,而**漏跑是無聲的**(skill／地雷／模板停在舊版)。**加進 inventory 這條路今天不可用**:
-  2026-08-09 查 tailnet 沒有它們,且常離線的筆電會讓每次 dotsync 都帶 ❌、稀釋訊號。
-  **待確認是刻意(終端設備不入清單)還是缺口。**
-
 - **B-20260907-governed-repo-declared-path-gaps** · **已 rollout 的 repo 有配置缺口，等各自的 session 補**(2026-09-07 加)。
   issue #165 實測六個 repo:`krepo-tej-export` 與 `krepo-mops-financial-statements` 的 `plan_dir` 指向
   `docs/plans` 卻沒有 `plans` class;`krepo-mops-financial-statements` 的 `STATUS.md` Dossier Steward 欄被中文

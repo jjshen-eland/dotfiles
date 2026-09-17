@@ -93,3 +93,9 @@
   - 放棄:以自然語言完整度評分冒充行為 oracle；預造無法誠實填寫的 R5 修復歷史；把缺少持久終態表自行補推為失敗證據
   - 重議:保留下來的真實終態報告三軸皆填，之後卻證明同一規則仍有漏修且當時流程放行；屆時以該 exact report、commit 與殘留取得 RED
   - 關聯:B-20260811-gap-03;PR#123;docs/archive/decisions-2026-08.md;shared/skills/deep-review/evals.md;shared/skills/deep-review/references/report-templates.md;tests/run.sh
+
+- **D-20260917-terminal-macbooks-outside-inventory · 2026-09-17 兩部 MacBook 刻意作為 inventory 外的自主更新終端**:`B-20260809-gap-10` 的未決問題是兩部 MacBook 未納入 `inventory.conf` 屬於刻意邊界或尚未修復的缺口。現行證據支持前者：`inventory.conf` 服務可穩定 SSH 連線並接受 fan-out 管理的辦公機隊，常離線的筆電納入後只會讓 `dotsync`／`allup` 持續出現非行動性失敗。`docs/repo-guide.md` 已給 inventory 外機器明確的本機 `git pull`＋`brewup` 路徑，2026-08-15 也實測兩機皆為 function 版，`brewup.sh` 能在 pull 換掉自身時當輪 re-exec；這是受支援的主動更新模型，不是遺漏實作。家中 MacBook 已完成現行 identity rollout，長期休眠的公司 MacBook 則依 `D-20260913-company-mac-nonblocking-identity-rollout` 在恢復使用時才本機收斂。因此不建立 laptop-specific fan-out、不為清 backlog 製造持久監控或離線噪音，並移除該 backlog 條目。
+  - 日期來源:direct
+  - 放棄:把常離線終端加入辦公機隊 inventory；來回打洞的 laptop-only fan-out 清單；只為偵測偶發本機漏跑而新增持久監控或啟動告警；將休眠中公司 MacBook 虛構為已驗證或退役
+  - 重議:任一 MacBook 恢復為常態開發節點且本機更新模型造成可重現的行為漂移；需要從中央穩定觀測或管理終端；或 inventory fan-out 日後能對長期離線節點靜默降級且不稀釋真失敗訊號
+  - 關聯:B-20260809-gap-10;D-20260913-company-mac-nonblocking-identity-rollout;M-20260913-identity-fleet-rollout-complete;docs/repo-guide.md;scripts/brewup.sh;scripts/inventory.conf
