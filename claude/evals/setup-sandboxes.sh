@@ -348,12 +348,18 @@ esac
 STUB
     sed 's/^MODE=enroll/MODE=never/' "$dir/gh-stub-enrollment" > "$dir/gh-stub-never-enrollment"
     sed 's/^MODE=enroll/MODE=transport/' "$dir/gh-stub-enrollment" > "$dir/gh-stub-enrollment-transport"
+    sed "s#no checks reported on the 'feat/rate-limit' branch#no required checks reported on the 'feat/o'brien' branch#" \
+        "$dir/gh-stub-enrollment" > "$dir/gh-stub-enrollment-required-empty"
+    sed "s#no checks reported on the 'feat/rate-limit' branch#unexpected required checks response#" \
+        "$dir/gh-stub-enrollment" > "$dir/gh-stub-enrollment-unknown-empty"
     sed 's/^MODE=enroll/MODE=delayed/' "$dir/gh-stub-enrollment" > "$dir/gh-stub-delayed-enrollment"
     sed 's/^MODE=enroll/MODE=run-failure/' "$dir/gh-stub-enrollment" > "$dir/gh-stub-run-failure"
     sed 's/^MODE=enroll/MODE=run-cancelled/' "$dir/gh-stub-enrollment" > "$dir/gh-stub-run-cancelled"
     sed 's/^MODE=enroll/MODE=run-success/' "$dir/gh-stub-enrollment" > "$dir/gh-stub-run-success"
     sed 's/^MODE=enroll/MODE=run-malformed/' "$dir/gh-stub-enrollment" > "$dir/gh-stub-run-malformed"
     chmod +x "$dir/gh-stub-enrollment" "$dir/gh-stub-never-enrollment" \
+        "$dir/gh-stub-enrollment-required-empty" \
+        "$dir/gh-stub-enrollment-unknown-empty" \
         "$dir/gh-stub-enrollment-transport" "$dir/gh-stub-delayed-enrollment" \
         "$dir/gh-stub-run-failure" "$dir/gh-stub-run-cancelled" \
         "$dir/gh-stub-run-success" "$dir/gh-stub-run-malformed"

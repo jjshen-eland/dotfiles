@@ -297,7 +297,8 @@ gh pr checks <PR-number|URL> -R "$repo_slug" --required
 ⚠️ **exit 1 有三個可觀察成因，必須把 exit code 與輸出一起分流**：
 
 1. 輸出明確列出標為 failed 的 check row → required check 失敗。
-2. 輸出是 exact `no checks reported on the '<branch>' branch` → 先重跑 `ship-state.sh <repo>` 取得新的
+2. 輸出是 gh 的兩種 exact empty-required 訊息之一：`no checks reported on the '<branch>' branch` 或
+   `no required checks reported on the '<branch>' branch` → 先重跑 `ship-state.sh <repo>` 取得新的
    `required-policy:`，不得只看 PR 空輸出：
    - `required-policy: none` → 確認沒有 effective required checks，阻擋與 check 無關，當成「全綠」走
      protection 那列。
@@ -340,9 +341,9 @@ repo，前一種誤讀會捏造不存在的壞 check；對 transport error，後
 | `CLEAN` / `HAS_HOOKS` / `UNSTABLE` | 沒有硬性阻擋（`UNSTABLE` = **非必要** check 有問題，protection 不在意——與上面 `--required` 是同一判準的兩面） | 直接 merge | 直接 merge（`--admin` 用不到） |
 | `BLOCKED` ＋ checks **exit 8** | **CI 還在跑，不是 protection 擋** | **等它跑完再 merge**（見下方等待策略） | **一樣等**——`--admin` 在此繞過的是還沒跑完的測試，不是規則 |
 | `BLOCKED` ＋ checks **其他非零，且列出了失敗的 check** | required check 失敗 | 停，回報是哪個 check 失敗 | **一樣停**——繞過等於把沒通過測試的變更送進 default |
-| `BLOCKED` ＋ authoritative non-watch checks 是 **query／transport failure**，沒有 failed row、也不是 exact `no checks reported` | check 狀態不確定 | 停，回報查詢錯誤；不得猜失敗或全綠 | **一樣停**——`--admin` 不得繞過未知狀態 |
-| `BLOCKED` ＋ checks **exit 0**，或 **`no checks reported` + required-policy none**（見上方 ⚠️） | protection 真的擋（缺 review／其他規則），與 check 無關 | **停**，回報並告知可用「bypass merge」 | 加 `--admin` 重試 |
-| `BLOCKED` ＋ **required-policy REQUIRED** 但 no checks reported | startup enrollment pending、dependency-gated active run，或 grace 後的 UNOBSERVED | 跑 identity-bound helper；ENROLLED 回到原 checks 分流，UNOBSERVED／RUN_TERMINAL／error 就停 | **一樣等／停**——沒有測試結果可 bypass |
+| `BLOCKED` ＋ authoritative non-watch checks 是 **query／transport failure**，沒有 failed row、也不是上述任一 exact empty-required 訊息 | check 狀態不確定 | 停，回報查詢錯誤；不得猜失敗或全綠 | **一樣停**——`--admin` 不得繞過未知狀態 |
+| `BLOCKED` ＋ checks **exit 0**，或 **exact empty-required + required-policy none**（見上方 ⚠️） | protection 真的擋（缺 review／其他規則），與 check 無關 | **停**，回報並告知可用「bypass merge」 | 加 `--admin` 重試 |
+| `BLOCKED` ＋ **required-policy REQUIRED** 但收到 exact empty-required 訊息 | startup enrollment pending、dependency-gated active run，或 grace 後的 UNOBSERVED | 跑 identity-bound helper；ENROLLED 回到原 checks 分流，UNOBSERVED／RUN_TERMINAL／error 就停 | **一樣等／停**——沒有測試結果可 bypass |
 | `DIRTY` | 有衝突 | 停，回報 | **一樣停**——`--admin` 不解決衝突 |
 | `BEHIND` | base 落後、protection 要求最新 | 停，回報 | **一樣停**——該做的是更新 branch，不是繞過 |
 | `DRAFT` | 這是 draft PR，本來就不能 merge | 停，問「要我先 `gh pr ready` 轉正式嗎」——**不自行轉** | 一樣停——`--admin` 不能 merge draft |

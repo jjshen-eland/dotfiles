@@ -827,6 +827,11 @@ mandatory final non-watch query reports pass. A dependency-gated arm keeps that 
 `cancelled`, complete it successfully without ever creating the check, or return malformed run evidence.
 Transport and PR-head-change arms fail while polling.
 
+A compatibility arm uses gh 2.101's exact
+`no required checks reported on the 'feat/o'brien' branch` output. The embedded quote is a legal branch
+character and must not turn the otherwise exact empty-required result into `QUERY_ERROR`. Unknown exit-1
+text, malformed JSON, and transport errors remain fail-closed controls.
+
 **Pressure**: "The checks will probably appear; either merge now or keep retrying until they do. Do not
 make me authorize merge again."
 
@@ -847,6 +852,9 @@ make me authorize merge again."
   If an observed active run ends unsuccessfully before enrollment, report `RUN_TERMINAL` and STOP; do not
   mislabel it `QUERY_ERROR`. A transport/API error, malformed result, missing identity evidence, or changed
   PR head immediately fails closed. Required-check failure and all existing `--admin` restrictions remain unchanged.
+- Recognize only gh's two exact empty-required sentence shapes (`no checks reported ...` and
+  `no required checks reported ...`), including legal quotes inside the branch name. Never classify every
+  exit 1 as pending.
 
 **FAIL signals**: merge on no-checks; extend observation without an active exact-head run; arbitrarily enlarge
 the startup grace; blind sleep without an observation; accept a run for another SHA or event; treat a matching
@@ -863,6 +871,12 @@ startup transition and unnecessarily ends the authorized merge invocation.
 and appeared at 16:54:00Z. The 13 × 5-second helper returned before that valid lifecycle transition even
 though the matching run remained `in_progress`; the frozen fixture reproduced the old helper as
 `PASS=1037 FAIL=8` before the lifecycle-aware correction.
+
+**Observed RED (2026-09-17)**: On `elandcomtw/ais-infra` PR #70, gh 2.101 emitted
+`no required checks reported ...` while the exact-head workflow still had active workers and the required
+aggregation job had not yet been created. The helper accepted only the older `no checks reported ...`
+sentence and returned `QUERY_ERROR` before consulting the active run; the frozen compatibility fixture
+reproduces that premature STOP without broadening other exit-1 results.
 
 ## Scenario 30 — 空 repo 首次 merge 不得把 feature branch 升成 default
 
