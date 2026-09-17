@@ -315,10 +315,24 @@ def main() -> int:
         if process.poll() is None:
             (process.kill if force else process.terminate)()
 
-    def terminate_children() -> None:
+    def cleanup_error(
+        phase: str, entry: dict[str, object], exc: Exception
+    ) -> dict[str, object]:
+        return {
+            "phase": phase,
+            "label": entry["label"],
+            "pid": entry["pid"],
+            "error": f"{type(exc).__name__}: {exc}",
+        }
+
+    def terminate_children() -> list[dict[str, object]]:
+        cleanup_errors = []
         for entry in processes:
             process = entry["process"]
-            signal_process_tree(process, force=False)  # type: ignore[arg-type]
+            try:
+                signal_process_tree(process, force=False)  # type: ignore[arg-type]
+            except Exception as exc:
+                cleanup_errors.append(cleanup_error("term-signal", entry, exc))
         cleanup_deadline = time.monotonic() + 5
         for entry in processes:
             process = entry["process"]
@@ -328,10 +342,19 @@ def main() -> int:
                 )
             except subprocess.TimeoutExpired:
                 pass
+            except Exception as exc:
+                cleanup_errors.append(cleanup_error("term-wait", entry, exc))
         for entry in processes:
             process = entry["process"]
-            signal_process_tree(process, force=True)  # type: ignore[arg-type]
-            process.wait()  # type: ignore[union-attr]
+            try:
+                signal_process_tree(process, force=True)  # type: ignore[arg-type]
+            except Exception as exc:
+                cleanup_errors.append(cleanup_error("force-signal", entry, exc))
+            try:
+                process.wait()  # type: ignore[union-attr]
+            except Exception as exc:
+                cleanup_errors.append(cleanup_error("force-wait", entry, exc))
+        return cleanup_errors
 
     shutdown_requested = False
 
@@ -492,7 +515,9 @@ def main() -> int:
         )
     except BaseException as exc:
         manifest["error"] = f"{type(exc).__name__}: {exc}"
-        terminate_children()
+        cleanup_errors = terminate_children()
+        if cleanup_errors:
+            manifest["cleanup_errors"] = cleanup_errors
     finally:
         for handled_signal, previous_handler in previous_handlers.items():
             signal.signal(handled_signal, previous_handler)
