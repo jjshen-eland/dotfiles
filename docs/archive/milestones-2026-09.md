@@ -305,3 +305,9 @@
   - 放棄:把三台路徑強制改成同名；讀取或搬運 secret values；由 transfer 自行 chmod；只靠 prose 提醒 private mode；跨 repo 越界修改 biz-chat；因 dotfiles guard 完成就移除仍有 observed gap 的 B08 backlog
   - 重議:helper 在 artifact 不安全時誤放行、洩漏內容或修改權限；Project transfer 再次接受 tracked／unignored／symlink／group-readable artifact；或另一次 biz-chat Project Spec 完成 project-local remediation 與必要 rotation 後，可正式移除 B08
   - 關聯:B-20260820-gap-08;shared/skills/project/scripts/verify-transfer-credential.sh;shared/skills/project/references/pressure-tests.md:Scenario10;shared/skills/project/references/workflow.md;tests/run.sh
+
+- **M-20260917-gap-08-ci-portability-fixed · 2026-09-17 PR #222 揭露的 Project credential CI portability 缺口已修正**:PR #222 run `35205077128` 的 macOS integration 行為其實為 `PASS=1057 FAIL=0`，只因 shard manifest 仍期待 1049 而失敗；Ubuntu 則因 helper 先嘗試 BSD `stat -f`，GNU `stat` 在 option failure 前輸出的 filesystem 資訊污染 fallback 結果，造成 0644／0600 fixtures 回 `mode-malformed`。先加入 deterministic GNU-stat stub，取得 integration `PASS=1057 FAIL=1` RED；最小修正恢復已由 `M-20260815-linux-stat-fix` 驗證的 GNU `-c` 優先、BSD `-f` fallback，並將 manifest 同步為 1058。修後 integration `PASS=1058 FAIL=0`，parallel aggregate、serial 與 clean no-local clone 均為 `PASS=1462 FAIL=0`；Bash syntax、ShellCheck 與 Codex Project skill validator 全綠。此紀錄只更正前一 milestone 的跨平台驗證與 assertion-count 證據，不改 credential policy，也不移除仍等待 biz-chat repo authority 的 B08 backlog。
+  - 日期來源:direct
+  - 放棄:重跑同一失敗 CI；只調整 manifest 掩蓋 Ubuntu 行為失敗；用 OS 分支複製 permission policy；吞掉 `stat` transport failure；因 dotfiles CI 修正就假結案 B08
+  - 重議:GNU／BSD mode probe 再回 `mode-malformed`；required OS 的完整 assertion 集合或 manifest 漂移；helper 洩漏 credential 內容、修改權限或放寬 fail-closed 契約
+  - 關聯:M-20260917-gap-08-dotfiles-transfer-guard;M-20260815-linux-stat-fix;B-20260820-gap-08;PR#222;run:35205077128;shared/skills/project/scripts/verify-transfer-credential.sh;tests/run.sh;tests/shard-manifest.tsv
