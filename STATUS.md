@@ -12,31 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### B-20260820-gap-07
-
-- **Context**：backlog 曾假設 `general-rag-cs` template 產生的 crawler configuration `STATUS.md`，會在
-  `npm-cs` 與 `knowledge-builder` 與 Project dossier 撞名，並預想改名為 `CRAWL-CONFIG.md`；現行 repo
-  root、consumer 與 Project resolver 已完成重驗。
-- **Goal**：以現行三個 repo 的實際路徑與行為判定是否仍有會覆寫 dossier、誤路由 active state 或讓治理
-  gate 失效的 collision；只處理可重現且會改變行為的缺口。
-- **Acceptance Criteria**：
-  1. 逐 repo 核對 `STATUS.md` 的語意、producer／consumer、Git root、lifecycle 與 doc-governance adoption。
-  2. 只有同一路徑覆寫、Project 誤認或 gate 漏判可重現時才取得 RED 並設計最小 migration。
-  3. 沒有 observed behavior gap 時保留現行檔名，移除 B07 並追加結案 milestone。
-  4. 外部 repo 零 mutation；dotfiles 的 ship audit、diff check 與完整 suite 通過。
-- **Constraints**：本項只授權 dotfiles 的 dossier／backlog／history 文件；不直接沿用舊
-  `CRAWL-CONFIG.md` 提案，不為 archived repo 製造 migration，不擴大為全 repo 命名整理。
-- **Progress**：重驗完成且沒有 RED。三個同名 artifact 都位於 Git module 子目錄，resolver 均回 `MODULE`；
-  現行 root-collision STOP 契約與 deterministic signature gate 已涵蓋假設風險。B07 已自 working-tree backlog
-  移除，`M-20260917-gap-07-status-collision-retired` 已追加，三個外部 repo 保持乾淨。
-- **Next step**：完成驗證後，以 Project Log 先提交本 active contract 作 durable parent，再以結案 commit
-  原子移除本項並納入 backlog／milestone 變更。
-- **Writer**：`codex:gap-07-status-collision`
-- **Workspace**：`branch=docs/gap-07-status-collision`
-- **Write Scope**：`STATUS.md`、`docs/backlog.md`、`docs/archive/milestones-2026-09.md`
-- **Dossier Steward**：`codex:gap-07-status-collision`
-- **Related IDs**：`B-20260820-gap-07`、`M-20260917-gap-07-status-collision-retired`、
-  `claude/evals/doc-governance-evals.md:E7`
+（目前無進行中項目。）
 
 ---
 

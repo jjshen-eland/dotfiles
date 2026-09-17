@@ -293,3 +293,9 @@
   - 放棄:重新啟動已 DROP 的改名與全機隊 symlink migration；為沒有 observed harm 的 context 重複新增 reviewer filter 或 gate；把已有決策的項目繼續當作 open debt
   - 重議:reviewer 因兩份 `AGENTS.md` 的同名內容產生可重現的衝突指令、錯誤 finding 或 scope 漂移；或 Codex 提供不再需要 `codex/AGENTS.md` 來源檔的原生全域 guidance 部署機制
   - 關聯:B-20260820-gap-06;docs/archive/decisions-2026-08.md;codex/AGENTS.md;AGENTS.md;scripts/ensure-codex-guidance.sh
+
+- **M-20260917-gap-07-status-collision-retired · 2026-09-17 crawler `STATUS.md` 同名經現行 repo root 與 Project resolver 重驗後退役**:`B-20260820-gap-07` 的舊前提是 `general-rag-cs` template 會把 crawler configuration `STATUS.md` 帶到 `npm-cs`／`knowledge-builder`，因而應改名為 `CRAWL-CONFIG.md`。現行路徑盤點沒有形成同一路徑 collision：`general-rag-cs` 生成器把完整 template 複製到新 Git 專案後，檔案落在 `crawler/STATUS.md`；`npm-cs` 的 live 與 `crawler/verified-config/STATUS.md` 逐 byte 相同，兩者都是已完成的網站分析／驗證記錄；`knowledge-builder/STATUS.md` 與 template 逐 byte 相同，並由現行 crawler playbook 讀寫、Phase 4 複製到 `verified-config/`，但其 Git root 是 `ais-platform`。三個 Git root 均無 root `STATUS.md`、均未採用 doc-governance，Project resolver 對三個 artifact 所在目錄都回 `MODULE` 而不鎖成 dossier repo。假設 domain `STATUS.md` 日後真的落到 target Git root，現行 Spec 契約、E7 behavior oracle 與 `ship-state.sh` 的 deterministic 簽章 gate 已要求 STOP 且不得覆寫。沒有觀察到覆寫、誤路由或 gate 漏判，因此不改 template、不批次改 archived downstream，只移除已失去決策價值的 backlog。
+  - 日期來源:direct
+  - 放棄:直接沿用舊 `CRAWL-CONFIG.md` 改名提案；為 archived `general-rag-cs`／`npm-cs` 製造 template migration；只因名稱相同就批次改 consumer；在既有 root-collision STOP gate 之外再疊一套同義規則
+  - 重議:active repo 的 domain `STATUS.md` 移到 Git root 並與 dossier 競爭同一路徑；Project resolver 開始把 module path 當獨立 repo；現行 Spec／signature gate 實際覆寫或誤認 domain artifact；或出現可重現的人工／自動 consumer 因同名讀錯檔案
+  - 關聯:B-20260820-gap-07;claude/evals/doc-governance-evals.md:E7;shared/skills/project/references/workflow.md;shared/skills/project/scripts/ship-state.sh;tests/run.sh;general-rag-cs@ebe48f28;npm-cs@4777b550;ais-platform@d140dba1
