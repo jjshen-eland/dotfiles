@@ -1,0 +1,1 @@
+../../../../shared/skills/project/scripts/verify-transfer-credential.sh

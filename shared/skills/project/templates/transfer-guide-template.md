@@ -2,7 +2,9 @@
 移交指南模板 — /project transfer 使用
 位置慣例:填完後放 <repo>/docs/transfer.md 並 commit(本體不含機密,可上 git)。
 Credentials 一律分離:一切 secrets / tokens / 連線字串放獨立檔(如 tmp/transfer-credentials.md,
-必須在 .gitignore 內),以私訊/密碼管理器交付,絕不進 git。本模板中以 <見 credentials 檔> 指涉。
+必須在 .gitignore 內且為 private mode——group/other 無任何權限),以私訊/密碼管理器交付,絕不進 git。
+若 credential plan 使用 local artifact，由 Project workflow 的 metadata-only helper 驗 path／tracked／ignore／
+symlink／mode；本模板中以 <見 credentials 檔> 指涉，不記值。
 完整度前置:移交前先跑 /project transfer；adopted repo 檢查 history shards、backlog 與 STATUS active state，legacy repo 才依既有 STATUS schema 檢查決策/死路/債——
 接手者最需要的就是「為什麼這樣設計、哪些路試過不通」。
 -->
@@ -57,6 +59,9 @@ Credentials 一律分離:一切 secrets / tokens / 連線字串放獨立檔(如 
 3. <.env 設定:對照 .env.example;值 → 見 credentials 檔>
 4. <中央資源連線驗證指令>
 5. <起服務 + 冒煙測試指令>
+
+- [ ] Credential plan 使用 local artifact 時，metadata helper 已驗證 untracked、gitignored、非 symlink、private mode；
+      使用密碼管理器而無 local artifact 時記錄安全交付管道，不建立多餘檔案
 
 ## 3. QA 驗收標準
 

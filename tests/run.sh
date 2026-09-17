@@ -4244,6 +4244,49 @@ if grep -q '^PAYMENTS_API_KEY=fixture-only-' "$project_s10/work/.env" \
     && ! grep -qE '^(PAYMENTS_API_KEY|VECTOR_DB_TOKEN)=' "$project_s10/work/.env.example"; then
     ok "S10 假 credentials 齊全，.env.example 精確缺兩個 key 名稱"
 else bad "S10 credential coverage 形狀不符 scenario"; fi
+assert_eq "S10 repo-local credential artifact 刻意以 0644 起始" \
+    "644" "$(stat -c '%a' "$project_s10/work/tmp/transfer-credentials.md" 2>/dev/null || stat -f '%Lp' "$project_s10/work/tmp/transfer-credentials.md" 2>/dev/null)"
+
+project_transfer_credential_audit="$PJS_CLAUDE/scripts/verify-transfer-credential.sh"
+if [ -x "$project_transfer_credential_audit" ]; then
+    project_credential_out="$("$project_transfer_credential_audit" \
+        "$project_s10/work" tmp/transfer-credentials.md 2>&1)"
+    project_credential_rc=$?
+    assert_rc "project transfer credential artifact 0644 → STOP" 1 "$project_credential_rc"
+    if grep -q '^verdict: STOP$' <<< "$project_credential_out" \
+        && grep -q '^mode: 644$' <<< "$project_credential_out" \
+        && ! grep -q 'fixture-only-' <<< "$project_credential_out"; then
+        ok "project credential audit 只回 metadata，不洩漏值"
+    else bad "project credential audit 的 0644 證據或輸出隔離不成立（${project_credential_out}）"; fi
+
+    chmod 0600 "$project_s10/work/tmp/transfer-credentials.md"
+    project_credential_out="$("$project_transfer_credential_audit" \
+        "$project_s10/work" tmp/transfer-credentials.md 2>&1)"
+    project_credential_rc=$?
+    assert_rc "project transfer credential artifact 0600 + ignored + untracked → PASS" 0 "$project_credential_rc"
+    if grep -q '^verdict: PASS$' <<< "$project_credential_out" \
+        && grep -q '^mode: 600$' <<< "$project_credential_out"; then
+        ok "project credential audit 接受 private mode"
+    else bad "project credential audit 未接受合格 artifact（${project_credential_out}）"; fi
+
+    printf 'fixture-only-unignored-secret\n' > "$project_s10/work/unignored-credentials.md"
+    project_credential_out="$("$project_transfer_credential_audit" \
+        "$project_s10/work" unignored-credentials.md 2>&1)"
+    assert_rc "project transfer credential artifact 未 ignore → STOP" 1 $?
+
+    ln -s ../.env "$project_s10/work/tmp/symlink-credentials.md"
+    project_credential_out="$("$project_transfer_credential_audit" \
+        "$project_s10/work" tmp/symlink-credentials.md 2>&1)"
+    assert_rc "project transfer credential artifact 是 symlink → STOP" 1 $?
+else
+    bad "project transfer credential metadata helper 尚未實作（RED）"
+fi
+
+if grep -q 'verify-transfer-credential.sh' "$PJS_CLAUDE/references/workflow.md" \
+    && grep -q 'private mode' "$PJS_CLAUDE/references/workflow.md" \
+    && grep -q 'private mode' "$PJS_CLAUDE/templates/transfer-guide-template.md"; then
+    ok "project transfer workflow 與模板接上 credential metadata gate"
+else bad "project transfer credential metadata gate 尚未接上 workflow／模板（RED）"; fi
 
 project_s12_lines="$(wc -l < "$project_s12/work/STATUS.md" | tr -d ' ')"
 project_s12_bytes="$(wc -c < "$project_s12/work/STATUS.md" | tr -d ' ')"

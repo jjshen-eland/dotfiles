@@ -61,7 +61,14 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   技術上可行,但前提已被負面結果動搖、代價卻是確定的(拿不到 tarball 簽章身分)——
   **用確定的代價換不確定的效果,暫不做**,優先靠已實證的復原路徑。
 
-- **B-20260820-gap-08** · biz-chat 移交檔三台路徑漂移(tmp/ vs handoff/,皆已 gitignored)+credentials 明文散於三台。
+- **B-20260820-gap-08** · **biz-chat repo-local credential／transfer remediation 尚未取得該 repo authority**：
+  2026-09-17 metadata-only 重驗確認本機使用 `tmp/`、db01 使用 `handoff/`、ap01 兩者皆無；本機與 db01 的
+  credential 類 artifact 為 `0644`，且 biz-chat tracked 設定／contract 有 credential-like literals、
+  `.env.example` 缺現行程式要求的 key names。dotfiles Project transfer 已新增不讀內容、不改權限的 metadata
+  gate，會阻止 tracked／unignored／symlink／group-readable artifact；但它不能代替 target repo 清理或 rotation。
+  **觸發條件**：以 biz-chat 為 target 明確叫用 Project Spec，並能協調必要 credential rotation；屆時只以 key
+  名稱與 filesystem／Git metadata 盤點，先處理 tracked literals、`.env.example` coverage 與 canonical transfer
+  path，不讀取、輸出或搬運 secret values。
 - **B-20260807-gap-09** · **`agy`(Antigravity CLI)只手動裝在 macs,未寫進 `setup-mac-env.sh`**:2026-08-07 因 gemini-cli
   已於 2026-06-18 停服而改裝其後繼(`brew install --cask antigravity-cli`,binary 名 `agy`)。
   後果:新機器跑 setup 不會裝、macmini/m4mini 目前也沒有。該 cask 標 `auto_updates`,故 `brewup`

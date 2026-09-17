@@ -539,6 +539,11 @@ APP_ENV=fixture
 PAYMENTS_API_KEY=fixture-only-payments-secret
 VECTOR_DB_TOKEN=fixture-only-vector-secret
 EOF
+        cat > tmp/transfer-credentials.md <<'EOF'
+PAYMENTS_API_KEY=fixture-only-payments-secret
+VECTOR_DB_TOKEN=fixture-only-vector-secret
+EOF
+        chmod 0644 tmp/transfer-credentials.md
         cat > .env.example <<'EOF'
 APP_ENV=development
 EOF
