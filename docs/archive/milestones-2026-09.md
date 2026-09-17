@@ -323,3 +323,9 @@
   - 放棄:把所有 `gh pr checks` exit 1 視為 pending；模糊比對 `no.*checks`；略過 exact-head run 查詢；延長任意 grace；重新要求同一 logical invocation 的 merge 授權；在進 main 前先關 Issue #219
   - 重議:gh 再次改變官方 empty-required 輸出；合法 ref 名仍被 parser 誤拒；未知 exit 1 被誤放行；或 enrollment 後任一 watch／final／fresh-state gate 被跳過
   - 關聯:Issue#219;elandcomtw/ais-infra#70;M-20260917-required-aggregation-enrollment;shared/skills/project/scripts/wait-required-enrollment.sh;shared/skills/project/references/ship-paths.md;shared/skills/project/references/pressure-tests.md;tests/run.sh
+
+- **M-20260918-pr222-macos-signal-fixture-synchronized · 2026-09-18 PR #222 macOS signal fixture readiness 已與 launcher dispatch 同步**:Run `35243167732` 的 macOS failure 在兩個 descendant 均已消失時仍回 `rc=2`，與本機序列 50/50、八路並行 400/400 的 canonical exit 1 形狀不同。根因是 hanging stub 在消費 launcher stdin 前先產生 descendant 並寫 PID，測試卻把兩個 PID 檔誤當成 launcher 已完成兩個 prompt pipe dispatch 的 readiness；macOS runner 的排程視窗因而可讓 SIGHUP 落在 fixture startup 半途。最小修正讓 stub 先讀完 stdin，再產生 descendant 與發布 PID，並在失敗診斷保留 raw launcher output；沒有改 reviewer／timeout／cleanup 語意，也沒有放寬 exit／manifest／live-descendant oracle。本機 integration、parallel、serial 與 no-local clean clone 均為 `PASS=1467 FAIL=0`；PR #222 exact head `0e09b16` 的 required run `35245607280` 中 Ubuntu 24.04 為 1m11s、macOS 15 為 1m26s，mandatory non-watch recheck 全綠且 merge state `CLEAN`。
+  - 日期來源:direct
+  - 放棄:把 rc=2 或缺 manifest 納入可接受結果；只重跑失敗 CI；繼續改 production cleanup 追逐不存在的 live descendant；以 PID 檔出現代理未完成的 stdin dispatch
+  - 重議:任一 supported OS 再現完整讀取 stdin 後仍非 canonical rc／manifest，或留下 live descendant；屆時保留 raw launcher output、PID count 與 process states 後重現
+  - 關聯:PR#222;run:35243167732;run:35245607280;M-20260917-deep-plan-signal-single-cleanup;tests/fixtures/deep-plan-hanging-stub.py;tests/run.sh

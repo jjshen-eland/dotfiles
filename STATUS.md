@@ -6,38 +6,11 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 # STATUS.md
 
-個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-09-17)
+個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-09-18)
 
 ---
 
 ## 進行中
-
-### PR222-macos-signal-readiness
-
-- **Context**：PR #222 run `35243167732` 的 Ubuntu required job 通過；macOS signal fixture 回
-  `rc=2`／無 canonical manifest，但兩個 descendant states 都是 `missing`。本機序列 50 次及八路並行
-  400 次皆回 exit 1／`ok:false`，顯示 cleanup production path 已收乾淨，差異落在 fixture 送 signal 的時點。
-- **Goal**：讓 signal fixture 只在兩個 reviewer stub 都已讀完 launcher 輸入後送 SIGHUP，移除以「descendant
-  PID 檔已出現」代理 launcher readiness 的排程競態；保留 rc、manifest、pid count、live states 診斷。
-- **Acceptance Criteria**：
-  1. hanging stub 在建立 descendant／寫 PID 前先完整讀取 stdin；兩個 PID 因而證明 launcher 已完成兩個 prompt
-     pipe 的 dispatch，不再允許 signal 落在未穩定的 startup 區段。
-  2. signal fixture 仍要求 exit 1、canonical `ok:false`、恰好兩個 PID、零 live descendants；失敗時附 raw
-     launcher output，不能用放寬 oracle 取得綠燈。
-  3. 本機序列／並行壓力、integration shard、parallel／serial、clean clone、ShellCheck 與 doc audit 全綠；
-     PR required macOS＋Ubuntu 重跑皆通過後才結案。
-- **Constraints**：不改 reviewer／timeout 語意，不重跑同一失敗 commit，不把 rc=2 當可接受，不因 test flake
-  放寬 required checks；一次只修 fixture readiness。
-- **Progress**：remote RED 已保留為 run `35243167732`；本機控制組序列 50/50、八路並行 400/400 全綠。
-- **Next step**：修 fixture readiness，重跑受影響範圍與完整驗證；取得新的 push 授權後更新 PR #222。
-- **Writer**：`codex:gap-08-biz-chat-transfer`
-- **Workspace**：`branch=docs/gap-08-biz-chat-transfer`
-- **Write Scope**：`STATUS.md`、`tests/fixtures/deep-plan-hanging-stub.py`、`tests/run.sh`、
-  `docs/archive/milestones-2026-09.md`
-- **Dossier Steward**：`codex:gap-08-biz-chat-transfer`
-- **Related IDs**：`PR#222`、`run:35243167732`、`M-20260917-deep-plan-signal-single-cleanup`
-
----
 
 ## 暫停中
 
