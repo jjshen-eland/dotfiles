@@ -12,7 +12,40 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-（目前無進行中項目。）
+### PR222-ci-and-issue-219-followups
+
+- **Context**：PR #222 run `35210169602` 的 Ubuntu required check 通過，但 macOS signal fixture 在 descendants
+  已清乾淨時仍回 launcher `rc=2`／非 canonical manifest；另有 ais-infra PR #70 實證 gh 2.101.0 的
+  `no required checks reported ...` 未被 enrollment helper 分類，對應既有 open Issue #219。
+- **Goal**：分別取得 deterministic RED，修正 deep-plan signal cleanup 的重入／單一終態問題，以及 Project
+  enrollment helper 對 GitHub CLI 兩種官方 empty-required-check 訊息的精確相容性；不放寬未知 exit 1。
+- **Acceptance Criteria**：
+  1. macOS failure fixture 能穩定區分 cleanup 結果、launcher rc 與 manifest；signal 路徑只 cleanup 一次，
+     回 canonical `ok:false` manifest／exit 1，且 descendants 全數消失。
+  2. Issue #219 fixture 在修正前對 `no required checks reported ...` 取得 QUERY_ERROR RED；修正後新舊官方訊息
+     都進入 exact-head run lifecycle，含單引號的合法 branch 可解析，其他未知／transport 輸出仍 QUERY_ERROR。
+  3. 現有 watch、final non-watch、fresh merge-state、head-change、RUN_TERMINAL 與明示 `--merge` approval UI=0
+     契約不變；shard manifest 精確同步。
+  4. 受影響 shards、parallel、serial、clean clone、syntax、ShellCheck、skill validators 與 doc audit 全綠；
+     記錄 milestone，Issue #219 僅在修正進入 main 後結案。
+- **Constraints**：一次只改一個已證實原因；不把所有 exit 1 當 pending；不 retry／bypass failing CI；不改
+  deep-plan reviewer semantics 或 Project authorization；本輪沒有新的 push／merge 授權。
+- **Progress**：PR #222 macOS failure 只在 signal 路徑回 `rc=2`；deterministic wait guard 證實 signal handler
+  cleanup 後共用 exception path 又 cleanup 一次。最小修正讓 handler 只提出中止、由共用路徑清理一次。
+  Issue #219 與 ais-infra PR #70 證據吻合；新版 gh exact empty-required 字串（含合法單引號 branch）已進入原
+  lifecycle，未知 exit 1 仍 `QUERY_ERROR`。兩組 RED 修後 integration 為 `PASS=1063 FAIL=0`。
+- **Next step**：完成 syntax、ShellCheck、skill validators、parallel／serial／clean-clone 與 doc audit，記錄
+  milestone 並本地 commit；本輪沒有 push 授權。
+- **Writer**：`codex:gap-08-biz-chat-transfer`
+- **Workspace**：`branch=docs/gap-08-biz-chat-transfer`
+- **Write Scope**：`STATUS.md`、`docs/archive/milestones-2026-09.md`、
+  `codex/skills/deep-plan/scripts/launch-reviewers.py`、`tests/fixtures/deep-plan-wait-guard/sitecustomize.py`、
+  `claude/evals/setup-sandboxes.sh`、`shared/skills/project/scripts/wait-required-enrollment.sh`、
+  `shared/skills/project/references/pressure-tests.md`、`shared/skills/project/references/ship-paths.md`、
+  `tests/run.sh`、`tests/shard-manifest.tsv`
+- **Dossier Steward**：`codex:gap-08-biz-chat-transfer`
+- **Related IDs**：`Issue#219`、`PR#222`、`run:35210169602`、`M-20260916-deep-plan-signal-pid-race-oracle-fixed`、
+  `M-20260917-required-aggregation-enrollment`
 
 ---
 

@@ -3692,6 +3692,50 @@ else
     echo "  signal diagnostics: rc=$dps_signal_rc manifest=$dps_signal_has_failure_manifest pid_count=$dps_signal_pid_count live=$dps_signal_descendants_alive states=${dps_signal_process_states:-none}" >&2
     bad "deep-plan launcher signal cleanup 未 fail closed 或留下 descendant"
 fi
+mkdir -p "$TMP/deep-plan-single-cleanup-pids"
+PYTHONPATH="$ROOT/tests/fixtures/deep-plan-wait-guard" \
+DEEP_PLAN_DESCENDANT_PID_DIR="$TMP/deep-plan-single-cleanup-pids" \
+    "$DPS_CODEX/scripts/launch-reviewers.py" \
+    --plan "$dps_fixture/docs/plans/plan.md" \
+    --repo "$dps_fixture" \
+    --brief "$DPS_CODEX/references/planner-brief.md" \
+    --schema "$DPS_CODEX/assets/reviewer-output.schema.json" \
+    --codex-bin "$dps_hanging_stub" \
+    --timeout-seconds 30 > "$TMP/deep-plan-single-cleanup.out" 2>&1 &
+dps_single_cleanup_launcher_pid=$!
+for _ in {1..50}; do
+    dps_single_cleanup_pid_count="$(find "$TMP/deep-plan-single-cleanup-pids" -name '*.pid' -type f | wc -l | tr -d ' ')"
+    [ "$dps_single_cleanup_pid_count" -eq 2 ] && break
+    sleep 0.1
+done
+kill -HUP "$dps_single_cleanup_launcher_pid"
+wait "$dps_single_cleanup_launcher_pid"
+dps_single_cleanup_rc=$?
+dps_single_cleanup_alive=0
+for pid_file in "$TMP/deep-plan-single-cleanup-pids"/*.pid; do
+    descendant_pid="$(< "$pid_file")"
+    if pid_is_live_non_zombie "$descendant_pid"; then
+        dps_single_cleanup_alive=$((dps_single_cleanup_alive + 1))
+    fi
+done
+dps_single_cleanup_manifest=0
+python3 - "$TMP/deep-plan-single-cleanup.out" <<'PY' && dps_single_cleanup_manifest=1
+import json
+from pathlib import Path
+import sys
+
+payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+raise SystemExit(payload.get("ok") is not False)
+PY
+if [ "$dps_single_cleanup_rc" -eq 1 ] \
+    && [ "$dps_single_cleanup_manifest" -eq 1 ] \
+    && [ "$dps_single_cleanup_pid_count" -eq 2 ] \
+    && [ "$dps_single_cleanup_alive" -eq 0 ]; then
+    ok "deep-plan launcher signal path 只執行一次 cleanup"
+else
+    echo "  single cleanup diagnostics: rc=$dps_single_cleanup_rc manifest=$dps_single_cleanup_manifest pid_count=$dps_single_cleanup_pid_count live=$dps_single_cleanup_alive output=$(< "$TMP/deep-plan-single-cleanup.out")" >&2
+    bad "deep-plan launcher signal handler 重複 cleanup（RED）"
+fi
 
 echo "▶ 12bb. deep-review skill 跨 Claude Code／Codex 共用核心"
 DRS_CLAUDE="$ROOT/claude/skills/deep-review"
@@ -4091,6 +4135,35 @@ if grep -q $'unit-tests\tpass' <<< "$project_watch_out" \
     && grep -q $'unit-tests\tpass' <<< "$project_final_out"; then
     ok "project enrollment 組合路徑保留 watch + final non-watch verification"
 else bad "project enrollment 組合路徑缺 watch 或 final verdict"; fi
+
+project_required_empty_stub="$project_u4/gh-stub-enrollment-required-empty"
+rm -f "$project_required_empty_stub.checks-count"
+project_required_empty_out="$(PATH="$project_eval_root/no-sleep:$PATH" \
+    PROJECT_ENROLLMENT_GH="$project_required_empty_stub" \
+    "$project_enrollment_wait" sandbox/order-service 7 "$project_head_sha" 2>&1)"
+project_required_empty_rc=$?
+assert_rc "project enrollment: gh 2.101 required-only empty state 進入 lifecycle" \
+    0 "$project_required_empty_rc"
+if grep -q '^verdict: ENROLLED$' <<< "$project_required_empty_out" \
+    && grep -q '^attempts: 3/13$' <<< "$project_required_empty_out" \
+    && grep -q '^run-observed: yes$' <<< "$project_required_empty_out" \
+    && grep -q '^checks-exit: 8$' <<< "$project_required_empty_out"; then
+    ok "project enrollment 精確接受 no required checks 與含單引號 branch"
+else bad "project enrollment 把新版 gh empty state 誤判為 query error（${project_required_empty_out}）"; fi
+
+project_unknown_empty_stub="$project_u4/gh-stub-enrollment-unknown-empty"
+rm -f "$project_unknown_empty_stub.checks-count"
+project_unknown_empty_out="$(PATH="$project_eval_root/no-sleep:$PATH" \
+    PROJECT_ENROLLMENT_GH="$project_unknown_empty_stub" \
+    "$project_enrollment_wait" sandbox/order-service 7 "$project_head_sha" 2>&1)"
+project_unknown_empty_rc=$?
+assert_rc "project enrollment: unknown exit-1 output 仍 fail closed" \
+    2 "$project_unknown_empty_rc"
+if grep -q '^verdict: QUERY_ERROR$' <<< "$project_unknown_empty_out" \
+    && grep -q '^stage: required-checks$' <<< "$project_unknown_empty_out" \
+    && grep -q '^detail: unexpected required checks response$' <<< "$project_unknown_empty_out"; then
+    ok "project enrollment 不把任意 exit 1 當 pending"
+else bad "project enrollment unknown exit-1 未保留 QUERY_ERROR 證據（${project_unknown_empty_out}）"; fi
 
 rm -f "$project_u4/gh-stub-delayed-enrollment.checks-count"
 project_delayed_out="$(PATH="$project_eval_root/no-sleep:$PATH" \

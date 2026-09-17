@@ -315,7 +315,7 @@ def main() -> int:
         if process.poll() is None:
             (process.kill if force else process.terminate)()
 
-    def terminate_children(_signum: int | None = None, _frame: object | None = None) -> None:
+    def terminate_children() -> None:
         for entry in processes:
             process = entry["process"]
             signal_process_tree(process, force=False)  # type: ignore[arg-type]
@@ -332,15 +332,22 @@ def main() -> int:
             process = entry["process"]
             signal_process_tree(process, force=True)  # type: ignore[arg-type]
             process.wait()  # type: ignore[union-attr]
-        if _signum is not None:
-            raise KeyboardInterrupt
+
+    shutdown_requested = False
+
+    def request_shutdown(_signum: int, _frame: object | None) -> None:
+        nonlocal shutdown_requested
+        if shutdown_requested:
+            return
+        shutdown_requested = True
+        raise KeyboardInterrupt
 
     handled_signals = [signal.SIGINT, signal.SIGTERM]
     for signal_name in ("SIGHUP", "SIGQUIT"):
         if hasattr(signal, signal_name):
             handled_signals.append(getattr(signal, signal_name))
     previous_handlers = {
-        handled_signal: signal.signal(handled_signal, terminate_children)
+        handled_signal: signal.signal(handled_signal, request_shutdown)
         for handled_signal in handled_signals
     }
     try:

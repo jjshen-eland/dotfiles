@@ -33,6 +33,24 @@ query_error() {
     exit 2
 }
 
+is_required_checks_empty() {
+    local output="$1" remainder branch
+    [[ "$output" != *$'\n'* ]] || return 1
+    case "$output" in
+        "no checks reported on the '"*"' branch")
+            remainder="${output#"no checks reported on the '"}"
+            ;;
+        "no required checks reported on the '"*"' branch")
+            remainder="${output#"no required checks reported on the '"}"
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+    branch="${remainder%"' branch"}"
+    [ -n "$branch" ]
+}
+
 run_observed=no
 active_run_observed=no
 command -v jq >/dev/null 2>&1 || query_error dependency "jq not found"
@@ -69,8 +87,7 @@ while :; do
         if [ "$checks_rc" -ne 0 ] && [ "$checks_rc" -ne 1 ]; then
             query_error required-checks "$checks_output"
         fi
-    elif [ "$checks_rc" -eq 1 ] \
-        && [[ "$checks_output" =~ ^no\ checks\ reported\ on\ the\ \'[^\']+\'\ branch$ ]]; then
+    elif [ "$checks_rc" -eq 1 ] && is_required_checks_empty "$checks_output"; then
         :
     else
         query_error required-checks "$checks_output"
