@@ -3648,8 +3648,48 @@ if [ "$dps_timeout_rc" -eq 1 ] \
     && [ "$dps_descendants_alive" -eq 0 ]; then
     ok "deep-plan launcher timeout 會收掉 reviewer process tree，不留持 pipe descendant"
 else
-    echo "  timeout diagnostics: rc=$dps_timeout_rc manifest=$dps_timeout_has_failure_manifest pid_count=$dps_descendant_count live=$dps_descendants_alive states=${dps_timeout_process_states:-none}" >&2
+    echo "  timeout diagnostics: rc=$dps_timeout_rc manifest=$dps_timeout_has_failure_manifest pid_count=$dps_descendant_count live=$dps_descendants_alive states=${dps_timeout_process_states:-none} output=$dps_timeout_out" >&2
     bad "deep-plan launcher timeout 未完整 fail closed 或留下 descendant"
+fi
+mkdir -p "$TMP/deep-plan-cleanup-fault-pids"
+dps_cleanup_fault_out="$(PYTHONPATH="$ROOT/tests/fixtures/deep-plan-cleanup-fault" \
+DEEP_PLAN_DESCENDANT_PID_DIR="$TMP/deep-plan-cleanup-fault-pids" \
+    "$DPS_CODEX/scripts/launch-reviewers.py" \
+    --plan "$dps_fixture/docs/plans/plan.md" \
+    --repo "$dps_fixture" \
+    --brief "$DPS_CODEX/references/planner-brief.md" \
+    --schema "$DPS_CODEX/assets/reviewer-output.schema.json" \
+    --codex-bin "$dps_hanging_stub" \
+    --timeout-seconds 1)"
+dps_cleanup_fault_rc=$?
+dps_cleanup_fault_pid_count="$(find "$TMP/deep-plan-cleanup-fault-pids" -name '*.pid' -type f | wc -l | tr -d ' ')"
+dps_cleanup_fault_alive=0
+for pid_file in "$TMP/deep-plan-cleanup-fault-pids"/*.pid; do
+    descendant_pid="$(< "$pid_file")"
+    if pid_is_live_non_zombie "$descendant_pid"; then
+        dps_cleanup_fault_alive=$((dps_cleanup_fault_alive + 1))
+    fi
+done
+dps_cleanup_fault_manifest=0
+python3 - "$dps_cleanup_fault_out" <<'PY' && dps_cleanup_fault_manifest=1
+import json
+import sys
+
+payload = json.loads(sys.argv[1])
+errors = payload.get("cleanup_errors", [])
+raise SystemExit(not (
+    payload.get("ok") is False
+    and any(error.get("phase") == "force-signal" for error in errors)
+))
+PY
+if [ "$dps_cleanup_fault_rc" -eq 1 ] \
+    && [ "$dps_cleanup_fault_manifest" -eq 1 ] \
+    && [ "$dps_cleanup_fault_pid_count" -eq 2 ] \
+    && [ "$dps_cleanup_fault_alive" -eq 0 ]; then
+    ok "deep-plan launcher cleanup 次級錯誤保留 canonical fail-closed manifest"
+else
+    echo "  cleanup fault diagnostics: rc=$dps_cleanup_fault_rc manifest=$dps_cleanup_fault_manifest pid_count=$dps_cleanup_fault_pid_count live=$dps_cleanup_fault_alive output=$dps_cleanup_fault_out" >&2
+    bad "deep-plan launcher cleanup 次級錯誤逃出 canonical handler（RED）"
 fi
 mkdir -p "$TMP/deep-plan-signal-pids"
 DEEP_PLAN_DESCENDANT_PID_DIR="$TMP/deep-plan-signal-pids" \
