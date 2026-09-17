@@ -55,7 +55,7 @@ if git -C "$repo" ls-files --error-unmatch -- "$artifact_rel" >/dev/null 2>&1; t
 fi
 git -C "$repo" check-ignore -q -- "$artifact_rel" || stop "artifact-is-not-ignored"
 
-mode="$(stat -f '%Lp' "$artifact_abs" 2>/dev/null || stat -c '%a' "$artifact_abs" 2>/dev/null)" || {
+mode="$(stat -c '%a' "$artifact_abs" 2>/dev/null || stat -f '%Lp' "$artifact_abs" 2>/dev/null)" || {
     echo "artifact: $artifact_rel"
     echo "reason: mode-unavailable"
     echo "verdict: BROKEN"

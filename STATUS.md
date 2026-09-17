@@ -12,7 +12,34 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-（目前無進行中項目。）
+### B-20260820-gap-08-ci-portability-fix
+
+- **Context**：PR #222 的兩個 required contexts 都在 `Run complete suite` fail closed。Ubuntu 的 Project
+  credential helper 因 GNU `stat -f` stdout 污染 fallback 結果而回 `mode-malformed`，integration 為
+  `PASS=1053 FAIL=4`；macOS 行為 assertions `PASS=1057 FAIL=0`，但 shard manifest 仍期待 1049。
+- **Goal**：以 deterministic GNU-stat RED 固定第一因果差異，將 mode probe 改回已驗證的 GNU `-c` 優先、BSD
+  `-f` fallback，並同步 integration assertion manifest；不改 transfer policy 或放寬 fail-closed gate。
+- **Acceptance Criteria**：
+  1. 修正前新增的 GNU-stat fixture 穩定重現 helper exit 2／`mode-malformed`，不依賴 Linux runner。
+  2. 最小修正後，同 fixture 對 0644 artifact 回 STOP、既有 macOS／Linux semantics 與 secret-output isolation 不變。
+  3. `tests/shard-manifest.tsv` 精確反映新的 integration assertion count；serial、parallel、clean clone、skill
+     validation、ShellCheck 與 doc audit 全綠。
+  4. 另記 milestone supersede PR #222 初次 CI 結論；B08 backlog 仍保留給 biz-chat-targeted remediation。
+- **Constraints**：一次只改一個已確認因果來源；不 retry/bypass required checks；不讀取或輸出 credential value；
+  不改雙 runtime topology。修正只 commit 在目前 feature branch，沒有新的 push／merge 授權。
+- **Progress**：已保存 PR #222／run 35205077128 兩端 failed logs。History 命中
+  `M-20260815-linux-stat-fix`，確認相同 GNU `stat -f` stdout contamination 機制；portable topology 與 steward
+  authority 已重驗通過。Deterministic GNU-stat fixture 取得 integration `PASS=1057 FAIL=1` RED；最小修正後
+  integration `PASS=1058 FAIL=0`，parallel、serial 與 clean no-local clone 均為 `PASS=1462 FAIL=0`，syntax、
+  ShellCheck 與 Codex Project skill validator 全綠。
+- **Next step**：記錄 superseding milestone、移除本 active item，完成 doc audit 後 commit closure。
+- **Writer**：`codex:gap-08-biz-chat-transfer`
+- **Workspace**：`branch=docs/gap-08-biz-chat-transfer`
+- **Write Scope**：`STATUS.md`、`docs/archive/milestones-2026-09.md`、
+  `shared/skills/project/scripts/verify-transfer-credential.sh`、`tests/run.sh`、`tests/shard-manifest.tsv`
+- **Dossier Steward**：`codex:gap-08-biz-chat-transfer`
+- **Related IDs**：`B-20260820-gap-08`、`M-20260815-linux-stat-fix`、
+  `M-20260917-gap-08-dotfiles-transfer-guard`、`PR#222`、`run:35205077128`
 
 ---
 

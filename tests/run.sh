@@ -4278,6 +4278,31 @@ if [ -x "$project_transfer_credential_audit" ]; then
     project_credential_out="$("$project_transfer_credential_audit" \
         "$project_s10/work" tmp/symlink-credentials.md 2>&1)"
     assert_rc "project transfer credential artifact 是 symlink → STOP" 1 $?
+
+    mkdir -p "$project_s10/gnu-stat-bin"
+    cat > "$project_s10/gnu-stat-bin/stat" <<'EOF'
+#!/usr/bin/env bash
+case "${1:-}:${2:-}" in
+    '-f:%Lp')
+        printf 'GNU stat filesystem output before option failure\n'
+        exit 1
+        ;;
+    '-c:%a')
+        printf '644\n'
+        exit 0
+        ;;
+    *) exit 2 ;;
+esac
+EOF
+    chmod +x "$project_s10/gnu-stat-bin/stat"
+    project_credential_out="$(PATH="$project_s10/gnu-stat-bin:$PATH" \
+        "$project_transfer_credential_audit" "$project_s10/work" tmp/transfer-credentials.md 2>&1)"
+    project_credential_rc=$?
+    if [ "$project_credential_rc" -eq 1 ] \
+        && grep -q '^reason: group-or-other-permissions-present$' <<< "$project_credential_out" \
+        && ! grep -q 'mode-malformed\|fixture-only-' <<< "$project_credential_out"; then
+        ok "project credential audit 隔離 GNU stat -f 失敗前的 stdout"
+    else bad "project credential audit 被 GNU stat -f stdout 污染（rc=${project_credential_rc}; ${project_credential_out}）"; fi
 else
     bad "project transfer credential metadata helper 尚未實作（RED）"
 fi
