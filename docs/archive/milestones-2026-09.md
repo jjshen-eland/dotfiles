@@ -353,3 +353,9 @@
   - 放棄:沿用 2026-08 名稱而不重驗 Homebrew metadata；在 fixture 安裝真實 cask；把首次系統核可偽裝成無人值守 setup 可完成；讓 brewup 對所有 auto_updates cask 強制 `--greedy`；重啟已排除的 Gatekeeper 預防方案
   - 重議:Homebrew 更改 cask token、binary target 或 auto_updates 契約；新機 setup 再次漏裝 `agy`；首次執行的系統核可可由官方支援的非互動方式安全完成；或 Bash／zsh fixture 與真實 setup 出現可重現差異
   - 關聯:B-20260807-gap-09;B-20260807-gap-04;setup-mac-env.sh;tests/run.sh;tests/shard-manifest.tsv;README.md
+
+- **M-20260918-actor-key-decoration-limit-closed · 2026-09-18 actor key 裝飾候選因舊 premise 失效而結案**:唯讀盤點 14 個 canonical governed repos，其中 12 個有 active items，共 66 個 actor fields、13 個唯一 normalized keys；現行資料沒有任何 decorated actor key。直接以現行程式重現時，scanner 與 authority gate 都接受 `codex:ui（暫代）` 與合法的非 ASCII `human:王小明`、拒絕含空白值；更關鍵的是，workspace 相符時 `derived_actor` 會原樣回傳 `codex:ui（暫代）`，來源為 `active-writer-workspace-match`，不會如 backlog 所述靜默退回 branch 推導。只有 workspace 不符才走 branch fallback，且 decorated／undecorated actor 行為相同。沒有 observed authority 誤判、silent fallback 或 rollout 相容性事件，因此不收緊 `ACTOR_RE`、不修改 Project skill、不新增沒有行為失敗支撐的 eval，移除 B-20260907-actor-key-decoration-limit。
+  - 日期來源:direct
+  - 放棄:以 ASCII-only 或標點 blacklist 解決未發生的問題，因為會推測性拒絕合法非 ASCII human actor；為舊 premise 補不具決策價值的 gate／fixture；自動改寫其他 governed repos
+  - 重議:實際 governed repo 出現 decorated actor key 並造成 authority mismatch／錯誤 fallback；或外部整合提出超越現行 runtime-prefix＋non-whitespace 契約的 machine-stable actor grammar 需求
+  - 關聯:B-20260907-actor-key-decoration-limit;D-20260907-declared-path-coverage-and-shared-actor-rule;M-20260907-doc-governance-silent-config-gaps;scripts/doc-governance.py;shared/skills/project/scripts/steward-authority.py
