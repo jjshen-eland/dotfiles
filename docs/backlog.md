@@ -78,12 +78,3 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   刻意未跨 repo 動手」。附帶觀察同源:`analysis`（`docs/analysis/*.md`）與 `script-guides`（`scripts/*/README.md`）
   在部分 repo 缺漏，但它們沒有 `plan_dir` 那種矛盾證據，機械偵測不到——**未決**:rollout 是否該對照一份
   標準 class 清單逐項確認要或不要。
-
-- **B-20260907-actor-key-decoration-limit** · **`ACTOR_RE` 擋得住空白、擋不住無空白的裝飾**(2026-09-07 加)。
-  規則是 `^(claude|codex|human|owner|external|unassigned):[^\s:][^\s]*$`，所以
-  `` `codex:kb-x`（使用者於2026-09-01具名移交terminal scope） `` 因為含空白被兩個 gate 一致拒絕，
-  但 `codex:ui（暫代）` 這種**沒有空白**的中文裝飾會**同時通過** `audit` 與 `steward-authority.py`。
-  後果比原缺口輕（兩個 gate 至少一致，不會再出現「audit 綠、authority BROKEN」的死結），但
-  `derived_actor` 的 `writer.startswith(f"{runtime}:")` 仍會靜默不匹配、退回 branch 推導。
-  **未決**:收緊 `ACTOR_RE`（例如限定 ASCII 字元集）會改變 `steward-authority.py` 在所有已 rollout repo 的
-  執行期行為，需要先盤點各 repo `STATUS.md` 的實際寫法才知道會擋掉誰;2026-09-07 判為超出 issue #165 範圍。
