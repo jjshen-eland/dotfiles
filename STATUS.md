@@ -12,6 +12,25 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
+### close-cross-repo-backlog-items
+
+- **Context**：`B-20260820-gap-08` 的 dotfiles transfer guard 已完成，剩餘內容只屬於不列為正式專案的
+  biz-chat；`B-20260907-governed-repo-declared-path-gaps` 追蹤的兩個下游 repo 配置缺口亦已在各自 main 修復。
+- **Goal**：從 dotfiles backlog 移除兩個已失去本 repo 行動價值的項目，並以 event-time record 保留結案理由。
+- **Acceptance Criteria**：B08 與 governed-repo declared-path gap 不再出現於 backlog；decision／milestone
+  各自記錄 ownership 與下游修復證據；doc audit、完整 suite 及 PR required macOS＋Ubuntu CI 通過。
+- **Constraints**：不在 biz-chat 建立正式 dossier／issue，不讀取或搬運 secret，不為未觀察到的標準 class
+  漂移新增 gate，不撤回既有 transfer metadata guard。
+- **進度**：已盤點現行 backlog 與下游 main 證據；尚未重建結案 commit。
+- **下一步**：在本 workline 下重建 backlog／history 變更，重驗 audit 與完整 suite 後 shipping。
+- **關聯**：B-20260820-gap-08;B-20260907-governed-repo-declared-path-gaps;D-20260918-biz-chat-backlog-out-of-scope;
+  M-20260918-governed-repo-declared-path-gaps-closed
+- **Writer**：codex:close-biz-chat-gap
+- **Workspace**：branch=docs/close-biz-chat-gap
+- **Write Scope**：`STATUS.md`, `docs/backlog.md`, `docs/archive/decisions-2026-09.md`,
+  `docs/archive/milestones-2026-09.md`
+- **Dossier Steward**：codex:close-biz-chat-gap
+
 ## 暫停中
 
 - **B-20260902-gh-account-autoswitch**：pending；維持 backlog 既有觸發條件，在條件實際發生前不開發、
