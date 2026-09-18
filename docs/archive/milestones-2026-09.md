@@ -347,3 +347,9 @@
   - 放棄:把 Ubuntu command-not-found 當 flake直接 rerun；在沒有 zsh 的 host 偽造 pass／skip assertions；移除 zsh caller fixture；修改 assertion manifest 掩蓋三項 failure
   - 重議:任一 required OS 再出現 zsh 不可用、CI dependency gate 與實際 PATH 不一致，或安裝 zsh 對 wall time 造成可重現且顯著的回歸
   - 關聯:Issue#223;PR#224;run:35293274779;M-20260918-issue-223-brewup-portable-ruby-visibility;.github/workflows/test.yml;tests/run.sh
+
+- **M-20260918-antigravity-cli-provisioning · 2026-09-18 Antigravity CLI 納入 macOS 新機 provisioning**:現行 Homebrew metadata 確認 cask token 仍為 `antigravity-cli`、binary target 為 `agy`，且標記 `auto_updates`；`setup-mac-env.sh` 的 AI CLI 區塊則只有 Codex，未安裝 Antigravity。隔離 Homebrew fixture 分別以 Bash 與 zsh 執行該區塊，既有 Codex control 皆通過，但 Antigravity 呼叫與首次 console 核可提示皆缺失，取得 integration `1077/4` RED。最小修正只加入 `brew install --cask antigravity-cli` 與 console 提示，不修改 `scripts/brewup.sh`、不加入 `--greedy`，並在 README 明列安裝與更新邊界。修後 integration `1081/0`，完整 suite `1485/0`，ShellCheck、Bash syntax 與 doc-governance 均通過，因此移除 B-20260807-gap-09。
+  - 日期來源:direct
+  - 放棄:沿用 2026-08 名稱而不重驗 Homebrew metadata；在 fixture 安裝真實 cask；把首次系統核可偽裝成無人值守 setup 可完成；讓 brewup 對所有 auto_updates cask 強制 `--greedy`；重啟已排除的 Gatekeeper 預防方案
+  - 重議:Homebrew 更改 cask token、binary target 或 auto_updates 契約；新機 setup 再次漏裝 `agy`；首次執行的系統核可可由官方支援的非互動方式安全完成；或 Bash／zsh fixture 與真實 setup 出現可重現差異
+  - 關聯:B-20260807-gap-09;B-20260807-gap-04;setup-mac-env.sh;tests/run.sh;tests/shard-manifest.tsv;README.md

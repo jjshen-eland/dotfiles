@@ -6748,6 +6748,51 @@ for xbit_script in scripts/brewup.sh scripts/sysup.sh; do
     fi
 done
 
+echo "▶ 18d2. setup-mac-env.sh 安裝 Antigravity CLI（隔離 Homebrew fixture）"
+agy_setup="$TMP/agy-setup"
+mkdir -p "$agy_setup/bin" "$agy_setup/home"
+agy_snippet="$agy_setup/ai-cli.sh"
+cat > "$agy_snippet" <<'SETUPSTUB'
+#!/usr/bin/env bash
+print_info() { printf "INFO: %s\n" "$1"; }
+print_success() { printf "SUCCESS: %s\n" "$1"; }
+print_warning() { printf "WARNING: %s\n" "$1"; }
+SETUPSTUB
+sed -n '/^# AI CLI 工具$/,/^print_success "AI CLI 工具安裝完成"$/p' \
+    "$ROOT/setup-mac-env.sh" >> "$agy_snippet"
+cat > "$agy_setup/bin/brew" <<'BREWSTUB'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$AGY_BREW_LOG"
+BREWSTUB
+cat > "$agy_setup/bin/claude" <<'CLAUDESTUB'
+#!/usr/bin/env bash
+exit 0
+CLAUDESTUB
+chmod +x "$agy_setup/bin/brew" "$agy_setup/bin/claude"
+
+for agy_shell in bash zsh; do
+    agy_log="$agy_setup/${agy_shell}.brew.log"
+    : > "$agy_log"
+    agy_out="$(HOME="$agy_setup/home" PATH="$agy_setup/bin:/usr/bin:/bin" \
+        AGY_BREW_LOG="$agy_log" "$agy_shell" "$agy_snippet" 2>&1)"
+    agy_rc=$?
+    assert_rc "${agy_shell} caller：AI CLI 安裝段可執行" 0 "$agy_rc"
+    assert_eq "${agy_shell} caller：既有 codex cask 安裝仍只呼叫一次" 1 \
+        "$(grep -Fxc 'install --cask codex' "$agy_log" || true)"
+    assert_eq "${agy_shell} caller：新機 setup 安裝 antigravity-cli cask 一次" 1 \
+        "$(grep -Fxc 'install --cask antigravity-cli' "$agy_log" || true)"
+    if grep -Fq 'Antigravity CLI 首次執行請在 Mac console 完成系統核可' <<< "$agy_out"; then
+        ok "${agy_shell} caller：保留首次執行需 console 核可的提示"
+    else
+        bad "${agy_shell} caller：缺首次執行需 console 核可的提示"
+    fi
+done
+if grep -q -- '--greedy' "$ROOT/scripts/brewup.sh"; then
+    bad "brewup 不得為 auto_updates cask 強制加入 --greedy"
+else
+    ok "brewup 維持不強制更新 auto_updates cask"
+fi
+
 echo "▶ 18e. ensure-ssh-config.sh 幂等重生 ~/.ssh/config（原子寫入 + 完整性驗證）"
 ESC="$ROOT/scripts/ensure-ssh-config.sh"
 esc="$TMP/esc"
