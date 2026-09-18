@@ -28,7 +28,7 @@ jobs:
           echo /home/linuxbrew/.linuxbrew/sbin >> "$GITHUB_PATH"
 
       - name: Install test dependencies
-        run: brew install shellcheck ripgrep yq
+        run: brew install shellcheck ripgrep yq zsh
 
       - name: Run complete suite
         run: ./tests/run-parallel.sh

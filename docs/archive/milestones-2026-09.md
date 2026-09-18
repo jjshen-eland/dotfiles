@@ -341,3 +341,9 @@
   - 放棄:移除 `brew trust` 的 stderr redirect；用 blind sleep、retry 或背景化掩飾零輸出；把 portable-ruby bootstrap 誤當 Gatekeeper cask 卡死並呼叫 `brewfix`；以真實 Homebrew 或網路作不穩定測試
   - 重議:Homebrew 改變 bootstrap 輸出 channel、`brew --version` 不再觸發必要 bootstrap、第一個 brew 呼叫再次位於 stderr suppression 後，或 required OS 出現與隔離 fixture不同的可重現行為
   - 關聯:Issue#223;scripts/brewup.sh;tests/run.sh;tests/shard-manifest.tsv;claude/known-hazards.md
+
+- **M-20260918-issue-223-ci-zsh-dependency · 2026-09-18 PR #224 Ubuntu zsh fixture dependency 補齊**:Required run `35293274779` 的 macOS 15 完整 suite 全綠，Ubuntu 24.04 則只有 zsh caller 臂以 exit 127 失敗；同一 runner 的 Bash direct 四項全綠，integration 因而為 `1069/3`。Workflow 原先只安裝 shellcheck、ripgrep、yq，確認第一因果差異是 Ubuntu image 沒有 zsh，不是 production warm-up、fixture oracle 或 manifest。先把 regression gate 擴為要求 zsh，取得 integration `1071/1` RED；最小修正將 zsh 加入同一 Homebrew dependency step，不做 conditional skip、不縮減任一 OS 的完整測試集合。修後 integration `1072/0`、parallel aggregate `1476/0`，Bash syntax、精確 ShellCheck 與 doc-governance ship audit 全綠；required OS 結果待更新 PR head 後驗證。
+  - 日期來源:direct
+  - 放棄:把 Ubuntu command-not-found 當 flake直接 rerun；在沒有 zsh 的 host 偽造 pass／skip assertions；移除 zsh caller fixture；修改 assertion manifest 掩蓋三項 failure
+  - 重議:任一 required OS 再出現 zsh 不可用、CI dependency gate 與實際 PATH 不一致，或安裝 zsh 對 wall time 造成可重現且顯著的回歸
+  - 關聯:Issue#223;PR#224;run:35293274779;M-20260918-issue-223-brewup-portable-ruby-visibility;.github/workflows/test.yml;tests/run.sh
