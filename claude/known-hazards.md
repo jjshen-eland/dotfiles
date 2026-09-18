@@ -132,6 +132,37 @@ macOS 系統 bash 是 3.2、沒有 associative array —— 那個改法會在**
 
 ---
 
+## brewup pull 後靜默：portable-ruby bootstrap 的 stderr 被吞
+
+### 症狀與根因（2026-09-18 實地確認）
+
+`brewup` 印完 dotfiles pull 後畫面長時間完全靜止；當時 Homebrew 剛從 6.0.22 升到 7.0.3，
+`Library/Homebrew/vendor/portable-ruby-version` 已改成 4.0.7，但 `vendor/portable-ruby/current` 尚未建立。
+Homebrew 的 portable-ruby bootstrap 把下載、fallback 重試與解壓進度全部寫到 stderr，而舊流程的第一個
+Homebrew 呼叫正好是：
+
+```bash
+brew trust --formula oven-sh/bun/bun 2>/dev/null
+```
+
+因此 bootstrap 並非沒有進展，而是整段可見訊息被相容性 redirect 吞掉。這不是一次性狀況：每逢 Homebrew
+要求新的 portable-ruby，而本 process 的第一次 `brew` 呼叫仍位於該 redirect，就會重演。
+
+### 修正與鑑別
+
+`scripts/brewup.sh` 現在先執行 `brew --version >/dev/null`：stdout 保持安靜，stderr 上的 bootstrap 進度可見；
+其後 `brew trust ... 2>/dev/null` 仍保留，避免舊版 Homebrew 不支援 `trust` 時每次噴噪音。這不會縮短真正的
+下載或解壓時間，修掉的是「有工作進行卻完全不可見」的假死。
+
+與下一節的 cask／Gatekeeper 卡死分辨：
+
+- 本項發生在**第一個 brew 呼叫**，常伴隨 Homebrew 或 `portable-ruby-version` 剛更新；若重試下載，畫面應持續
+  顯示 portable-ruby 的下載／pouring 訊息。
+- Gatekeeper 問題發生在 cask upgrade 的 executable/completion 階段，常見 `Linking Binary`、卡死 process 或
+  `Caskroom/<cask>/<old>.upgrading` 殘留；那才使用 `brewfix`。portable-ruby bootstrap 不應用 `brewfix` 處置。
+
+---
+
 ## cask 升版卡死（Gatekeeper / syspolicyd）
 
 > **先看結論**：復發時直接 `brewfix`。以下是機制與已排除的路，**不必重查**。

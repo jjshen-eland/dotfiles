@@ -12,25 +12,6 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### issue-223-brewup-portable-ruby-visibility
-
-- **Context**：Issue #223 已確認 `scripts/brewup.sh` 的第一個 `brew` 呼叫吞掉 portable-ruby bootstrap stderr，
-  導致 pull 後長時間零輸出；Gatekeeper cask 卡死、helper 延遲及 trust 互動提示已有反證排除。
-- **Goal**：以隔離 fixture 固定 causal boundary，讓 bootstrap 進度可見，同時保留舊版 `brew trust` 噪音抑制。
-- **Acceptance Criteria**：Bash direct 與 zsh caller RED 轉綠；不碰真實 Homebrew；完整 suite、clean clone、
-  doc audit 與 required macOS＋Ubuntu CI 通過。
-- **Constraints**：只做對準第一個 brew 呼叫 stderr 邊界的最小修正；不以 sleep、retry 或移除 trust redirect
-  冒充修復。
-- **進度**：RED 為 integration `1068/4`；修後 integration `1072/0`，parallel／serial／clean clone皆
-  `1476/0`，syntax、ShellCheck 與 doc audit 通過；等待 shipping CI。
-- **下一步**：由本次 Project Log commit、push、開 PR，required CI 全綠後 merge 並關閉 Issue #223。
-- **關聯**：Issue#223;M-20260918-issue-223-brewup-portable-ruby-visibility
-- **Writer**：codex:issue-223-brewup-portable-ruby-visibility
-- **Workspace**：branch=fix/issue-223-brewup-portable-ruby-visibility
-- **Write Scope**：`scripts/brewup.sh`, `tests/run.sh`, `tests/shard-manifest.tsv`, `claude/known-hazards.md`,
-  `STATUS.md`, `docs/archive/milestones-2026-09.md`
-- **Dossier Steward**：codex:issue-223-brewup-portable-ruby-visibility
-
 ## 暫停中
 
 - **B-20260902-gh-account-autoswitch**：pending；維持 backlog 既有觸發條件，在條件實際發生前不開發、
