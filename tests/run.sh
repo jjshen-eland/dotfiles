@@ -6507,6 +6507,62 @@ bup_make_helpers() {   # $1=失敗的 helper 名（空字串＝全部成功）
     done
 }
 
+# Homebrew 自我升級後，第一個 brew 呼叫可能先安裝 portable-ruby；該 bootstrap 的所有進度都
+# 寫到 stderr。若第一個呼叫正好是下面刻意吞 stderr 的 `brew trust`，使用者在 pull 之後會看見
+# 長時間完全無輸出。stub 只在第一次呼叫印 bootstrap marker，並讓 trust 另印舊版不支援的噪音：
+# 前者必須可見，後者仍必須被抑制，才能證明修的是 causal boundary 而非把 redirect 整個拿掉。
+cat > "$bup/bin/brew" <<'BREWSTUB'
+#!/usr/bin/env bash
+n=$(( $(cat "$BREW_BOOTSTRAP_COUNTER" 2>/dev/null || echo 0) + 1 ))
+echo "$n" > "$BREW_BOOTSTRAP_COUNTER"
+printf '%s\n' "$*" >> "$BREW_BOOTSTRAP_LOG"
+if [ "$n" -eq 1 ]; then
+    echo 'fixture: portable-ruby bootstrap progress' >&2
+fi
+if [ "${1:-}" = trust ]; then
+    echo 'fixture: legacy brew has no trust command' >&2
+    exit 1
+fi
+exit 0
+BREWSTUB
+chmod +x "$bup/bin/brew"
+export BREW_BOOTSTRAP_COUNTER="$bup/marks/brew-bootstrap-count" \
+       BREW_BOOTSTRAP_LOG="$bup/marks/brew-bootstrap.log"
+
+bup_assert_bootstrap_visible() {  # $1=呼叫邊界；$2...=執行命令
+    bup_boundary="$1"
+    shift
+    rm -f "$BREW_BOOTSTRAP_COUNTER" "$BREW_BOOTSTRAP_LOG"
+    bup_bootstrap_out="$(DOTFILES_DIR="$bup/dotfiles" HOME="$bup/home" PATH="$bup/bin:$PATH" "$@" 2>&1)"
+    bup_bootstrap_rc=$?
+    assert_rc "$bup_boundary portable-ruby warm-up → brewup exit 0" 0 "$bup_bootstrap_rc"
+    assert_eq "$bup_boundary 第一個 brew 呼叫先 warm-up" "--version" \
+        "$(sed -n '1p' "$BREW_BOOTSTRAP_LOG")"
+    if grep -q 'fixture: portable-ruby bootstrap progress' <<< "$bup_bootstrap_out"; then
+        ok "$bup_boundary portable-ruby bootstrap stderr 對使用者可見"
+    else
+        bad "$bup_boundary 第一個 brew 呼叫吞掉 portable-ruby bootstrap stderr"
+    fi
+    if grep -q 'fixture: legacy brew has no trust command' <<< "$bup_bootstrap_out"; then
+        bad "$bup_boundary brew trust 的舊版噪音外洩"
+    else
+        ok "$bup_boundary brew trust 仍抑制舊版不支援噪音"
+    fi
+}
+
+bup_make_helpers ""
+bup_assert_bootstrap_visible "Bash direct" bash "$BUP"
+# shellcheck disable=SC2016  # $1 刻意由 `zsh -c` 的子 shell 展開
+bup_assert_bootstrap_visible "zsh caller" zsh -c 'exec "$1"' _ "$BUP"
+
+# 還原一般 brew stub，供 18d 其餘 fixtures 記錄呼叫且不帶 bootstrap 輸出。
+{
+    echo '#!/usr/bin/env bash'
+    echo "echo \"\$0 \$*\" >> \"$bup/marks/brew.log\""
+    echo 'exit 0'
+} > "$bup/bin/brew"
+chmod +x "$bup/bin/brew"
+
 # RED 臂：guidance helper 失敗
 bup_make_helpers ensure-codex-guidance
 bup_out="$(DOTFILES_DIR="$bup/dotfiles" HOME="$bup/home" PATH="$bup/bin:$PATH" bash "$BUP" 2>&1)"

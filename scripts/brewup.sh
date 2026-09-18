@@ -48,6 +48,10 @@ helper_warn=0
 [ -f "${DOTFILES}/scripts/ensure-codex-config.py" ] && { DOTFILES_DIR="${DOTFILES}" python3 "${DOTFILES}/scripts/ensure-codex-config.py" 2>/dev/null || helper_warn=1; } || true
 [ -f "${DOTFILES}/scripts/ensure-lftprc.sh" ] && { bash "${DOTFILES}/scripts/ensure-lftprc.sh" 2>/dev/null || helper_warn=1; } || true
 # 2. Homebrew
+# Homebrew 自我升級後可能在本 process 的第一次 brew 呼叫安裝 portable-ruby，且下載、重試與
+# 解壓進度全部寫到 stderr。下一行為相容不支援 trust 的舊版刻意吞 stderr；先以可見 stderr
+# 的無副作用查詢完成 bootstrap，避免 pull 之後長時間零輸出、看似假死。
+brew --version >/dev/null
 brew trust --formula oven-sh/bun/bun 2>/dev/null
 brew update && brew upgrade --yes && brew cleanup
 

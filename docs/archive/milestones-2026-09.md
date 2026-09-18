@@ -335,3 +335,9 @@
   - 放棄:把 rc 2 或缺 manifest 視為可接受；只重跑失敗 CI；把 macOS process-group permission race 當 runner noise；吞掉 cleanup error；移除 force-kill、放寬 descendant liveness oracle，或改 reviewer／timeout／signal 語意
   - 重議:任一 supported OS 再出現 cleanup 次級例外逃出 canonical manifest、exit 非 1、live descendant，或 phase diagnostics 無法定位失敗；屆時保留 raw output、cleanup phase、rc、PID count 與 process states 再重現
   - 關聯:PR#222;run:35246416742;run:35254111643;M-20260917-deep-plan-signal-single-cleanup;M-20260918-pr222-macos-signal-fixture-synchronized;f132e1d;codex/skills/deep-plan/scripts/launch-reviewers.py;tests/fixtures/deep-plan-cleanup-fault/sitecustomize.py;tests/run.sh
+
+- **M-20260918-issue-223-brewup-portable-ruby-visibility · 2026-09-18 brewup 首次 Homebrew bootstrap 恢復可見進度**:Issue #223 的本機時間線已證明 Homebrew 升版後需要新版 portable-ruby 時，`scripts/brewup.sh` 的第一個 brew 呼叫正是吞 stderr 的 `brew trust`，因此下載、fallback retry 與解壓並非沒有進展，而是全部不可見。隔離 stub 只在首次 brew 呼叫輸出 bootstrap marker，並讓 trust 另輸出舊版不支援噪音；現行 Bash direct 與 zsh caller 均先呼叫 trust、marker 不可見，取得 integration `PASS=1068 FAIL=4` RED，而 trust 噪音控制臂仍被正確抑制。最小修正只在 trust 前加入 `brew --version >/dev/null`，讓 stdout 保持安靜、bootstrap stderr 可見，且不移除 trust 的 redirect。修後 integration `1072/0`，parallel aggregate、serial 與 no-local clean clone均為 `1476/0`；Bash／zsh syntax、精確 ShellCheck 與 doc-governance ship audit 全綠。Issue #223 保持 open，待修正通過 macOS＋Ubuntu required CI 並進入 `main` 後結案。
+  - 日期來源:direct
+  - 放棄:移除 `brew trust` 的 stderr redirect；用 blind sleep、retry 或背景化掩飾零輸出；把 portable-ruby bootstrap 誤當 Gatekeeper cask 卡死並呼叫 `brewfix`；以真實 Homebrew 或網路作不穩定測試
+  - 重議:Homebrew 改變 bootstrap 輸出 channel、`brew --version` 不再觸發必要 bootstrap、第一個 brew 呼叫再次位於 stderr suppression 後，或 required OS 出現與隔離 fixture不同的可重現行為
+  - 關聯:Issue#223;scripts/brewup.sh;tests/run.sh;tests/shard-manifest.tsv;claude/known-hazards.md
