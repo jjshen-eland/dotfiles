@@ -12,24 +12,6 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### issue-223-brewup-portable-ruby-visibility
-
-- **Context**：PR #224 required run `35293274779` 中 macOS 15 全綠，Ubuntu 24.04 的 Bash fixture 亦全綠，
-  但 runner 未安裝 zsh，zsh caller 臂以 exit 127 失敗並造成 integration `1069/3` 與 manifest mismatch。
-- **Goal**：保留 macOS＋Ubuntu 的完整 Bash／zsh fixture，不以 conditional skip 縮減 Ubuntu 覆蓋；將 zsh
-  明列為 CI test dependency，並以 regression gate 固定依賴。
-- **Acceptance Criteria**：本地 workflow dependency gate 先 RED 後轉綠；完整 suite 保持 `1476/0`；PR #224
-  新 head 的 macOS 15 與 Ubuntu 24.04 required checks 全綠。
-- **Constraints**：不改 production warm-up、fixture oracle 或 assertion manifest；不把 command-not-found 當 flake
-  重跑；不為 Ubuntu 跳過 zsh assertions。
-- **進度**：root cause 已由 failed log 確認；尚未修改 workflow。
-- **下一步**：在 CI 安裝 zsh，補 dependency gate，完成本地驗證後準備更新 PR #224。
-- **關聯**：Issue#223;PR#224;run:35293274779;M-20260918-issue-223-brewup-portable-ruby-visibility
-- **Writer**：codex:issue-223-brewup-portable-ruby-visibility
-- **Workspace**：branch=fix/issue-223-brewup-portable-ruby-visibility
-- **Write Scope**：`.github/workflows/test.yml`, `tests/run.sh`, `STATUS.md`, `docs/archive/milestones-2026-09.md`
-- **Dossier Steward**：codex:issue-223-brewup-portable-ruby-visibility
-
 ## 暫停中
 
 - **B-20260902-gh-account-autoswitch**：pending；維持 backlog 既有觸發條件，在條件實際發生前不開發、
