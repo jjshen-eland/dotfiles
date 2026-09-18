@@ -459,8 +459,10 @@ detect_dossier() {
     # `!` 反轉後**正常的大 dossier 被誤報簽章不符**，而該 flag 的處置是「停下、勿當 dossier 改」。
     # 實證：115KB fixture 下 cond1/cond2 皆 rc=141；小檔不發作（printf 寫得完），故潛伏。
     # 同型前例：krepo 的 scripts/backup/lib/dest_r2.sh（保底清單比對）。已入 claude/CLAUDE.md 已知地雷。
+    # GNU grep 與 BSD grep 對「全形／半形括號混同一個 bracket expression」的錨定 ERE
+    # 結果不一致；兩種裝飾後綴分成明確 alternation，避免 Ubuntu 把合法 dossier 誤報簽章不符。
     if ! grep -qE '^##[[:space:]].*進行中[[:space:]]*$' <<< "$unfenced" \
-        || ! grep -qE '^##[[:space:]].*(決策|死路|技術債|里程碑|已完成|已知缺口|移交準備度?)[[:space:]]*([（(][^（()）]*[）)])?[[:space:]]*$' <<< "$unfenced"; then
+        || ! grep -qE '^##[[:space:]].*(決策|死路|技術債|里程碑|已完成|已知缺口|移交準備度?)[[:space:]]*(（[^（）]*）|\([^()]*\))?[[:space:]]*$' <<< "$unfenced"; then
         echo "dossier-flag: 簽章不符（缺「進行中」或 dossier 專屬章節——撞名領域產物？勿當 dossier 改；spec 模式遇之停下告知）"
     else
         # 章節完整性：簽章只要求「任一」專屬章節在，故**整節被刪它抓不到**。
