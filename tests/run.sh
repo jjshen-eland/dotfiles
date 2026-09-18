@@ -1570,7 +1570,7 @@ else bad "乾淨 repo 缺 protection/ship-path/branch-first（docs-only mode 取
 
 # local-only（無 remote）→ STOP
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/gh-local")"
-if echo "$out" | grep -q "remotes: NONE"; then ok "無 remote → STOP 告知"; else bad "無 remote 未 STOP"; fi
+if grep -q "remotes: NONE" <<< "$out"; then ok "無 remote → STOP 告知"; else bad "無 remote 未 STOP"; fi
 
 "$SS_SCRIPT" "$TMP/not-a-repo" >/dev/null 2>&1
 assert_rc "非 git repo → exit 1" 1 $?
@@ -2763,7 +2763,7 @@ if echo "$out" | grep -qE "^dossier-sections: 進行中 [0-9]{4,} \([0-9]+%\)"; 
   awk 'BEGIN { s = "- ✅ 里程碑填充"; for (i = 0; i < 10; i++) s = s "內容"; for (r = 0; r < 30; r++) print s }'; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
 if echo "$out" | grep -qE "^dossier-sections: 關鍵決策（附理由） [0-9]{5,}"; then ok "fenced 內容計入分節 bytes（大 fence 章節排第一，未被低估）"; else bad "fence 章節被低估／排名倒轉（實得：$(echo "$out" | grep dossier-sections)）"; fi
-if echo "$out" | grep -q "dossier-flag:.*簽章"; then bad "大輸入下簽章偽陽性（grep -q 早退 + pipefail）"; else ok "大檔簽章判定正確（herestring 防 SIGPIPE 偽陽性）"; fi
+if echo "$out" | grep -q "dossier-flag:.*簽章"; then bad "大輸入下簽章偽陽性（herestring 或括號 ERE 不相容）"; else ok "大檔簽章判定正確（herestring + GNU/BSD grep 括號 ERE）"; fi
 # ✅ 偵測必須吃 unfenced：讀原檔會把 fence 內的範例當成真的「進行中含 ✅」
 if echo "$out" | grep -q "dossier-flag:.*進行中.*✅"; then bad "fence 內的 ✅ 範例被誤報為完成項未移走（✅ 偵測未吃 unfenced）"; else ok "fence 內的 ✅ 範例不誤報"; fi
 # Session Log 偵測的失效方向是偽陰性（命中才早退），比簽章那處更隱蔽——必須有具名守門
@@ -6771,10 +6771,11 @@ CLAUDESTUB
 chmod +x "$agy_setup/bin/brew" "$agy_setup/bin/claude"
 
 for agy_shell in bash zsh; do
+    agy_shell_path="$(command -v "$agy_shell")"
     agy_log="$agy_setup/${agy_shell}.brew.log"
     : > "$agy_log"
     agy_out="$(HOME="$agy_setup/home" PATH="$agy_setup/bin:/usr/bin:/bin" \
-        AGY_BREW_LOG="$agy_log" "$agy_shell" "$agy_snippet" 2>&1)"
+        AGY_BREW_LOG="$agy_log" "$agy_shell_path" "$agy_snippet" 2>&1)"
     agy_rc=$?
     assert_rc "${agy_shell} caller：AI CLI 安裝段可執行" 0 "$agy_rc"
     assert_eq "${agy_shell} caller：既有 codex cask 安裝仍只呼叫一次" 1 \
