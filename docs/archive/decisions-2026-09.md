@@ -99,3 +99,9 @@
   - 放棄:把常離線終端加入辦公機隊 inventory；來回打洞的 laptop-only fan-out 清單；只為偵測偶發本機漏跑而新增持久監控或啟動告警；將休眠中公司 MacBook 虛構為已驗證或退役
   - 重議:任一 MacBook 恢復為常態開發節點且本機更新模型造成可重現的行為漂移；需要從中央穩定觀測或管理終端；或 inventory fan-out 日後能對長期離線節點靜默降級且不稀釋真失敗訊號
   - 關聯:B-20260809-gap-10;D-20260913-company-mac-nonblocking-identity-rollout;M-20260913-identity-fleet-rollout-complete;docs/repo-guide.md;scripts/brewup.sh;scripts/inventory.conf
+
+- **D-20260918-biz-chat-backlog-out-of-scope · 2026-09-18 非正式 biz-chat 不再由 dotfiles backlog 追蹤**:`B-20260820-gap-08` 原本混合兩個 ownership：dotfiles 的 Project transfer credential artifact guard，以及 biz-chat 自身的 tracked literals、`.env.example`、transfer path 與 credential rotation。前者已由 `M-20260917-gap-08-dotfiles-transfer-guard` 與後續 portability 修正完成；剩餘內容只屬於 biz-chat。使用者確認 biz-chat 不算正式專案並決定直接關閉，因此不在 biz-chat 建立 backlog／issue，也不繼續以 dotfiles 作為跨 repo 提醒清單；移除 B08，但不撤回既有 metadata-only、fail-closed transfer guard。
+  - 日期來源:direct
+  - 放棄:把非正式 repo 納入完整 project-governance；在 biz-chat 建立 backlog／issue；繼續讓 dotfiles 承擔它無 authority 修正的 target-local debt；讀取或搬運任何 secret 值
+  - 重議:biz-chat 日後成為正式維護專案、出現實際跨機器移交需求，或其 credential／transfer 狀態造成可重現的部署或接手阻塞；屆時以 biz-chat 為 target 另案建立狀態，不復活 dotfiles 的跨 repo backlog
+  - 關聯:B-20260820-gap-08;M-20260917-gap-08-dotfiles-transfer-guard;M-20260917-gap-08-ci-portability-fixed
