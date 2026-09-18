@@ -12,27 +12,6 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### B-20260807-gap-09 · Antigravity CLI macOS provisioning
-
-- **Context**：`agy` 目前只手動安裝在部分 Mac；backlog 記錄的 Homebrew cask 為
-  `antigravity-cli`，但 `setup-mac-env.sh` 尚未承接新機 provisioning，造成機器間漂移。
-- **Goal**：重新驗證現行 cask／binary 與 macOS setup 契約，讓新機 setup 可安裝 Antigravity CLI。
-- **Acceptance Criteria**：先以隔離 Homebrew fixture 取得「新機 setup 未要求安裝
-  `--cask antigravity-cli`」的 RED；最小修正後 fixture 轉綠，且 Bash／zsh 呼叫路徑與完整 suite 通過；
-  不改 `brewup` 對 `auto_updates` cask 的預設更新語意。
-- **Constraints**：測試不得安裝真實 cask；首次執行仍需人在 Mac console 完成系統核可，不把該互動偽裝成
-  setup 可自動完成；不沿用已排除的 Gatekeeper 預防方案，也不強制 `brewup --greedy`。
-- **進度**：ROOT CAUSE CONFIRMED；Bash／zsh fixture 由 integration `1077/4` RED 轉為 `1081/0`，完整 suite
-  `1485/0`，core `165/0`，ShellCheck、syntax 與 doc audit 通過；實作與 milestone 已完成，等待 shipping。
-- **下一步**：由 Project Log 將 code、tests、README、backlog 結案與 milestone 組成受控 commit，送 PR 並以
-  macOS＋Ubuntu required CI 驗證。
-- **關聯**：B-20260807-gap-09;B-20260807-gap-04;M-20260918-antigravity-cli-provisioning
-- **Writer**：codex:antigravity-cli-provisioning
-- **Workspace**：branch=feat/antigravity-cli-provisioning
-- **Write Scope**：`setup-mac-env.sh`, `tests/run.sh`, `tests/shard-manifest.tsv`, `README.md`,
-  `STATUS.md`, `docs/backlog.md`, `docs/archive/milestones-2026-09.md`
-- **Dossier Steward**：codex:antigravity-cli-provisioning
-
 ## 暫停中
 
 - **B-20260902-gh-account-autoswitch**：pending；維持 backlog 既有觸發條件，在條件實際發生前不開發、

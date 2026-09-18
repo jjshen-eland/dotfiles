@@ -123,6 +123,9 @@ git, gh, wget, htop, tree, tmux, bun, node, python3, uv, jq, yq
 |------|----------|----------|
 | claude (Claude Code) | 官方安裝腳本 → `~/.local/bin` | `claude update`（`brewup` 已涵蓋） |
 | codex (OpenAI Codex) | `brew install --cask codex`（macOS/Linux 皆支援） | `brew upgrade`（`brewup` 已涵蓋） |
+| agy (Google Antigravity CLI) | `brew install --cask antigravity-cli`（macOS） | cask 標記 `auto_updates`；`brewup` 不強制 `--greedy` |
+
+`agy` 首次執行需在 Mac console 完成系統核可；遠端或無人值守 setup 不會代替這個互動步驟。
 
 ### 便捷別名
 

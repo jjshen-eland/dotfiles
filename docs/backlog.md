@@ -69,11 +69,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   **觸發條件**：以 biz-chat 為 target 明確叫用 Project Spec，並能協調必要 credential rotation；屆時只以 key
   名稱與 filesystem／Git metadata 盤點，先處理 tracked literals、`.env.example` coverage 與 canonical transfer
   path，不讀取、輸出或搬運 secret values。
-- **B-20260807-gap-09** · **`agy`(Antigravity CLI)只手動裝在 macs,未寫進 `setup-mac-env.sh`**:2026-08-07 因 gemini-cli
-  已於 2026-06-18 停服而改裝其後繼(`brew install --cask antigravity-cli`,binary 名 `agy`)。
-  後果:新機器跑 setup 不會裝、macmini/m4mini 目前也沒有。該 cask 標 `auto_updates`,故 `brewup`
-  不會升它(除非 `--greedy`)。**它沒有 `generate_completions_from_executable`,不會踩 codex 那個
-  Gatekeeper 坑**,但首次執行仍會走核可流程——要裝就在該機 console 前跑一次。
 - **B-20260907-governed-repo-declared-path-gaps** · **已 rollout 的 repo 有配置缺口，等各自的 session 補**(2026-09-07 加)。
   issue #165 實測六個 repo:`krepo-tej-export` 與 `krepo-mops-financial-statements` 的 `plan_dir` 指向
   `docs/plans` 卻沒有 `plans` class;`krepo-mops-financial-statements` 的 `STATUS.md` Dossier Steward 欄被中文

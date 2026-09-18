@@ -336,6 +336,10 @@ print_info "安裝 AI CLI 工具..."
 # Codex：官方只上架 cask（無 formula），binary 類 cask macOS/Linux 皆支援，更新由 brew upgrade 管理
 brew install --cask codex 2>&1 | grep -v "already installed" || true
 
+# Antigravity CLI：auto_updates cask 只負責新機 provisioning；brewup 不以 --greedy 強制升級
+brew install --cask antigravity-cli 2>&1 | grep -v "already installed" || true
+print_warning "Antigravity CLI 首次執行請在 Mac console 完成系統核可"
+
 # Claude Code：官方安裝腳本 → ~/.local/bin，安裝後由 claude update 自我更新（brewup 已涵蓋）
 if command -v claude &> /dev/null; then
     print_info "Claude Code 已安裝，跳過（更新走 claude update / brewup）"
