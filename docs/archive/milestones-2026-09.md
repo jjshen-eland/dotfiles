@@ -359,3 +359,9 @@
   - 放棄:以 ASCII-only 或標點 blacklist 解決未發生的問題，因為會推測性拒絕合法非 ASCII human actor；為舊 premise 補不具決策價值的 gate／fixture；自動改寫其他 governed repos
   - 重議:實際 governed repo 出現 decorated actor key 並造成 authority mismatch／錯誤 fallback；或外部整合提出超越現行 runtime-prefix＋non-whitespace 契約的 machine-stable actor grammar 需求
   - 關聯:B-20260907-actor-key-decoration-limit;D-20260907-declared-path-coverage-and-shared-actor-rule;M-20260907-doc-governance-silent-config-gaps;scripts/doc-governance.py;shared/skills/project/scripts/steward-authority.py
+
+- **M-20260918-governed-repo-declared-path-gaps-closed · 2026-09-18 rollout repo declared-path gaps 已由下游修復**:`B-20260907-governed-repo-declared-path-gaps` 原本追蹤 issue #165 在六 repo 盤點中發現的實際缺口：`krepo-tej-export` 與 `krepo-mops-financial-statements` 宣告 `plan_dir=docs/plans` 卻缺少 `plans` class，後者另有 decorated Dossier Steward。現行 main 已分別由 `krepo-tej-export@fca0d7a` 宣告 `plans` class，以及 `krepo-mops-financial-statements@6e07376` 補齊 plans／analysis class、`0740709` 將 steward 恢復為 bare actor key；兩個 repo 的現行 `audit --ship` 均為 OK。實際缺口已消失，附帶的「是否建立全 fleet 標準 class 清單」沒有 observed failure，不另增規則或 gate，因此移除 backlog。
+  - 日期來源:direct
+  - 放棄:由 dotfiles 跨 repo 重做已完成的修正；把所有 repo 強制成相同 class 清單；為未觀察到的 `analysis`／`script-guides` miss 建立理論性 gate
+  - 重議:任一 governed repo 再次宣告 `plan_dir`／`history_paths` 卻沒有 matching class，或實際 canonical path 因 class 缺漏造成 audit、find 或 shipping 的可重現錯判
+  - 關聯:B-20260907-governed-repo-declared-path-gaps;M-20260907-doc-governance-silent-config-gaps;issue#165;krepo-tej-export@fca0d7a;krepo-mops-financial-statements@6e07376;krepo-mops-financial-statements@0740709
