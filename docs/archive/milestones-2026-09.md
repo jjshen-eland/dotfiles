@@ -371,3 +371,9 @@
   - 放棄:寬 Bash permission allow；把現版無 denial 冒充歷史 root-cause repair；把 B 的 `Edit` fallback 冒充 classifier GREEN；複製或持久保存 Claude credentials；修改 managed Kernel
   - 重議:G14 A/C/D 任一臂回歸；B 能以公開穩定方式直送 heredoc tool input；或 exact historical denial 在 supported version 再現
   - 關聯:Issue#228;D-20260920-claude-auto-mode-contract-maintenance-boundary;claude/settings.json;claude/CLAUDE.md;claude/evals/README.md;claude/evals/contract-evals.md;claude/evals/setup-sandboxes.sh;tests/run.sh
+
+- **M-20260920-pr-231-shard-manifest-synchronized · 2026-09-20 PR #231 的 integration assertion manifest 已與新增 gates 同步**:Required run `35517972049` 的 Ubuntu 24.04 與 macOS 15 都在 integration shard 本身 `1083 PASS／0 FAIL` 後，以同一個 `expected 1081, got 1083` aggregate mismatch 失敗；因此第一個因果差異不是 OS 行為，而是 Issue #228 新增兩個 deterministic assertions 時漏同步 `tests/shard-manifest.tsv`。本機 `tests/run-parallel.sh` 先以相同 mismatch exit 1 重現 RED；最小修正只把 integration manifest 從 1081 更新為 1083，不移除或放寬測試。修後 parallel aggregate `1487/0`、macOS 本機 serial `1487/0`，ShellCheck 與 doc-governance slow gates 亦全綠；現有 macOS CI 沒有獨立 failure，和 Ubuntu 同因。
+  - 日期來源:direct
+  - 放棄:只重跑失敗 workflow；把 failure 誤診為 Ubuntu-only；降低實際 assertion 數、移除新增 gates 或放寬 aggregate fail-closed 判準
+  - 重議:任一 required OS 在新 head 出現不同 failure；integration assertion 數再次漂移；或 parallel／serial 的實際 assertion 集合不一致
+  - 關聯:PR#231;run:35517972049;Issue#228;M-20260920-issue-228-auto-mode-containment-complete;tests/shard-manifest.tsv;tests/run.sh
