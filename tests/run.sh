@@ -8483,6 +8483,33 @@ if grep -q 'sandbox_mode = "danger-full-access"' "$ROOT/codex/config.toml" \
 else
     bad "Codex autonomy／PreToolUse gate contract 不成立"
 fi
+
+if jq -e '
+    (.autoMode.allow | index("$defaults")) != null
+    and any(.autoMode.allow[];
+        contains("Documentation Governance Reads")
+        and contains("scripts/doc-governance.py")
+        and contains("find")
+        and contains("record-path")
+        and contains("report")
+        and contains("audit")
+        and contains("read-only")
+        and contains("record-path` only computes and prints")
+        and contains("no earlier Edit, Write, or Bash tool call"))
+' "$ROOT/claude/settings.json" >/dev/null; then
+    ok "Claude Auto 精確允許未被本輪修改的 doc-governance 唯讀子命令"
+else
+    bad "Claude Auto 缺少 bounded doc-governance read-only allow，或未保留 defaults／modified-script 邊界"
+fi
+
+if grep -q 'repo-specific contract text' "$ROOT/claude/CLAUDE.md" \
+    && grep -q 'managed Kernel' "$ROOT/claude/CLAUDE.md" \
+    && grep -q 'Edit.*Write' "$ROOT/claude/CLAUDE.md" \
+    && grep -q 'Bash heredoc' "$ROOT/claude/CLAUDE.md"; then
+    ok "Claude always-on 契約釘住 repo-specific 授權邊界與結構化編輯工具"
+else
+    bad "Claude always-on 契約缺少 repo-specific／Kernel 分界或 Edit/Write 規則"
+fi
 for rule in 'git", "push' 'git", "send-pack' 'gh", "pr", "merge'; do
     if grep -F "$rule" "$ROOT/codex/rules/default.rules" | grep -q 'decision="prompt"'; then
         ok "Codex canonical rule prompt: $rule"

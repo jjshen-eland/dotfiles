@@ -365,3 +365,9 @@
   - 放棄:由 dotfiles 跨 repo 重做已完成的修正；把所有 repo 強制成相同 class 清單；為未觀察到的 `analysis`／`script-guides` miss 建立理論性 gate
   - 重議:任一 governed repo 再次宣告 `plan_dir`／`history_paths` 卻沒有 matching class，或實際 canonical path 因 class 缺漏造成 audit、find 或 shipping 的可重現錯判
   - 關聯:B-20260907-governed-repo-declared-path-gaps;M-20260907-doc-governance-silent-config-gaps;issue#165;krepo-tej-export@fca0d7a;krepo-mops-financial-statements@6e07376;krepo-mops-financial-statements@0740709
+
+- **M-20260920-issue-228-auto-mode-containment-complete · 2026-09-20 Issue #228 的 Auto mode 工具形狀誤判已沉澱成 bounded containment 與 G14 oracle**:先在 `tests/run.sh` 加入 Auto allow 範圍與 always-on 契約邊界兩個 gate，取得完整 suite `1485 PASS／2 FAIL` RED；最小修正新增一條保留 `$defaults` 的 `Documentation Governance Reads` allow，以及 Claude contract 的 exact repo-specific authorization、managed Kernel 不可跨越與 `Edit`／`Write` 規則。G14 fixture 以四個 fresh repo arms、classifier-only／always-on 兩組 home 重播：A 唯讀 helper GREEN，C 模糊授權零 mutation 並要求具名，D 只用單一 `Edit` 刪 exact line，四臂 Kernel hash 相同；B 在 current Sonnet 不肯發出 heredoc tool call，故誠實保留 classifier UNVERIFIED，歷史根因終態仍為 UNCONFIRMED、本批只宣稱 containment。`claude auto-mode config` 已看到 effective rule，官方 critique 暴露 `record-path` 名稱歧義後補成「只計算並輸出」的效果描述；fixture 自身 audit OK，最終完整 suite `1487 PASS／0 FAIL`、doc-governance ship audit／JSON／Bash syntax／diff check 全綠。
+  - 日期來源:direct
+  - 放棄:寬 Bash permission allow；把現版無 denial 冒充歷史 root-cause repair；把 B 的 `Edit` fallback 冒充 classifier GREEN；複製或持久保存 Claude credentials；修改 managed Kernel
+  - 重議:G14 A/C/D 任一臂回歸；B 能以公開穩定方式直送 heredoc tool input；或 exact historical denial 在 supported version 再現
+  - 關聯:Issue#228;D-20260920-claude-auto-mode-contract-maintenance-boundary;claude/settings.json;claude/CLAUDE.md;claude/evals/README.md;claude/evals/contract-evals.md;claude/evals/setup-sandboxes.sh;tests/run.sh
