@@ -6,11 +6,25 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 # STATUS.md
 
-個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-09-18)
+個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-09-20)
 
 ---
 
 ## 進行中
+
+### #228 Claude auto mode 契約修改誤判
+
+- **Writer**：codex:claude-auto-mode-contract-edits
+- **Workspace**：branch=fix/claude-auto-mode-contract-edits
+- **Write Scope**：`STATUS.md`, `claude/settings.json`, `claude/CLAUDE.md`, `claude/evals/`, `tests/run.sh`, `docs/archive/`
+- **Dossier Steward**：codex:claude-auto-mode-contract-edits
+- **Context**：Issue #228 記錄 Auto mode 曾依工具形狀誤擋唯讀 governance helper 與使用者已精確授權的 repo-specific 契約修改。
+- **Goal**：建立不放寬 managed Kernel 或高優先級規則的 bounded containment，並留下可重播的行為 oracle。
+- **Acceptance Criteria**：保留 observed RED；唯讀 helper allow 有精確邊界；exact repo-specific 修改只用結構化工具；G14 負向臂保持 Kernel 不變；完整 suite 全綠。
+- **Constraints**：歷史 classifier 根因無法在現版重現時維持 `UNCONFIRMED`，不得宣稱上游已修復；不得擴成寬 Bash allow。
+- **進度**：實作與 clean-clone `PASS=1487 FAIL=0` 已完成；正依 Project authority recovery 重建尚未 push 的 lifecycle commits。
+- **下一步**：建立完成 milestone、移除本 active item，重驗 authority／文件／tree hash 後執行 `$project --merge`。
+- **關聯**：Issue#228;D-20260920-claude-auto-mode-contract-maintenance-boundary;M-20260920-issue-228-auto-mode-containment-complete
 
 ## 暫停中
 
