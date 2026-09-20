@@ -12,6 +12,20 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
+### PR #231 integration shard assertion manifest 漂移
+
+- **Writer**：codex:claude-auto-mode-contract-edits
+- **Workspace**：branch=fix/claude-auto-mode-contract-edits
+- **Write Scope**：`STATUS.md`, `tests/shard-manifest.tsv`, `docs/archive/milestones-2026-09.md`
+- **Dossier Steward**：codex:claude-auto-mode-contract-edits
+- **Context**：PR #231 的 Ubuntu 24.04 與 macOS 15 required jobs 都在 integration tests 全綠後，因 assertion manifest 仍期待 1081、實際為 1083 而失敗。
+- **Goal**：讓 shard manifest 與新增的兩個 deterministic regression assertions 同步，不改任何測試判準。
+- **Acceptance Criteria**：本機 `tests/run-parallel.sh` 從相同 mismatch RED 轉綠；完整 suite、doc audit 與兩個 required OS 都通過。
+- **Constraints**：只更新可歸因的 assertion count；不得移除或放寬新增測試，不把相同跨平台失敗誤報為 Ubuntu-only。
+- **進度**：CI 與本機均重現 `integration expected 1081, got 1083`；root cause confirmed。
+- **下一步**：將 integration manifest 更新為 1083，重跑 parallel／serial checks；完成後移除本 active item並記錄 milestone。
+- **關聯**：PR#231;run:35517972049;Issue#228;M-20260920-issue-228-auto-mode-containment-complete
+
 ## 暫停中
 
 - **B-20260902-gh-account-autoswitch**：pending；維持 backlog 既有觸發條件，在條件實際發生前不開發、
