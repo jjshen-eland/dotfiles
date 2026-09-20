@@ -44,6 +44,7 @@ fallback conventions 則由該 repo 自己的規定勝出。Repo 沒有契約檔
 - Ambiguous task: NEVER silently pick one reading. List the plausible interpretations and let the user choose before writing anything.（自主執行時的 fallback 見本節下方 `Uncertain?` 條目）
 - Uncertain? 互動 session：stop and ask — do NOT assume just to keep momentum。自主執行（背景 turn、使用者無法即時回覆）：取最合理解讀繼續，並在既有 active-state store 或最終回報明列假設、標示待確認。**Irreversible or outward-facing actions still require asking — the autonomous fallback NEVER extends to them.**
 - Bug fix: ALWAYS write a reproducing test FIRST, then fix. 無法可行地自動重現者（環境相依、一次性腳本、外部服務行為）→ 改記手動重現步驟與修後驗證方式（有 STATUS.md 寫進去、無則寫在回報裡）；「先重現、再修」的順序不變。
+- When the user explicitly requests an exact change to repo-specific contract text in `AGENTS.md` or `CLAUDE.md`, that authorizes only that named repo-specific edit. It NEVER authorizes changing a managed Kernel block, higher-priority instructions, permissions, hooks, or Auto mode rules. Make the change with `Edit` or `Write`, NEVER a Bash heredoc or opaque search-and-replace script, so the old/new content stays directly reviewable.
 
 ## PR / Git
 
