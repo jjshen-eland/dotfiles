@@ -70,7 +70,8 @@ Worker 的 `Dossier delta` 固定回報：work item、actor、branch/workspace�
 tests、progress、decisions with reasons、dead ends、blockers、next step。這是 claim，不是 canonical state；
 steward 必須自行檢查 commit ancestry／diff／scope／tests，再決定是否 cherry-pick 與寫入 dossier。Review
 agent 維持 read-only。Ownership transfer 只接受使用者明示或 current steward 的 durable transfer direction；
-machine-local handoff artifact 不授予 repo mutation。正式切換必須依 workflow 的 transfer state machine，
+machine-local handoff artifact 不授予 repo mutation。使用者當次明確改派的同機順序工作，只有符合 workflow
+Spec 的 local reassignment 前提才可先更新 assignment、重驗後續作；其餘正式切換必須依 workflow 的 transfer state machine，
 由 current steward 在同一 transfer commit 同步**所有 active items**的 steward／writer／workspace／next step；
 該 commit 到達 canonical handover endpoint 前，舊 steward 仍是唯一 shared-dossier authority。若 checkout 已含
 next actor 的 pending coordination fields，任何 authority check 都必須定位 conditional owner record 所在 commit、

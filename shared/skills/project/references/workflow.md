@@ -73,7 +73,7 @@ Steward 與 item identity，則這份指派不因下一個 Project invocation �
 assignment 改變、work item 已移除、撤回／改派、PREPARED transfer、human delegation、跨 runtime 或新 session
 皆不可沿用；仍用既有 gate 處理。任何外向 endpoint 必須另有當次授權，此指派不授予 push／PR／merge。
 
-在任何 adopted active-state mutation、commit 或 shipping 前執行：
+除下節 Spec 的 local reassignment 兩欄更新外，在任何 adopted active-state mutation、commit 或 shipping 前執行：
 
 ```sh
 python3 "<project-scripts>/steward-authority.py" --root "$repo" --runtime <runtime> \
@@ -95,6 +95,19 @@ authority actor、authority source 四行；`--merge` 等 endpoint 說法不參�
 
 開工儀式：把願望變成可驗證的 active contract。本模式只寫文檔，不改 code、不 commit。
 
+**同機順序 local reassignment**：使用者當次明確把既有工作與文件維護改派給本 agent，並說明前任已停、
+沒有其他 writer，才適用；「我是 owner」、舊handoff claim或前任僅退出不算改派。沿下列Spec步驟一次完成
+adoption／trusted-core、repo/branch/dirty state、routed records及worktree盤點；限單canonical repo、唯一active
+item、Writer與Steward同為另一runtime的agent actor、Workspace符合當前feature branch、worktree/index clean。
+有其他repo相依、未整合workspace、活躍writer、必要private-only事實、transfer guide／conditional owner或其
+影響尚不清楚時，不適用此路徑；不把前任已停當成這些事實皆不存在。
+
+上述事實已確認後，當次改派本身允許**只先更新Writer／Dossier Steward兩欄**為本runtime的同一workline，
+保留其餘欄位；不先跑必然因舊actor mismatch而STOP的helper，也不為同一snapshot重複盤點／再問使用者。
+更新後才跑普通authority helper，exact PASS方可繼續原Spec進度／event-time改派記錄／文件驗證；來源為
+`current-user-local-reassignment`，不是舊actor resume或繼承授權。新衝突／helper失敗就停，不能擴改scope或
+自行修正不明assignment。其餘多writer／多repo／human steward／正式Transfer路徑及各批outward授權不變。
+
 1. 判斷 adoption：`.doc-governance.json` 與 `scripts/doc-governance.py` 兩者皆有＝adopted；兩者皆無＝legacy；
    只存在一個＝BROKEN，停止且不要回退 legacy。
 2. Adopted repo 先確認 target 的 config/core adoption 完整且 core 通過 trusted-core 比對，再執行
@@ -104,7 +117,7 @@ authority actor、authority source 四行；`--merge` 等 endpoint 說法不參�
    從 `<project-templates>/STATUS-legacy-template.md` 建立。建立後確認專案定位；撞名的領域產物不得覆寫。
 4. 在 `進行中` 寫 Context／Goal／Acceptance Criteria／Constraints／進度／下一步／關聯 IDs。若 target
    config 啟用 `status_schema.active_item_contract`，另依 dossier 的「平行協作與 stewardship」填四個
-   coordination fields。寫入前先跑上節 helper：沒有 active items 時新 work item 以
+   coordination fields。符合上述local reassignment時先做兩欄更新並重驗；其他寫入前先跑上節 helper：沒有 active items 時新 work item 以
    `<runtime>:<workline>` 作 actor／steward；已有 steward 時必須 exact same-runtime resume，或由 exact human
    steward 以本輪 `as=` bounded delegation 建立 item（durable steward 保持 human actor）。尚未建立 feature
    branch 時 `Workspace` 先填 `unassigned`。普通身分宣稱、`--merge` 或「原 session 已退出」都不放行。
