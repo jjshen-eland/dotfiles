@@ -6,35 +6,13 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 # STATUS.md
 
-個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-09-20)
+個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-09-24)
 
 ---
 
 ## 進行中
 
-### #229 — review convergence baseline
-
-- **Writer**：codex:229-handoff-current-authorization
-- **Workspace**：branch=fix/229-handoff-current-authorization
-- **Write Scope**：本項 STATUS、docs/plans/2026-09-23-review-convergence-audit.md、shared/skills/deep-plan/{evals.md,references/workflow.md}、{codex,claude}/skills/deep-plan/SKILL.md、docs/archive/{decisions,milestones}-2026-09.md；risk activation已落地。本輪新增shared/skills/deep-review/scripts/review-terminal.sh、shared/skills/deep-review/evals.md、tests/run.sh與tests/shard-manifest.tsv，僅修已重現的BSD sed terminal顯示；不改review gate／brief／launcher。
-- **Dossier Steward**：codex:229-handoff-current-authorization
-- **Goal**：查證計畫／code review 的阻斷分類與重掃成本，不以 handoff 單一候選失敗停止 umbrella audit。
-- **Acceptance Criteria**：fixed cross-repo plan 中的真實 wire-contract blocker 被指出；optional improvements／既有無關 debt 不變成開工條件。reviewer-stage baseline 與完整 orchestration evidence 分開，不以前者冒充全流程驗收。
-- **Constraints**：Astra medium（先前有界high分析已完成）；P18/P19均reject，不重跑洗綠。Risk-route stage150秒、native600秒／Claude USD4、每target每arm一次；harness污染與有效behavior結果分開，詳見active audit。
-- **下一步**：risk activation已完成；terminal evidence顯示修正另已本地驗證（1491/0），見M-20260923-review-terminal-display-local，未push。Cold terminal replay未重現hot orchestration的錯誤PASS，Sol仍逾時；不再重跑同packet或增加判定警語。完整高風險收斂、prompt transport與code-review流程有效性仍未完，不把工具修復當全#229結案。
-- **進度**：plan候選拒絕：Sol完整GO；Opus第二輪reviews無blocking但parent等待超過900秒，未出有效終態；Sonnet仍擴張測試並NO-GO，且reviewer違反唯讀。Production brief未改。Code兩端一批修復產物正確，但Opus驗證reviewer讀到前輪資料仍被parent判PASS；其獨立驗收不成立。Handoff 增量已本地驗收、未ship，見 M-20260923-handoff-task-reference-local-acceptance 與 [凍結紀錄](docs/plans/2026-09-22-workflow-audit.md)。
-
-### #229 — sequential coordination baseline
-
-- **Writer**：codex:229-handoff-current-authorization
-- **Workspace**：branch=fix/229-handoff-current-authorization
-- **Write Scope**：本項STATUS、docs/plans/2026-09-23-coordination-audit.md、shared/skills/project/references/{workflow,log-workflow,dossier,pressure-tests}.md、shared/skills/project/scripts/steward-authority.py、tests/project-session-binding.py、tests/run.sh、tests/shard-manifest.tsv、docs/archive/{decisions,milestones}-2026-09.md；已驗證的same-session binding及同機單item local reassignment；後者只改workflow／dossier及oracle，kernel／runtime entry／正式transfer與shipping authorization不改。
-- **Dossier Steward**：codex:229-handoff-current-authorization
-- **Goal**：查證明確順序交棒的正常路徑與真實writer conflict的安全路徑。
-- **Acceptance Criteria**：native targets完成原Goal而不重問內部token；衝突arm不改task／owner；無outward操作。
-- **Constraints**：每target每arm一次、300秒、Claude USD2；不重跑追綠，不把helper probe當完整驗收。
-- **進度**：same-session binding已本地落地；雙primary完整Spec不重問、scope變更STOP、一次新指示後續作皆通過。Helper9 tests與repo1488/0通過，見M-20260923-project-session-binding-local-acceptance。未push／跨機散佈；kernel／runtime entry／shipping authorization未改。先前batch／交棒與guided-recovery瑕疵保留，非全部coordination完成。
-- **下一步**：cross-runtime Spec第二候選已本地驗收、未push，見M-20260923-project-local-reassignment-acceptance；第一候選reject保留。接續聚焦必要互動的一答恢復與完整Log／shipping未驗部分，不重測已通過的小型local Spec或parallel control；review未解部分仍在其active audit。
+目前無進行中項目。
 
 ## 暫停中
 

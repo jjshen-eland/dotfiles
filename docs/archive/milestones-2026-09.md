@@ -407,3 +407,9 @@
   - 放棄:以正確程式測試替代獨立review；把show修正當原錯誤PASS根因；調高budget重跑Sol；以cold replay當full-review驗收
   - 重議:system工具相容性或terminal欄位schema改變，顯示／clear coverage回歸
   - 關聯:Issue#229;D-20260923-review-terminal-native-display;docs/plans/2026-09-23-review-convergence-audit.md;shared/skills/deep-review/evals.md
+
+- **M-20260924-workflow-integration-delivery · 2026-09-24 #229 有界版本完成本地交付驗收**：保留e6110a3、9684d30、c2c8233的已驗證改善，沒有新production規範／helper改動。唯一雙primary整合case中，Sol/high187.060秒、Opus5 157.054秒均以一次產品回答完成原scope，無第二次授權確認或無關debt實作；root semantic與權威suite exit0（6／9tests），HEAD／index不變。Repo1491 PASS／0 FAIL、138秒、exit0。本輪audit完成後凍結並移出STATUS active；verification成本與完整review限制轉既有backlog，不關閉GitHub #229、不宣稱原全部AC通過。無commit／push／部署。
+  - 日期來源:direct
+  - 放棄:將Opus文件only重跑／pipeline exit masking當成全GREEN；新增同類探測或改prose再跑；把小型整合case外推大型cross-repo／shipping或全面效率提升
+  - 重議:B-20260924-workflow-review-residuals與B-20260924-workflow-verification-economy所列真實觸發條件；已驗證增量發生回歸
+  - 關聯:Issue#229;D-20260924-workflow-bounded-delivery;docs/plans/2026-09-23-coordination-audit.md;docs/plans/2026-09-23-review-convergence-audit.md;docs/backlog.md
