@@ -16,12 +16,12 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 - **Writer**：codex:229-handoff-current-authorization
 - **Workspace**：branch=fix/229-handoff-current-authorization
-- **Write Scope**：本項 STATUS、docs/plans/2026-09-23-review-convergence-audit.md、shared/skills/deep-plan/{evals.md,references/workflow.md}、{codex,claude}/skills/deep-plan/SKILL.md、docs/archive/{decisions,milestones}-2026-09.md；只落地已驗證risk activation候選，full-review finding gate／brief／launcher／其他helper未改。
+- **Write Scope**：本項 STATUS、docs/plans/2026-09-23-review-convergence-audit.md、shared/skills/deep-plan/{evals.md,references/workflow.md}、{codex,claude}/skills/deep-plan/SKILL.md、docs/archive/{decisions,milestones}-2026-09.md；risk activation已落地。本輪新增shared/skills/deep-review/scripts/review-terminal.sh、shared/skills/deep-review/evals.md、tests/run.sh與tests/shard-manifest.tsv，僅修已重現的BSD sed terminal顯示；不改review gate／brief／launcher。
 - **Dossier Steward**：codex:229-handoff-current-authorization
 - **Goal**：查證計畫／code review 的阻斷分類與重掃成本，不以 handoff 單一候選失敗停止 umbrella audit。
 - **Acceptance Criteria**：fixed cross-repo plan 中的真實 wire-contract blocker 被指出；optional improvements／既有無關 debt 不變成開工條件。reviewer-stage baseline 與完整 orchestration evidence 分開，不以前者冒充全流程驗收。
 - **Constraints**：Astra medium（先前有界high分析已完成）；P18/P19均reject，不重跑洗綠。Risk-route stage150秒、native600秒／Claude USD4、每target每arm一次；harness污染與有效behavior結果分開，詳見active audit。
-- **下一步**：risk activation已依使用者選擇完成本地增量，repo1488/0／雙entry validators通過，見M-20260923-risk-routing-local-increment；完整高風險review收斂、Claude prompt transport偏差與code-review污染仍未完，不把本次正常路徑改善當全#229結案。
+- **下一步**：risk activation已完成；terminal evidence顯示修正另已本地驗證（1491/0），見M-20260923-review-terminal-display-local，未push。Cold terminal replay未重現hot orchestration的錯誤PASS，Sol仍逾時；不再重跑同packet或增加判定警語。完整高風險收斂、prompt transport與code-review流程有效性仍未完，不把工具修復當全#229結案。
 - **進度**：plan候選拒絕：Sol完整GO；Opus第二輪reviews無blocking但parent等待超過900秒，未出有效終態；Sonnet仍擴張測試並NO-GO，且reviewer違反唯讀。Production brief未改。Code兩端一批修復產物正確，但Opus驗證reviewer讀到前輪資料仍被parent判PASS；其獨立驗收不成立。Handoff 增量已本地驗收、未ship，見 M-20260923-handoff-task-reference-local-acceptance 與 [凍結紀錄](docs/plans/2026-09-22-workflow-audit.md)。
 
 ### #229 — sequential coordination baseline
