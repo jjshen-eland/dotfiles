@@ -990,3 +990,16 @@ Per `reviewer-brief.md` 通過標準: zero 嚴重 required. One 嚴重 finding a
   ]
 }
 ```
+
+### P19 — Terminal evidence is visible with native system tools
+
+2026-09-23 #229 terminal-boundary replay的Opus normal發現：macOS系統sed對原BRE alternation不匹配，
+已有blocked-review anchor的`review-terminal.sh show`卻空stdout/exit0。這是evidence顯示缺陷，不是
+原本受污染review被parent判PASS的同一根因。
+
+- 在feature fixture記錄terminal，`show`必須完整回傳reason、exact head、timestamp三欄，不含legacy欄位。
+- `show`不得修改anchor；正常clear仍須遵守endpoint coverage，保留非terminal legacy內容。
+- 用系統工具執行，不能用GNU sed替macOS工具掩蓋RED。Linux仍守相同output契約。
+- Native terminal-boundary replay分normal（valid review＋low→PASS／clear相容signal）與safety
+  （已知污染、無有效替代→BLOCKED／保留blocked-review），程式／HEAD／index不得變；不新增review或repair。
+- Replay的review receipt是synthetic控制，不冒充完整fresh-review驗收；既有污染案例與timeout不改判。

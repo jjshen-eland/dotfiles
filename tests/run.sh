@@ -3846,6 +3846,15 @@ mkdir -p "$(dirname "$drs_anchor")"
 echo 'base=legacy-compatible' > "$drs_anchor"
 "$DRS_CLAUDE"/scripts/review-terminal.sh record --repo "$drs_tmp/repo" \
     --reason blocking-findings --head "$drs_base" >/dev/null
+drs_before_show="$(cat "$drs_anchor")"
+drs_show="$("$DRS_CLAUDE"/scripts/review-terminal.sh show --repo "$drs_tmp/repo")"
+if grep -qxF 'terminal_reason=blocking-findings' <<< "$drs_show" \
+    && grep -qxF "terminal_head=$drs_base" <<< "$drs_show" \
+    && grep -Eq '^terminal_at=[0-9]+$' <<< "$drs_show" \
+    && [ "$(wc -l <<< "$drs_show" | tr -d ' ')" -eq 3 ]; then
+    ok "deep-review show 在系統 sed 完整顯示 terminal 三欄、不洩 legacy"
+else bad "deep-review show 遺失 terminal evidence 或混入其他欄位"; fi
+assert_eq "deep-review show 不改 anchor" "$drs_before_show" "$(cat "$drs_anchor")"
 "$DRS_CLAUDE"/scripts/review-terminal.sh clear --repo "$drs_tmp/repo" \
     --base "$drs_head" --head "$drs_head" >/dev/null 2>&1
 assert_rc "deep-review PASS scope 未涵蓋舊 terminal → 保留 signal" 5 $?
@@ -3855,6 +3864,8 @@ assert_rc "deep-review PASS scope 涵蓋 terminal → 清除 signal" 0 $?
 if grep -qx 'base=legacy-compatible' "$drs_anchor" && ! grep -q '^terminal_' "$drs_anchor"; then
     ok "deep-review terminal helper 保留 legacy anchor 非 terminal 欄位"
 else bad "deep-review terminal helper 破壞 legacy anchor 或殘留 terminal signal"; fi
+drs_show="$("$DRS_CLAUDE"/scripts/review-terminal.sh show --repo "$drs_tmp/repo")"
+assert_eq "deep-review clear 後 show 不把 legacy 當 terminal" "" "$drs_show"
 
 echo "▶ 12c. project skill 跨 Claude Code／Codex 共用核心"
 PJS_CLAUDE="$ROOT/claude/skills/project"

@@ -401,3 +401,9 @@
   - 放棄:因單端normal成功便安裝；延長固定budget或補跑洗綠；把stage分類或小fixture當完整多repo／shipping驗收
   - 重議:真實同機接手再出現false STOP或遺失in-flight工作、危險情境被捷徑放行、模型更換後相同oracle回歸
   - 關聯:Issue#229;D-20260923-project-local-reassignment;docs/plans/2026-09-23-coordination-audit.md;shared/skills/project/references/pressure-tests.md
+
+- **M-20260923-review-terminal-display-local · 2026-09-23 #229 terminal evidence顯示完成本地修復**：system-tool probe先重現macOS既有anchor被show輸出空白，再以單行ERE修正轉GREEN；三條regression守三欄完整、show唯讀、clear後不洩legacy。兩runtime的after tool evidence可見正確signal，Opus normal／污染兩arm完整PASS／BLOCKED；Sol前後四例皆180秒逾時，正確metadata產物不冒充完整流程完成。Repo1491/0 exit0、138秒、雙entry validators／doc audit／diff-check通過。原污染後PASS、budget-reset建議與收尾延遲仍未修；此增量不增加治理prose或變更審查門檻。未commit／push／跨機部署。
+  - 日期來源:direct
+  - 放棄:以正確程式測試替代獨立review；把show修正當原錯誤PASS根因；調高budget重跑Sol；以cold replay當full-review驗收
+  - 重議:system工具相容性或terminal欄位schema改變，顯示／clear coverage回歸
+  - 關聯:Issue#229;D-20260923-review-terminal-native-display;docs/plans/2026-09-23-review-convergence-audit.md;shared/skills/deep-review/evals.md

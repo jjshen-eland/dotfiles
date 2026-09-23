@@ -141,3 +141,9 @@
   - 放棄:無條件刪除authority／transfer會失去真衝突防護；另建helper／store無必要證據；重複執行必然因舊actor而STOP的pre-mutation probe不產生新的授權證據。
   - 重議:normal或conflict regression、單repo前提不足以防止in-flight遺失、或真實多item／跨repo接手需要新機制時；不把本次小fixture外推為完整遠端移交或shipping驗收。
   - 關聯:GitHub #229;docs/plans/2026-09-23-coordination-audit.md;shared/skills/project/references/pressure-tests.md;D-20260923-project-session-workline-binding
+
+- **D-20260923-review-terminal-native-display · 2026-09-23 #229 修正macOS terminal evidence空白輸出**：native terminal-boundary replay暴露既有anchor三欄存在而show空stdout/exit0；system-tool probe確認BSD sed BRE alternation是第一個差異點。只改成portable ERE，使兩runtime共用helper輸出原有reason/head/time，不改terminal schema、record/clear、workflow verdict或review budget。此為獨立observability修復，不把原污染後PASS或Sol收尾逾時歸成同因。
+  - 日期來源:direct
+  - 放棄:新增治理警語或terminal裁判helper；要求agent每次手讀anchor繞過show；安裝GNU工具當必要前提；用小型replay替完整code-review PASS背書
+  - 重議:macOS/Linux system-tool output回歸、anchor唯讀性或clear coverage改變、完整native流程仍把已知無效review判PASS時另依原root處理
+  - 關聯:Issue#229;docs/plans/2026-09-23-review-convergence-audit.md;shared/skills/deep-review/evals.md;D-20260823-portable-deep-review

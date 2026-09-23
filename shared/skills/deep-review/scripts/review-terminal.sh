@@ -88,7 +88,7 @@ show_terminal() {
     local anchor
     anchor="$(anchor_path "$1")" || return $?
     if [ -f "$anchor" ]; then
-        sed -n '/^terminal_\(reason\|head\|at\)=/p' "$anchor"
+        sed -nE '/^terminal_(reason|head|at)=/p' "$anchor"
     else
         echo "terminal: NONE"
     fi
