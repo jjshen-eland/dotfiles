@@ -2,11 +2,13 @@
 
 - 工作項：229-review-convergence
 - 日期：2026-09-23
-- 狀態：in-progress
+- 狀態：implemented
 - 種類：audit
 - 需求來源：GitHub #229；使用者要求繼續，不因局部方法 budget 耗盡而終止整體工作。
 
 ## Execution record and bounded baseline
+
+2026-09-24依使用者明示收斂交付，結束本audit的擴張調查。已驗證risk activation與terminal顯示修復保留；full-review收斂／transport／validity未解轉B-20260924-workflow-review-residuals，不重跑原失敗packet、不加警語。本輪唯一整合驗收與分項accept／partial見[coordination audit](2026-09-23-coordination-audit.md)；這是有界版本交付，不代表GitHub #229原全部AC通過。依D-20260924-workflow-bounded-delivery本檔於交付後凍結，後續只按backlog觸發条件開具體工作。
 
 Risk activation本地validation：正式三檔與受測candidate `cmp`一致；workflow SHA256 `31557b5e4933a4b809ed33d9725fa267d1b4be8256e9e1212359126a7a1142bc`、Codex entry `eb47dd7b5b1871d2155abef5e930cd2e9b08a97b45bca67feed7ffd493ae52fe`、Claude entry `9de085842899378a569b9a1af81aab8633381b8caf133c39b5883b2926965664`。雙entry quick_validate通過；完整`./tests/run.sh`1488 PASS／0 FAIL、138秒、exit0，既有launcher安全／portability gates未改。Doc governance audit與diff-check通過。未commit／push／PR／merge／散佈；high-risk strict transport、code-review validity與cross-runtime Spec等剩餘項保持active，不宣稱#229完成。
 
@@ -100,6 +102,12 @@ Sonnet機制arm完成603.765秒、USD1.8582573，NO-GO；無permanent-carrier ob
 固定target arm（claude-opus-5[1m]、CLI2.1.280）同樣FAIL：第一批plan repair強制新增consumer/tests/test_integration.py及producer count test新檔；理由仍是缺固定carrier，不是原Goal要求。這份diff足以判定normal-path oracle失敗，後續reviewer給GO亦無法消除已發生的擴張。為避免驗證變成目的，root在551.693秒主動終止此隔離process group；runner code143、timedOut=false。這是early-stop-on-observed-failure，不是900秒timeout，也不宣稱完成兩輪／取得final gate；保留raw trace與artifact。前後CLI版本不同是不可忽略的量測邊界，不外推純instruction因果／成本改善。最終兩repo仍clean。機制候選reject，未安裝；兩種候選均已結束，不再補跑同題。
 
 ## Code-review baseline
+
+2026-09-23 upstream只讀續診：HEAD c2c8233da76d3d819fa10ab4c9582dbf91e9e9f6、進場clean，既有writer／steward與Astra medium不變；沒有啟動新eval或調高effort。原Opus trace:194的verification dispatch已逐字禁止讀兩repo外與父目錄；不是漏傳隔離規則。Trace:237原先以`grep ... producer consumer --include=*.py --include=*.md`維持雙root，但239顯示zsh的`no matches found`；compound最後的find成功，整個tool result卻`is_error:false`。242換Grep時把path擴成父目錄，244實際回傳prompt中的目標及plan的實作方案。這是可見的失敗恢復範圍擴張；不能僅憑時間順序認定所有污染都由shell錯誤造成。
+
+證據精度更正：244中的歷史trace匹配大多是`[Omitted long matching line]`，所以前述「讀到先前finding」不能當成已證實的正文曝光。可確證的是作者目標、計畫方案與前輪trace存在／行號的曝光；已足以違反此次blind-review契約。257 reviewer自述刻意忽略曝光仍報`NO BLOCKING FINDINGS`；298 parent知道獨立性不足仍以自有測試PASS。程式正確性與review validity的兩個結論仍須分開，這不推翻原FAIL，也不把真實正確修復判成code regression。
+
+處置：reject立即補「不要讀父目錄」或parent「validity不足即BLOCKED」警語，因dispatch／workflow已具備；defer reviewer結果契約改版及硬隔離機制，尚無相同native情境的兩面替代證據。Brief末尾三結果目前未明定意外曝光的映射，但「有可補文字」不是行為修復證據；不為此重跑已能正確分類的cold packet。未建立額外helper／gate、未改review budget或將隔離失敗轉成再修程式；本次只更新audit／STATUS與事件決策。後續若測替代機制，必須量到工具失敗後仍限定雙root、正常跨repo依賴檢查可完成，以及真實曝光不能產生有效獨立PASS；不能只搬走本fixture的trace檔便宣稱一般runtime隔離修好。既有terminal顯示修正保持獨立已驗收項；整體#229仍in-progress。
 
 本輪終態：顯示helper修復本地完成；整體review-validity／terminal completion仍未解。After safety Opus88.705秒BLOCKED，實際show回三欄；Sol180.018秒逾時，但已record blocked-review且show完整，worktree/HEAD/index均保持。Native前後Opus兩arm均正確裁定；Sol四例皆無final，不補跑或加時。Opus兩個safety final都建議另授權新驗證，仍違反預登記的no-budget-reset建議條件；不把完整protocol說成GREEN。冷重播未重現原hot orchestration的錯誤PASS，因此不加terminal裁判helper／重複警語；原失敗維持FAIL，後續需研究整段執行的狀態傳遞，不再重跑此synthetic packet。
 

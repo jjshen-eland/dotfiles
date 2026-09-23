@@ -2,12 +2,22 @@
 
 - 工作項：229-sequential-coordination
 - 日期：2026-09-23
-- 狀態：in-progress
+- 狀態：implemented
 - 種類：audit
 - 需求來源：GitHub #229；使用者要求已授權工作持續進行、降低跨runtime順序接手摩擦。
 - Writer／Steward：codex:229-handoff-current-authorization
 
 ## Contract and execution record
+
+2026-09-24限定交付完成：本audit依D-20260924-workflow-bounded-delivery結束擴張稽核，已驗證改善保留；未解部分轉B-20260924-workflow-review-residuals及B-20260924-workflow-verification-economy，不宣稱原#229全部AC已滿足，也不關閉GitHub issue。詳細整合結果如下；本檔於本輪交付後凍結。
+
+唯一整合case結果：Sol兩turn66.842／120.218秒，合計187.060秒；Opus102.637／54.417秒，合計157.054秒，均exit0、未timeout。兩者只需duplicate-id一個必要選擇，固定答案後同session直接完成，零額外授權／owner／繼續確認，零獨立reviewer；Sol先問後實作，Opus先完成不依賴答案的部分。兩端都保留items、duplicates／順序、count／summary及input不變性，legacy_discount未動；exact五檔scope、HEAD／index不變、零untracked、無outward。Root以獨立semantic oracle及不接pipeline的權威unittest取得exit0（Sol6／Opus9tests）。所有原始prompt、trace、result、diff及verification.json保存在scratch；沒有後修產物或第二次模型嘗試。
+
+分項處置：accept此case的authorized continuation、一次回答恢復及review不擴張目標；verification economy僅partial，不宣稱全GREEN。Sol共三次suite（RED、實作GREEN、修改legacy相容測試後GREEN），沒有未變subject重跑；Opus六次suite中兩次只有文件變更後再跑，另一次記憶體mutation check，且suite皆接tail未保留原exit；root獨立驗證確認產物正確不抹除其程序瑕疵。Opus保留completed item在Active亦顯示文件生命週期尚未完全一致（fixture採legacy store，無scanner，不以此修改production schema）。兩端合併選項B仍需要另一產品子選擇，故只驗收實際選定A的一答恢復，不外推所有選項。此為單repo雙component、給定review feedback的完成路徑，不是真正獨立review、cross-repo、Project Log或shipping驗收。
+
+成本：Sol output tokens1477＋4803＝6280，14個completed command calls；Opus8333＋4570＝12903，10個Bash calls，session累計USD0.969750（resume result是累計，不能再加首turn成本）。工具呼叫粒度不同，不直接比效率優劣；無相同整合case的歷史before，不宣稱端到端加速比例。受測skill兩端均實際讀取已提交的risk workflow；本輪沒有改production instruction、helper或model default，未重驗前四個已通過增量。
+
+2026-09-24收斂交付：依使用者明示四點指示，保留已驗證增量、不重測，reviewer污染轉已知缺口。本輪僅做一個雙primary整合case，不修改skill或新增治理機制。HEAD c2c8233；進場三份dirty文件皆為本writer上一輪audit變更。Astra medium；Codex0.155.1／gpt-5.6-sol high，Claude2.1.280／claude-opus-5[1m] default effort。Scratch `/tmp/issue-229-delivery.SfxkuZ`，各自隔離repo、同任務／一次產品答案。任務：依既有計畫完成batch envelope＋consumer摘要，處置一項wire相容缺陷與optional debt；重複id語意未定，須先提出必要選擇，回答保留後完成原scope、測試、契約與進度。每target一次原生session兩turn，共600秒（首turn最多240秒，後turn只用餘額），Claude各turn USD2上限；不retry、不加budget、不提供expected verdict。Oracle由實際程式／diff／HEAD與trace判定：一次必要提問可恢復、無第二次授權確認、保留items與順序／duplicates／輸入不變、count及consumer摘要正確、empty正確、legacy debt不修、無commit／outward、最後如實交付；記錄planned checks以外的重跑，不用模型自述PASS替代。這是現版整合驗收，非新before/after或大型cross-repo／shipping完整驗收。正式write scope僅STATUS、兩份active audit、既有backlog與2026-09-24事件shards；失敗保留限制，不疊加措辭後重跑。
 
 HEAD c6395c67b877282254e23062f12a2d550ff1b280；feature branch fix/229-handoff-current-authorization。Dirty paths都是本workline先前記錄的handoff／review audit變更。Astra medium，未升級；Sol/high與Claude Opus5 default effort沿用前一execution record的runtime版本。Write scope只限本檔、STATUS；fixtures／logs在scratch，production coordination規則／helper不改。
 

@@ -147,3 +147,15 @@
   - 放棄:新增治理警語或terminal裁判helper；要求agent每次手讀anchor繞過show；安裝GNU工具當必要前提；用小型replay替完整code-review PASS背書
   - 重議:macOS/Linux system-tool output回歸、anchor唯讀性或clear coverage改變、完整native流程仍把已知無效review判PASS時另依原root處理
   - 關聯:Issue#229;docs/plans/2026-09-23-review-convergence-audit.md;shared/skills/deep-review/evals.md;D-20260823-portable-deep-review
+
+- **D-20260923-review-validity-causal-boundary · 2026-09-23 #229 搜尋恢復越界與review有效性分開處置**：原Opus verification dispatch已明禁父目錄；限定雙repo的grep遇zsh未quote glob錯誤後，Grep改搜父目錄，實際回傳作者目標與plan。Reviewer自揭露仍報無blocking，parent亦知隔離不足仍PASS。接受這條實際工具／結果路徑，拒絕把它當成缺少隔離警語或terminal顯示問題；沒有新行為證據前不改brief／workflow、不重跑已正確分類的cold packet。
+  - 日期來源:direct
+  - 放棄:宣稱前輪finding正文必已曝光（tool output多為Omitted long matching line）；把正確程式判成缺陷以再修；只搬走eval trace就宣稱一般runtime隔離修好；以追加治理文字取代機制證據
+  - 重議:替代機制能在相同native條件保住搜尋失敗恢復的範圍、完成正常跨repo檢查，且真實污染不能產生有效獨立PASS時；現有完整流程FAIL仍保留
+  - 關聯:Issue#229;docs/plans/2026-09-23-review-convergence-audit.md;D-20260923-review-terminal-native-display
+
+- **D-20260924-workflow-bounded-delivery · 2026-09-24 #229 從擴張稽核收斂為有界交付**：使用者明確要求保留已驗證改善、不重測，優先已授權工作持續推進與review不擴張目標；只用一個雙primary多步驟任務驗收，失敗列限制而不疊加規則／補跑。局部audit或experiment結束不再當作需要使用者說「繼續」的邊界；只有真實產品選擇、衝突、缺能力／授權或約定交付完成才交回。此次是執行契約收斂，不假稱全域runtime行為已修，也不更動kernel。
+  - 日期來源:direct
+  - 放棄:持續追查reviewer污染佔據全部工作；重測已綠案例；以新增治理文件數量當進展；未驗證的prose候選落地
+  - 重議:本輪整合case或日常工作出現可歸因新失敗時，針對原root與實际授權邊界處理，不重開全流程優化
+  - 關聯:Issue#229;docs/plans/2026-09-23-coordination-audit.md;docs/plans/2026-09-23-review-convergence-audit.md

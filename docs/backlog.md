@@ -5,7 +5,7 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
 
 # Backlog
 
-待辦清單:技術債與已知缺口(更新日期:2026-09-18)
+待辦清單:技術債與已知缺口(更新日期:2026-09-24)
 
 > **為什麼與 `STATUS.md`／history 分家**：三者生命週期不同。STATUS 只留 active／paused；history
 > event 發生後 append-only；backlog 只留未結案狀態，直到做掉或明確放棄才會消失。
@@ -40,6 +40,22 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   RED 再修。不為清 backlog 人工推遠端、不新增持久監控或啟動噪音。此項由
   `B-20260820-debt-17` 拆出。
 ## 已知缺口
+
+- **B-20260924-workflow-verification-economy** · **#229 整合case完成但verification／文件收尾仍有額外成本**。
+  2026-09-24同一多步驟task兩primary均一答恢復且不擴scope；Opus仍在文件only變更後重跑suite兩次，另做一次mutation check，
+  測試接tail未保留原exit；root獨立suite／semantic exit0只能證實產物正確，不能讓程序瑕疵變GREEN。
+  Opus完成項仍留fixture的Active，且兩端未選的「合併」選項仍需補子決策；沒有全面驗收所有互動／文件生命周期。
+  **觸發條件**：日常同類工作再次出現無新失敗的重複驗證、exit masking或完成後重新要「繼續」時，保留實際trace與scope，優先刪除或合併該步；
+  不為此重跑已完成的整合fixture，不靠新增always-on規範宣稱修好。詳見[整合驗收](plans/2026-09-23-coordination-audit.md)。
+
+- **B-20260924-workflow-review-residuals** · **#229 完整高風險review與大型工程驗收仍有限制**。
+  已保留的risk activation、same-session binding、local reassignment與terminal顯示修復，不代表完整review已驗收。
+  原Opus完整code-review曾在reviewer曝光作者目標／plan後仍PASS；Sol terminal replay未在固定預算內完成；
+  full deep-plan的收斂／prompt transport及大型真實code-review非收斂尚未獲得替代機制的完整證據。
+  本輪依D-20260924-workflow-bounded-delivery不追查、不加規則、不重跑原packet；正確程式產物仍保留，無效獨立review不得當shipping證據。
+  **觸發條件**：下一個真正需要full review的日常工作，或新的機制能提出包含正常完成與安全控制的固定驗收；保留exact scope／prompt／工具結果／終態後只修該root。
+  **驗收邊界**：小型同機Spec與parallel controls不能外推完整Log／shipping、跨host或所有必要互動；遇實際該路徑失敗再重議。
+  證據：[review audit](plans/2026-09-23-review-convergence-audit.md)、[coordination audit](plans/2026-09-23-coordination-audit.md)。
 
 - **B-20260824-remote-human-contributor-path** · **單一 Dossier Steward 模型尚未定義跨機器真人
   contributor 的 commit 傳遞路徑**(2026-08-24 發現)。`D-20260824-cross-runtime-dossier-stewardship`
