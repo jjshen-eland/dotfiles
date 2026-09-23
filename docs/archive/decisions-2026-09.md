@@ -135,3 +135,9 @@
   - 放棄:維持每份計畫無條件完整多輪；重跑已reject的finding措辭候選求綠
   - 重議:normal path錯誤跳過具體高風險，或雙runtime原型無法在固定budget內正確完成
   - 關聯:docs/plans/2026-09-23-review-convergence-audit.md;GitHub #229
+
+- **D-20260923-project-local-reassignment · 2026-09-23 #229 同機明確改派不強制遠端Transfer**：單repo唯一active item、前任已停且使用者當次明確改派工作與文件維護、clean matching feature workspace、無其他writer／未整合work／pending transfer時，Project Spec先只更新Writer與Dossier Steward，再以原authority helper PASS後續作。改派來源是當次指示，不是冒充舊actor或繼承action授權。雙primary正常與活躍writer反例完整通過，Sonnet安全分類保留；候選1失敗紀錄不改判。supersedes:D-20260824-project-steward-authority 僅窄同機順序改派被無條件導向正式Transfer的部分；其他authority、parallel與endpoint安全邊界不變。
+  - 日期來源:direct
+  - 放棄:無條件刪除authority／transfer會失去真衝突防護；另建helper／store無必要證據；重複執行必然因舊actor而STOP的pre-mutation probe不產生新的授權證據。
+  - 重議:normal或conflict regression、單repo前提不足以防止in-flight遺失、或真實多item／跨repo接手需要新機制時；不把本次小fixture外推為完整遠端移交或shipping驗收。
+  - 關聯:GitHub #229;docs/plans/2026-09-23-coordination-audit.md;shared/skills/project/references/pressure-tests.md;D-20260923-project-session-workline-binding

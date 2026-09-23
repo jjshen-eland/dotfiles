@@ -395,3 +395,9 @@
   - 放棄:每個plan無條件兩輪；刪除高風險review保護；以stage／受污染run冒充native驗收；為零finding復活P18/P19候選；將單次wall time外推成模型可靠度
   - 重議:normal route漏掉具體高風險或越出授權scope；已授權階段切換再次重問；完整review被使用者明示卻跳過；有新的真實大型案例顯示routing不足
   - 關聯:Issue#229;D-20260923-risk-triggered-plan-review-direction;docs/plans/2026-09-23-review-convergence-audit.md;shared/skills/deep-plan/evals.md
+
+- **M-20260923-project-local-reassignment-acceptance · 2026-09-23 #229 同機跨runtime明確改派完成本地增量**：第二候選雙primary native normal／conflict四例皆在固定240秒內完成；正常兩欄改派後helper PASS再完成指定progress／event record，衝突零mutation，獨立exact diff／HEAD／audit核對通過。Sonnet安全分類通過；第一候選逾時原樣保留。Exact tested shared workflow／dossier落地，無新helper／flag／store，未改kernel或對外授權。完整repo1488/0 exit0、138秒，doc audit／diff-check及Codex格式validator通過；Claude原生入口未改且native驗證通過，跨平台validator既知metadata限制保留。Sol接近預算，仍有多餘尾端驗證與提示，不外推穩定latency或全面guided-recovery改善。未commit／push／跨機部署。
+  - 日期來源:direct
+  - 放棄:因單端normal成功便安裝；延長固定budget或補跑洗綠；把stage分類或小fixture當完整多repo／shipping驗收
+  - 重議:真實同機接手再出現false STOP或遺失in-flight工作、危險情境被捷徑放行、模型更換後相同oracle回歸
+  - 關聯:Issue#229;D-20260923-project-local-reassignment;docs/plans/2026-09-23-coordination-audit.md;shared/skills/project/references/pressure-tests.md

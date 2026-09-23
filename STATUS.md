@@ -28,13 +28,13 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 - **Writer**：codex:229-handoff-current-authorization
 - **Workspace**：branch=fix/229-handoff-current-authorization
-- **Write Scope**：本項STATUS、docs/plans/2026-09-23-coordination-audit.md、shared/skills/project/references/{workflow,log-workflow,dossier,pressure-tests}.md、shared/skills/project/scripts/steward-authority.py、tests/project-session-binding.py、tests/run.sh、tests/shard-manifest.tsv、docs/archive/{decisions,milestones}-2026-09.md；僅已驗證的same-session binding，kernel／runtime entry／transfer與shipping authorization不改。
+- **Write Scope**：本項STATUS、docs/plans/2026-09-23-coordination-audit.md、shared/skills/project/references/{workflow,log-workflow,dossier,pressure-tests}.md、shared/skills/project/scripts/steward-authority.py、tests/project-session-binding.py、tests/run.sh、tests/shard-manifest.tsv、docs/archive/{decisions,milestones}-2026-09.md；已驗證的same-session binding及同機單item local reassignment；後者只改workflow／dossier及oracle，kernel／runtime entry／正式transfer與shipping authorization不改。
 - **Dossier Steward**：codex:229-handoff-current-authorization
 - **Goal**：查證明確順序交棒的正常路徑與真實writer conflict的安全路徑。
 - **Acceptance Criteria**：native targets完成原Goal而不重問內部token；衝突arm不改task／owner；無outward操作。
 - **Constraints**：每target每arm一次、300秒、Claude USD2；不重跑追綠，不把helper probe當完整驗收。
 - **進度**：same-session binding已本地落地；雙primary完整Spec不重問、scope變更STOP、一次新指示後續作皆通過。Helper9 tests與repo1488/0通過，見M-20260923-project-session-binding-local-acceptance。未push／跨機散佈；kernel／runtime entry／shipping authorization未改。先前batch／交棒與guided-recovery瑕疵保留，非全部coordination完成。
-- **下一步**：cross-runtime Spec已重現false STOP；窄local reassignment候選Opus完成但Sol逾時僅完成部分assignment，reject、不安裝。真正parallel worker→steward整合baseline雙primary完成，scope／拒收／audit通過；正式owner transfer與完整Log／shipping尚未驗收。較完整guided-options候選因Sol stage逾時未採。使用者已選風險觸發完整審查，review work item正驗證新activation機制；不重開已reject的兩個prose候選。
+- **下一步**：cross-runtime Spec第二候選已本地驗收、未push，見M-20260923-project-local-reassignment-acceptance；第一候選reject保留。接續聚焦必要互動的一答恢復與完整Log／shipping未驗部分，不重測已通過的小型local Spec或parallel control；review未解部分仍在其active audit。
 
 ## 暫停中
 
