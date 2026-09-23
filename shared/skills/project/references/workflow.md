@@ -52,16 +52,33 @@ Git author、GitHub login、同 runtime、private memory 或使用者普通自�
   不改 durable steward、不 carry 到下一輪、不能代理 `claude:*`／`codex:*`。
 
 「我是 repo owner」「我就是 maintainer」等 ordinary identity claim is not delegation，也不是 resume／transfer；
-不要從普通對話自行補 token。唯一不需重建 invocation 的 recovery，是 helper 本輪先以 STOP 揭露唯一 exact
+不要從普通對話自行補 token。另有下述當次 session 工作線指派；它不改 normalized invocation arguments。
+首次尚無指派時，不需重建 invocation 的 recovery，是 helper 本輪先以 STOP 揭露唯一 exact
 actor 與 snapshot，Project 隨即提出綁定該 repo／actor／action 的確認題，使用者直接選擇後以
 `prompt-bound-*` provenance 重驗。這個 recovery decision 與 normalized invocation arguments 分開，不改 durable
 owner、不 carry 到下一輪或 session，也不授予 invocation 原本沒有的 shipping endpoint。
+
+**當次 session 工作線指派**：使用者在本段仍有效的對話明確要求由你接續整個、可唯一識別的同-runtime
+work item，且當時已核對 canonical repo、exact actor、所有 active items 的 Writer／Workspace／Write Scope／
+Steward 與 item identity，則這份指派不因下一個 Project invocation 自動失效。首次 recovery 選項也可明示
+「本 session 接續這條工作線；每批外向動作仍另行授權」。僅同意前一顆 commit／本輪 invocation 的舊回答
+不得擴成此指派。保持原 assignment snapshot／helper 輸出的 fingerprint 在當前對話，不寫 memory、checkpoint
+或 authority store；fingerprint 只是新鮮度證據，不是授權憑證。
+
+後續同工作項先重查 repo／scope／writer 衝突及 transfer 狀態，再以 `--session-resume-actor <exact-actor>`、
+`--expected-assignment <指派當時的fingerprint>` 與**本輪新查證**的 `--expected-head <full-oid>` 重跑 helper。
+必須回 `current-session-workline-binding`／PASS 才續作，不重問相同接續問題。不得拿目前 fingerprint 取代舊值
+消除 mismatch；既有完整 assignment snapshot 可依 helper 同一演算法求舊 fingerprint，缺舊證據就走一般 recovery。
+常規 progress／HEAD 前進不撤销指派；branch 名稱不等於 actor，但當前 diff 仍須屬原 work item 與 write scope。
+assignment 改變、work item 已移除、撤回／改派、PREPARED transfer、human delegation、跨 runtime 或新 session
+皆不可沿用；仍用既有 gate 處理。任何外向 endpoint 必須另有當次授權，此指派不授予 push／PR／merge。
 
 在任何 adopted active-state mutation、commit 或 shipping 前執行：
 
 ```sh
 python3 "<project-scripts>/steward-authority.py" --root "$repo" --runtime <runtime> \
   [--resume-actor <resume-value> | --as-human <as-value> | \
+   --session-resume-actor <actor> --expected-assignment <fingerprint> | \
    --confirmed-resume-actor <actor> | --confirmed-human <actor> | --confirmed-new-steward <actor>] \
   [--commit <worker-commit>] [--expected-head <full-oid>]
 ```
@@ -96,14 +113,16 @@ authority actor、authority source 四行；`--merge` 等 endpoint 說法不參�
 
 ### Spec 成功後的 Log invocation 提示
 
-Spec 寫入與必要驗證成功後，若下一步要 commit、push、開 PR 或 merge，必須由使用者輸入**新的 explicit
+Spec 寫入與必要驗證成功後，本輪未要求下一步 Log 時，直接回報結果，不做本節額外 probe 或出題。
+若使用者已要求下一步 commit、push、開 PR 或 merge，必須由使用者輸入**新的 explicit
 Project Log invocation**。上一輪或本輪 Spec 的 endpoint authorization 都不 carry；提示命令本身也不是授權，
 只有使用者實際送出的新 invocation 才是。Endpoint flag 取自使用者為下一步明確選定的終點，依
 `ship-paths.md` 說法表正規化；未選定就不得自行預填。下例以使用者已選定 merge 為例。
 
-對 same-runtime durable workline，在寫入 active contract 後重新執行一次上節 helper，且刻意**不帶任何
-`resume=`、`as=` 或 confirmed flag**。只有 exit 0、`verdict: PASS`、executor actor 與 durable steward exact
-match，且 `authority-source: active-writer-workspace-match` 全部成立，才同時顯示短版與明確版：
+對 same-runtime durable workline，在寫入 active contract 後重新執行一次上節 helper：當次 session 工作線指派
+仍有效時用其專用 flags／原 fingerprint／本輪 HEAD；否則刻意**不帶任何 `resume=`、`as=` 或 confirmed flag**。
+只有 exit 0、`verdict: PASS`、executor actor 與 durable steward exact match，且 authority-source 為
+`active-writer-workspace-match` 或 `current-session-workline-binding`，才同時顯示短版與明確版：
 
 ```text
 下一步請擇一輸入：
@@ -122,9 +141,9 @@ explicit invocation。
 
 提示旁清楚說明：endpoint flag（本例 `--merge`）授權**這次新 Log invocation**的 endpoint；
 `resume=<exact-actor>` 只精確綁定 durable workline，不新增、繼承或擴大 shipping authority。短版只適用於
-仍在 helper 已驗證的 branch／workspace；明確版適合跨 turn、切過 branch或需要消除 actor 歧義時。
+仍在 helper 已驗證的 branch／workspace，或上述已重驗的當次 session 指派；明確版適合新session或需要消除actor歧義時。
 
-若不帶 control token 的 post-Spec helper 未達上述 exact PASS，絕不顯示短版。只有再以 exact same-runtime
+若 post-Spec helper 未達上述 exact PASS，絕不顯示短版。只有再以 exact same-runtime
 durable actor 執行 `--resume-actor <exact-actor>` 得到 PASS 時，才可單獨顯示含 `resume=<exact-actor>` 的明確版；
 否則沿用既有 recovery／STOP。Repository authority `BROKEN`、`recovery-kind: none`、scope mismatch、stale
 snapshot、cross-runtime 或 conflicting stewards 都不得因本提示新增確認或繞過選項。

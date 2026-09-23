@@ -47,7 +47,8 @@ steward，不代表任何 Claude／Codex session 自動取得該 actor。Runtime
   Project mutation／shipping，下一輪自動失效，也不把 executor 寫成 owner。
 - Helper 已先 STOP 並揭露唯一 exact actor 時，使用者也可回答 Project 緊接提出、綁定 repo／actor／snapshot／
   action 的 recovery 選項；這是獨立的 prompt-bound decision，不是把自然語言補寫回 `as=`／`resume=`。確認後
-  必須以 dedicated `prompt-bound-*` authority source 重跑 helper，且同樣只活在該 logical invocation。
+  必須以 dedicated `prompt-bound-*` authority source 重跑 helper。僅本輪的確認只活在該 logical invocation；
+  明示整條工作線的當次 session 指派，依 workflow 的 authority 規則獨立重驗，不是沿用 shipping approval。
 - 普通自然語言「我是某人」、Git author、GitHub login、同 runtime 或名稱相似都不是 resume／delegation
   credential。Agent session 不得把自己重新標成 `human:*`／`owner:*`。
 
@@ -76,7 +77,7 @@ next actor 的 pending coordination fields，任何 authority check 都必須定
 fetch endpoint 並驗 remote-visible ancestry；不得只按字面欄位授權，證據不可得即 STOP。
 
 Bounded human delegation 不是 ownership transfer：durable steward 不變，runtime 只是本輪受指示的 executor。
-它不能代理 `claude:*`／`codex:*` steward；agent workline 的接續只能用 same-runtime `resume=` exact match。
+它不能代理 `claude:*`／`codex:*` steward；agent workline 的接續須符合 workflow 的 same-runtime exact-match 規則。
 Worker commit 若含 `STATUS.md`、backlog、history shard、shared plan 或 transfer guide，delta 已越界；不得原樣
 ship 或當作合格 cherry-pick。先由 worker 交出不含 shared surfaces 的 semantic commit，或由合法 steward
 在受控整合中重建 commit 並重新驗 diff／tests。

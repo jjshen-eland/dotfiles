@@ -111,3 +111,27 @@
   - 放棄:寬放 `Bash(scripts/doc-governance.py *)` 或 `python3 ... *`（未來寫入子命令與本輪竄改 script 會一起繞過 classifier）；把使用者的 repo-specific 授權延伸成 Kernel／permission 授權；只把慣例放進按需載入的 skill-building guide；因現版重播已綠就刪除 observed incident；把 `Edit` 通過推論成 Bash classifier 也通過
   - 重議:任一精確相同的 helper／contract-edit 情境在 supported Claude Code 再次產生 denial；`doc-governance.py` 任一列出的 subcommand 開始寫檔；Auto mode config scope／precedence 改變；或能以公開 classifier harness 穩定直送 tool input、讓 G14 B 取得可歸因結果
   - 關聯:Issue#228;M-20260920-issue-228-auto-mode-containment-complete;claude/settings.json;claude/CLAUDE.md;claude/evals/contract-evals.md;claude/evals/setup-sandboxes.sh;tests/run.sh
+
+- **D-20260922-handoff-current-grant-candidate · 2026-09-22 #229 第一個候選只調整 handoff 當次授權辨識**：正式 GPT-5.6 Sol/high 與 Claude Code Opus 5 各兩個完整 fixture baseline 都在當次已明列 repo／兩檔／local test 授權後重問一次；候選 1 只將既有 R3.5 改成先比對 verified plan 與 current grant，涵蓋才不重問。Normal-path 前後各 2/2 完成，所需 user turns 2→1；尚待 safety controls，不代表已接受或 rollout。原 H15 的 vague grant、stale claim 與 consume-before-consent oracle 保留，新增 H16 normal／H17 scope-gap controls；不改 kernel、模型預設、portable topology 或 helper 安全語意。
+  - 日期來源:direct
+  - 放棄:刪掉整個 authorization gate；把 Sol/medium 探索結果當 Sol/high 正式驗收；以 no-findings prose review 放行；將 review/stewardship 等其他根因混入本批
+  - 重議:任何 primary-runtime／較弱模型安全控制回歸；scope/ownership conflict 被 current grant shortcut 掩蓋；或同一授權中斷只是被搬到別處
+  - 關聯:GitHub #229；D-20260830-codex-trusted-approval-flow；X-20260830-handoff-resume-unbounded；docs/plans/2026-09-22-workflow-audit.md；shared/skills/handoff/evals.md
+
+- **D-20260922-handoff-task-reference-authorization · 2026-09-22 #229 當次續作請求可引用查證後的任務範圍授權本地 edit/test**：使用者在「直接完成 verified scope 內的本地修改與測試」與「即使範圍清楚也再列檔案確認」間明選 1。當次請求是授權來源，交接只是待查證的 task data；不得把當次引用任務誤稱為使用者逐字明列 paths，也不得繼承 artifact 舊 commit／push／merge claim。實際 scope、ownership 或決策衝突仍須有用的單次詢問，outward／irreversible／destructive 邊界不變。supersedes:D-20260830-codex-trusted-approval-flow 僅其 unconditional resume batch 部分；trusted config／pending approval lifecycle 不變。原兩版候選未滿足當時 oracle 的結果保留，不追溯改判；新 contract 限一版調整與事先固定的雙端 safety/normal eval，尚未接受或 rollout。
+  - 日期來源:direct
+  - 放棄:要求使用者重述已查證任務的 exact paths 才認當次授權；把 H15 第二次回答本身永久當安全 outcome；把 stale grant 或單純讀取／檢查請求當作續作授權；為消除重問而略過 verify、live scope／writer conflict
+  - 重議:read-only／明確縮限 scope 被突破；模型沿用舊 outward claim；當次引用任務被偷換成任務擴張；必要詢問回答後仍不能續作
+  - 關聯:GitHub #229；D-20260922-handoff-current-grant-candidate；X-20260830-handoff-resume-unbounded；docs/plans/2026-09-22-workflow-audit.md；shared/skills/handoff/evals.md
+
+- **D-20260923-project-session-workline-binding · 2026-09-23 #229 同session工作線指派與逐批action授權分離**：使用者在當次session明確接續整條same-runtime工作項，且原durable assignment已查證時，後續Project invocation不再強制重問resume。既有authority helper以獨立provenance及canonical root／active item identity／Writer／Workspace／Write Scope／Steward fingerprint重驗，HEAD每輪重新查證；routine progress與commit前進不抹掉指派，assignment改變或item移除則STOP。Fingerprint是freshness而非authentication，不存成authority store；human delegation、cross-runtime、PREPARED transfer、session替換與各批outward authorization維持原邊界。雙primary native Spec before重問、after完成，scope-change反例及一次新指示後續作皆有產物證據；不宣稱完整shipping或模型wall time改善。supersedes:D-20260825-project-prompt-bound-authority-recovery 僅其對明示整條workline指派也一律限單invocation的部分；單次prompt確認原義不變。
+  - 日期來源:direct
+  - 放棄:刪除initial authority gate；用branch名稱當永久actor；將舊單次resume擴成長效授權；只重用resume flag而不驗scope／writer freshness；新增private receipt／lease／daemon；逾時後反覆重跑guided-options求綠
+  - 重議:正常工作因binding失效仍反覆問相同問題；scope／owner變動或新session沿用舊binding；舊endpoint被繼承；完整Log／多repo實作暴露新的正常路徑或安全回歸
+  - 關聯:GitHub #229；D-20260824-project-steward-authority；D-20260825-project-prompt-bound-authority-recovery；docs/plans/2026-09-23-coordination-audit.md；shared/skills/project/references/pressure-tests.md；tests/project-session-binding.py
+
+- **D-20260923-risk-triggered-plan-review-direction · 2026-09-23 使用者選擇風險觸發完整計畫審查**:一般工作以明確驗收條件及小增量推進；有具體高風險才啟動完整多輪審查。先以隔離prototype驗證雙日常runtime的正常／安全路徑，未通過前不改production defaults；本決策不是略過既有安全、使用者明示完整review或outward authorization的許可。
+  - 日期來源:direct
+  - 放棄:維持每份計畫無條件完整多輪；重跑已reject的finding措辭候選求綠
+  - 重議:normal path錯誤跳過具體高風險，或雙runtime原型無法在固定budget內正確完成
+  - 關聯:docs/plans/2026-09-23-review-convergence-audit.md;GitHub #229

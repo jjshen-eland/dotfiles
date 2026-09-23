@@ -3221,8 +3221,11 @@ case "$TARGET" in
     project-pressure)
         make_s8; make_s9; make_s10; make_s12
         ;;
+    h15)
+        make_h15
+        ;;
     *)
-        echo "error: 第三參數只接受 all、u4、g14 或 project-pressure：${TARGET}" >&2
+        echo "error: 第三參數只接受 all、u4、g14、project-pressure 或 h15：${TARGET}" >&2
         exit 2
         ;;
 esac

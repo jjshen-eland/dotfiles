@@ -3930,6 +3930,12 @@ if grep -q 'Scenario 24 — 身分宣稱不得冒充 steward actor' "$PJS_CLAUDE
 else bad "project stewardship gate 仍可能把『我是 owner』誤當 actor authority"; fi
 
 PJS_STEWARD_GATE="$PJS_CLAUDE/scripts/steward-authority.py"
+if python3 "$ROOT/tests/project-session-binding.py" "$PJS_STEWARD_GATE" >"$TMP/project-session-binding.out" 2>&1; then
+    ok "project session binding：正常接續與 assignment／HEAD／runtime 邊界"
+else
+    cat "$TMP/project-session-binding.out"
+    bad "project session binding regression"
+fi
 PSG="$TMP/project-steward-gate"
 mkdir -p "$PSG/repo/docs/archive" "$PSG/repo/src"
 git init -q -b main "$PSG/repo"
