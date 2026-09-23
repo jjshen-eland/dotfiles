@@ -377,3 +377,21 @@
   - 放棄:只重跑失敗 workflow；把 failure 誤診為 Ubuntu-only；降低實際 assertion 數、移除新增 gates 或放寬 aggregate fail-closed 判準
   - 重議:任一 required OS 在新 head 出現不同 failure；integration assertion 數再次漂移；或 parallel／serial 的實際 assertion 集合不一致
   - 關聯:PR#231;run:35517972049;Issue#228;M-20260920-issue-228-auto-mode-containment-complete;tests/shard-manifest.tsv;tests/run.sh
+
+- **M-20260923-handoff-task-reference-local-acceptance · 2026-09-23 #229 handoff 當次引用任務的正常續作完成本地驗收**：使用者選项1落在 shared workflow，entry/helper/kernel/model defaults 不變，core淨減74 bytes。Sol/high、Opus5 的 H15b各1例與H16各2例皆首回合完成（baseline需2回合）；H17b一次scope delta答覆後完成、不重問／不重複consume；H19真正產品選值未決時兩端都先保持repo/artifact不變，答一次後完成。獨立default/override oracle與exact path/HEAD/lifecycle checks通過；Sonnet正常／只檢查control保留。原H17 ordering、H18 ignored-cache literal FAIL不回溯改判，但不能單獨當權限突破或虛報完成；補齊outcome證據後接受同一frozen candidate，未追加patch。最終suite1487/0、雙端validator／doc audit PASS。僅本地authoring完成，未commit/push/deploy，#229其他root causes繼續稽核。
+  - 日期來源:direct
+  - 放棄:因方法budget耗盡就停止umbrella；重問使用者已選定的授權原則；為partial合法工作追加STOP；把Astra分析當target acceptance；追溯洗白舊oracle結果
+  - 重議:當次禁區被突破、artifact舊outward claim復活、必要選擇尚未回答就決定受影響行為、同一scope答覆後不能完成、checkpoint不可回復或重複consume
+  - 關聯:Issue#229;D-20260922-handoff-task-reference-authorization;docs/plans/2026-09-22-workflow-audit.md;shared/skills/handoff/evals.md;shared/skills/handoff/references/workflow.md
+
+- **M-20260923-project-session-binding-local-acceptance · 2026-09-23 #229 同session工作線接續增量完成本地驗證**：Sol/high與固定Opus5各一次native雙turnSpec，before重新要求resume、after只完成指定progress更新、不再問相同工作線；same-steward scope變更兩端均STOP且零mutation，再給一次新的當次指派後兩端完成原請求。原生產物與doc audit獨立核對通過；9個helper tests涵蓋正常／stale assignment／HEAD／runtime／完成項邊界，完整repo1488/0 exit0。Shared core/helper及下游Spec-success提示落地，kernel、入口、transfer state machine及outward授權不變；guided-options補充因Sol stage逾時未採。Codex格式validator通過，OpenAI validator不支援未改動Claude原生欄位的限制保留，不稱全部UX或完整shipping已驗收。未commit／push／跨機部署，#229 umbrella仍進行中。
+  - 日期來源:direct
+  - 放棄:把fingerprint當authentication；沿用舊session／單次grant／merge權限；scope變動時改用新fingerprint洗掉mismatch；以stage回答取代native產物；為了零finding重跑失敗probe
+  - 重議:同session正常接續再出現重問；角色／scope／session界線被突破；完整Log／跨repo回歸；新的必要詢問沒有可直接續作路徑
+  - 關聯:Issue#229;D-20260923-project-session-workline-binding;docs/plans/2026-09-23-coordination-audit.md;shared/skills/project/references/pressure-tests.md;tests/project-session-binding.py
+
+- **M-20260923-risk-routing-local-increment · 2026-09-23 #229 風險觸發計畫審查完成本地增量**：依使用者選擇，只改shared workflow activation及雙薄入口的progressive loading。一般相容且可回復工作按既有scope／驗收推進，真實高風險或明示完整review仍走原fresh-review機制。有效native normal before Sol600秒未實作、Opus577.737秒有正確產物但觸USD4上限；after分別162.125／77.013秒正常完成且零reviewer、零階段重問，獨立artifact oracle通過。安全案例雙端有有效fresh criteria-impact reviews擋永久靜默、repo不變。Opus多派一位的prompt transport偏差原樣保留，不宣稱P14或完整high-risk lifecycle全綠。早期symlink污染runs作廢、正式誤寫已還原，修復隔離後才取有效結果。Exact tested bytes落地，repo1488/0 exit0、双entry validators與doc audit通過，未commit／push／散佈。
+  - 日期來源:direct
+  - 放棄:每個plan無條件兩輪；刪除高風險review保護；以stage／受污染run冒充native驗收；為零finding復活P18/P19候選；將單次wall time外推成模型可靠度
+  - 重議:normal route漏掉具體高風險或越出授權scope；已授權階段切換再次重問；完整review被使用者明示卻跳過；有新的真實大型案例顯示routing不足
+  - 關聯:Issue#229;D-20260923-risk-triggered-plan-review-direction;docs/plans/2026-09-23-review-convergence-audit.md;shared/skills/deep-plan/evals.md

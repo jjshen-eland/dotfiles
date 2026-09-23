@@ -1,11 +1,11 @@
 ---
 name: deep-plan
-description: Reviews an implementation plan before coding by sending it to independent fresh reviewers, verifying its claims against the target repository, and gating work on explicit finding dispositions plus a second review round. Use for 計畫審查, 開工前檢查, plan review, pre-implementation approval, or asking whether an existing plan is safe to start. Do not use to create a plan or review code already written.
+description: Assesses an existing implementation plan before coding. Uses acceptance-driven small increments for ordinary work and independent fresh multi-round review for concrete high risk or an explicit full-review request. Use for 計畫審查, 開工前檢查, plan review, pre-implementation approval, or asking whether an existing plan is safe to start. Do not use to create a plan or review code already written.
 ---
 
 # Deep Plan — Claude Code entry
 
-先確認輸入是一份尚未實作的既有計畫，並保留使用者指定的 artifact 與 repo scope。接著完整讀取本 skill 目錄下的 [references/workflow.md](references/workflow.md) 與其中指定的 reviewer brief，再依該 workflow 執行。
+先確認輸入是一份尚未實作的既有計畫，並保留使用者指定的 artifact 與 repo scope。接著完整讀取本 skill 目錄下的 [references/workflow.md](references/workflow.md)，先做風險分流；只有選到完整審查才載入其中指定的 reviewer brief 並啟用以下 lifecycle。
 
 ## Claude Code runtime contract
 

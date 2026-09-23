@@ -2,7 +2,10 @@
 
 ## Purpose and invariants
 
-你是 orchestrator，不是 reviewer。用獨立 fresh reviewers 查證一份尚未實作的 implementation plan 是否建立在正確的 repository 事實、歷史、相依與完成判定上。
+先以具體風險決定尚未實作的 implementation plan 需要哪種開工路徑。一般工作用明確驗收與可回復的小增量；
+只有下節觸發完整審查時，你才是 orchestrator、由獨立 fresh reviewers 查證，不得自行冒充獨立 review。
+
+下列 round invariants 與 §2–6 僅適用完整審查路徑：
 
 - 每輪預設 `N=2`；只有使用者明確要求更廣抽樣時才增加。
 - 每輪 reviewer 都必須是全新 context。建立與等待的順序由載入本文件的 runtime entry 約束；沒有有效 reviewer handles 時 fail closed。
@@ -11,7 +14,7 @@
 - target repositories 在 reviewer 工作期間唯讀。不得修改本 skill、eval、field log 或無關 repo。
 - reviewer prompts 不含前輪 findings、作者解釋、round number、進度提示或 plan 內文。
 
-開始時追蹤：artifact/repo 已確認、第一輪完成、findings 已處置、第二輪完成、gate 已回報。
+完整路徑追蹤：artifact/repo 已確認、第一輪完成、findings 已處置、第二輪完成、gate 已回報。
 
 ## 1. Confirm artifact and scope
 
@@ -20,6 +23,29 @@
 Reviewer 必須能從檔案讀取計畫：已有 canonical plan 就直接使用；只在對話中時遵循目標 repo 的文件慣例，否則放在不會隨 repo ship 的明確 scratch artifact。不得用 heredoc、echo 或 printf 寫入使用者提供的 plan text。落點跟目標 repo，不跟目前 cwd。
 
 多 repo 計畫交給同一組 reviewers，讓每位 reviewer 查跨 repo 一致性。
+
+## 1a. Risk route before reviewer dispatch
+
+先讀計畫及其直接相關的 repo contract／實作，核對此次變更的影響，不先載入完整 reviewer brief 或派人。
+以下任一成立就進 §2–6：
+
+- 使用者明確指定完整審查、兩輪或 reviewer 數量。
+- 有難以回復的持久資料／production state 變更，或驗證／回復失敗會造成重大不可逆損失。
+- 改變 security／permission 邊界，或實際改變告警、豁免、過濾、SLA等放行／攔下的行為。
+- 不相容的跨repo／對外介面，或需要協調切換才能避免資料錯誤、失去既有能力或服務中斷。
+- 已找到關係到上述重大後果、但尚未能查明的具體事實缺口；不要用「尚有任何未知」代替風險證據。
+
+記錄觸發原因與指向的變更／repo證據。計畫長、步驟多、跨repo、缺永久test carrier、既有無關缺陷，
+本身不構成高風險；不得因本地可回復increment而盤點所有歷史債。相反地，「只是小改」或拆小步驟不能
+隱藏實際權限、資料或介面後果。判準是否改變看產品行為，不因刪除非目標工作清單就當成放寬安全判準。
+
+沒有觸發時，不啟動 §2–6，直接核對既有計畫是否足以指定下一個increment的目標／非目標、修改邊界、
+可執行驗收及回復方式；已寫清楚不另建spec、補架構或新增文件。真正的產品歧義提出一個最小決策問題與
+選項，標 `NEEDS-DECISION`；查證到會違反既定驗收的問題則具體指出待修正處，不靠完整review猜答案。
+條件足夠就回 `READY-FOR-INCREMENT`，簡述核對依據、下一個increment及停止驗證的條件，明說未進行獨立
+多輪審查，不冒稱完整review `GO`、實作測試通過或release approval。這不修改原Goal、shipping gates或授權；
+只要求審查時不改code，已另外授權後續實作時可接著做原scope，不為切換階段再問一次。發現新的實質高風險
+才重新分流，不以「再看一次可能更安心」重開探索。
 
 ## 2. Dispatch a review round
 

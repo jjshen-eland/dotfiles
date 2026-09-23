@@ -177,7 +177,8 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
    先依 transfer workflow 定位該 record 所在 commit、fetch canonical endpoint 並驗 remote-visible ancestry；
    未抵達時 active fields 中的 next actor 只是 pending value，effective authority 仍取 guide 的 current steward，
    查不到證據就 STOP。接著用 shared workflow 的 `steward-authority.py` 跑 ordinary gate，runtime prefix 只能
-   由入口提供；initial call 的 `resume=`／`as=` 只能來自 normalized invocation arguments。ordinary identity claim is not delegation；
+   由入口提供；initial call 的 `resume=`／`as=` 只能來自 normalized invocation arguments；當次 session 工作線指派
+   另依 shared workflow 的 authority 規則，以獨立 provenance 與原 assignment snapshot 重驗。ordinary identity claim is not delegation；
    「我是 owner」、Git author、GitHub login 或同 runtime 都不得改 helper 的 executor actor。
    若啟用 `active_item_contract`，helper 的 authority actor 必須等於所有 active items 的 durable steward，
    才能進入 shared dossier／commit／shipping 流程。`resume=` must use the same runtime prefix and exact actor；
@@ -295,7 +296,8 @@ unshipped candidate，完成後以新的 full OID 重驗。Helper 只有 exit 0 
 `prompt-bound-human-delegation`、`prompt-bound-same-runtime-resume` 或 `prompt-bound-new-workline-confirmation` 才能續行。
 
 Prompt-bound decision 與 normalized invocation arguments 分開，不寫入 memory 或 dossier；它不得授予額外 endpoint。
-也不得套到未列出的 repo／actor／candidate，或 carry 到下一輪／session。普通「我是 owner」、
+僅本輪的確認不得套到未列出的 repo／actor／candidate，或 carry 到下一輪／session；若選項明示接續本 session
+整條工作線，後續只依 shared workflow 的「當次 session 工作線指派」重新驗證身分，不沿用舊 action approval。普通「我是 owner」、
 不同題的回答、自由文字近義詞或 snapshot 改變後的舊回答，一律重新跑 initial helper。
 
 ## Step 3：Adaptive 提交

@@ -14,11 +14,12 @@ transfer evidence before using this ordinary-path gate.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 FIELD_RE = re.compile(
@@ -35,6 +36,7 @@ class ActiveItem:
     writer: str
     workspace: str
     steward: str
+    scope: str
 
 
 def fail(message: str, code: int = 2) -> int:
@@ -102,6 +104,7 @@ def active_items(status_text: str) -> list[ActiveItem]:
                 writer=fields["Writer"],
                 workspace=fields["Workspace"],
                 steward=fields["Dossier Steward"],
+                scope=fields.get("Write Scope", ""),
             )
         )
     return items
@@ -110,6 +113,12 @@ def active_items(status_text: str) -> list[ActiveItem]:
 def validate_actor(actor: str, label: str) -> None:
     if not ACTOR_RE.fullmatch(actor):
         raise ValueError(f"{label} is not a valid actor key: {actor!r}")
+
+
+def assignment_fingerprint(root: Path, items: list[ActiveItem]) -> str:
+    payload = {"version": 1, "root": str(root), "items": [asdict(item) for item in items]}
+    encoded = json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
 def derived_actor(runtime: str, branch: str, items: list[ActiveItem]) -> tuple[str, str]:
@@ -169,12 +178,14 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--runtime", required=True, choices=("claude", "codex"))
     authority = result.add_mutually_exclusive_group()
     authority.add_argument("--resume-actor")
+    authority.add_argument("--session-resume-actor")
     authority.add_argument("--as-human", dest="as_human")
     authority.add_argument("--confirmed-resume-actor")
     authority.add_argument("--confirmed-human")
     authority.add_argument("--confirmed-new-steward")
     result.add_argument("--commit")
     result.add_argument("--expected-head")
+    result.add_argument("--expected-assignment")
     return result
 
 
@@ -182,6 +193,14 @@ def main() -> int:
     args = parser().parse_args()
     root = Path(args.root).expanduser().resolve()
     try:
+        if args.session_resume_actor:
+            if not args.expected_head or not args.expected_assignment:
+                return fail("session binding requires --expected-head and --expected-assignment")
+            validate_actor(args.session_resume_actor, "session resume actor")
+            if not args.session_resume_actor.startswith(f"{args.runtime}:"):
+                return fail("session resume actor must use the same runtime prefix")
+        elif args.expected_assignment:
+            return fail("--expected-assignment requires --session-resume-actor")
         confirmed = (
             args.confirmed_resume_actor
             or args.confirmed_human
@@ -207,6 +226,16 @@ def main() -> int:
         if not status_path.is_file():
             return fail(f"active-item contract enabled but status file missing: {status_path}")
         items = active_items(status_path.read_text(encoding="utf-8"))
+        fingerprint = assignment_fingerprint(root, items)
+        print(f"assignment-fingerprint: {fingerprint}")
+        if args.session_resume_actor and (
+            not items or fingerprint != args.expected_assignment
+            or any(not item.scope for item in items)
+        ):
+            print("authority-source: stale-workline-assignment")
+            print("recovery-kind: none")
+            print("verdict: STOP")
+            return 1
         surfaces = shared_surfaces(root, config, args.commit)
         steward_source = "current-active-state"
         if not items and args.commit:
@@ -229,14 +258,17 @@ def main() -> int:
                 return 1
 
         resume_actor = (
-            args.resume_actor or args.confirmed_resume_actor or args.confirmed_new_steward
+            args.resume_actor or args.session_resume_actor
+            or args.confirmed_resume_actor or args.confirmed_new_steward
         )
         human_actor = args.as_human or args.confirmed_human
         if resume_actor:
             validate_actor(resume_actor, "resume actor")
             if not resume_actor.startswith(f"{args.runtime}:"):
                 return fail("resume actor must use the same runtime prefix")
-            if args.confirmed_new_steward:
+            if args.session_resume_actor:
+                executor_source = "current-session-workline-binding"
+            elif args.confirmed_new_steward:
                 executor_source = "prompt-bound-new-workline-confirmation"
             elif args.confirmed_resume_actor:
                 executor_source = "prompt-bound-same-runtime-resume"
