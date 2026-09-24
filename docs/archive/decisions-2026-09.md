@@ -159,3 +159,9 @@
   - 放棄:持續追查reviewer污染佔據全部工作；重測已綠案例；以新增治理文件數量當進展；未驗證的prose候選落地
   - 重議:本輪整合case或日常工作出現可歸因新失敗時，針對原root與實际授權邊界處理，不重開全流程優化
   - 關聯:Issue#229;docs/plans/2026-09-23-coordination-audit.md;docs/plans/2026-09-23-review-convergence-audit.md
+
+- **D-20260924-review-repair-verification-choice · 2026-09-24 #229 選擇首次全面審查、修後聚焦受影響契約**：使用者明選首次完整獨立審查後，只驗實際修復與semantic dependents；具體新風險才擴大。先以code-review autofix單一候選驗收，deep-plan不混改。Fresh context、初次完整coverage、scope drift、必要checks與真實blocker仍承重；修後定位資訊不等於作者結論可信。此為方向決定，不宣稱candidate已通過或#229結案。
+  - 日期來源:direct
+  - 放棄:每次修復後重新抽樣整份未變scope；完全取消review；把聚焦驗證冒稱又一次完整盲審
+  - 重議:相同task的雙primary驗收或安全對照失敗；新風險跨出已知依賴範圍；初次coverage或delta來源不可驗證
+  - 關聯:Issue#229;docs/plans/2026-09-24-review-followup-design.md;D-20260924-workflow-bounded-delivery

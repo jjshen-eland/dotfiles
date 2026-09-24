@@ -413,3 +413,9 @@
   - 放棄:將Opus文件only重跑／pipeline exit masking當成全GREEN；新增同類探測或改prose再跑；把小型整合case外推大型cross-repo／shipping或全面效率提升
   - 重議:B-20260924-workflow-review-residuals與B-20260924-workflow-verification-economy所列真實觸發條件；已驗證增量發生回歸
   - 關聯:Issue#229;D-20260924-workflow-bounded-delivery;docs/plans/2026-09-23-coordination-audit.md;docs/plans/2026-09-23-review-convergence-audit.md;docs/backlog.md
+
+- **M-20260924-review-followup-bounded-result · 2026-09-24 #229 修後審查候選未採用、scope stdout修復完成**：依使用者選擇實作隔離code-review候選。Opus同helper before／after 414.243／353.528秒正常完成，Sol兩端均600秒未完成；faulty-repair安全對照Opus／Sonnet可完成並攔下未修fence，Sol240秒未完成。未將候選workflow／brief裝入正式來源，沒有加時重跑；#229仍未完成。另以sandbox RED證實scope helper重開/dev/stdout的問題，改用inherited stdout且fingerprint不變、verify為FRESH；保留此獨立修復。雙entry validators、1494/0 repo suite（139秒、exit0）通過。工作項從active移除，候選限制回既有backlog；未commit／push／部署。
+  - 日期來源:direct
+  - 放棄:以產物suite通過冒充完整review完成；由單次小fixture外推大型專案效率；把plan-mode污染run當安全GREEN；重啟相同packet或再疊候選prose
+  - 重議:日常full-review新證據或能區分範圍成本與runtime完成成本的新機制；stdout／fingerprint regression
+  - 關聯:Issue#229;D-20260924-review-repair-verification-choice;docs/plans/2026-09-24-review-followup-design.md;B-20260924-workflow-review-residuals

@@ -68,9 +68,9 @@ load_paths() {
 }
 
 append_paths() {
-    local payload="$1" item
-    printf '%s\0' paths >> "$payload"
-    for item in "${PATHS[@]+"${PATHS[@]}"}"; do printf '%s\0' "$item" >> "$payload"; done
+    local item
+    printf '%s\0' paths
+    for item in "${PATHS[@]+"${PATHS[@]}"}"; do printf '%s\0' "$item"; done
 }
 
 append_untracked() {
@@ -197,7 +197,7 @@ compute_fingerprint() {
     status_file="$(mktemp "${TMPDIR:-/tmp}/deep-review-status.XXXXXX")"
     {
         printf 'mode\0%s\0base\0%s\0head\0%s\0' "$mode" "$base" "$head"
-        append_paths /dev/stdout
+        append_paths
         printf 'subjects\0'; cat "$subjects"
         printf 'guidance\0'; cat "$guidance"
     } > "$payload"
