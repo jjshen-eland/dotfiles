@@ -38,6 +38,12 @@ Repo 的 `status_schema.active_item_contract` 啟用時，每個 active H3 除�
   repo writer 平行工作。
 - `Dossier Steward`：所有 active items 使用同一個 actor key，且不得是 `unassigned`。
 
+`Write Scope` 約束實作writer；steward另負責本次已授權work item的既有active／history／plan生命週期。
+已明確指派文件維護時，記錄本次決策、更新該plan狀態與結案不是新增產品目標，
+不需為每個必要文件另擴Write Scope或再問授權。只改同work item的必要欄位／紀錄，不改其他工作、
+plan內容契約或新增治理store。使用者明示「只准這些檔案」、排除某檔／文件維護，或repo更嚴約束優先；
+遇此衝突保留該檔、完成其他可做工作後一次提出具體選項，不能用steward身分繞過。
+
 既有 repo 的 human authority 可能寫成 `human:<name>` 或 legacy `owner:<name>`；兩者都代表 durable human
 steward，不代表任何 Claude／Codex session 自動取得該 actor。Runtime executor 與 authority actor 必須分開：
 
@@ -71,7 +77,7 @@ tests、progress、decisions with reasons、dead ends、blockers、next step。�
 steward 必須自行檢查 commit ancestry／diff／scope／tests，再決定是否 cherry-pick 與寫入 dossier。Review
 agent 維持 read-only。Ownership transfer 只接受使用者明示或 current steward 的 durable transfer direction；
 machine-local handoff artifact 不授予 repo mutation。使用者當次明確改派的同機順序工作，只有符合 workflow
-Spec 的 local reassignment 前提才可先更新 assignment、重驗後續作；其餘正式切換必須依 workflow 的 transfer state machine，
+「同機順序 local reassignment」前提才可先更新 assignment、重驗後續作；不因多個具名repo或已明確交接的髒檔重問相同指派。其餘正式切換必須依 workflow 的 transfer state machine，
 由 current steward 在同一 transfer commit 同步**所有 active items**的 steward／writer／workspace／next step；
 該 commit 到達 canonical handover endpoint 前，舊 steward 仍是唯一 shared-dossier authority。若 checkout 已含
 next actor 的 pending coordination fields，任何 authority check 都必須定位 conditional owner record 所在 commit、

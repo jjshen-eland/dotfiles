@@ -2,6 +2,15 @@
 
 set -euo pipefail
 
+# Inspection must not refresh the target repository's index cache.
+export GIT_OPTIONAL_LOCKS=0
+
+# diff's autoRefreshIndex can still write despite optional locks being disabled.
+# Keep inspection local to this process; never change the repository's config.
+git() {
+    command git -c diff.autoRefreshIndex=false "$@"
+}
+
 EMPTY_TREE=4b825dc642cb6eb9a060e54bf8d69288fbee4904
 
 usage() {

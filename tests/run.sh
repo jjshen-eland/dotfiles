@@ -3243,6 +3243,9 @@ echo "▶ 11. portable review-scope range / historical guidance / autofix gate"
 DRS_CLAUDE="$ROOT/claude/skills/deep-review"
 RRS_CODEX="$ROOT/codex/skills/repo-review"
 DR_SCOPE="$DRS_CLAUDE/scripts/review-scope.sh"
+if python3 "$ROOT/tests/review-readonly.py" "$ROOT"; then
+    ok "review inspection preserves target files and Git metadata"
+else bad "review inspection mutated target metadata"; fi
 DR_EMPTY_TREE="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 
 git init -q -b main "$TMP/drs-context"
@@ -3394,6 +3397,12 @@ else bad "repo-review 仍殘留第二套 runtime contract"; fi
 echo "▶ 12b. deep-plan 雙薄入口與共用 workflow"
 DPS_CLAUDE="$ROOT/claude/skills/deep-plan"
 DPS_CODEX="$ROOT/codex/skills/deep-plan"
+if python3 "$ROOT/tests/deep-plan-repair-context.py" "$DPS_CODEX/scripts/launch-reviewers.py" >"$TMP/deep-plan-repair-context.out" 2>&1; then
+    ok "deep-plan repair context：discovery與修後證據入口分離"
+else
+    cat "$TMP/deep-plan-repair-context.out"
+    bad "deep-plan repair context regression"
+fi
 if [ -f "$DPS_CLAUDE/SKILL.md" ] && [ -f "$DPS_CODEX/SKILL.md" ] \
     && [ ! -L "$DPS_CLAUDE" ] && [ ! -L "$DPS_CODEX" ]; then
     ok "deep-plan 兩個 runtime 各有薄入口"
@@ -3478,10 +3487,11 @@ prompt = sys.stdin.read()
 if mutate_path := os.environ.get("DEEP_PLAN_STUB_MUTATE_FILE"):
     Path(mutate_path).write_text("after\n", encoding="utf-8")
 required_prompt_text = [
-    "把計畫對現況、歷史、相依與完成判定的宣稱逐一拿回 repo 查證。",
     "依語意找相依，不只比對字串。",
     "可唯讀查檔、搜尋、檢查歷史及執行不改變狀態的診斷。",
 ]
+scope_text = "修後驗證資料：" if os.environ.get("DEEP_PLAN_STUB_REPAIR") else "把計畫對現況、歷史、相依與完成判定的宣稱逐一拿回 repo 查證。"
+required_prompt_text.append(scope_text)
 if not all(text in prompt for text in required_prompt_text):
     sys.exit(8)
 if "Do not invoke any skill" in prompt or "spawn or wait" in prompt:
@@ -3528,6 +3538,23 @@ if [ "$dps_launch_rc" -eq 0 ] \
     && [ -z "$(git -C "$dps_fixture" status --porcelain=v1)" ]; then
     ok "deep-plan launcher 建立兩個 attributed reviewers 並保持 target repo 不變"
 else bad "deep-plan launcher normal fixture 未滿足 parallel／fresh／read-only oracle"; fi
+printf '%s\n' 'F1: verify the repair against source evidence.' > "$TMP/deep-plan-repair.md"
+dps_repair_out="$(DEEP_PLAN_STUB_REPAIR=1 "$DPS_CODEX/scripts/launch-reviewers.py" \
+    --plan "$dps_fixture/docs/plans/plan.md" --repo "$dps_fixture" \
+    --brief "$DPS_CODEX/references/planner-brief.md" --schema "$DPS_CODEX/assets/reviewer-output.schema.json" \
+    --repair-context "$TMP/deep-plan-repair.md" --codex-bin "$TMP/deep-plan-codex-stub" --timeout-seconds 5)"
+dps_repair_rc=$?
+if [ "$dps_repair_rc" -eq 0 ] && grep -q '"review_mode":"repair-verification"' <<< "$dps_repair_out"; then
+    ok "deep-plan repair packet以immutable hash進入有效fresh manifest"
+else bad "deep-plan repair packet transport失敗"; fi
+dps_repair_drift_out="$(DEEP_PLAN_STUB_REPAIR=1 DEEP_PLAN_STUB_MUTATE_FILE="$TMP/deep-plan-repair.md" \
+    "$DPS_CODEX/scripts/launch-reviewers.py" --plan "$dps_fixture/docs/plans/plan.md" --repo "$dps_fixture" \
+    --brief "$DPS_CODEX/references/planner-brief.md" --schema "$DPS_CODEX/assets/reviewer-output.schema.json" \
+    --repair-context "$TMP/deep-plan-repair.md" --codex-bin "$TMP/deep-plan-codex-stub" --timeout-seconds 5)"
+dps_repair_drift_rc=$?
+if [ "$dps_repair_drift_rc" -ne 0 ] && grep -q '"ok":false' <<< "$dps_repair_drift_out"; then
+    ok "deep-plan repair packet被改寫時拒絕驗收"
+else bad "deep-plan repair packet drift被錯誤放行"; fi
 cp "$dps_fixture/docs/plans/plan.md" "$TMP/deep-plan-scratch.md"
 dps_criteria_out="$(DEEP_PLAN_STUB_REQUIRE_CRITERIA=1 "$DPS_CODEX/scripts/launch-reviewers.py" \
     --plan "$TMP/deep-plan-scratch.md" \
@@ -3959,6 +3986,12 @@ if grep -q 'Scenario 24 — 身分宣稱不得冒充 steward actor' "$PJS_CLAUDE
 else bad "project stewardship gate 仍可能把『我是 owner』誤當 actor authority"; fi
 
 PJS_STEWARD_GATE="$PJS_CLAUDE/scripts/steward-authority.py"
+if python3 "$ROOT/tests/project-sequential-assignment.py" "$PJS_STEWARD_GATE" >"$TMP/project-sequential-assignment.out" 2>&1; then
+    ok "project sequential assignment：明示指派與dirty／conflict／snapshot邊界"
+else
+    cat "$TMP/project-sequential-assignment.out"
+    bad "project sequential assignment regression"
+fi
 if python3 "$ROOT/tests/project-session-binding.py" "$PJS_STEWARD_GATE" >"$TMP/project-session-binding.out" 2>&1; then
     ok "project session binding：正常接續與 assignment／HEAD／runtime 邊界"
 else

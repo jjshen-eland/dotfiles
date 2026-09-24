@@ -263,6 +263,15 @@ git -C <repo> branch -D <feature>       # 本地 branch 若仍殘留。squash/re
 
 **flag 與裸說法完全等價**，只是形狀不同：`--merge` ≡ 「merge」。**flag 只存在於 `/project …` 的引數裡**，而裸說法在**本輪任何一則訊息**都算數（那是 prose 路徑，刻意沒有 flag 形式——你可以三輪之後才補一句「merge」）。兩者共用這張表，**不得各自演化**。
 
+**同批修復接續**：`--merge`／表內merge說法涵蓋這次已具名repo、同PR、同目標與同session的必要修復、
+commit、更新feature branch、重新等待required checks及merge。首次送出摘要明列此邊界。Required check
+失敗只暫停merge，不結束logical invocation：先診斷，修復本批引入且在原scope內的缺陷，跑受影響檢查，
+展示修後摘要並更新同一PR，再以新HEAD重驗全部required gates；不重問相同endpoint授權。
+每批最多兩次CI修復提交；仍失敗則回報具體缺口與選项，不重設額度。不是兩次測試上限，也不放行失敗CI。
+撤回、session／owner轉移、不同PR或新增目標／實質風險時失效。既有外部環境債、保護規則修改、bypass、
+force-push、production或永久刪除不包含在修復批次；新事實需要這些操作才一次詢問具體差異。
+其他STOP仍維持其安全判準；完成可安全進行的既定準備後，若確有必要決策才結束回合並提出可續行選項。
+
 > **「（無送出詞）」與 `--pr` 的差別只有一個：問不問。** 兩者最終狀態相同（PR 開著、沒 merge）；`--pr` 是「我知道我要停在 PR」，所以跳過那一題。
 
 **預設保留、不預設壓**：語意 commit 在 PR 裡逐顆可讀、日後可追，那是它們存在的理由。GitHub 的 squash-merge 全有全無、做不到只壓部分，故「壓」必須是使用者說出口的意圖，**不是流程的預設**。
@@ -323,7 +332,7 @@ gh pr checks <PR-number|URL> -R "$repo_slug" --required
      - `QUERY_ERROR` / `HEAD_CHANGED` / malformed evidence → 立即 STOP，不 retry；`QUERY_ERROR` 必須保留
        helper 的 `stage`／`detail`，不能用「尚未看到 check」代替真正錯誤。
      原 `--merge` authorization 在這個 logical Project invocation 的 grace／watch 內繼續有效，approval UI
-     呼叫數必須是 0；一旦 STOP 或 invocation 結束就不 carry。
+       呼叫數必須是 0；invocation 結束不 carry。已知本批CI失敗適用上方同批修復接續，不把repair hold當成結束。
    - `required-policy: UNKNOWN` → policy 不可見，STOP；不得把 403／provider gap 當成 none。
 3. 兩者皆非，且末尾是 GraphQL／GitHub API／network 錯誤（例如 `Post "https://api.github.com/graphql":
    ... operation timed out`），或輸出根本無法產生 check verdict → 這是 transport／API 的 **query failure**。
@@ -340,7 +349,7 @@ repo，前一種誤讀會捏造不存在的壞 check；對 transport error，後
 |---|---|---|---|
 | `CLEAN` / `HAS_HOOKS` / `UNSTABLE` | 沒有硬性阻擋（`UNSTABLE` = **非必要** check 有問題，protection 不在意——與上面 `--required` 是同一判準的兩面） | 直接 merge | 直接 merge（`--admin` 用不到） |
 | `BLOCKED` ＋ checks **exit 8** | **CI 還在跑，不是 protection 擋** | **等它跑完再 merge**（見下方等待策略） | **一樣等**——`--admin` 在此繞過的是還沒跑完的測試，不是規則 |
-| `BLOCKED` ＋ checks **其他非零，且列出了失敗的 check** | required check 失敗 | 停，回報是哪個 check 失敗 | **一樣停**——繞過等於把沒通過測試的變更送進 default |
+| `BLOCKED` ＋ checks **其他非零，且列出了失敗的 check** | required check 失敗 | 暫停merge；依同批修復接續處理，不以失敗結束已授權修復 | **一樣不merge**——修復後重驗，不能bypass失敗測試 |
 | `BLOCKED` ＋ authoritative non-watch checks 是 **query／transport failure**，沒有 failed row、也不是上述任一 exact empty-required 訊息 | check 狀態不確定 | 停，回報查詢錯誤；不得猜失敗或全綠 | **一樣停**——`--admin` 不得繞過未知狀態 |
 | `BLOCKED` ＋ checks **exit 0**，或 **exact empty-required + required-policy none**（見上方 ⚠️） | protection 真的擋（缺 review／其他規則），與 check 無關 | **停**，回報並告知可用「bypass merge」 | 加 `--admin` 重試 |
 | `BLOCKED` ＋ **required-policy REQUIRED** 但收到 exact empty-required 訊息 | startup enrollment pending、dependency-gated active run，或 grace 後的 UNOBSERVED | 跑 identity-bound helper；ENROLLED 回到原 checks 分流，UNOBSERVED／RUN_TERMINAL／error 就停 | **一樣等／停**——沒有測試結果可 bypass |
@@ -366,7 +375,8 @@ repo，前一種誤讀會捏造不存在的壞 check；對 transport error，後
   - **NEVER wrap the wait in `timeout` / `gtimeout`.** Neither exists on macOS, and `command not found` is exit 127 — the whole wait silently never runs while the exit code still reads like a pass. 需要停就中斷，不要引入 `timeout`。
   - **NEVER re-run `gh pr merge` while waiting.** 這正是本節標題那條「不做失敗就 retry」的具體化：判準是 check 狀態，不是上一次 merge 失敗與否；重試只是多一次 API 呼叫，還把「還是被擋」的假訊號餵回自己。
   - 「有的還在跑、有的已失敗」同時成立時 exit code 只會回一個。**不論回哪個，處置都不是 `--admin`**——差別只在「等」還是「立刻回報」；`--fail-fast` 會讓 watch 在第一個失敗就返回。
-- **required check 失敗時要把回程路線一起講**：回報附一句「check 修綠之後跟我說一聲 **merge**，我接手最後一哩」。使用者之後說「merge」即是說法表的授權——**重查一次現況**（不沿用本輪快照）再走「Merge 最後一哩」，**不必重跑整個 `/project`**。
+- **required check失敗依同批修復接續處理**：範圍內可修就直接修復並重查，不要求再說merge。
+  只有修復超出原批次、額度耗盡或確有未決權限時，才列具體差異、選項及回答後的下一步。
 - **`--auto` 預設不用。** GitHub 的錯誤訊息會建議它，但 merge 真正發生時 agent 已經結束，「Merge 最後一哩」剩下的三步（切回 default、`pull` 同步、刪 branch）沒有人做——本地 default 落後、feature branch 殘留，要等下一輪 `ship-state.sh` 的 `stale-branches:` 才補報。只有在 CI 明顯很慢、使用者不想等時才提供它當選項，並在回報明說「本地 default 與 branch 清理要你之後自己做」。
 - **`BLOCKED` 缺的是什麼，去讀規則與 check，NEVER infer it from an empty PR field.** `reviewDecision: ""` 不等於「缺 approval」——`required_approving_review_count: 0` 的 repo 它本來就一直是空的（2026-08-14 與 08-15 兩次實地誤診同一來源）。要確認 protection 要求什麼就直接讀：`gh api repos/{owner}/{repo}/rulesets`（再取 `/rulesets/{id}` 看內容）與上面〈Branch protection 偵測〉那組指令。
 - **動用了 `--admin` 就必須在送出回報裡明說「這次繞過了 protection」。** 繞過本身要留在使用者看得到的地方。

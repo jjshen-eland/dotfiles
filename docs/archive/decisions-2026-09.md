@@ -171,3 +171,41 @@
   - 放棄:修好 harness 就自動重開模型批次；以部分成功洗綠；再加 always-on 規則；要求使用者用「繼續」確認同一收斂方向
   - 重議:使用者另行決定新的限定驗收工作；不得自動重設本批已耗預算或重測已綠改善
   - 關聯:Issue#229;B-20260924-workflow-verification-economy;docs/plans/2026-09-24-ci-continuation.md
+
+- **D-20260924-delivery-mechanism-reset · 2026-09-24 #229 改為順序指派、同批送出與分端交付**：使用者明選工作指派即接手（前任已停且scope／conflict核對）、允許已驗證runtime先交付，以及同session同PR同目標的merge批次涵蓋必要修復commit/push，隨後明令實作核准計畫。這取代繼續補提醒或僅整理案例的方向，不代表候選已驗收。真實並行、未知變更、撤回、scope擴張及production邊界仍保留；新整合packet固定八次top-level native invocation，不重開舊packet。
+  - 日期來源:direct
+  - 放棄:要求使用者再確認同一steward／writer改派；一端未驗收無限阻擋另一端的非共同策略；把CI失敗自動等同整個工作授權結束；用更多文件冒充修復
+  - 重議:共同安全控制退化、runtime策略分歧改變安全語意、或同批修復跨出原目標
+  - 關聯:docs/plans/2026-09-24-production-batch-boundary.md;docs/skill-portability.md;D-20260924-continuation-bounded-closeout
+
+- **D-20260924-delivery-candidate-not-enabled · 2026-09-24 #229 實作候選保留但不以部分驗收啟用**：固定八案的正常case未取得完整review／shipping結果。Sol一答後修復兩repo且未擴scope，但review耗盡600秒；Opus接到JSON後已耗盡USD4軟額度，consumer repair只提出命令而未執行。共同授權變更及focused runtime標記從生效來源移出，候選差異保存於同plan的patch；測過的唯讀helper、可選transport與未啟用core保留。1498項repo regression通過不能取代native驗收，#229未結案。
+  - 日期來源:direct
+  - 放棄:以timeout或tool request冒充完成；加時／追加同packet；讓未通過candidate經本機symlink靜默啟用；自動commit或部署
+  - 重議:明確的新first-review／互動transport機制及固定新驗收，而非單純提高author effort或重跑本案
+  - 關聯:D-20260924-delivery-mechanism-reset;B-20260924-workflow-review-residuals;docs/plans/2026-09-24-production-batch-boundary.md
+
+- **D-20260924-single-review-delivery · 2026-09-24 #229 改變一般工作收尾機制**：使用者核准一般工作以一位fresh reviewer涵蓋完整具名scope，修後由作者驗finding／diff／受影響契約與測試，不自動再派reviewer；具體高風險與明示full維持完整路徑。真正產品問題前移至review dispatch前，角色更新與authority PASS先於code。新packet限定雙端normal／safety四案、每案累計600秒及Claude USD4軟上限，不重跑before。這是候選實作方向，不是驗收通過宣告。
+  - 日期來源:direct
+  - 放棄:僅提高effort、每次修後重開fresh review、把多repo或未commit修復本身當blocker；衝突repo寫入.git作為審查副作用
+  - 重議:具體高風險出現、作者驗證漏掉受影響契約、或固定packet未完成；不得自動增加案例洗綠
+  - 關聯:D-20260924-delivery-candidate-not-enabled;docs/plans/2026-09-24-production-batch-boundary.md
+  - 實作證據:新增唯讀回歸先RED；逐命令SHA確認Git 2.55.0的diff即使GIT_OPTIONAL_LOCKS=0仍刷新index，局部停用diff.autoRefreshIndex後capture／show／verify／autofix-check／terminal show全樹含.git雜湊不變。未更改使用者Git設定。
+
+- **D-20260924-remove-unrequested-eval-budget · 2026-09-24 #229 移除agent自設額度門檻**：使用者指出日常為訂閱帳號，未指定token／美元預算，要求盤點移除舊影響。USD4與600秒直接來自scratch runner，不是帳號限制；以其截斷判工作流不收斂的推論撤銷。CLI費用欄只作telemetry，不當帳單。既有被截斷session沿原材料接續、不新增case，實際scope／安全違約仍保留。supersedes:D-20260924-single-review-delivery 的數值預算條款及 D-20260924-delivery-candidate-not-enabled 中僅據人工截斷作出的失敗推論；不追溯宣稱未觀察到的endpoint成功。
+  - 日期來源:direct
+  - 放棄:把籠統核准計畫當使用者指定美元額度；以固定wall-time代替效率因果證據；讓舊eval預算阻止未完成case接續；刪除raw失敗事實
+  - 重議:使用者日後明確指定成本／時間限制，或服務真的回報帳號上限；不是agent自己選量化數字
+  - 關聯:docs/plans/2026-09-24-production-batch-boundary.md;B-20260924-workflow-review-residuals
+
+- **D-20260924-single-pass-partial-delivery · 2026-09-24 #229 一般審查分項交付**：移除人工上限後三個原session接續exit0，四案mock endpoint完成。雙端normal／safety均一次fresh跨repo reviewer及作者修復驗證、不重審、不擴入既有float債，因此只啟用兩review入口single-pass-v1。共同kernel／Project候選因Write Scope與lifecycle的實際違約仍存patch，不以正常endpoint掩蓋；shipping協定偏離及主agent插問停頓另保留。恢復transport用neutral Continue，不冒充模型自主接續。1499/0回歸、validator及audit支援本地交付，未commit或部署。
+  - 日期來源:direct
+  - 放棄:人工預算造成的all-or-nothing拒收；一個分項成功代表#229全解；重開before或追加相似case
+  - 重議:普通review再次自動重審／擴scope，或真實高風險工作需完整路徑時依原邊界；共同授權另需解開明確scope與lifecycle衝突
+  - 關聯:D-20260924-remove-unrequested-eval-budget;docs/plans/2026-09-24-production-batch-boundary.md
+
+- **D-20260925-task-continuity-and-steward-scope · 2026-09-25 #229 解開治理重工而非重寫計畫**：使用者明令交付效率改善且品質不降低的流程。保留已驗證普通review，修正steward對同工作既有文檔的必要生命週期權責與implementation Write Scope混用；明示文件排除、其他工作及active writer不放寬。新assignment在completion parent先持久化，避免結案後回拆history；已有commit授權才提交。原完整reference讀取可在同session／context仍完整／SHA相同時沿用，插問用進度回覆後接續工具，不另設停點。supersedes:D-20260924-single-pass-partial-delivery 僅其共同候選等待處理狀態；未驗證前不宣稱改善保證。
+  - 日期來源:direct
+  - 放棄:要求每個steward必要文件另一次授權；完成後重寫history才能通過；每stage重讀同SHA reference；以USD／token／固定總時限判效率
+  - 重議:明示scope排除被突破、跨work-item文檔變更、authority祖先不可查證、實際品質回歸；依具體root修正，不推翻整套流程或重開全部eval
+  - 關聯:docs/plans/2026-09-24-production-batch-boundary.md;B-20260924-workflow-review-residuals;B-20260924-workflow-verification-economy
+  - 交付證據:1499/0完整回歸與14項assignment control通過。Opus focused收尾及明示Project Log的Sol均有序提交且parent authority PASS，無重問／review／history rewrite，source/tests與excluded consumer含.git不變；共同改動保留在本機source，未真實commit／部署。原generic Sol漏接手仍FAIL，未用修正入口的成功抹去；未測所有shipping／高風險情境及same-SHA重讀收益。Raw `/tmp/issue-229-closeout.UK5Xf4/eval/FINAL-AUDIT.md`。

@@ -1,0 +1,298 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index abce00a..ff3d0b7 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -14,7 +14,7 @@
+ ### Safety floor — never relaxed by any repo
+ 
+ - **NEVER commit onto the default branch** (`main`/`master`). If `HEAD` is on it — or detached — create a feature branch first: `git switch -c <type>/<slug>`. This holds regardless of protection state and regardless of which tooling is loaded.
+-- **NEVER push without authorization for the push in front of you.** Implementing, fixing, or committing never carries it, and neither does approval given before this change existed. **Where a shipping workflow applies, its authorization table is the only source — NEVER extend it with synonyms of your own.** Where none applies, authorization is an instruction naming the action itself ("push", "open a PR"), or an affirmative answer to a confirmation you just presented. **A bare "ship it" / "送出" names an outcome, not an action — on its own it authorizes nothing**; present the confirmation and wait. Deciding for yourself which wording is close enough is the failure this rule exists to prevent. No authorization ever covers the default branch.
++- **NEVER push without authorization for this action and batch.** Implementation or commit alone grants none. **Where a shipping workflow applies, its authorization table alone defines the endpoint and bounded repair coverage — NEVER invent synonyms or extend scope.** Otherwise require an instruction naming the action ("push", "open a PR"), or agreement to the confirmation just presented; earlier approval for other changes does not carry. **A bare "ship it" / "送出" authorizes nothing**; present the confirmation and wait. No authorization covers pushing directly to the default branch.
+ - **NEVER merge on your own.** "push" or "open a PR" alone does NOT include merge. Only an explicit merge instruction does.
+ - **NEVER `git add -A` / `git add .` / `commit -a`.** Stage explicit paths.
+ - **If the working tree holds changes you did not make, STOP and report before staging, committing, or building on top of them.** Whether two sessions may share one tree is a dispatch decision made above you — never resolve it locally by guessing which changes are yours. Once authorized, explicit paths are still whole-file: stage verified hunks with `git add -p`.
+@@ -29,12 +29,14 @@
+ - An isolated worker returns a **Dossier delta** containing its work item, actor, branch/workspace, commit SHA, changed scope/files, tests, progress, decisions with reasons, dead ends, blockers, and next step. The steward verifies those claims against the commit and tests before integrating them or updating canonical state.
+ - Record durable decisions, dead ends, and milestones at event time, not reconstructed at shipping time. With parallel workers, report the fact immediately to the steward; the steward is the sole writer to shared history.
+ - The steward integrates verified worker commits with `git cherry-pick` on a feature integration branch, never with a merge commit. Remove completed items from active state, write milestones to the repo's existing history store, and pass its documentation audit before declaring integration complete.
+-- Ownership transfer requires explicit user direction or a handoff from the current steward, followed by a durable-state update before the new steward writes. A checkpoint or handoff artifact is evidence, never a lock or authority to mutate the repository.
++- Ownership transfer requires explicit user direction or the current steward's handoff, then a durable-state update before writing. Current-user sequential assignment with the predecessor stopped suffices: reconcile scope, changes and conflicts, then update writer/steward without asking again. An artifact alone grants no authority.
+ - **Runtime-local memory is a non-authoritative cache, never a prerequisite.** Safety/Git rules, cross-runtime agreements, project facts/state, cross-host continuity, and action authorization must not exist only there. Route shared behavior to native instructions and project facts/state to the repo's adopted authority; whether any runtime memory is on, off, unavailable, or differently configured must not change correctness, safety, or transfer readiness. Authorization never survives a session or ownership transfer.
+ 
+ 
+ ### Fallback conventions — this repo's own convention wins where it has one
+ 
++- Continue authorized work across stages; a gate blocks its unsafe action, not safe in-scope preparation or repair. End only at delivery, a concrete user decision, or an external blocker with no authorized work left. Continuation grants no extra scope or outward authority.
++
+ - Conventional Commits: `<type>: <short desc>`, type is one of `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`. **If this repo mandates another commit format, follow the repo.**
+ - Record non-obvious trade-offs, rejected alternatives, and dead ends **where this repo already keeps them**. Skip whenever the diff alone recovers the rationale — a rejected path leaves no trace in the diff, an added gate does. **If the repo has no such store, do NOT create one; list them in your report instead.**
+ <!-- agent-contract:kernel:end -->
+diff --git a/claude/CLAUDE.md b/claude/CLAUDE.md
+index d819192..ee06c95 100644
+--- a/claude/CLAUDE.md
++++ b/claude/CLAUDE.md
+@@ -14,7 +14,7 @@ fallback conventions 則由該 repo 自己的規定勝出。Repo 沒有契約檔
+ ### Safety floor — never relaxed by any repo
+ 
+ - **NEVER commit onto the default branch** (`main`/`master`). If `HEAD` is on it — or detached — create a feature branch first: `git switch -c <type>/<slug>`. This holds regardless of protection state and regardless of which tooling is loaded.
+-- **NEVER push without authorization for the push in front of you.** Implementing, fixing, or committing never carries it, and neither does approval given before this change existed. **Where a shipping workflow applies, its authorization table is the only source — NEVER extend it with synonyms of your own.** Where none applies, authorization is an instruction naming the action itself ("push", "open a PR"), or an affirmative answer to a confirmation you just presented. **A bare "ship it" / "送出" names an outcome, not an action — on its own it authorizes nothing**; present the confirmation and wait. Deciding for yourself which wording is close enough is the failure this rule exists to prevent. No authorization ever covers the default branch.
++- **NEVER push without authorization for this action and batch.** Implementation or commit alone grants none. **Where a shipping workflow applies, its authorization table alone defines the endpoint and bounded repair coverage — NEVER invent synonyms or extend scope.** Otherwise require an instruction naming the action ("push", "open a PR"), or agreement to the confirmation just presented; earlier approval for other changes does not carry. **A bare "ship it" / "送出" authorizes nothing**; present the confirmation and wait. No authorization covers pushing directly to the default branch.
+ - **NEVER merge on your own.** "push" or "open a PR" alone does NOT include merge. Only an explicit merge instruction does.
+ - **NEVER `git add -A` / `git add .` / `commit -a`.** Stage explicit paths.
+ - **If the working tree holds changes you did not make, STOP and report before staging, committing, or building on top of them.** Whether two sessions may share one tree is a dispatch decision made above you — never resolve it locally by guessing which changes are yours. Once authorized, explicit paths are still whole-file: stage verified hunks with `git add -p`.
+@@ -29,12 +29,14 @@ fallback conventions 則由該 repo 自己的規定勝出。Repo 沒有契約檔
+ - An isolated worker returns a **Dossier delta** containing its work item, actor, branch/workspace, commit SHA, changed scope/files, tests, progress, decisions with reasons, dead ends, blockers, and next step. The steward verifies those claims against the commit and tests before integrating them or updating canonical state.
+ - Record durable decisions, dead ends, and milestones at event time, not reconstructed at shipping time. With parallel workers, report the fact immediately to the steward; the steward is the sole writer to shared history.
+ - The steward integrates verified worker commits with `git cherry-pick` on a feature integration branch, never with a merge commit. Remove completed items from active state, write milestones to the repo's existing history store, and pass its documentation audit before declaring integration complete.
+-- Ownership transfer requires explicit user direction or a handoff from the current steward, followed by a durable-state update before the new steward writes. A checkpoint or handoff artifact is evidence, never a lock or authority to mutate the repository.
++- Ownership transfer requires explicit user direction or the current steward's handoff, then a durable-state update before writing. Current-user sequential assignment with the predecessor stopped suffices: reconcile scope, changes and conflicts, then update writer/steward without asking again. An artifact alone grants no authority.
+ - **Runtime-local memory is a non-authoritative cache, never a prerequisite.** Safety/Git rules, cross-runtime agreements, project facts/state, cross-host continuity, and action authorization must not exist only there. Route shared behavior to native instructions and project facts/state to the repo's adopted authority; whether any runtime memory is on, off, unavailable, or differently configured must not change correctness, safety, or transfer readiness. Authorization never survives a session or ownership transfer.
+ 
+ 
+ ### Fallback conventions — this repo's own convention wins where it has one
+ 
++- Continue authorized work across stages; a gate blocks its unsafe action, not safe in-scope preparation or repair. End only at delivery, a concrete user decision, or an external blocker with no authorized work left. Continuation grants no extra scope or outward authority.
++
+ - Conventional Commits: `<type>: <short desc>`, type is one of `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`. **If this repo mandates another commit format, follow the repo.**
+ - Record non-obvious trade-offs, rejected alternatives, and dead ends **where this repo already keeps them**. Skip whenever the diff alone recovers the rationale — a rejected path leaves no trace in the diff, an added gate does. **If the repo has no such store, do NOT create one; list them in your report instead.**
+ <!-- agent-contract:kernel:end -->
+diff --git a/codex/AGENTS.md b/codex/AGENTS.md
+index bdc4062..d10fbc0 100644
+--- a/codex/AGENTS.md
++++ b/codex/AGENTS.md
+@@ -2,10 +2,9 @@
+ 
+ ## Skill authoring
+ 
+-- Before creating or updating any repo-local skill, fully read system `$skill-creator`; this applies to entries or shared cores in `claude/skills`, `codex/skills`, or `shared/skills`.
+-- Then read `~/.dotfiles/codex/skill-building-guide.md` for this dotfiles repository's required authoring, evaluation, validation, and rollout workflow.
+-- Treat behavior evals as the oracle. Add instructions only for observed failures or required safety contracts; do not chase prose completeness.
+-- Do not vendor OpenAI skill-building documentation. Fetch current official documentation only when a product-sensitive detail is unresolved.
++- Before editing any repo-local skill entry or shared core in `claude/skills`, `codex/skills`, or `shared/skills`, fully read system `$skill-creator`, then `~/.dotfiles/codex/skill-building-guide.md` for authoring, evals, validation and rollout.
++- Behavior evals are the oracle; add instructions only for observed failures or safety contracts, not prose completeness.
++- Do not vendor OpenAI docs; fetch official guidance only for unresolved product-sensitive facts.
+ 
+ ## Interactive approval lifecycle
+ 
+@@ -14,10 +13,8 @@
+ 
+ ## Repo contract precedence
+ 
+-Before starting work in any repo, look for a root `AGENTS.md` (then `CLAUDE.md`) — **if present, it is that
+-repo's authority on its own conventions**. The kernel below is your behavioural floor in **every** repo: the
+-safety floor is never relaxed by a repo's conventions (stricter rules stack on top), while fallback
+-conventions defer to whatever the repo itself mandates. Where a repo has no contract file, this is all of it.
++Read root `AGENTS.md`, then `CLAUDE.md`, before repo work. Repo conventions override the kernel's fallback
++conventions, never its safety floor; stricter rules stack. Without a repo contract, follow this kernel.
+ 
+ <!-- agent-contract:kernel:start v1 -->
+ ## Kernel
+@@ -25,7 +22,7 @@ conventions defer to whatever the repo itself mandates. Where a repo has no cont
+ ### Safety floor — never relaxed by any repo
+ 
+ - **NEVER commit onto the default branch** (`main`/`master`). If `HEAD` is on it — or detached — create a feature branch first: `git switch -c <type>/<slug>`. This holds regardless of protection state and regardless of which tooling is loaded.
+-- **NEVER push without authorization for the push in front of you.** Implementing, fixing, or committing never carries it, and neither does approval given before this change existed. **Where a shipping workflow applies, its authorization table is the only source — NEVER extend it with synonyms of your own.** Where none applies, authorization is an instruction naming the action itself ("push", "open a PR"), or an affirmative answer to a confirmation you just presented. **A bare "ship it" / "送出" names an outcome, not an action — on its own it authorizes nothing**; present the confirmation and wait. Deciding for yourself which wording is close enough is the failure this rule exists to prevent. No authorization ever covers the default branch.
++- **NEVER push without authorization for this action and batch.** Implementation or commit alone grants none. **Where a shipping workflow applies, its authorization table alone defines the endpoint and bounded repair coverage — NEVER invent synonyms or extend scope.** Otherwise require an instruction naming the action ("push", "open a PR"), or agreement to the confirmation just presented; earlier approval for other changes does not carry. **A bare "ship it" / "送出" authorizes nothing**; present the confirmation and wait. No authorization covers pushing directly to the default branch.
+ - **NEVER merge on your own.** "push" or "open a PR" alone does NOT include merge. Only an explicit merge instruction does.
+ - **NEVER `git add -A` / `git add .` / `commit -a`.** Stage explicit paths.
+ - **If the working tree holds changes you did not make, STOP and report before staging, committing, or building on top of them.** Whether two sessions may share one tree is a dispatch decision made above you — never resolve it locally by guessing which changes are yours. Once authorized, explicit paths are still whole-file: stage verified hunks with `git add -p`.
+@@ -40,12 +37,14 @@ conventions defer to whatever the repo itself mandates. Where a repo has no cont
+ - An isolated worker returns a **Dossier delta** containing its work item, actor, branch/workspace, commit SHA, changed scope/files, tests, progress, decisions with reasons, dead ends, blockers, and next step. The steward verifies those claims against the commit and tests before integrating them or updating canonical state.
+ - Record durable decisions, dead ends, and milestones at event time, not reconstructed at shipping time. With parallel workers, report the fact immediately to the steward; the steward is the sole writer to shared history.
+ - The steward integrates verified worker commits with `git cherry-pick` on a feature integration branch, never with a merge commit. Remove completed items from active state, write milestones to the repo's existing history store, and pass its documentation audit before declaring integration complete.
+-- Ownership transfer requires explicit user direction or a handoff from the current steward, followed by a durable-state update before the new steward writes. A checkpoint or handoff artifact is evidence, never a lock or authority to mutate the repository.
++- Ownership transfer requires explicit user direction or the current steward's handoff, then a durable-state update before writing. Current-user sequential assignment with the predecessor stopped suffices: reconcile scope, changes and conflicts, then update writer/steward without asking again. An artifact alone grants no authority.
+ - **Runtime-local memory is a non-authoritative cache, never a prerequisite.** Safety/Git rules, cross-runtime agreements, project facts/state, cross-host continuity, and action authorization must not exist only there. Route shared behavior to native instructions and project facts/state to the repo's adopted authority; whether any runtime memory is on, off, unavailable, or differently configured must not change correctness, safety, or transfer readiness. Authorization never survives a session or ownership transfer.
+ 
+ 
+ ### Fallback conventions — this repo's own convention wins where it has one
+ 
++- Continue authorized work across stages; a gate blocks its unsafe action, not safe in-scope preparation or repair. End only at delivery, a concrete user decision, or an external blocker with no authorized work left. Continuation grants no extra scope or outward authority.
++
+ - Conventional Commits: `<type>: <short desc>`, type is one of `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`. **If this repo mandates another commit format, follow the repo.**
+ - Record non-obvious trade-offs, rejected alternatives, and dead ends **where this repo already keeps them**. Skip whenever the diff alone recovers the rationale — a rejected path leaves no trace in the diff, an added gate does. **If the repo has no such store, do NOT create one; list them in your report instead.**
+ <!-- agent-contract:kernel:end -->
+diff --git a/shared/skills/project/references/dossier.md b/shared/skills/project/references/dossier.md
+index fc94dc3..e59359c 100644
+--- a/shared/skills/project/references/dossier.md
++++ b/shared/skills/project/references/dossier.md
+@@ -71,7 +71,7 @@ tests、progress、decisions with reasons、dead ends、blockers、next step。
+ steward 必須自行檢查 commit ancestry／diff／scope／tests，再決定是否 cherry-pick 與寫入 dossier。Review
+ agent 維持 read-only。Ownership transfer 只接受使用者明示或 current steward 的 durable transfer direction；
+ machine-local handoff artifact 不授予 repo mutation。使用者當次明確改派的同機順序工作，只有符合 workflow
+-Spec 的 local reassignment 前提才可先更新 assignment、重驗後續作；其餘正式切換必須依 workflow 的 transfer state machine，
++「同機順序 local reassignment」前提才可先更新 assignment、重驗後續作；不因多個具名repo或已明確交接的髒檔重問相同指派。其餘正式切換必須依 workflow 的 transfer state machine，
+ 由 current steward 在同一 transfer commit 同步**所有 active items**的 steward／writer／workspace／next step；
+ 該 commit 到達 canonical handover endpoint 前，舊 steward 仍是唯一 shared-dossier authority。若 checkout 已含
+ next actor 的 pending coordination fields，任何 authority check 都必須定位 conditional owner record 所在 commit、
+diff --git a/shared/skills/project/references/log-workflow.md b/shared/skills/project/references/log-workflow.md
+index 0a4b302..85d5d12 100644
+--- a/shared/skills/project/references/log-workflow.md
++++ b/shared/skills/project/references/log-workflow.md
+@@ -50,7 +50,7 @@ These are hard constraints. Read them before touching git.
+ - **NEVER merge the PR on your own.** Opening a PR ≠ merging it. Merge only on an explicit user instruction — 「明說」＝使用者說了 merge 類說法（本輪引數或任一則訊息），或在 Step 4 選了「送出並 merge」。兩者皆無 → 一律不 merge。**Never infer a merge from "ship", "push", "送出", or from having just opened the PR.**
+ - **Branch FIRST, before any commit.** If changes must be committed while `HEAD` is the default branch (or detached), create a feature branch **before** committing — not at push time. This is unconditional: do it regardless of protection state (see Step 1, item 5), even when protection is confirmed off.
+ - **Unknown protection = protected.** If `gh` is missing or the protection query fails, treat the default branch as protected (PR path). Do not assume it is open.
+-- **A ship keyword authorizes HOW to ship, NEVER whether a batch may ship.** Any `verdict: STOP` from `ship-state.sh` — including `review-terminal:` — outranks every keyword. Stop and follow the message.
++- **A ship keyword authorizes HOW to ship, NEVER whether a batch may ship.** Any `verdict: STOP` from `ship-state.sh` — including `review-terminal:` — blocks shipping. Follow the specific failed gate; continue authorized in-scope preparation or repair. The same-PR repair batch in ship-paths defines endpoint continuity, not a bypass of any gate.
+ 
+ ### Rationalization table — STOP if you hear yourself say these
+ 
+@@ -142,7 +142,7 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4
+ 2. **變更集**（= 此 branch **相對 default 的變更**，即 PR 將含的內容；**不等於「未 push」**——已 push 到 feature branch upstream 的 commit 仍落在此範圍，push 狀態由 Step 5 處理且 push 為冪等）：取腳本的 `files-vs-default` + `working-tree` 合併為完整**檔案**清單（Step 2 判模組、Step 4 列變更檔都靠它；`commits-ahead` 只有主旨、無檔名，deep-review 交接的「clean tree + 只剩 branch commit」情境靠 `files-vs-default` 列檔）。無變更（腳本印 `changes: NONE`）→ 跳過此 repo，**除非符合下述 docs-only mode**。
+    **Docs-only mode**：repo git 無變更（tree clean、無領先 default 的 commit），但 session 記憶中有本 session **已 ship**（已 merge／已 push）的變更 → 不跳過。變更集改由那批 commit 重建檔案清單：逐 commit `git -C <repo> show --name-only <sha>`（已 merge 進 default 者用 default 上的對應 commit）。後續步驟照常：Step 2 據此同步文檔、Step 3 只會產生符合 target repo convention 的文檔 commit、branch-first／protection／Step 4 確認全部適用；Step 2 掃完確認文檔皆已同步 → 該 repo 無事可做，如實回報。**A clean tree does not mean "nothing to ship" — "code shipped, docs lagging" is the common case this mode exists for.**
+ 3. **branch protection**：取腳本的 `protection:` verdict（classic + ruleset 都查過）——`PROTECTED` / `OPEN` / `UNKNOWN → treat as PROTECTED`。**Never reinterpret the script's UNKNOWN as "probably open" — Unknown = protected, the script already says so.** verdict 附 `viewerPermission=READ`（classic `Not Found`）→ 身分分離情境，後續處置（`git push --dry-run` 探權限、Step 4 摘要點明、不自行硬推）見 `ship-paths.md`。
+-4. **決定 ship 路徑**：腳本印 `verdict: BOOTSTRAP`（遠端零 branch，且 intended default／baseline／creation policy 全部可驗）→ 走 **bootstrap 路徑**（`ship-paths.md`「Bootstrap」），Step 4 摘要標明 intended default 與 baseline SHA。先讀 target root contract；若它與 provider metadata 衝突，先用確認型問題選定 authority，再以 `ship-state.sh --bootstrap-default <name> <repo>` 重驗。若 `bootstrap-baseline: NEEDS_CONFIRMATION`，使用 runtime user-input primitive 提出「暫停（預設）／目前 HEAD full SHA／列出的 ancestor」選項；選定後照抄 `bootstrap-baseline.sh`，再帶同一個 `--bootstrap-default` 重跑偵測，**不得**自行挑 commit。其餘 `verdict: STOP` 一律停下照訊息處理，**不得**自行當成 bootstrap。否則取腳本的 `ship-path:`——protected（或未知）→ **PR 路徑**（推 feature branch + 必開 PR）；確定無保護 → **仍預設 PR 路徑**（跨 repo 單一形狀，省掉每輪「這個 repo 要不要 PR」的判斷，並留下審查紀錄與可回溯 diff）。**"No protection" is not a reason to skip the PR** —— 只有使用者明說「不用 PR / 只推 branch」才退為直接 push 該 feature branch（escape hatch，不主動勸退）。**兩條路徑都推 feature branch、都不直推 default**（branch-first 無條件）——「直接 push」指**省去開 PR 的步驟、直接 push 該 branch**，不是直推 default。把變更合進 default branch 一律是**使用者**的事（agent 不 merge、不直推 default）。
++4. **決定 ship 路徑**：腳本印 `verdict: BOOTSTRAP`（遠端零 branch，且 intended default／baseline／creation policy 全部可驗）→ 走 **bootstrap 路徑**（`ship-paths.md`「Bootstrap」），Step 4 摘要標明 intended default 與 baseline SHA。先讀 target root contract；若它與 provider metadata 衝突，先用確認型問題選定 authority，再以 `ship-state.sh --bootstrap-default <name> <repo>` 重驗。若 `bootstrap-baseline: NEEDS_CONFIRMATION`，使用 runtime user-input primitive 提出「暫停（預設）／目前 HEAD full SHA／列出的 ancestor」選項；選定後照抄 `bootstrap-baseline.sh`，再帶同一個 `--bootstrap-default` 重跑偵測，**不得**自行挑 commit。其餘 `verdict: STOP` 一律停下照訊息處理，**不得**自行當成 bootstrap。否則取腳本的 `ship-path:`——protected（或未知）→ **PR 路徑**（推 feature branch + 必開 PR）；確定無保護 → **仍預設 PR 路徑**（跨 repo 單一形狀，省掉每輪「這個 repo 要不要 PR」的判斷，並留下審查紀錄與可回溯 diff）。**"No protection" is not a reason to skip the PR** —— 只有使用者明說「不用 PR / 只推 branch」才退為直接 push 該 feature branch（escape hatch，不主動勸退）。**兩條路徑都推 feature branch、都不直推 default**（branch-first 無條件）——「直接 push」指**省去開 PR 的步驟、直接 push 該 branch**，不是直推 default。合進default須有明確merge授權；有授權且gates通過就由agent完成，絕不直推default。
+ 5. **Branch-first（無條件，依全域「if on default branch, branch first」）**：目標——**到 Step 5 送出前，當前 branch 一定不是 default branch（也不是 detached HEAD）**，**不論 protection**。已在 feature branch（如 deep-review 結尾）→ 跳過。否則執行：
+ 
+    ```
+@@ -176,7 +176,8 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4
+ 1. 先讀 target config 與 active items。若存在 `PREPARED` transfer guide 或 conditional owner `D-*` record，
+    先依 transfer workflow 定位該 record 所在 commit、fetch canonical endpoint 並驗 remote-visible ancestry；
+    未抵達時 active fields 中的 next actor 只是 pending value，effective authority 仍取 guide 的 current steward，
+-   查不到證據就 STOP。接著用 shared workflow 的 `steward-authority.py` 跑 ordinary gate，runtime prefix 只能
++   查不到證據就 STOP。當次明確順序改派先依 `workflow.md`「同機順序 local reassignment」完成角色更新及重驗，
++   不另要Spec invocation或改派確認。其他情況用 shared workflow 的 `steward-authority.py` 跑 ordinary gate，runtime prefix 只能
+    由入口提供；initial call 的 `resume=`／`as=` 只能來自 normalized invocation arguments；當次 session 工作線指派
+    另依 shared workflow 的 authority 規則，以獨立 provenance 與原 assignment snapshot 重驗。ordinary identity claim is not delegation；
+    「我是 owner」、Git author、GitHub login 或同 runtime 都不得改 helper 的 executor actor。
+diff --git a/shared/skills/project/references/ship-paths.md b/shared/skills/project/references/ship-paths.md
+index 58bfaf6..e375da8 100644
+--- a/shared/skills/project/references/ship-paths.md
++++ b/shared/skills/project/references/ship-paths.md
+@@ -263,6 +263,15 @@ git -C <repo> branch -D <feature>       # 本地 branch 若仍殘留。squash/re
+ 
+ **flag 與裸說法完全等價**，只是形狀不同：`--merge` ≡ 「merge」。**flag 只存在於 `/project …` 的引數裡**，而裸說法在**本輪任何一則訊息**都算數（那是 prose 路徑，刻意沒有 flag 形式——你可以三輪之後才補一句「merge」）。兩者共用這張表，**不得各自演化**。
+ 
++**同批修復接續**：`--merge`／表內merge說法涵蓋這次已具名repo、同PR、同目標與同session的必要修復、
++commit、更新feature branch、重新等待required checks及merge。首次送出摘要明列此邊界。Required check
++失敗只暫停merge，不結束logical invocation：先診斷，修復本批引入且在原scope內的缺陷，跑受影響檢查，
++展示修後摘要並更新同一PR，再以新HEAD重驗全部required gates；不重問相同endpoint授權。
++每批最多兩次CI修復提交；仍失敗則回報具體缺口與選项，不重設額度。不是兩次測試上限，也不放行失敗CI。
++撤回、session／owner轉移、不同PR或新增目標／實質風險時失效。既有外部環境債、保護規則修改、bypass、
++force-push、production或永久刪除不包含在修復批次；新事實需要這些操作才一次詢問具體差異。
++其他STOP仍維持其安全判準；完成可安全進行的既定準備後，若確有必要決策才結束回合並提出可續行選項。
++
+ > **「（無送出詞）」與 `--pr` 的差別只有一個：問不問。** 兩者最終狀態相同（PR 開著、沒 merge）；`--pr` 是「我知道我要停在 PR」，所以跳過那一題。
+ 
+ **預設保留、不預設壓**：語意 commit 在 PR 裡逐顆可讀、日後可追，那是它們存在的理由。GitHub 的 squash-merge 全有全無、做不到只壓部分，故「壓」必須是使用者說出口的意圖，**不是流程的預設**。
+@@ -323,7 +332,7 @@ gh pr checks <PR-number|URL> -R "$repo_slug" --required
+      - `QUERY_ERROR` / `HEAD_CHANGED` / malformed evidence → 立即 STOP，不 retry；`QUERY_ERROR` 必須保留
+        helper 的 `stage`／`detail`，不能用「尚未看到 check」代替真正錯誤。
+      原 `--merge` authorization 在這個 logical Project invocation 的 grace／watch 內繼續有效，approval UI
+-     呼叫數必須是 0；一旦 STOP 或 invocation 結束就不 carry。
++       呼叫數必須是 0；invocation 結束不 carry。已知本批CI失敗適用上方同批修復接續，不把repair hold當成結束。
+    - `required-policy: UNKNOWN` → policy 不可見，STOP；不得把 403／provider gap 當成 none。
+ 3. 兩者皆非，且末尾是 GraphQL／GitHub API／network 錯誤（例如 `Post "https://api.github.com/graphql":
+    ... operation timed out`），或輸出根本無法產生 check verdict → 這是 transport／API 的 **query failure**。
+@@ -340,7 +349,7 @@ repo，前一種誤讀會捏造不存在的壞 check；對 transport error，後
+ |---|---|---|---|
+ | `CLEAN` / `HAS_HOOKS` / `UNSTABLE` | 沒有硬性阻擋（`UNSTABLE` = **非必要** check 有問題，protection 不在意——與上面 `--required` 是同一判準的兩面） | 直接 merge | 直接 merge（`--admin` 用不到） |
+ | `BLOCKED` ＋ checks **exit 8** | **CI 還在跑，不是 protection 擋** | **等它跑完再 merge**（見下方等待策略） | **一樣等**——`--admin` 在此繞過的是還沒跑完的測試，不是規則 |
+-| `BLOCKED` ＋ checks **其他非零，且列出了失敗的 check** | required check 失敗 | 停，回報是哪個 check 失敗 | **一樣停**——繞過等於把沒通過測試的變更送進 default |
++| `BLOCKED` ＋ checks **其他非零，且列出了失敗的 check** | required check 失敗 | 暫停merge；依同批修復接續處理，不以失敗結束已授權修復 | **一樣不merge**——修復後重驗，不能bypass失敗測試 |
+ | `BLOCKED` ＋ authoritative non-watch checks 是 **query／transport failure**，沒有 failed row、也不是上述任一 exact empty-required 訊息 | check 狀態不確定 | 停，回報查詢錯誤；不得猜失敗或全綠 | **一樣停**——`--admin` 不得繞過未知狀態 |
+ | `BLOCKED` ＋ checks **exit 0**，或 **exact empty-required + required-policy none**（見上方 ⚠️） | protection 真的擋（缺 review／其他規則），與 check 無關 | **停**，回報並告知可用「bypass merge」 | 加 `--admin` 重試 |
+ | `BLOCKED` ＋ **required-policy REQUIRED** 但收到 exact empty-required 訊息 | startup enrollment pending、dependency-gated active run，或 grace 後的 UNOBSERVED | 跑 identity-bound helper；ENROLLED 回到原 checks 分流，UNOBSERVED／RUN_TERMINAL／error 就停 | **一樣等／停**——沒有測試結果可 bypass |
+@@ -366,7 +375,8 @@ repo，前一種誤讀會捏造不存在的壞 check；對 transport error，後
+   - **NEVER wrap the wait in `timeout` / `gtimeout`.** Neither exists on macOS, and `command not found` is exit 127 — the whole wait silently never runs while the exit code still reads like a pass. 需要停就中斷，不要引入 `timeout`。
+   - **NEVER re-run `gh pr merge` while waiting.** 這正是本節標題那條「不做失敗就 retry」的具體化：判準是 check 狀態，不是上一次 merge 失敗與否；重試只是多一次 API 呼叫，還把「還是被擋」的假訊號餵回自己。
+   - 「有的還在跑、有的已失敗」同時成立時 exit code 只會回一個。**不論回哪個，處置都不是 `--admin`**——差別只在「等」還是「立刻回報」；`--fail-fast` 會讓 watch 在第一個失敗就返回。
+-- **required check 失敗時要把回程路線一起講**：回報附一句「check 修綠之後跟我說一聲 **merge**，我接手最後一哩」。使用者之後說「merge」即是說法表的授權——**重查一次現況**（不沿用本輪快照）再走「Merge 最後一哩」，**不必重跑整個 `/project`**。
++- **required check失敗依同批修復接續處理**：範圍內可修就直接修復並重查，不要求再說merge。
++  只有修復超出原批次、額度耗盡或確有未決權限時，才列具體差異、選項及回答後的下一步。
+ - **`--auto` 預設不用。** GitHub 的錯誤訊息會建議它，但 merge 真正發生時 agent 已經結束，「Merge 最後一哩」剩下的三步（切回 default、`pull` 同步、刪 branch）沒有人做——本地 default 落後、feature branch 殘留，要等下一輪 `ship-state.sh` 的 `stale-branches:` 才補報。只有在 CI 明顯很慢、使用者不想等時才提供它當選項，並在回報明說「本地 default 與 branch 清理要你之後自己做」。
+ - **`BLOCKED` 缺的是什麼，去讀規則與 check，NEVER infer it from an empty PR field.** `reviewDecision: ""` 不等於「缺 approval」——`required_approving_review_count: 0` 的 repo 它本來就一直是空的（2026-08-14 與 08-15 兩次實地誤診同一來源）。要確認 protection 要求什麼就直接讀：`gh api repos/{owner}/{repo}/rulesets`（再取 `/rulesets/{id}` 看內容）與上面〈Branch protection 偵測〉那組指令。
+ - **動用了 `--admin` 就必須在送出回報裡明說「這次繞過了 protection」。** 繞過本身要留在使用者看得到的地方。
+diff --git a/shared/skills/project/references/workflow.md b/shared/skills/project/references/workflow.md
+index d121065..edb1b79 100644
+--- a/shared/skills/project/references/workflow.md
++++ b/shared/skills/project/references/workflow.md
+@@ -17,7 +17,7 @@ arguments** 與它自己的 skill directory；先把該目錄下的 `scripts/`
+ 從 `--start 1` 開始，逐段核對 `REFERENCE`、固定不變的 `SHA256`、連續且不重複的 `Lnnnnnn` 行號，並依
+ `NEXT` 接續；只有看見該檔的 `EOF` 才算完整讀取。若同一檔的 SHA 改變，從 line 1 重新讀取。
+ 
+-每輪一律完整讀取 `dossier.md`。Log 另完整讀取 `log-workflow.md` 與 `ship-paths.md`；Spec 或 Transfer
++每輪只載入正在執行的模式：Spec／Transfer讀取 `dossier.md`；Log完整讀取 `dossier.md`、`log-workflow.md` 與 `ship-paths.md`。Spec 或 Transfer
+ 只有在 workflow／dossier 明確導向其他 reference 時才以相同協定載入。不得以摘要、runtime memory、搜尋命中
+ 或前一輪讀取取代本輪要求。典型呼叫如下，`NEXT` 的值成為下一次 `--start`：
+ 
+@@ -73,7 +73,7 @@ Steward 與 item identity，則這份指派不因下一個 Project invocation 
+ assignment 改變、work item 已移除、撤回／改派、PREPARED transfer、human delegation、跨 runtime 或新 session
+ 皆不可沿用；仍用既有 gate 處理。任何外向 endpoint 必須另有當次授權，此指派不授予 push／PR／merge。
+ 
+-除下節 Spec 的 local reassignment 兩欄更新外，在任何 adopted active-state mutation、commit 或 shipping 前執行：
++除下節「同機順序 local reassignment」的欄位更新外，在任何 adopted active-state mutation、commit 或 shipping 前執行：
+ 
+ ```sh
+ python3 "<project-scripts>/steward-authority.py" --root "$repo" --runtime <runtime> \
+@@ -91,23 +91,41 @@ authority actor、authority source 四行；`--merge` 等 endpoint 說法不參
+ 提出 exact prompt 且收到其緊接回答後使用。Log 的完整 prompt／revalidation 契約見
+ `log-workflow.md`「Prompt-bound authority recovery」。
+ 
++## 同機順序 local reassignment
++
++適用於使用者當次明確把已識別的工作與其文件維護交給本agent，並確認前任已停、沒有並行writer。
++同runtime或跨runtime皆可；「我是owner」、舊artifact、process不存在或單獨說前任退出不是指派。
++此路徑適用Spec與Log，不要求為相同指派另開Spec invocation或再問是否換steward。
++
++先核對各具名repo的adoption／trusted-core、active items、worktree與dirty paths。多repo要一起核對，
++不能把其中一個repo的同意擴成其他repo的指派；所有active items必須屬於此次具名工作與同一前任，
++不能轉走未被指派的其他工作。必要private-only事實、活躍writer、未整合且影響不明的workspace、
++formal transfer／conditional owner尚未釐清時先解決該具體缺項，不自行接管。
++
++每個repo先執行普通helper取得HEAD／assignment fingerprint，再帶入當次指派的exact evidence：
++
++```sh
++python3 "<project-scripts>/steward-authority.py" --root "$repo" --runtime <runtime> \
++  --reassign-from <previous-runtime:workline> --prior-writer-stopped \
++  --assigned-item <exact-active-heading> --expected-head <full-oid> \
++  --expected-assignment <fingerprint> [--assigned-item <another-heading>] \
++  [--owned-path <exact-handed-over-dirty-file>]
++```
++
++這些flags是agent從當次明示指派整理的證據，不讓使用者重建指令。`--owned-path`僅列已明確交接、
++核對內容與scope的髒檔，不能用全部status輸出當成已知ownership。Helper本身唯讀，
++`READY_FOR_REASSIGNMENT`不是mutation／shipping的PASS；同一不可分割切換群組的前置皆就緒後，
++只更新各active item的Writer／Dossier Steward為輸出的target，保留scope／workspace與其他欄位。
++寫入前重驗同一HEAD／fingerprint，更新後普通authority helper必須PASS，才接續原工作與event-time紀錄。
++不重問同一指派；新衝突才問實質差異。改派不繼承前任的外向授權，新session亦不沿用舊授權。
++
++具名但未改派／仍有活躍writer的repo保持唯讀，不納入改派群組。只有在不依賴該repo的未完成變更、
++且不破壞現有跨repo契約時，其他已指派repo可獨立接手與交付；不把局部成功說成整體完成。
++
+ ## Spec 模式
+ 
+ 開工儀式：把願望變成可驗證的 active contract。本模式只寫文檔，不改 code、不 commit。
+ 
+-**同機順序 local reassignment**：使用者當次明確把既有工作與文件維護改派給本 agent，並說明前任已停、
+-沒有其他 writer，才適用；「我是 owner」、舊handoff claim或前任僅退出不算改派。沿下列Spec步驟一次完成
+-adoption／trusted-core、repo/branch/dirty state、routed records及worktree盤點；限單canonical repo、唯一active
+-item、Writer與Steward同為另一runtime的agent actor、Workspace符合當前feature branch、worktree/index clean。
+-有其他repo相依、未整合workspace、活躍writer、必要private-only事實、transfer guide／conditional owner或其
+-影響尚不清楚時，不適用此路徑；不把前任已停當成這些事實皆不存在。
+-
+-上述事實已確認後，當次改派本身允許**只先更新Writer／Dossier Steward兩欄**為本runtime的同一workline，
+-保留其餘欄位；不先跑必然因舊actor mismatch而STOP的helper，也不為同一snapshot重複盤點／再問使用者。
+-更新後才跑普通authority helper，exact PASS方可繼續原Spec進度／event-time改派記錄／文件驗證；來源為
+-`current-user-local-reassignment`，不是舊actor resume或繼承授權。新衝突／helper失敗就停，不能擴改scope或
+-自行修正不明assignment。其餘多writer／多repo／human steward／正式Transfer路徑及各批outward授權不變。
+-
+ 1. 判斷 adoption：`.doc-governance.json` 與 `scripts/doc-governance.py` 兩者皆有＝adopted；兩者皆無＝legacy；
+    只存在一個＝BROKEN，停止且不要回退 legacy。
+ 2. Adopted repo 先確認 target 的 config/core adoption 完整且 core 通過 trusted-core 比對，再執行
+@@ -127,9 +145,10 @@ item、Writer與Steward同為另一runtime的agent actor、Workspace符合當前
+ ### Spec 成功後的 Log invocation 提示
+ 
+ Spec 寫入與必要驗證成功後，本輪未要求下一步 Log 時，直接回報結果，不做本節額外 probe 或出題。
+-若使用者已要求下一步 commit、push、開 PR 或 merge，必須由使用者輸入**新的 explicit
+-Project Log invocation**。上一輪或本輪 Spec 的 endpoint authorization 都不 carry；提示命令本身也不是授權，
+-只有使用者實際送出的新 invocation 才是。Endpoint flag 取自使用者為下一步明確選定的終點，依
++若使用者在本次明確要求Spec後接續Log及其endpoint，完成Spec後直接進入同一logical workflow的Log，
++載入所需references並重驗authority，不再要求重輸invocation。上一個已結束invocation或session的
++endpoint authorization 不 carry；提示命令本身也不是授權。尚未要求Log時，只提供以下可選用的命令。
++Endpoint flag 取自使用者為下一步明確選定的終點，依
+ `ship-paths.md` 說法表正規化；未選定就不得自行預填。下例以使用者已選定 merge 為例。
+ 
+ 對 same-runtime durable workline，在寫入 active contract 後重新執行一次上節 helper：當次 session 工作線指派

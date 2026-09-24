@@ -1,5 +1,12 @@
 # Deep Plan — Evals
 
+## Focused repair transport — #229 candidate
+
+首次prompt仍盲審；修後packet只供原finding、實際plan diff與語意相依定位，不可提供預定verdict。
+Launcher須記packet hash與review mode，packet被改寫、relative／control-character path皆fail closed。
+機械transport測試不等於高風險雙runtime行為驗收；入口未啟用focused時必須保留既有盲審。
+本輪native整合採一般計畫路徑，不把該成功外推為高風險full-review通過。
+
 > 開發/迭代用的評測集，**不從 SKILL.md body 連結**（避免 runtime 被載入）。
 > 執行方式、沙盒建置、模型樓層政策、transcript 截獲法：repo-relative `claude/evals/README.md`（唯一權威）。
 

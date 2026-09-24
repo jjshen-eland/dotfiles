@@ -17,9 +17,11 @@ arguments** 與它自己的 skill directory；先把該目錄下的 `scripts/`�
 從 `--start 1` 開始，逐段核對 `REFERENCE`、固定不變的 `SHA256`、連續且不重複的 `Lnnnnnn` 行號，並依
 `NEXT` 接續；只有看見該檔的 `EOF` 才算完整讀取。若同一檔的 SHA 改變，從 line 1 重新讀取。
 
-每輪一律完整讀取 `dossier.md`。Log 另完整讀取 `log-workflow.md` 與 `ship-paths.md`；Spec 或 Transfer
-只有在 workflow／dossier 明確導向其他 reference 時才以相同協定載入。不得以摘要、runtime memory、搜尋命中
-或前一輪讀取取代本輪要求。典型呼叫如下，`NEXT` 的值成為下一次 `--start`：
+每個必要reference首次使用須完整讀取：`dossier.md`；Log另讀`log-workflow.md`與`ship-paths.md`。
+Spec／Transfer只在workflow／dossier導向時載入其他reference。同session已完整收到EOF、內容仍在
+可用context且實際檔案SHA256未變時沿用，不因內部stage切換、插問或重驗從頭再讀。
+新session、只剩摘要／memory、內容遺失或SHA改變才重讀；搜尋命中不算完整讀取。
+典型呼叫如下，`NEXT` 的值成為下一次 `--start`：
 
 ```sh
 python3 "<project-scripts>/read-reference.py" dossier.md --start 1
@@ -73,7 +75,7 @@ Steward 與 item identity，則這份指派不因下一個 Project invocation �
 assignment 改變、work item 已移除、撤回／改派、PREPARED transfer、human delegation、跨 runtime 或新 session
 皆不可沿用；仍用既有 gate 處理。任何外向 endpoint 必須另有當次授權，此指派不授予 push／PR／merge。
 
-除下節 Spec 的 local reassignment 兩欄更新外，在任何 adopted active-state mutation、commit 或 shipping 前執行：
+除下節「同機順序 local reassignment」的欄位更新外，在任何 adopted active-state mutation、commit 或 shipping 前執行：
 
 ```sh
 python3 "<project-scripts>/steward-authority.py" --root "$repo" --runtime <runtime> \
@@ -91,22 +93,45 @@ authority actor、authority source 四行；`--merge` 等 endpoint 說法不參�
 提出 exact prompt 且收到其緊接回答後使用。Log 的完整 prompt／revalidation 契約見
 `log-workflow.md`「Prompt-bound authority recovery」。
 
+## 同機順序 local reassignment
+
+適用於使用者當次明確把已識別的工作與其文件維護交給本agent，並確認前任已停、沒有並行writer。
+同runtime或跨runtime皆可；「我是owner」、舊artifact、process不存在或單獨說前任退出不是指派。
+此路徑適用Spec與Log，不要求為相同指派另開Spec invocation或再問是否換steward。
+
+先核對各具名repo的adoption／trusted-core、active items、worktree與dirty paths。多repo要一起核對，
+不能把其中一個repo的同意擴成其他repo的指派；所有active items必須屬於此次具名工作與同一前任，
+不能轉走未被指派的其他工作。必要private-only事實、活躍writer、未整合且影響不明的workspace、
+formal transfer／conditional owner尚未釐清時先解決該具體缺項，不自行接管。
+
+每個repo先執行普通helper取得HEAD／assignment fingerprint，再帶入當次指派的exact evidence：
+
+```sh
+python3 "<project-scripts>/steward-authority.py" --root "$repo" --runtime <runtime> \
+  --reassign-from <previous-runtime:workline> --prior-writer-stopped \
+  --assigned-item <exact-active-heading> --expected-head <full-oid> \
+  --expected-assignment <fingerprint> [--assigned-item <another-heading>] \
+  [--owned-path <exact-handed-over-dirty-file>]
+```
+
+這些flags是agent從當次明示指派整理的證據，不讓使用者重建指令。`--owned-path`僅列已明確交接、
+核對內容與scope的髒檔，不能用全部status輸出當成已知ownership。Helper本身唯讀，
+`READY_FOR_REASSIGNMENT`不是mutation／shipping的PASS；同一不可分割切換群組的前置皆就緒後，
+只更新各active item的Writer／Dossier Steward為輸出的target，保留scope／workspace與其他欄位。
+寫入前重驗同一HEAD／fingerprint，更新後普通authority helper必須PASS，才接續原工作與event-time紀錄。
+不重問同一指派；新衝突才問實質差異。改派不繼承前任的外向授權，新session亦不沿用舊授權。
+
+保留新assignment到後續completion commit的parent：若HEAD還記舊actor或沒有active contract，
+在已獲commit授權的既定提交階段，先提交可查證的新assignment，再做移除active item的結案提交。
+可與同scope實作合併成語意commit，不必另設使用者停點；沒有commit授權就保留active狀態與完成證據，
+不先刪掉自己後續gate需要的authority，也不新增commit權限。不要等shipping失敗才回頭重寫history。
+
+具名但未改派／仍有活躍writer的repo保持唯讀，不納入改派群組。只有在不依賴該repo的未完成變更、
+且不破壞現有跨repo契約時，其他已指派repo可獨立接手與交付；不把局部成功說成整體完成。
+
 ## Spec 模式
 
 開工儀式：把願望變成可驗證的 active contract。本模式只寫文檔，不改 code、不 commit。
-
-**同機順序 local reassignment**：使用者當次明確把既有工作與文件維護改派給本 agent，並說明前任已停、
-沒有其他 writer，才適用；「我是 owner」、舊handoff claim或前任僅退出不算改派。沿下列Spec步驟一次完成
-adoption／trusted-core、repo/branch/dirty state、routed records及worktree盤點；限單canonical repo、唯一active
-item、Writer與Steward同為另一runtime的agent actor、Workspace符合當前feature branch、worktree/index clean。
-有其他repo相依、未整合workspace、活躍writer、必要private-only事實、transfer guide／conditional owner或其
-影響尚不清楚時，不適用此路徑；不把前任已停當成這些事實皆不存在。
-
-上述事實已確認後，當次改派本身允許**只先更新Writer／Dossier Steward兩欄**為本runtime的同一workline，
-保留其餘欄位；不先跑必然因舊actor mismatch而STOP的helper，也不為同一snapshot重複盤點／再問使用者。
-更新後才跑普通authority helper，exact PASS方可繼續原Spec進度／event-time改派記錄／文件驗證；來源為
-`current-user-local-reassignment`，不是舊actor resume或繼承授權。新衝突／helper失敗就停，不能擴改scope或
-自行修正不明assignment。其餘多writer／多repo／human steward／正式Transfer路徑及各批outward授權不變。
 
 1. 判斷 adoption：`.doc-governance.json` 與 `scripts/doc-governance.py` 兩者皆有＝adopted；兩者皆無＝legacy；
    只存在一個＝BROKEN，停止且不要回退 legacy。
@@ -127,9 +152,10 @@ item、Writer與Steward同為另一runtime的agent actor、Workspace符合當前
 ### Spec 成功後的 Log invocation 提示
 
 Spec 寫入與必要驗證成功後，本輪未要求下一步 Log 時，直接回報結果，不做本節額外 probe 或出題。
-若使用者已要求下一步 commit、push、開 PR 或 merge，必須由使用者輸入**新的 explicit
-Project Log invocation**。上一輪或本輪 Spec 的 endpoint authorization 都不 carry；提示命令本身也不是授權，
-只有使用者實際送出的新 invocation 才是。Endpoint flag 取自使用者為下一步明確選定的終點，依
+若使用者在本次明確要求Spec後接續Log及其endpoint，完成Spec後直接進入同一logical workflow的Log，
+載入所需references並重驗authority，不再要求重輸invocation。上一個已結束invocation或session的
+endpoint authorization 不 carry；提示命令本身也不是授權。尚未要求Log時，只提供以下可選用的命令。
+Endpoint flag 取自使用者為下一步明確選定的終點，依
 `ship-paths.md` 說法表正規化；未選定就不得自行預填。下例以使用者已選定 merge 為例。
 
 對 same-runtime durable workline，在寫入 active contract 後重新執行一次上節 helper：當次 session 工作線指派

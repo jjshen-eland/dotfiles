@@ -5,6 +5,9 @@ description: Deeply reviews local repository changes with independent fresh-cont
 
 # Repo Review
 
+Runtime strategy: `review_strategy=single-pass-v1`. Accept `--full` as the
+shared workflow's explicit full-review selector; it does not authorize autofix.
+
 This is the Codex public entry for the portable deep-review workflow. Keep the
 public skill name `$repo-review`; do not redirect the user to another skill name.
 

@@ -14,6 +14,7 @@ Apply the shared workflow's risk route first. The reviewer lifecycle below appli
 - Read and synthesize every `review` in that manifest. Do not consume a partial result set.
 - If the launcher is unavailable, returns nonzero, or any manifest invariant fails, STOP and report orchestration failure. Never replace missing reviewers with the orchestrator's own review.
 - Run the launcher again for the second round; its ephemeral child processes provide new contexts. Never reuse a prior manifest, thread, or result.
+- If the shared workflow selects focused repair verification, also pass `--repair-context <absolute-packet-path>`; require `review_mode=repair-verification` and unchanged packet hashes in its manifest. Omit this flag for discovery and blind review.
 - Do not put runtime names, tool details, IDs, or orchestration progress in reviewer prompts.
 
 After preserving the user's artifact and repository scope, completely read [references/workflow.md](references/workflow.md); load the reviewer brief only when that workflow routes to full review. The shared workflow controls routing, findings, dispositions, the second round, and the final gate; this entry controls only Codex reviewer lifecycle.

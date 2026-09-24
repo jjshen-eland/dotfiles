@@ -24,6 +24,28 @@ second independent reviewer; using both requests both behaviors.
 Do not turn an explanation, implementation, test-only, or debugging request into
 a deep review unless the user also asks for review.
 
+For `review_strategy=single-pass-v1` selected by the runtime entry, use the
+risk route below. `--full`, an explicit full-review request or an explicit
+reviewer count selects the existing full path. The skill name alone does not.
+Missing strategy selection preserves the existing full path.
+
+## 1a. Risk and necessary decisions
+
+For the single-pass strategy, inspect the actual change and direct contracts
+before loading reviewer instructions or dispatching. Use full review for concrete
+irreversible data/production changes, security or permission boundaries, changed
+release/alert/allow-deny criteria, incompatible interfaces requiring coordinated
+cutover, or a specific unresolved fact threatening those consequences. Record
+the triggering evidence. Repository count, steps, diff size or unrelated debt
+alone do not trigger full review; do not hide real risk by calling a change small.
+
+Otherwise select ordinary review. Ask genuine product decisions after basic
+inspection and before costly reviewer dispatch, with options and the next action.
+Use native asynchronous input when available and continue independent safe work;
+otherwise return the actual question, then resume in the same session on its
+answer. Never guess the choice or require another continue/authorization message.
+An answer resolves only that decision, not scope, authority or the repair budget.
+
 ## 2. Resolve an exact scope
 
 For every candidate repository, read its root contract (`AGENTS.md`, then
@@ -86,6 +108,12 @@ merge base as a new scope and wait for confirmation.
 Choose non-overlapping primary assignments before delegation. Respect an explicit
 reviewer limit and the runtime's actual concurrency cap:
 
+Ordinary review uses exactly one fresh reviewer for the entire confirmed change,
+including all named repositories and their affected interfaces. Give it all
+immutable endpoints. If it cannot cover that scope, report the exact missing
+coverage as BLOCKED; do not silently omit a repository or add reviewers.
+The following size-based partition rules apply only to the full path:
+
 - A small coherent change uses one or two reviewers split by distinct concerns.
 - A medium change uses up to three or four reviewers with module or concern
   ownership.
@@ -127,7 +155,7 @@ Also provide that reviewer's bounded repositories, paths, modules, or concerns.
 For a cross-repository pass, include only the relevant interfaces and both
 immutable endpoint sets. Do not send one reviewer's output to another reviewer.
 
-Do not include author hypotheses, prior findings, prior repair summaries, review
+For initial discovery and an explicitly requested second blind opinion, do not include author hypotheses, prior findings, prior repair summaries, review
 pass numbers, remaining cycle budget, desired verdict, or statements that a
 particular area is probably correct. Do not expose this skill's eval oracle.
 Task names, role labels, and checkpoint text must also remain neutral.
@@ -192,6 +220,12 @@ Before the first edit:
 - If a commit will be needed, ensure `HEAD` is on a non-default feature branch
   first. Never commit from detached `HEAD` or onto the default branch.
 - Read and obey the target repository's mutation, testing, and commit rules.
+- Establish writer/steward authority before code edits, not only before commit.
+  A current explicit sequential assignment uses the target's adopted reassignment
+  path first; update roles and require its authority PASS before repairing code.
+  A conflict in one repository does not transfer its ownership or prohibit
+  independent authorized work elsewhere. Keep the conflicting repository wholly
+  read-only, including Git metadata and terminal signals.
 - Set a finite repair limit before starting: default three repair cycles, never
   more than five. Never raise or reset it after the first reviewer starts.
 
@@ -205,23 +239,50 @@ values.
 After each repair batch:
 
 1. Inspect the actual diff and confirm it contains only authorized, owned work.
-2. Run the relevant authoritative checks. A failed or unavailable required check
-   stops the loop; preserve an understandable working state and report it rather
-   than expanding scope to repair the environment.
+2. Run the relevant authoritative checks. A failure caused by this repair remains
+   in the bounded repair loop; do not ask for the same repair authorization again.
+   Missing checks or unrelated environment faults block acceptance, not independent
+   authorized work. Do not expand scope to repair that environment.
 3. Capture a new manifest for the repaired subject.
-4. Start a new fresh-context reviewer set under the same partition and isolation
-   contract. Do not send it earlier findings, repair summaries, pass numbers, or
-   remaining budget.
-5. Independently verify its findings again.
+4. For ordinary review, the author verifies each original finding against the
+   actual repair, same-class occurrences, affected contracts and relevant tests.
+   Record the finding disposition and evidence. Do not dispatch another reviewer
+   unless new concrete high-risk evidence triggers the full path or the user
+   explicitly requested another independent review. This is author verification,
+   not a second independent opinion. For the full path, start a new fresh-context
+   reviewer set with the same isolation contract.
+   For `repair_followup=focused` supplied by the runtime entry, provide the original
+   findings and evidence locations, actual repair diff/endpoints, and semantic
+   dependents as a navigation packet, never an expected verdict or author defense.
+   Verify the repair, all same-class occurrences and affected contracts; expand
+   only for new concrete risk evidence. Do not rediscover unrelated unchanged scope.
+   When the entry omits this setting, retain the prior full-partition blind review
+   without earlier findings or repair summaries. Neither route receives pass numbers
+   or remaining budget; both require complete independently verified results.
+5. When a new reviewer was required, independently verify its findings again.
+
+Before a finding enters autofix, connect its trigger and consequence to a current
+acceptance criterion, safety invariant, or regression caused/exposed by this change.
+Severity alone does not make unrelated debt current scope. Mention it in the report;
+do not edit backlog or expand Write Scope to accommodate it. A late-discovered real safety defect still blocks; do not discard
+it merely because it was absent from the original finding set.
 
 Stop with `PASS` when no blocking findings remain. Stop with `FAIL` when verified
 blocking findings remain at the repair limit. Stop with `BLOCKED` when scope,
 ownership, reviewer validity, or required verification cannot be established.
+Track these results per repository as well as the aggregate. A read-only or
+conflicted consumer remains BLOCKED; it does not invalidate verified producer
+repairs that are independently safe under the existing cross-repository contract.
+Continue separately authorized shipping for that producer without representing
+the whole task as complete. Do not ship a partial change requiring a coordinated
+cutover of the blocked repository.
 Do not open a new cycle, rename the pass, invoke this skill recursively, or use a
 second-review request to evade the limit.
 
 If autofix ends in `FAIL` or `BLOCKED` after editing, persist a shipping-visible
-terminal signal without touching worktree or history:
+terminal signal only in repositories you were authorized to mutate and actually
+edited. This writes Git metadata; never call record or clear for a read-only or
+ownership-conflicted repository. Report its blocker without writing there:
 
 ```text
 <skill-root>/scripts/review-terminal.sh record --repo <repo> --reason <blocking-findings|blocked-review> --head <current-head>
@@ -268,7 +329,8 @@ Always include:
 
 1. Repositories, mode, paths, immutable commit endpoints, and whether dirty and
    untracked work were included.
-2. Primary and optional second-review status.
+2. Risk route, initial independent-review status, author repair-verification
+   evidence (ordinary autofix), and any explicitly requested second-review status.
 3. Blocking findings first, grouped by root cause. Each finding includes severity,
    exact location, trigger condition, concrete impact, evidence, verification
    basis, same-class coverage, and an actionable repair direction.
