@@ -437,3 +437,9 @@
   - 放棄:重啟模型驗收求綠；提交前移除唯一 contract 證據；將有界交付當成 #229 全部完成
   - 重議:依 D-20260924-continuation-bounded-closeout 的新限定工作決策；不自動重設本批預算
   - 關聯:Issue#229;D-20260924-continuation-bounded-closeout;B-20260924-workflow-verification-economy;docs/plans/2026-09-24-ci-continuation.md
+
+- **M-20260925-workflow-usable-delivery · 2026-09-25 #229 可用工作流程版本本地交付**：9cd38ba提交一般工作single-pass review、明示順序接手、同批shipping修復接續、steward文件scope、assignment先於completion提交及唯讀Git metadata修復。完整suite1499 PASS／0 FAIL、exit0；14項assignment案例、runtime適用validators與doc audit通過。Opus收尾及Sol明示Project入口驗證有序commit與插問接續，generic Sol未載入Project的接手失敗仍留backlog；不外推全面效率／品質優越性。父commit保留唯一active assignment，單repo移除後無其他active item指向retiring actor；計畫凍結。使用者明示`$project --merge`，本輪gh auth證實token invalid、API HTTP401，尚未push／PR／CI／merge或dotsync。
+  - 日期來源:direct
+  - 放棄:重跑已通過的native驗收；以局部PASS關閉#229；把mock endpoint當真實shipping；刪改歷史candidate patch的diff context空白以偽裝全檔diff-check無警告
+  - 重議:GitHub重新登入後接續本批shipping；generic入口／高風險完整review／reviewer污染依backlog觸發條件處理
+  - 關聯:Issue#229;D-20260925-task-continuity-and-steward-scope;docs/plans/2026-09-24-production-batch-boundary.md;docs/backlog.md

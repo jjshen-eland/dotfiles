@@ -2,11 +2,11 @@
 
 - 工作項：229-production-batch-boundary
 - 日期：2026-09-24
-- 狀態：in-progress
+- 狀態：implemented
 - 種類：implementation；已採用與候選部分分別記錄，不是production授權
 - 需求來源：使用者要求繼續 #229；以真實 krepo-common 多步驟工作改善重複具名確認。
 - 範圍：依STATUS的當前write scope修改共用工作流；不修改其他真實repo，不操作production。下方早期audit／budget段落是歷史，不是當前執行限制。
-- 現行實作：2026-09-25已恢復共用接手／同批修復並修正steward文檔scope與結案順序；`2026-09-24-delivery-candidate.patch`保留為歷史候選快照，不再當待套用指令。最新驗證與限制見文末及STATUS。
+- 現行實作：2026-09-25已恢復共用接手／同批修復並修正steward文檔scope與結案順序；`2026-09-24-delivery-candidate.patch`保留為歷史候選快照，不再當待套用指令。最新驗證與限制見文末及STATUS。本地實作提交9cd38ba；使用者已明示`$project --merge`，但GitHub憑證失效（HTTP401），遠端送出尚未完成。本計畫自本地交付起凍結，shipping後續記於既有history。
 
 ## Approved implementation extension — 2026-09-24
 

@@ -12,19 +12,11 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### 229-production-batch-boundary
-
-- **Writer**: codex:229-production-batch-boundary
-- **Workspace**: branch=docs/229-production-batch-boundary
-- **Write Scope**: STATUS.md, docs/plans/2026-09-24-production-batch-boundary.md, docs/plans/2026-09-24-delivery-candidate.patch, AGENTS.md, codex/AGENTS.md, claude/CLAUDE.md, docs/skill-portability.md, shared/skills/project/, shared/skills/deep-plan/, shared/skills/deep-review/, codex/skills/deep-plan/, claude/skills/deep-plan/, codex/skills/repo-review/, claude/skills/deep-review/, tests/, docs/archive/decisions-2026-09.md, docs/backlog.md
-- **Dossier Steward**: codex:229-production-batch-boundary
-- **Goal**: 交付可直接工作的流程：移除已證實的重複授權與治理重工，保留獨立審查、回歸、安全及scope約束；不把可行性冒充效率／品質優越性。
-- **Acceptance**: 雙runtime正常／安全四個既有case，不重跑before、不加相似case。不以未經使用者指定的token／美元／總時限作門檻。正常case完成mock PR endpoint、無重複授權／審查／擴scope；安全case衝突repo含.git零寫入、獨立工作接續。共同授權須雙端通過，非共同策略可分端啟用。regression／validator／audit通過。
-- **Progress**: 可用版本本地完成：共同接手／同批送出接續、steward文件scope、completion parent ordering及插問接續已落地。14項assignment與1499/0回歸通過；Opus收尾與明示Project入口Sol都正確有序提交、parent gate PASS、無重問／review／history rewrite，source/tests及excluded consumer含.git不變。Generic Sol未載入Project漏接手仍記為限制，未聲稱品質／速度全面優越。未真實shipping。
-- **Next**: 本批實作與必要驗證已完成，待明示commit／shipping；不是等待「繼續」做剩餘步驟。一般commit未載入Project、高風險full review與既有reviewer污染另留backlog，不自動重開整批驗收。
+目前無進行中項目。
 
 ## 暫停中
 
+- **#229 本批 shipping**：本地交付見 M-20260925-workflow-usable-delivery；`docs/229-production-batch-boundary` 尚未push／PR／merge／部署。**恢復條件**：GitHub重新登入後接續已要求的PR／CI／merge。
 - **B-20260902-gh-account-autoswitch**：pending；維持 backlog 既有觸發條件，在條件實際發生前不開發、
   不結案。**恢復條件**：跨帳號操作成為常態，或相同症狀再次被查錯方向。
 - **B-20260824-remote-human-contributor-path**：pending；現行 feature branch／PR 可作為 Git 傳遞媒介，
