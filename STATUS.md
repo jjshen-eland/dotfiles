@@ -12,7 +12,19 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-目前無進行中項目。
+### 229-review-followup-ci
+
+- **Writer**：codex:229-review-followup-design
+- **Workspace**：branch=docs/229-review-followup-design
+- **Write Scope**：STATUS.md, tests/run.sh, tests/shard-manifest.tsv, docs/archive/milestones-2026-09.md
+- **Dossier Steward**：codex:229-review-followup-design
+- **Context**：PR #233 macOS run 35938302086 的 integration 全通過，但新增平台條件測試使計數 1090 與 manifest 1087 不符；Ubuntu 1087 通過。
+- **Goal**：修正跨平台測試計數契約，接續原 PR 合併。
+- **Acceptance Criteria**：兩平台執行相同三項 capture／fingerprint／verify 斷言，macOS 加 sandbox 限制；固定 manifest 與實際計數一致，完整 suite 與 required CI 通過。
+- **Constraints**：不放寬聚合器、不重跑模型驗收、不關閉 #229、不將 Linux control 宣稱為 sandbox 驗收。
+- **進度**：CI RED 與原始碼已確認根因，尚未修改測試。
+- **下一步**：修正測試與 manifest、驗證並接續 push／merge。
+- **關聯**：Issue#229；PR#233；M-20260924-review-followup-bounded-result
 
 ## 暫停中
 
