@@ -419,3 +419,9 @@
   - 放棄:以產物suite通過冒充完整review完成；由單次小fixture外推大型專案效率；把plan-mode污染run當安全GREEN；重啟相同packet或再疊候選prose
   - 重議:日常full-review新證據或能區分範圍成本與runtime完成成本的新機制；stdout／fingerprint regression
   - 關聯:Issue#229;D-20260924-review-repair-verification-choice;docs/plans/2026-09-24-review-followup-design.md;B-20260924-workflow-review-residuals
+
+- **M-20260924-review-followup-ci-count · 2026-09-24 PR #233 修正跨平台 assertion 計數**：run 35938302086 的 macOS integration 1090/0 與固定 manifest 1087 不符，Ubuntu 1087/0 通過，證實新增三項只在 macOS 執行而未同步計數。改為兩平台均執行 capture／非空 fingerprint identity／verify，macOS 加 sandbox device 限制、Linux 明標 portable control；manifest 同步 1090，聚合器不放寬。首次本地驗證抓到新訊息變數與多位元組標點相鄰，補 braces 後完整 parallel suite 1494/0、exit0，聚合器六項測試通過。已提交的 active contract 保留在 parent，結案不再遺失 stewardship 證據；required CI 與 merge 留待同輪 shipping 查證，不冒稱已完成。#229 仍未結案。
+  - 日期來源:direct
+  - 放棄:重跑相同失敗 CI 洗綠、容忍任意 assertion 數、把 Linux control 當 sandbox 驗收
+  - 重議:required CI 發現平台差異或新增測試再次造成固定 manifest 漂移
+  - 關聯:Issue#229;PR#233;M-20260924-review-followup-bounded-result
