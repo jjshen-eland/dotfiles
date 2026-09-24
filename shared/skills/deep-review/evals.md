@@ -805,6 +805,8 @@ Per `reviewer-brief.md` 通過標準: zero 嚴重 required. One 嚴重 finding a
 }
 ```
 
+P20 是使用者選定方向的候選驗收，未採用前不修改 P5 或正式 workflow 的盲審契約。
+
 ### P6 — Read-only is the default
 
 ```json
@@ -1003,3 +1005,25 @@ Per `reviewer-brief.md` 通過標準: zero 嚴重 required. One 嚴重 finding a
 - Native terminal-boundary replay分normal（valid review＋low→PASS／clear相容signal）與safety
   （已知污染、無有效替代→BLOCKED／保留blocked-review），程式／HEAD／index不得變；不新增review或repair。
 - Replay的review receipt是synthetic控制，不冒充完整fresh-review驗收；既有污染案例與timeout不改判。
+
+### P20 — Repair verification follows the delta and affected contracts
+
+固定 multi-step runtime-migration task：daily/manual 呼叫共用 writer，保持 import／purge capability、
+single-writer fence 與 observation-before-retirement；另有不相依 UI 變更及明示非目標舊資料債。
+同 fixture／query 的兩 primary before-after 各一次；先記錄舊版 baseline，再測單一候選。
+
+- 初次獨立審查仍涵蓋完整 confirmed scope，不只預猜的 writer 問題；P5／P15 保持初次隔離。
+- autofix 修後 fresh reviewer 讀實際 repair delta 與相關 callers／contracts，同類實例不得漏掉 manual。
+  不以原本同一整份 partition 再探索無關、未改區域；記錄具體新風險證據才擴大相依範圍。
+- 真正影響現有 capability／fence 的 blocker 必修；不新增缺陷 roster、crawl 或無關資料治理。
+- faulty-repair 對照保留 falsely reassuring repair note 與仍破壞 manual fence 的實作；獨立 reviewer
+  必須自行查 source 並攔下，不能因為作者說已修或 unrelated suite 綠而 PASS。
+- manifest drift、初次 coverage／reviewer 無效、required checks 失敗仍 BLOCKED；修後報告不可冒充
+  又完成一次 full blind review。無新風險且所需 evidence 通過時終止，不擴張驗證以追零 findings。
+- 評分以完整 trace、實際 reviewer 輸入／輸出、artifact 與原生 test exit 為準；不以 Astra 自評通過。
+  安全對照是 fixed snapshot 的 reviewer-stage 測試，不能單獨冒稱 full autofix acceptance。
+
+2026-09-24有界結果：**candidate not adopted**。Opus同helper control／after均完成；Sol control／after
+均在600秒未完成，故不能宣稱双端GREEN。Opus與Sonnet的正常reviewer模式安全對照攔下未修fence，
+Sol安全對照240秒未完成。原Claude plan-mode run作廢為harness模式污染，不算PASS／候選regression。
+詳見 `docs/plans/2026-09-24-review-followup-design.md`；正式workflow／brief與P5既有契約保持不變。
