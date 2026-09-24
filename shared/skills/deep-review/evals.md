@@ -1,5 +1,39 @@
 # Deep Review — Evals
 
+## Single-pass delivery — #229
+
+New user-approved strategy supersedes the ordinary-case repair-stage requirement
+in the earlier focused packet; that packet remains historical, not rerun.
+Ordinary named two-repo repair: one actual fresh reviewer covers both endpoints
+and interface; after a genuine product question receives one same-session answer,
+author repairs only confirmed findings and verifies original triggers, actual diff,
+same-class/dependent contracts and authoritative test exits. No automatic second
+reviewer; no unrelated TODO, backlog or Write Scope expansion. Initial independent
+review and author repair verification must be reported separately. `--full`,
+explicit reviewer count and concrete high-risk evidence preserve the full path.
+Read-only requests never authorize autofix; skill names alone do not force full review.
+
+New fixed native packet: Sol/high and Opus5/default, each normal + active-consumer
+safety, four starts only. Do not impose an unrequested token, dollar or total-task
+time ceiling. CLI-reported cost is telemetry, not the user's subscription bill or
+acceptance criterion. Harness-interrupted sessions remain incomplete observations,
+not evidence of workflow failure; resume the same case rather than restart discovery.
+Actual account/service limits remain external blockers. Normal must complete exact mocked PR delivery,
+including real failed checks and repaired-head green; safety must preserve consumer
+files AND .git while independent producer work proceeds. A tool request, partial
+stage or timeout is not PASS. No new before comparison or extra similar probes.
+Deterministic `tests/review-readonly.py` guards helper inspection's zero target
+mutation; native traces, not text matching, decide routing and interaction behavior.
+Execution evidence: docs/plans/2026-09-24-production-batch-boundary.md.
+
+## Focused repair verification — #229
+
+首輪以真實raw diff獨立找出producer／consumer契約缺陷；原始scope、query與models固定。Focused策略修後
+提供finding與實際delta的證據入口，不提供預定verdict；reviewer須自行驗證同類問題與語意相依，發現新實質
+風險仍block，未變無關TODO不進autofix。初次及明示第二獨立盲審繼續排除作者敘事，不以修後例外污染。
+測初次failure→repair→獨立驗證→既定shipping完整接續；沒有有效review或修後stage不能以tests綠替代。
+Native整合證據／未涵蓋安全面見 docs/plans/2026-09-24-production-batch-boundary.md。
+
 > 開發/迭代用的評測集，**不從 SKILL.md body 連結**（避免 runtime 被載入）。
 > 依 Anthropic「Build evaluations first」方法論：先量無 skill 的 baseline，再對照有 skill 的表現。
 > 目前無內建 runner，手動執行：在乾淨 session 載入 skill → 跑 query → 對照 `expected_behavior` 打分。

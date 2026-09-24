@@ -5,6 +5,9 @@ description: Deeply reviews local repository changes with independent fresh-cont
 
 # Deep Review
 
+Runtime strategy: `review_strategy=single-pass-v1`. Accept `--full` as the
+shared workflow's explicit full-review selector; it does not authorize autofix.
+
 Review a precisely bounded local change set without inheriting the author's
 conclusions. Default to read-only reporting; modify files only when the user
 explicitly requests autofix.

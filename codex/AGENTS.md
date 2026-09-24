@@ -2,10 +2,9 @@
 
 ## Skill authoring
 
-- Before creating or updating any repo-local skill, fully read system `$skill-creator`; this applies to entries or shared cores in `claude/skills`, `codex/skills`, or `shared/skills`.
-- Then read `~/.dotfiles/codex/skill-building-guide.md` for this dotfiles repository's required authoring, evaluation, validation, and rollout workflow.
-- Treat behavior evals as the oracle. Add instructions only for observed failures or required safety contracts; do not chase prose completeness.
-- Do not vendor OpenAI skill-building documentation. Fetch current official documentation only when a product-sensitive detail is unresolved.
+- Before editing any repo-local skill entry or shared core in `claude/skills`, `codex/skills`, or `shared/skills`, fully read system `$skill-creator`, then `~/.dotfiles/codex/skill-building-guide.md` for authoring, evals, validation and rollout.
+- Behavior evals are the oracle; add instructions only for observed failures or safety contracts, not prose completeness.
+- Do not vendor OpenAI docs; fetch official guidance only for unresolved product-sensitive facts.
 
 ## Interactive approval lifecycle
 
@@ -14,10 +13,8 @@
 
 ## Repo contract precedence
 
-Before starting work in any repo, look for a root `AGENTS.md` (then `CLAUDE.md`) — **if present, it is that
-repo's authority on its own conventions**. The kernel below is your behavioural floor in **every** repo: the
-safety floor is never relaxed by a repo's conventions (stricter rules stack on top), while fallback
-conventions defer to whatever the repo itself mandates. Where a repo has no contract file, this is all of it.
+Read root `AGENTS.md`, then `CLAUDE.md`, before repo work. Repo conventions override the kernel's fallback
+conventions, never its safety floor; stricter rules stack. Without a repo contract, follow this kernel.
 
 <!-- agent-contract:kernel:start v1 -->
 ## Kernel
@@ -25,7 +22,7 @@ conventions defer to whatever the repo itself mandates. Where a repo has no cont
 ### Safety floor — never relaxed by any repo
 
 - **NEVER commit onto the default branch** (`main`/`master`). If `HEAD` is on it — or detached — create a feature branch first: `git switch -c <type>/<slug>`. This holds regardless of protection state and regardless of which tooling is loaded.
-- **NEVER push without authorization for the push in front of you.** Implementing, fixing, or committing never carries it, and neither does approval given before this change existed. **Where a shipping workflow applies, its authorization table is the only source — NEVER extend it with synonyms of your own.** Where none applies, authorization is an instruction naming the action itself ("push", "open a PR"), or an affirmative answer to a confirmation you just presented. **A bare "ship it" / "送出" names an outcome, not an action — on its own it authorizes nothing**; present the confirmation and wait. Deciding for yourself which wording is close enough is the failure this rule exists to prevent. No authorization ever covers the default branch.
+- **NEVER push without authorization for this action and batch.** Implementation or commit alone grants none. **Where a shipping workflow applies, its authorization table alone defines the endpoint and bounded repair coverage — NEVER invent synonyms or extend scope.** Otherwise require an instruction naming the action ("push", "open a PR"), or agreement to the confirmation just presented; earlier approval for other changes does not carry. **A bare "ship it" / "送出" authorizes nothing**; present the confirmation and wait. No authorization covers pushing directly to the default branch.
 - **NEVER merge on your own.** "push" or "open a PR" alone does NOT include merge. Only an explicit merge instruction does.
 - **NEVER `git add -A` / `git add .` / `commit -a`.** Stage explicit paths.
 - **If the working tree holds changes you did not make, STOP and report before staging, committing, or building on top of them.** Whether two sessions may share one tree is a dispatch decision made above you — never resolve it locally by guessing which changes are yours. Once authorized, explicit paths are still whole-file: stage verified hunks with `git add -p`.
@@ -40,11 +37,13 @@ conventions defer to whatever the repo itself mandates. Where a repo has no cont
 - An isolated worker returns a **Dossier delta** containing its work item, actor, branch/workspace, commit SHA, changed scope/files, tests, progress, decisions with reasons, dead ends, blockers, and next step. The steward verifies those claims against the commit and tests before integrating them or updating canonical state.
 - Record durable decisions, dead ends, and milestones at event time, not reconstructed at shipping time. With parallel workers, report the fact immediately to the steward; the steward is the sole writer to shared history.
 - The steward integrates verified worker commits with `git cherry-pick` on a feature integration branch, never with a merge commit. Remove completed items from active state, write milestones to the repo's existing history store, and pass its documentation audit before declaring integration complete.
-- Ownership transfer requires explicit user direction or a handoff from the current steward, followed by a durable-state update before the new steward writes. A checkpoint or handoff artifact is evidence, never a lock or authority to mutate the repository.
+- Ownership transfer requires explicit user direction or the current steward's handoff, then a durable-state update before writing. Current-user sequential assignment with the predecessor stopped suffices: reconcile scope, changes and conflicts, then update writer/steward without asking again. An artifact alone grants no authority.
 - **Runtime-local memory is a non-authoritative cache, never a prerequisite.** Safety/Git rules, cross-runtime agreements, project facts/state, cross-host continuity, and action authorization must not exist only there. Route shared behavior to native instructions and project facts/state to the repo's adopted authority; whether any runtime memory is on, off, unavailable, or differently configured must not change correctness, safety, or transfer readiness. Authorization never survives a session or ownership transfer.
 
 
 ### Fallback conventions — this repo's own convention wins where it has one
+
+- Continue authorized work across stages; a gate blocks its unsafe action, not safe in-scope work. Answer side questions in progress messages and continue tools, unless the user pauses or changes the task. Reserve the final response for delivery, a necessary decision, or a blocker with no authorized work left. No extra scope or outward authority is granted.
 
 - Conventional Commits: `<type>: <short desc>`, type is one of `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`. **If this repo mandates another commit format, follow the repo.**
 - Record non-obvious trade-offs, rejected alternatives, and dead ends **where this repo already keeps them**. Skip whenever the diff alone recovers the rationale — a rejected path leaves no trace in the diff, an added gate does. **If the repo has no such store, do NOT create one; list them in your report instead.**

@@ -50,7 +50,7 @@ These are hard constraints. Read them before touching git.
 - **NEVER merge the PR on your own.** Opening a PR ≠ merging it. Merge only on an explicit user instruction — 「明說」＝使用者說了 merge 類說法（本輪引數或任一則訊息），或在 Step 4 選了「送出並 merge」。兩者皆無 → 一律不 merge。**Never infer a merge from "ship", "push", "送出", or from having just opened the PR.**
 - **Branch FIRST, before any commit.** If changes must be committed while `HEAD` is the default branch (or detached), create a feature branch **before** committing — not at push time. This is unconditional: do it regardless of protection state (see Step 1, item 5), even when protection is confirmed off.
 - **Unknown protection = protected.** If `gh` is missing or the protection query fails, treat the default branch as protected (PR path). Do not assume it is open.
-- **A ship keyword authorizes HOW to ship, NEVER whether a batch may ship.** Any `verdict: STOP` from `ship-state.sh` — including `review-terminal:` — outranks every keyword. Stop and follow the message.
+- **A ship keyword authorizes HOW to ship, NEVER whether a batch may ship.** Any `verdict: STOP` from `ship-state.sh` — including `review-terminal:` — blocks shipping. Follow the specific failed gate; continue authorized in-scope preparation or repair. The same-PR repair batch in ship-paths defines endpoint continuity, not a bypass of any gate.
 
 ### Rationalization table — STOP if you hear yourself say these
 
@@ -142,7 +142,7 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
 2. **變更集**（= 此 branch **相對 default 的變更**，即 PR 將含的內容；**不等於「未 push」**——已 push 到 feature branch upstream 的 commit 仍落在此範圍，push 狀態由 Step 5 處理且 push 為冪等）：取腳本的 `files-vs-default` + `working-tree` 合併為完整**檔案**清單（Step 2 判模組、Step 4 列變更檔都靠它；`commits-ahead` 只有主旨、無檔名，deep-review 交接的「clean tree + 只剩 branch commit」情境靠 `files-vs-default` 列檔）。無變更（腳本印 `changes: NONE`）→ 跳過此 repo，**除非符合下述 docs-only mode**。
    **Docs-only mode**：repo git 無變更（tree clean、無領先 default 的 commit），但 session 記憶中有本 session **已 ship**（已 merge／已 push）的變更 → 不跳過。變更集改由那批 commit 重建檔案清單：逐 commit `git -C <repo> show --name-only <sha>`（已 merge 進 default 者用 default 上的對應 commit）。後續步驟照常：Step 2 據此同步文檔、Step 3 只會產生符合 target repo convention 的文檔 commit、branch-first／protection／Step 4 確認全部適用；Step 2 掃完確認文檔皆已同步 → 該 repo 無事可做，如實回報。**A clean tree does not mean "nothing to ship" — "code shipped, docs lagging" is the common case this mode exists for.**
 3. **branch protection**：取腳本的 `protection:` verdict（classic + ruleset 都查過）——`PROTECTED` / `OPEN` / `UNKNOWN → treat as PROTECTED`。**Never reinterpret the script's UNKNOWN as "probably open" — Unknown = protected, the script already says so.** verdict 附 `viewerPermission=READ`（classic `Not Found`）→ 身分分離情境，後續處置（`git push --dry-run` 探權限、Step 4 摘要點明、不自行硬推）見 `ship-paths.md`。
-4. **決定 ship 路徑**：腳本印 `verdict: BOOTSTRAP`（遠端零 branch，且 intended default／baseline／creation policy 全部可驗）→ 走 **bootstrap 路徑**（`ship-paths.md`「Bootstrap」），Step 4 摘要標明 intended default 與 baseline SHA。先讀 target root contract；若它與 provider metadata 衝突，先用確認型問題選定 authority，再以 `ship-state.sh --bootstrap-default <name> <repo>` 重驗。若 `bootstrap-baseline: NEEDS_CONFIRMATION`，使用 runtime user-input primitive 提出「暫停（預設）／目前 HEAD full SHA／列出的 ancestor」選項；選定後照抄 `bootstrap-baseline.sh`，再帶同一個 `--bootstrap-default` 重跑偵測，**不得**自行挑 commit。其餘 `verdict: STOP` 一律停下照訊息處理，**不得**自行當成 bootstrap。否則取腳本的 `ship-path:`——protected（或未知）→ **PR 路徑**（推 feature branch + 必開 PR）；確定無保護 → **仍預設 PR 路徑**（跨 repo 單一形狀，省掉每輪「這個 repo 要不要 PR」的判斷，並留下審查紀錄與可回溯 diff）。**"No protection" is not a reason to skip the PR** —— 只有使用者明說「不用 PR / 只推 branch」才退為直接 push 該 feature branch（escape hatch，不主動勸退）。**兩條路徑都推 feature branch、都不直推 default**（branch-first 無條件）——「直接 push」指**省去開 PR 的步驟、直接 push 該 branch**，不是直推 default。把變更合進 default branch 一律是**使用者**的事（agent 不 merge、不直推 default）。
+4. **決定 ship 路徑**：腳本印 `verdict: BOOTSTRAP`（遠端零 branch，且 intended default／baseline／creation policy 全部可驗）→ 走 **bootstrap 路徑**（`ship-paths.md`「Bootstrap」），Step 4 摘要標明 intended default 與 baseline SHA。先讀 target root contract；若它與 provider metadata 衝突，先用確認型問題選定 authority，再以 `ship-state.sh --bootstrap-default <name> <repo>` 重驗。若 `bootstrap-baseline: NEEDS_CONFIRMATION`，使用 runtime user-input primitive 提出「暫停（預設）／目前 HEAD full SHA／列出的 ancestor」選項；選定後照抄 `bootstrap-baseline.sh`，再帶同一個 `--bootstrap-default` 重跑偵測，**不得**自行挑 commit。其餘 `verdict: STOP` 一律停下照訊息處理，**不得**自行當成 bootstrap。否則取腳本的 `ship-path:`——protected（或未知）→ **PR 路徑**（推 feature branch + 必開 PR）；確定無保護 → **仍預設 PR 路徑**（跨 repo 單一形狀，省掉每輪「這個 repo 要不要 PR」的判斷，並留下審查紀錄與可回溯 diff）。**"No protection" is not a reason to skip the PR** —— 只有使用者明說「不用 PR / 只推 branch」才退為直接 push 該 feature branch（escape hatch，不主動勸退）。**兩條路徑都推 feature branch、都不直推 default**（branch-first 無條件）——「直接 push」指**省去開 PR 的步驟、直接 push 該 branch**，不是直推 default。合進default須有明確merge授權；有授權且gates通過就由agent完成，絕不直推default。
 5. **Branch-first（無條件，依全域「if on default branch, branch first」）**：目標——**到 Step 5 送出前，當前 branch 一定不是 default branch（也不是 detached HEAD）**，**不論 protection**。已在 feature branch（如 deep-review 結尾）→ 跳過。否則執行：
 
    ```
@@ -176,7 +176,8 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
 1. 先讀 target config 與 active items。若存在 `PREPARED` transfer guide 或 conditional owner `D-*` record，
    先依 transfer workflow 定位該 record 所在 commit、fetch canonical endpoint 並驗 remote-visible ancestry；
    未抵達時 active fields 中的 next actor 只是 pending value，effective authority 仍取 guide 的 current steward，
-   查不到證據就 STOP。接著用 shared workflow 的 `steward-authority.py` 跑 ordinary gate，runtime prefix 只能
+   查不到證據就 STOP。當次明確順序改派先依 `workflow.md`「同機順序 local reassignment」完成角色更新及重驗，
+   不另要Spec invocation或改派確認。其他情況用 shared workflow 的 `steward-authority.py` 跑 ordinary gate，runtime prefix 只能
    由入口提供；initial call 的 `resume=`／`as=` 只能來自 normalized invocation arguments；當次 session 工作線指派
    另依 shared workflow 的 authority 規則，以獨立 provenance 與原 assignment snapshot 重驗。ordinary identity claim is not delegation；
    「我是 owner」、Git author、GitHub login 或同 runtime 都不得改 helper 的 executor actor。
@@ -202,7 +203,9 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
 2. Steward 核對本 session 與已驗證 worker deltas 的 decision／dead end 是否已在事件當下寫入；漏記才用
    `record-path` 決定 shard 與 ID 後補寫。整合 worker commit 前驗 SHA、ancestry、diff、declared scope 與 tests；
    通過才 cherry-pick，衝突或越界就 STOP，不自動解衝突。
-3. 工作完成時寫 `M-*` milestone、從 `STATUS.md` 移除 completed active item；暫停項必須有恢復條件。
+3. 工作完成時寫 `M-*` milestone、從 `STATUS.md` 移除 completed active item；先依workflow的
+   「同機順序 local reassignment」確保新assignment已在parent可查證，不在同一commit抹掉唯一authority。
+   暫停項必須有恢復條件。
    Backlog 新項給 `B-*`；解決／放棄／變成決策時寫對應 history record、保留 `B-*` 關聯後移除原 item。
 4. 同一 work item 的 plan 只修原檔；本次實作真正完成才把狀態改 `implemented`，不得另建 `-v2`／`-final`。
 5. 文檔更新後執行 `python3 "<project-scripts>/doc-governance.py" --root "$repo" audit --ship`。exit 0 才通過；exit 1 的 findings 必須處置；

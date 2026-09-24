@@ -56,6 +56,8 @@ findings 的真假去 repo 查就知道，答案是二元的：
 | **低** | 行號漂移、路徑寫錯、指標斷鏈 | **否** | 「L74」實際在 L73；引用的 memory link 在此 repo 解析不到 |
 
 **Blocking 欄是「這條能不能擋住開工」，兩個條件要同時成立**：該條落在**可查證層**（§2）**且**嚴重度不是「低」。判斷層的 findings 不論嚴重度都不 block。**A "低" finding NEVER blocks on its own** —— 行號漂 1–2 行是常態（見 §4.2），讓它擋批會使通過條件近乎不可達；照列出來讓作者順手修即可。
+首次完整審查適用下方全部查證動作；明示修後驗證時，針對原finding、實際修正、同類問題與語意相依執行，
+新具體風險才擴大。Repair packet是待查的資料而非可信結論；不能只照作者圈定位置給PASS。
 
 **Do NOT adjust severity for repair cost, delivery pressure, or how many rounds the plan has been through.** 你不知道它跑過幾輪，也不需要知道。
 

@@ -58,6 +58,21 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   不為此重跑已完成的整合fixture，不靠新增always-on規範宣稱修好。詳見[整合驗收](plans/2026-09-23-coordination-audit.md)。
 
 - **B-20260924-workflow-review-residuals** · **#229 完整高風險review與大型工程驗收仍有限制**。
+  後續single-pass四案已完成；原harness自行設定USD4／600秒截斷，不能據此判定工作流不收斂，
+  亦非使用者訂閱帳號限制。去除上限後原session接續完成；雙端一般一次review＋作者驗證已啟用。
+  2026-09-25已區分steward必要文檔維護與implementation scope，並要求completion parent保留新assignment，
+  不再為同工作文件逐檔擴scope／重問。Opus與明示Project入口Sol的focused產物驗證通過；generic Sol
+  未載入Project漏接手仍FAIL，不能宣稱任意commit請求皆可靠。Opus先前shipping安全案有略讀必要reference、省略required
+  flag及pipeline遮蔽exit的偏離。這些不抹去review與closeout分項成功，但不擴稱所有shipping協定
+  已修好；原patch現為歷史快照，新增已驗證部分已進source。
+  實作及逐案限制見下方同一實作紀錄。主agent回答插問以final
+  結束回合亦已實際復發，不能宣稱整體接續已解；不另加模型輪次或規則洗綠。
+  歷史delivery-mechanism packet曾執行八case；Sol after正常一答修好兩repo但人工600秒內
+  未完成修後review/shipping，Opus after正常收到答案時已近USD4且修復命令未執行。共同授權候選與
+  runtime focused當時均未採用；人工上限造成的失敗推論已撤銷，歷史helper／transport與diff保存於
+  [本批實作紀錄](plans/2026-09-24-production-batch-boundary.md)。不追加同packet來換綠燈。
+  舊版另實證不相關backlog／Write Scope擴張、producer重複改派確認，以及read-only consumer的
+  `.git` terminal anchor寫入；新版Opus安全case亦有角色更新晚於code edit的順序缺口。
   已保留的risk activation、same-session binding、local reassignment與terminal顯示修復，不代表完整review已驗收。
   原Opus完整code-review曾在reviewer曝光作者目標／plan後仍PASS；Sol terminal replay未在固定預算內完成；
   full deep-plan的收斂／prompt transport及大型真實code-review非收斂尚未獲得替代機制的完整證據。

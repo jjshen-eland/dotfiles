@@ -70,3 +70,9 @@ adapter 分層或 linkage 等 topology，必須有新證據並以 `supersedes:<d
 - 任何 harness 缺能力時 fail closed，回報 capability boundary；不得由另一端的成功冒充雙端完成。
 - Ship 前記錄 canonical topology、雙端 live evidence 與重議條件。之後換 writer 時以 repo evidence 重驗，不靠前一
   harness 的對話或記憶。
+
+使用者明確選定分runtime交付時，已驗證端可由薄入口選擇shared core中具名的策略revision，未驗證端保持
+原策略；不複製core或eval oracle，不用adapter另定安全gate。共同安全／授權變更仍須雙端通過。
+一次策略revision需記正常與安全evidence、啟用端及未啟用端；partial rollout不是portable全部完成。
+這是有界啟用差異，不是由單端成功推定另一端也通過。未完成的同一case可接續；
+不得以自行設定的費用／token／總時限冒充使用者驗收條件，也不以重跑相同packet洗綠。

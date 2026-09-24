@@ -20,7 +20,7 @@ import re
 import subprocess
 import sys
 from dataclasses import asdict, dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 FIELD_RE = re.compile(
     r"^-\s+\*\*(Writer|Workspace|Write Scope|Dossier Steward)\*\*[：:]\s*(.*?)\s*$"
@@ -172,6 +172,54 @@ def parent_active_items(root: Path, commit: str, status_path: Path) -> list[Acti
     return active_items(parent_text)
 
 
+def sequential_assignment(args: argparse.Namespace, root: Path, items: list[ActiveItem], branch: str) -> int:
+    """Check a user-directed handover; never confer authority before its durable update.
+
+    The flags are assertions supplied by the invoking workflow from current user
+    direction, not a way to infer consent from a dead process or an old artifact.
+    """
+    validate_actor(args.reassign_from, "previous writer")
+    if not args.reassign_from.startswith(("claude:", "codex:")):
+        return fail("sequential reassignment requires an agent workline")
+    known = set(args.owned_path)
+    for path in known:
+        parsed = PurePosixPath(path)
+        if not path or parsed.is_absolute() or ".." in parsed.parts or str(parsed) != path or path == "." or ".git" in parsed.parts:
+            return fail("--owned-path must be an exact repo-relative file path")
+    reasons = []
+    if not args.prior_writer_stopped:
+        reasons.append("previous-writer-not-confirmed-stopped")
+    if not items or {item.heading for item in items} != set(args.assigned_item):
+        reasons.append("assignment-does-not-cover-active-items")
+    if not branch or branch in ("main", "master"):
+        reasons.append("feature-workspace-required")
+    if any(item.writer != args.reassign_from or item.steward != args.reassign_from
+           or item.workspace != f"branch={branch}" or not item.scope for item in items):
+        reasons.append("writer-steward-workspace-conflict")
+    transfer = root / "docs/transfer.md"
+    if transfer.exists() or transfer.is_symlink():
+        reasons.append("formal-transfer-must-be-reconciled")
+    dirty = set()
+    for command in [("diff", "--name-only", "-z", "HEAD"), ("ls-files", "--others", "--exclude-standard", "-z")]:
+        # diff's optional index refresh would mutate even a rejected assignment.
+        raw = subprocess.check_output(["git", "-c", "diff.autoRefreshIndex=false", "-C", str(root), *command])
+        dirty.update(os_path for os_path in raw.decode("utf-8", errors="surrogateescape").split("\0") if os_path)
+    if dirty - known:
+        reasons.append("changes-not-explicitly-handed-over")
+    if reasons:
+        print("authority-source: sequential-assignment-conflict")
+        for reason in reasons:
+            print(f"reassignment-blocker: {reason}")
+        print("verdict: STOP")
+        return 1
+    target = args.runtime + ":" + args.reassign_from.split(":", 1)[1]
+    print(f"reassignment-from: {args.reassign_from}")
+    print(f"reassignment-target: {target}")
+    print("authority-source: current-user-sequential-assignment-preflight")
+    print("verdict: READY_FOR_REASSIGNMENT")
+    return 0
+
+
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description="Resolve Project Log steward authority")
     result.add_argument("--root", required=True)
@@ -183,6 +231,10 @@ def parser() -> argparse.ArgumentParser:
     authority.add_argument("--confirmed-resume-actor")
     authority.add_argument("--confirmed-human")
     authority.add_argument("--confirmed-new-steward")
+    authority.add_argument("--reassign-from")
+    result.add_argument("--prior-writer-stopped", action="store_true")
+    result.add_argument("--assigned-item", action="append", default=[])
+    result.add_argument("--owned-path", action="append", default=[])
     result.add_argument("--commit")
     result.add_argument("--expected-head")
     result.add_argument("--expected-assignment")
@@ -193,13 +245,18 @@ def main() -> int:
     args = parser().parse_args()
     root = Path(args.root).expanduser().resolve()
     try:
+        if args.reassign_from:
+            if not args.expected_head or not args.expected_assignment or not args.assigned_item or args.commit:
+                return fail("reassignment requires HEAD, assignment fingerprint and named items; no candidate commit")
+        elif args.prior_writer_stopped or args.assigned_item or args.owned_path:
+            return fail("reassignment evidence requires --reassign-from")
         if args.session_resume_actor:
             if not args.expected_head or not args.expected_assignment:
                 return fail("session binding requires --expected-head and --expected-assignment")
             validate_actor(args.session_resume_actor, "session resume actor")
             if not args.session_resume_actor.startswith(f"{args.runtime}:"):
                 return fail("session resume actor must use the same runtime prefix")
-        elif args.expected_assignment:
+        elif args.expected_assignment and not args.reassign_from:
             return fail("--expected-assignment requires --session-resume-actor")
         confirmed = (
             args.confirmed_resume_actor
@@ -228,7 +285,7 @@ def main() -> int:
         items = active_items(status_path.read_text(encoding="utf-8"))
         fingerprint = assignment_fingerprint(root, items)
         print(f"assignment-fingerprint: {fingerprint}")
-        if args.session_resume_actor and (
+        if (args.session_resume_actor or args.reassign_from) and (
             not items or fingerprint != args.expected_assignment
             or any(not item.scope for item in items)
         ):
@@ -256,6 +313,9 @@ def main() -> int:
                 print("recovery-kind: none")
                 print("verdict: STOP")
                 return 1
+
+        if args.reassign_from:
+            return sequential_assignment(args, root, items, branch)
 
         resume_actor = (
             args.resume_actor or args.session_resume_actor
