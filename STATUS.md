@@ -12,11 +12,19 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-目前無進行中項目。
+### 229-production-batch-boundary
+
+- **Writer**: codex:229-production-batch-boundary
+- **Workspace**: branch=docs/229-production-batch-boundary
+- **Write Scope**: STATUS.md, docs/archive/milestones-2026-09.md
+- **Dossier Steward**: codex:229-production-batch-boundary
+- **Goal**: 完成已授權版本的文件收尾與PR／CI／merge，不重開模型驗收或擴張#229。
+- **Acceptance**: 清除失效登入阻礙、保留未解backlog；required CI通過後合併並同步本地main。
+- **Progress**: GitHub登入恢復，gh api user為jjshen-eland；既有兩筆提交與工作線authority PASS。
+- **Next**: 提交本次shipping接續紀錄，完成同一PR的既定送出；不部署。
 
 ## 暫停中
 
-- **#229 本批 shipping**：本地交付見 M-20260925-workflow-usable-delivery；`docs/229-production-batch-boundary` 尚未push／PR／merge／部署。**恢復條件**：GitHub重新登入後接續已要求的PR／CI／merge。
 - **B-20260902-gh-account-autoswitch**：pending；維持 backlog 既有觸發條件，在條件實際發生前不開發、
   不結案。**恢復條件**：跨帳號操作成為常態，或相同症狀再次被查錯方向。
 - **B-20260824-remote-human-contributor-path**：pending；現行 feature branch／PR 可作為 Git 傳遞媒介，
