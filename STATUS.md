@@ -12,7 +12,19 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-目前無進行中項目。
+### 229-review-followup-design
+
+- **Writer**：codex:229-review-followup-design
+- **Workspace**：branch=docs/229-review-followup-design
+- **Write Scope**：STATUS.md, docs/archive/decisions-2026-09.md, docs/archive/milestones-2026-09.md, docs/backlog.md, docs/plans/2026-09-24-review-followup-design.md, shared/skills/deep-review/evals.md, shared/skills/deep-review/scripts/review-scope.sh, tests/run.sh
+- **Dossier Steward**：codex:229-review-followup-design
+- **Context**：使用者同意修復 e7af890 的未送出工作契約與提交 ancestry；原先完成前移除 active item，造成 shipping authority 無法驗證。
+- **Goal**：受控重建已驗證的 stdout helper 修正與有界驗收紀錄，再完成本次 PR／merge。
+- **Acceptance Criteria**：重建後最終 tracked tree 與 e7af890 相同；authority gate 與 doc audit 通過；既定檢查通過後交付。
+- **Constraints**：只重建本次未 push 的 candidate；不採用審查候選、不重跑模型驗收、不關閉 #229。
+- **進度**：已核對本地 candidate、clean tree、遠端無 branch／PR；使用者已確認 recovery。
+- **下一步**：提交此契約作為 parent，重建原修正與完成狀態，驗證後接續既有 merge 授權。
+- **關聯**：Issue#229；D-20260924-review-repair-verification-choice；M-20260924-review-followup-bounded-result
 
 ## 暫停中
 
