@@ -165,3 +165,9 @@
   - 放棄:每次修復後重新抽樣整份未變scope；完全取消review；把聚焦驗證冒稱又一次完整盲審
   - 重議:相同task的雙primary驗收或安全對照失敗；新風險跨出已知依賴範圍；初次coverage或delta來源不可驗證
   - 關聯:Issue#229;docs/plans/2026-09-24-review-followup-design.md;D-20260924-workflow-bounded-delivery
+
+- **D-20260924-continuation-bounded-closeout · 2026-09-24 #229 接續候選收斂交付、不追加模型驗收**：使用者選擇先交付已驗證改善與明列限制，不追加 lifecycle 候選驗收預算。Stop prototype 機制可用但未證明效率提升，lifecycle 候選有歷史 failure evidence 但模型驗收受 fixture 缺陷污染；兩者均不採用、不部署。保留既有改善與 backlog，不以文件整理冒充 #229 完成。當前 active contract 僅保留待提交／結案證據；本選項不授予 commit／push／merge。
+  - 日期來源:direct
+  - 放棄:修好 harness 就自動重開模型批次；以部分成功洗綠；再加 always-on 規則；要求使用者用「繼續」確認同一收斂方向
+  - 重議:使用者另行決定新的限定驗收工作；不得自動重設本批已耗預算或重測已綠改善
+  - 關聯:Issue#229;B-20260924-workflow-verification-economy;docs/plans/2026-09-24-ci-continuation.md

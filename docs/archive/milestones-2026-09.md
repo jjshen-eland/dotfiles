@@ -431,3 +431,9 @@
   - 放棄:盲目重跑 CI、關閉 pipefail、忽略 failed assertion
   - 重議:同一斷言在移除 pipeline 後仍失敗，或有其他實際 SIGPIPE 證據
   - 關聯:Issue#229;PR#233;M-20260924-review-followup-ci-count
+
+- **M-20260924-continuation-bounded-delivery · 2026-09-24 #229 接續稽核有界交付**：依使用者收斂選項完成結果與限制紀錄，CI failure-row 假說未重現而不修改；Stop prototype 未證明效率改善、lifecycle 候選驗收受 harness 缺陷污染，均不採用、不部署、不追加模型驗收。既有有效改善保留，未解缺口仍在 backlog，#229 不結案。Project 收尾前已用 f9c42ad 保存 active contract；單 repo 唯一 active item 結案後無 retiring-steward dead reference，移除 active 並凍結本輪 audit。這是稽核交付，不是兩候選修復完成或遠端 merge 證據。
+  - 日期來源:direct
+  - 放棄:重啟模型驗收求綠；提交前移除唯一 contract 證據；將有界交付當成 #229 全部完成
+  - 重議:依 D-20260924-continuation-bounded-closeout 的新限定工作決策；不自動重設本批預算
+  - 關聯:Issue#229;D-20260924-continuation-bounded-closeout;B-20260924-workflow-verification-economy;docs/plans/2026-09-24-ci-continuation.md

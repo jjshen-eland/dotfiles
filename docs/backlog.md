@@ -45,6 +45,15 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   2026-09-24同一多步驟task兩primary均一答恢復且不擴scope；Opus仍在文件only變更後重跑suite兩次，另做一次mutation check，
   測試接tail未保留原exit；root獨立suite／semantic exit0只能證實產物正確，不能讓程序瑕疵變GREEN。
   Opus完成項仍留fixture的Active，且兩端未選的「合併」選項仍需補子決策；沒有全面驗收所有互動／文件生命周期。
+  PR #233 前後已再次觸發：active contract 提早移除導致 local candidate 重建確認，merge 子任務結束後仍
+  有上層工作卻自行結束回合，後續解釋也未接續。不能再以「等待新實例」擱置。新的本地 CI 修復 stage
+  兩 primary before 已可直接完成，反證不足以用刪 STOP 文案修好整體問題；見 [接續稽核](plans/2026-09-24-ci-continuation.md)。
+  使用者選定的隔離 Stop prototype 已完成 8 項 deterministic 與雙 primary 六組 native 測試；最多一次自檢
+  生效且對照未越權，但沒有 early-stop RED，反而重複完成訊息／必要問題。因此不正式安裝，不追加相似
+  probes；中斷缺口未結案，raw artifacts 與啟用所缺證據見同一接續稽核。
+  Lifecycle 候選亦未採用：歷史 commit 已重現契約 ancestry 缺失，但雙端驗收被 fixture 缺陷污染。
+  使用者依 D-20260924-continuation-bounded-closeout 選擇先收斂交付，不追加本批模型測試；
+  不把修好的 fixture 預檢當行為通過，也不把剩餘缺口留成等待一句「繼續」的工作。
   **觸發條件**：日常同類工作再次出現無新失敗的重複驗證、exit masking或完成後重新要「繼續」時，保留實際trace與scope，優先刪除或合併該步；
   不為此重跑已完成的整合fixture，不靠新增always-on規範宣稱修好。詳見[整合驗收](plans/2026-09-23-coordination-audit.md)。
 
