@@ -3237,7 +3237,7 @@ if echo "$out" | grep -q "continuity: WARNING"; then bad "ahead=0 不應有 cont
 git clone -q "$TMP/rs-origin.git" "$TMP/rs-detach"
 (cd "$TMP/rs-detach" && git checkout -q --detach)
 out="$("$RS_SCRIPT" "$TMP/rs-detach")"
-if echo "$out" | grep -q "branch-first: REQUIRED（HEAD 在 DETACHED"; then ok "detached HEAD → branch-first REQUIRED"; else bad "detached branch-first 誤判"; fi
+if grep -q "branch-first: REQUIRED（HEAD 在 DETACHED" <<< "$out"; then ok "detached HEAD → branch-first REQUIRED"; else bad "detached branch-first 誤判"; fi
 
 echo "▶ 11. portable review-scope range / historical guidance / autofix gate"
 DRS_CLAUDE="$ROOT/claude/skills/deep-review"

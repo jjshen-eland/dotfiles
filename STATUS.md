@@ -12,19 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### 229-review-followup-ci-pipe
-
-- **Writer**：codex:229-review-followup-design
-- **Workspace**：branch=docs/229-review-followup-design
-- **Write Scope**：STATUS.md, tests/run.sh, docs/archive/milestones-2026-09.md
-- **Dossier Steward**：codex:229-review-followup-design
-- **Context**：PR #233 run 35938995369 Ubuntu 的 detached branch-first assertion 出現 echo Broken pipe；新增三項測試皆通過。
-- **Goal**：移除該斷言 early-exit pipeline 的偽失敗，接續合併。
-- **Acceptance Criteria**：斷言以 herestring 讀完整相同輸入；full suite 與 required CI 通過。
-- **Constraints**：只修實際失敗斷言，不擴張為 pipeline 清理；不改 production helper。
-- **進度**：CI log 與 pipefail 原始碼已確認原因。
-- **下一步**：單行修正、驗證、更新原 PR。
-- **關聯**：Issue#229；PR#233；M-20260924-review-followup-ci-count
+目前無進行中項目。
 
 ## 暫停中
 

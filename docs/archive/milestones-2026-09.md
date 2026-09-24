@@ -425,3 +425,9 @@
   - 放棄:重跑相同失敗 CI 洗綠、容忍任意 assertion 數、把 Linux control 當 sandbox 驗收
   - 重議:required CI 發現平台差異或新增測試再次造成固定 manifest 漂移
   - 關聯:Issue#229;PR#233;M-20260924-review-followup-bounded-result
+
+- **M-20260924-review-followup-ci-pipe · 2026-09-24 PR #233 detached assertion 消除 early-exit pipeline**：run 35938995369 的 Ubuntu 已通過三項新增 capture checks，另在 tests/run.sh detached branch-first assertion 出現 echo Broken pipe，導致 pipefail 偽紅；非計數修正失效。只將該處 echo 管線改為 grep herestring，保留 pattern 與 assertion 數。完整 parallel suite 1494/0、exit0；未修改 production helper、未擴張其他 pipeline 清理，required CI 待更新 PR 後查證。
+  - 日期來源:direct
+  - 放棄:盲目重跑 CI、關閉 pipefail、忽略 failed assertion
+  - 重議:同一斷言在移除 pipeline 後仍失敗，或有其他實際 SIGPIPE 證據
+  - 關聯:Issue#229;PR#233;M-20260924-review-followup-ci-count
