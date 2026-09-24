@@ -3265,18 +3265,23 @@ drs_historical_guidance="$(git -C "$TMP/drs-context" rev-parse "$drs_historical_
 /bin/bash "$DR_SCOPE" capture --repo "$TMP/drs-context" --mode working-tree >/dev/null 2>&1
 assert_rc "review-scope 空 path list 相容 macOS Bash 3.2" 0 $?
 
+drs_capture_runner=(/bin/bash)
+drs_capture_environment='portable control'
 if [ -x /usr/bin/sandbox-exec ]; then
     drs_device_policy='(version 1)(allow default)(deny file-write* (subpath "/dev"))(allow file-write* (literal "/dev/null"))'
-    drs_control="$(/bin/bash "$DR_SCOPE" capture --repo "$TMP/drs-context" --mode working-tree)"
-    drs_sandbox="$(/usr/bin/sandbox-exec -p "$drs_device_policy" /bin/bash "$DR_SCOPE" capture --repo "$TMP/drs-context" --mode working-tree 2>&1)"
-    assert_rc "review-scope 不重開 sandbox 禁寫的 stdout device" 0 $?
-    if [ "$(sed -n 's/^fingerprint: //p' <<< "$drs_control")" = "$(sed -n 's/^fingerprint: //p' <<< "$drs_sandbox")" ]; then
-        ok "sandbox 與正常 capture fingerprint 相同"
-    else bad "sandbox fingerprint 遺失或改變"; fi
-    drs_sandbox_manifest="$(sed -n 's/^manifest: //p' <<< "$drs_sandbox")"
-    /usr/bin/sandbox-exec -p "$drs_device_policy" /bin/bash "$DR_SCOPE" verify --manifest "$drs_sandbox_manifest" >/dev/null 2>&1
-    assert_rc "sandbox capture 後仍能 verify scope" 0 $?
+    drs_capture_runner=(/usr/bin/sandbox-exec -p "$drs_device_policy" /bin/bash)
+    drs_capture_environment='sandbox device restriction'
 fi
+drs_control="$(/bin/bash "$DR_SCOPE" capture --repo "$TMP/drs-context" --mode working-tree)"
+drs_capture="$("${drs_capture_runner[@]}" "$DR_SCOPE" capture --repo "$TMP/drs-context" --mode working-tree 2>&1)"
+assert_rc "review-scope capture（${drs_capture_environment}）" 0 $?
+drs_control_fingerprint="$(sed -n 's/^fingerprint: //p' <<< "$drs_control")"
+if [ -n "$drs_control_fingerprint" ] && [ "$drs_control_fingerprint" = "$(sed -n 's/^fingerprint: //p' <<< "$drs_capture")" ]; then
+    ok "capture fingerprint 相同（${drs_capture_environment}）"
+else bad "capture fingerprint 遺失或改變（${drs_capture_environment}）"; fi
+drs_capture_manifest="$(sed -n 's/^manifest: //p' <<< "$drs_capture")"
+"${drs_capture_runner[@]}" "$DR_SCOPE" verify --manifest "$drs_capture_manifest" >/dev/null 2>&1
+assert_rc "capture 後仍能 verify scope（${drs_capture_environment}）" 0 $?
 
 out="$("$DR_SCOPE" capture --repo "$TMP/drs-context" --mode range \
     --range "$drs_base..$drs_historical_head")"
