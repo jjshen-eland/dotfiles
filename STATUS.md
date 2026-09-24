@@ -12,16 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### 229-production-batch-boundary
-
-- **Writer**: codex:229-production-batch-boundary
-- **Workspace**: branch=docs/229-production-batch-boundary
-- **Write Scope**: STATUS.md, docs/archive/milestones-2026-09.md
-- **Dossier Steward**: codex:229-production-batch-boundary
-- **Goal**: 完成已授權版本的文件收尾與PR／CI／merge，不重開模型驗收或擴張#229。
-- **Acceptance**: 清除失效登入阻礙、保留未解backlog；required CI通過後合併並同步本地main。
-- **Progress**: GitHub登入恢復，gh api user為jjshen-eland；既有兩筆提交與工作線authority PASS。
-- **Next**: 提交本次shipping接續紀錄，完成同一PR的既定送出；不部署。
+目前無進行中項目。
 
 ## 暫停中
 

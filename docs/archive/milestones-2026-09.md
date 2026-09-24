@@ -443,3 +443,9 @@
   - 放棄:重跑已通過的native驗收；以局部PASS關閉#229；把mock endpoint當真實shipping；刪改歷史candidate patch的diff context空白以偽裝全檔diff-check無警告
   - 重議:GitHub重新登入後接續本批shipping；generic入口／高風險完整review／reviewer污染依backlog觸發條件處理
   - 關聯:Issue#229;D-20260925-task-continuity-and-steward-scope;docs/plans/2026-09-24-production-batch-boundary.md;docs/backlog.md
+
+- **M-20260925-workflow-shipping-ready · 2026-09-25 登入阻礙解除並完成送出準備**：使用者重新登入後agent端gh api user確認jjshen-eland；原HTTP401阻礙解除，不再保留等待登入的paused項。855ee57保存本次收尾assignment，唯一active item移除後無其他工作指向該actor；既有實作、驗收與backlog不變，implemented計畫不改寫。此記錄只證明送出準備完成，PR／required CI／merge結果以本批GitHub PR及其head為準，不預先宣稱遠端成功；不關閉#229、不部署。
+  - 日期來源:direct
+  - 放棄:因登入恢復重跑模型驗收、要求使用者重給merge授權、將本地紀錄冒充遠端合併證據
+  - 重議:本批required CI失敗時依原授權有界修復；其他未解缺口依backlog觸發條件處理
+  - 關聯:Issue#229;M-20260925-workflow-usable-delivery;855ee57
