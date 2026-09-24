@@ -12,7 +12,19 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-目前無進行中項目。
+### 229-ci-continuation
+
+- **Writer**：codex:229-ci-continuation
+- **Workspace**：branch=fix/229-ci-continuation
+- **Write Scope**：STATUS.md, docs/backlog.md, docs/plans/2026-09-24-ci-continuation.md, docs/archive/decisions-2026-09.md, docs/archive/milestones-2026-09.md, shared/skills/project/references/ship-paths.md, shared/skills/project/references/pressure-tests.md, shared/skills/project/references/dossier.md
+- **Dossier Steward**：codex:229-ci-continuation
+- **Context**：#229 持續改善授權仍有效；PR #233 已合併，但 agent 再次把子任務終點當整體停點。CI failure 路由另明令修綠後重新要求 merge，需區分本地修復與送出阻擋。
+- **Goal**：依使用者最新選項1收斂交付：保留已驗證改善，Stop／lifecycle 未通過候選不採用，不追加模型驗收。
+- **Acceptance Criteria**：結果、未通過原因與剩餘缺口記錄一致；不將 prototype 能力或失效 fixture 當正式改善；文件檢查通過，無 production skill／runtime 變更。
+- **Constraints**：不重測既有已綠案例、不改 default 模型、不擴充驗證、不沿用 PR #233 的 push／merge 授權；#229 umbrella 未完成。
+- **進度**：本輪稽核與交付紀錄已整理；兩候選均不採用，缺口保留在 backlog。此 item 僅剩未提交的交付／結案，不代表仍在執行實驗或 #229 已完成。
+- **下一步**：保存本 active contract 的提交證據，再處理文件結案與當次 Project 送出；不新增模型驗收或部署。
+- **關聯**：Issue#229；B-20260924-workflow-verification-economy；D-20260924-continuation-bounded-closeout
 
 ## 暫停中
 
