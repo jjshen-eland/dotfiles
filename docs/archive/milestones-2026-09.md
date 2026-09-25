@@ -461,3 +461,9 @@
   - 放棄:盲目重跑失敗 CI；容忍任意 assertion 數；刪除新增 gate 或放寬 aggregate fail-closed 判準
   - 重議:新增或移除 assertion 後 manifest 再次漂移，或不同平台的實際 assertion 集合不一致
   - 關聯:PR#236;M-20260925-project-numbered-text-options;tests/run.sh;tests/shard-manifest.tsv
+
+- **M-20260925-instruction-quality-plan · 2026-09-25 規則與 skill 撰寫品質計劃完成交付準備**：已核對 GitHub #229 與後續使用者決策，交付八項候選的規格依據、write scope、正常／安全驗證及停止條件。保留 single-pass review、task-reference 續作、順序接手與 same-SHA reference 沿用，不自設費用／token／總時限，不改歷史 eval；無收益證據的拆檔暫緩。完整 tests/run.sh exit 0（1500 PASS／0 FAIL）、doc audit／diff check 通過。此次結案只涵蓋評估與計劃撰寫；計劃仍為 draft，尚未實作，不代表 #229 完成。使用者另以 Project merge 指定本批文件的送出終點。
+  - 日期來源:direct
+  - 放棄:以刪字量代替品質；為文字整理重開已驗收整批；把合併計劃解作實作授權
+  - 重議:使用者指派實作時依原計劃逐項建立證據；新規格衝突只暫停受影響項目
+  - 關聯:docs/plans/2026-09-25-instruction-quality.md;47d46a0;D-20260924-remove-unrequested-eval-budget;D-20260925-task-continuity-and-steward-scope
