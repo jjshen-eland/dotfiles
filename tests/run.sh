@@ -4134,6 +4134,16 @@ if grep -q 'Scenario 26 — 可安全修復的 authority STOP 改用綁定式確
     ok "project authority recovery 以 prompt-bound 選項續行且不擴張授權"
 else bad "project authority recovery 尚未形成可確認、可取消且不重建 invocation 的契約"; fi
 
+project_runtime_adapter="$(sed -n '/^## Runtime adapter/,/^## /p' "$PJS_CLAUDE/references/workflow.md")"
+if grep -q 'Scenario 35 — 文字 fallback 保留完整編號選項' "$PJS_CLAUDE/references/pressure-tests.md" \
+    && grep -q '2–3 個.*編號選項' <<< "$project_runtime_adapter" \
+    && grep -q '完整動作與後果' <<< "$project_runtime_adapter" \
+    && grep -q '建議項.*第一' <<< "$project_runtime_adapter" \
+    && grep -q '不得只要求.*確認.*停止' <<< "$project_runtime_adapter" \
+    && grep -q '不新增.*預檢\|不改變.*詢問時機' <<< "$project_runtime_adapter"; then
+    ok "project 文字 fallback 保留完整編號選項且不增加正常路徑成本"
+else bad "project 文字 fallback 仍可退化成確認／停止關鍵字或擴張預檢"; fi
+
 project_spec_completion="$(sed -n '/^### Spec 成功後的 Log invocation 提示/,/^## /p' "$PJS_CLAUDE/references/workflow.md")"
 if grep -q 'Scenario 27 — Spec 收尾同時提示短版與 exact resume 明確版' "$PJS_CLAUDE/references/pressure-tests.md" \
     && grep -q '不帶任何' <<< "$project_spec_completion" \

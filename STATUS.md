@@ -12,7 +12,19 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-目前無進行中項目。
+### 1. Project 文字選項呈現回歸 🆕
+
+- **Writer**：`codex:project-numbered-text-options`
+- **Workspace**：`branch=fix/project-numbered-text-options`
+- **Write Scope**：`STATUS.md`, `shared/skills/project/references/workflow.md`, `shared/skills/project/references/pressure-tests.md`, `tests/run.sh`, `docs/archive/decisions-2026-09.md`, `docs/archive/milestones-2026-09.md`
+- **Dossier Steward**：`codex:project-numbered-text-options`
+- **Context**：Project 在無 runtime user-input primitive 時應列文字編號選項，實地卻連續將 authority 與 branch 決策壓成「請回覆確認或停止」。
+- **Goal**：固定 Project 的文字 fallback 呈現，保留現有決策時機與全部 authority／branch 行為。
+- **Acceptance Criteria**：離散決策的文字 fallback 列 2–3 個完整編號選項、建議項先列，不再要求關鍵字「確認／停止」；新增 observed-failure eval；雙 runtime linkage、validator、doc audit 與 `./tests/run.sh` 通過。
+- **Constraints**：不新增 branch collision 預檢、不改變詢問時機、不改 authority／scope／shipping 邊界，不新增 script 或 runtime-specific 副本。
+- **進度**：已以 Scenario 35 與 static gate 重現 `1499 PASS / 1 FAIL`；修正 shared runtime adapter 後完整 suite `1500 PASS / 0 FAIL`，Codex validator 與 doc audit 通過。
+- **下一步**：核對最終 diff；若要送出，另行依 Project Log 完成 commit／PR。
+- **關聯**：`D-20260925-project-numbered-text-options`, `D-20260825-project-prompt-bound-authority-recovery`, `M-20260825-project-guided-authority-recovery`
 
 ## 暫停中
 

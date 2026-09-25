@@ -282,9 +282,11 @@ Transfer state 是 `BLOCKED → PREPARED → TRANSFERRED`：
 
 ## Runtime adapter
 
-- 需要使用者回答時，使用目前 runtime 的 user-input primitive；若不可用，輸出精簡文字編號選項並暫停當前
-  turn。使用者緊接著的直接選項回答延續同一 logical Project invocation；自由文字身分宣稱或其他工作後的
-  回答不算，必須重新偵測。
+- 需要使用者回答時，使用目前 runtime 的 user-input primitive；若不可用，輸出 2–3 個精簡文字編號選項並暫停當前
+  turn。每個選項本身必須寫出完整動作與後果；有建議項時將它放在第一項並標示「建議」，取消項明述不修改。
+  不得只要求使用者回覆「確認」／「停止」、「是」／「否」或其他須回讀前文才知道後果的短 token；請其回覆編號或完整選項。
+  使用者緊接著的直接選項回答延續同一 logical Project invocation；自由文字身分宣稱或其他工作後的回答不算，必須重新偵測。
+  這是已經需要詢問時的呈現契約；不新增 branch／PR 預檢、工具呼叫或詢問點，不改變原有詢問時機與 authority／scope／shipping 邊界。
 - Claude Code 的顯式形式是 `/project ...`；Codex 是 `$project ...`。說法表只解讀 invocation arguments
   與本輪使用者明說的 endpoint，不把 runtime 的 skill sigil 當授權。
 - Shell、git 與 gh 行為完全相同。可照抄 helper command 必須由 scripts 自己輸出其實際絕對路徑。
