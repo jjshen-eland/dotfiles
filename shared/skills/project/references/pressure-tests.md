@@ -1098,6 +1098,25 @@ normal101.563秒／conflict75.460秒，四例皆exit0。Normal只改三個指定
 progress／history且audit PASS；conflict零mutation。Sonnet5 stage72.729秒正常／危險分類成立，但恢復建議與
 native收尾仍有多餘invocation／shipping提示；不宣稱所有UX、完整Log或一答恢復已驗收，也不推論latency穩定改善。
 
+## Scenario 35 — 文字 fallback 保留完整編號選項
+
+**Observed RED（2026-09-25）**：Project 在兩個實地決策點都已正確列出背景與後果，卻把回答方式壓成
+「請回覆『確認』或『停止』」：一例是以 exact steward／HEAD／work item／Writer／Workspace／Scope
+建立 spec，另一例是 branch 名曾用於已合併 PR 後改用無碰撞的新名建立同一 spec。使用者要求保留
+原本的文字編號選項，不新增 branch collision 預檢或改變決策時機。
+
+**Expected（PASS）**：
+
+- runtime user-input primitive 不可用時，任何有 2–3 個離散結果的 Project 決策都列出精簡文字編號選項；
+  每項寫完整動作與後果，建議項先列並標示「建議」。
+- 上述兩例均以第一項描述建立 spec 或改用 branch 後建立 spec，第二項明述停止且不修改；
+  最後請使用者回覆編號或完整選項，不要求輸入「確認」／「停止」這種只能靠前文解讀的關鍵字。
+- 這只規範已經需要詢問時的文字呈現；不新增預檢、工具呼叫、詢問點、authority／scope／shipping
+  或 branch collision 政策。runtime primitive 可用時仍使用原有 adapter。
+
+**FAIL 訊號**：只列「確認／停止」、「是／否」或其他需回讀長篇前文才知道後果的短 token；
+雖有編號但選項未寫動作與後果；為了通過本情境而新增 branch／PR 預檢、改變原詢問時機或放寬任何授權。
+
 ## Triggering tests
 
 > 觸發機制註記：兩個 harness 都是 user-only。Claude Code 由 `disable-model-invocation: true` 保證；

@@ -209,3 +209,9 @@
   - 重議:明示scope排除被突破、跨work-item文檔變更、authority祖先不可查證、實際品質回歸；依具體root修正，不推翻整套流程或重開全部eval
   - 關聯:docs/plans/2026-09-24-production-batch-boundary.md;B-20260924-workflow-review-residuals;B-20260924-workflow-verification-economy
   - 交付證據:1499/0完整回歸與14項assignment control通過。Opus focused收尾及明示Project Log的Sol均有序提交且parent authority PASS，無重問／review／history rewrite，source/tests與excluded consumer含.git不變；共同改動保留在本機source，未真實commit／部署。原generic Sol漏接手仍FAIL，未用修正入口的成功抹去；未測所有shipping／高風險情境及same-SHA重讀收益。Raw `/tmp/issue-229-closeout.UK5Xf4/eval/FINAL-AUDIT.md`。
+
+- **D-20260925-project-numbered-text-options · 2026-09-25 Project 文字 fallback 保留完整編號選項**：使用者以兩個實地 Project 決策輸出確認行為回歸：原本文字 fallback 會列「1. 完整動作（建議）／2. 停止」，現在卻只要求輸入「確認」或「停止」。修正限於已經需要詢問時的呈現：列 2–3 個編號選項，每項寫完整動作與後果，建議項先列；不新增 branch／PR 預檢、工具呼叫或詢問點，不改變 authority／scope／shipping 邊界。
+  - 日期來源:direct
+  - 放棄:為 branch collision 增加每次預檢或提前合併詢問；只修單一 branch 文案；繼續要求使用者輸入需回讀前文的短關鍵字
+  - 重議:文字 fallback 再次省略完整選項，或因此規則新增預檢、詢問點或其他正常路徑成本
+  - 關聯:D-20260825-project-prompt-bound-authority-recovery;M-20260825-project-guided-authority-recovery;shared/skills/project/references/pressure-tests.md
