@@ -51,7 +51,7 @@ Evals 是 source of truth。Skill review 的 blocking line 是「agent 照做是
 - Medium freedom：有偏好流程但允許情境調整時使用 pseudocode 或參數化 script。
 - Low freedom：脆弱、具破壞性或要求一致性時使用少參數 deterministic script 與明確 gates。
 
-將核心 workflow 留在 `SKILL.md`。重複產生或需要 deterministic reliability 的操作放 `scripts/`；詳細領域資料放 `references/`；輸出模板或素材放 `assets/`。References 保持一層深，避免同一事實在 body 與 reference 重複。
+`SKILL.md` 保留用途、必要約束與載入路由；portable skill 的共用 workflow 與資源位置依 `docs/skill-portability.md`，不在薄入口重複。重複產生或需要 deterministic reliability 的操作放 `scripts/`；詳細領域資料放 `references/`；輸出模板或素材放 `assets/`。由入口直接連到所需 reference，避免同一事實在 body 與 reference 重複。
 
 ### 5. 建立或修改 skill
 

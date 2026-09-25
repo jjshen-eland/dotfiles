@@ -2,12 +2,12 @@
 
 - 工作項：instruction-quality
 - 日期：2026-09-25
-- 狀態：draft
+- 狀態：in-progress
 - 種類：implementation
 - 需求來源：使用者要求在規格、功能及效果不變下改善效率、一致性與品質，先核對 [#229](https://github.com/jjshen-eland/dotfiles/issues/229) 再提出計劃。
-- 本輪授權：查證與撰寫計劃；不含下列候選實作、模型 eval、commit、push 或部署。
+- 本輪授權：使用者明示「開始實作計畫，我充分授權，沒有必要不需要停下來問我」；包含候選實作與必要本機／模型驗證，不沿用前次計劃批次的 shipping 授權。
 - 查證基線：`b7e32ffde5dec543fb208a6f0a140e032f851747`；起始 working tree clean；#229 於 2026-09-25 查詢仍 OPEN、無 comments。
-- Writer／Dossier Steward：`codex:instruction-quality`；Workspace：`branch=docs/instruction-quality-plan`。
+- Writer／Dossier Steward：`codex:instruction-quality`；Workspace：`branch=refactor/instruction-quality`。實作基線 `1a2228f2acc67a4ebdca8a411d22b9c6ac3ee6b0`，main clean；候選在隔離 worktree，不啟用全域 symlink。
 
 ## 目標與完成條件
 
@@ -23,7 +23,7 @@
 
 ## #229 相容性與已採用基線
 
-Issue 原文允許替換治理機制；本次使用者要求更窄，只授權規格不變的品質規劃。
+Issue 原文允許替換治理機制；本次使用者要求更窄，只做規格不變的撰寫改善。
 Issue 的初始數值預算要求也不能蓋過後續已記錄的使用者決策。核對來源如下：
 
 | 來源 | 必須保留的結果及對本計劃的約束 |
@@ -40,7 +40,7 @@ Issue 的初始數值預算要求也不能蓋過後續已記錄的使用者決�
 
 ## 原評估建議的處置與候選 write scope
 
-本表的「納入」只表示列入候選，不是已驗證缺陷或實作授權。每批只處理一個問題來源；
+本表的「納入」只表示列入候選，不代表已驗證缺陷；實際 disposition 及證據見後文。每批只處理一個問題來源；
 跨檔同一規則可同批對齊，不把獨立問題合成一次 before/after。
 
 | ID／處置 | 原規格、問題與最小候選 | 候選 write scope | #229 相容性與驗證 |
@@ -72,11 +72,20 @@ Issue 的初始數值預算要求也不能蓋過後續已記錄的使用者決�
    原問題、語意相依與必要檢查已過就交付該項；不足則回到具體證據／決策，不追求零 findings。
    不設定未授權的 token、美元或整體時間上限；既有 workflow 的 review／repair 次數限制不變。
 
-此次不啟動以上 native eval。後續各批確定 write scope 後才選必要 scenarios／樣本數，不藉計劃預排全套 #229 重跑。
+各批確定 write scope 後才選必要 scenarios／樣本數，不重跑全套 #229。
 套用 skill 改動時，在目標 runtime 使用正確 validator；不以 Codex validator 不識別 Claude 原生欄位為由刪 metadata。
 依 root 契約執行必要 `./tests/run.sh`（保留原 exit code）、doc audit 與 diff check；已通過且內容未變不重跑。
 
 ## 品質與效率的等價驗收
+
+本輪固定對照（先啟動 before 才改文字）：`/tmp/instruction-quality-probe.py`；每項每模型每版本一次 fresh invocation，
+CLI Codex 0.157.0／Claude Code 2.1.282；GPT-5.6 Sol `gpt-5.6-sol` high、`claude-opus-5[1m]` high、
+受影響 Claude 安全 floor `claude-sonnet-5` high。Q1 四臂（PR／merge／rebase 不可用／未授權）三模型；
+Q2 notification 函式及負向 scope 兩 Claude 模型；Q5 portable authoring 配置兩 production 模型；Q6 具名／未定 scope 兩 Claude 模型。
+Q2/Q6 只改 Claude pointer，shared core byte-identical，故不新增 Codex 臂；Q5 是雙 runtime guide，雙 production。
+Prompt、command、SHA256、stdout、stderr、exit 各別留在 `/tmp/instruction-quality-{before,after}`。
+這些是離線 decision／code-generation probes，不冒充真實 shipping 或完整 skill E2E；Q2 產碼另用 local fake 執行。
+Q4 只做歷史完整性與 current-status 導航檢查。Q3/Q7 尚無本輪 behavior RED，先保留原文，不為措辭完整度擴張 eval。
 
 | 面向 | 合格證據 | 不接受的替代證據 |
 | --- | --- | --- |
@@ -89,11 +98,35 @@ Issue 的初始數值預算要求也不能蓋過後續已記錄的使用者決�
 歷史 baseline 僅在來源版本、prompt、fixture、模型設定確實可比時沿用；否則只作背景，新增當前最小對照。
 保留原 raw failures 和不完整觀察；新的 outcome evidence 另列，不用成功分項掩蓋其他失敗。
 
+本輪結果（2026-09-25；各模型／版本各一次，非成功率估計）：
+
+| 項目 | Before → after 的指定觀察 | 處置與限制 |
+| --- | --- | --- |
+| Q1 | Sonnet D 臂逐字「push branch + 開 PR，停在 PR，然後問一題」，並產出 push/create 指令；after 改為先問、依答案才送。Sol/Opus D 前後均先問。三模型 A 均停 PR、B 均 rebase 不重問、C 均詢問可用方式而不自行 fallback。 | 納入。根因是說法表的錯誤順序與過廣摘要，不是原 authority gate 缺失。所有內容只是離線草擬，未對 GitHub 寫入。 |
+| Q2 | Opus/Sonnet 前後產碼均通過 local fake：成功 start/done、主失敗 start/fail 且原 exception identity、缺設定不送、transport/timeout 含假 secret 仍只安全 warning，主結果不變；API／只讀 review 不整合。 | 納入 pointer 與 P2 authority 對齊；沒有測得行為提升，不改 shared core，不聲稱完整 N1／client wire／部署驗收。 |
+| Q4 | 原有字元與段落順序保留，只在歷史待補清單前插入 current-status 說明，指到 Scenario 8／13 起及現行 Step 4／說法表。 | 納入；消除把已推翻的「≥2 commits 必問」當現行 oracle 的歧義，不重判舊 PASS/FAIL。 |
+| Q5 | Sol/Opus before 都產出 `~/.claude/skills/log-triage/...` 固定執行引用，無法綁定 `/tmp/team-wt`；after 都採載入 skill directory／相對引用；雙薄入口、單一 core、nested links、按需格式 reference 皆保留。 | 納入。既有 topology 與 metadata 不改；這是 authoring proposal probe，沒有建立／部署新 skill。 |
+| Q6 | Opus/Sonnet 前後均保留 a1..b2、c3..d4 與 empty-diff ui，不重問；未具名集合先列 api/ui 等確認，不掃 broad directories。 | 納入既有 scope 規格對齊；不宣稱減少了實測提問。Sonnet after 額外推論「缺 strategy 也可轉 single-pass」，不屬所測 scope 分流且非既定規則；保留原輸出，不把此 probe 宣稱完整 review-policy PASS，也不擴張本批改 review core。 |
+| Q3/Q7/Q8 | Q3 既有 H1/H5/H5b 已分規則、未沉澱決策與 verified pointer，沒有本輪 behavioral RED；Q7 未量到重排收益；Q8 原已 defer。 | 不改，保留為條件式候選；不以刪字量或全部實作作完成指標。 |
+
+重現資料：runner `/tmp/instruction-quality-probe.py` 使用表列每項文件的完整當前內容（Q6 shared review 截至 `## 3.`、Log 截至 `## Step 1`），
+以相同離線前綴／query 分別對原 `1a2228f` 與候選執行。Q1 四情況前提為單一 repo、scope/ownership 已驗證、摘要已印、無 residue；
+A `--pr` gate PASS 尚未 push；B `--merge` 三語意 commit、PR checks 全綠可 rebase；C 同 B 但 rebase 不允許、剩 squash/merge-commit；D 無送出說法且未 push。
+Q2 要求 `run(job, notify, configured)` 函式、另答 API/只讀 review scope；Q5 要求 `/tmp/team-wt` 下 log-triage 雙 runtime 配置、共用 workflow/parser 與按需格式說明；
+Q6 A 明示 api a1..b2/ui c3..d4（ui 空 diff），B 未具名但本輪 api 3 檔/ui 2 檔。均只草擬，不工具操作。
+Raw command／prompt SHA／stdout 保留於前述 scratch；fake runner `/tmp/instruction-quality-notify-test.py`，假 secret 為 `synthetic-secret-Q2-never-log`。
+Claude results 的 `subtype=success` 與實際 modelUsage identifier、Codex `turn.completed` 及 exit 0 用於完整性檢查，不以 process exit alone 判綠。
+
+本機檢查：18 次 probes 全部正常結束、原始失敗輸出保留；四份 Q2 產碼皆通過 fake runner。
+`./tests/run.sh` exit 0，1500 PASS／0 FAIL；Codex project `quick_validate.py` 通過，Claude 原生 metadata 未改、由既有 packaging gates 驗證；
+doc-governance ship audit 與 diff check 通過。原歷史待補清單及舊 evidence 零刪改；shared notification／handoff／review core、scripts、kernel、metadata／linkage 均未改。
+此結果不代表統計穩定性、整體 latency/token 降幅或完整 #229 驗收。正式交付前維持 in-progress／active assignment，以保留後續結案所需的 ownership 祖先。
+
 ## 交付、回復與 scope 邊界
 
 每項交付附：精確 diff、原規格與改寫映射、適用 runtime、正常／安全證據、可觀察改善、未驗證限制與 disposition。
 未達標只撤回本項候選，保留其他已驗證且獨立的成果；不動使用者／其他 writer 的變更，不使用 destructive reset。
 未確認語意維持原文，不先改 oracle；本計劃不授權變更 helper 行為、核准新規格或放寬既有安全結果。
 
-本輪實際 write scope 只有此計劃與 STATUS.md 的本工作項。計劃交付後保持 draft，等待使用者指派實作；
+實際 write scope 限上表候選及必要驗證記錄、本工作 STATUS／計劃／event-time records。
 不自動啟動 project/deep-plan/repo-review、不寫 GitHub comments、不 commit/push/merge/dotsync，不關閉 #229。

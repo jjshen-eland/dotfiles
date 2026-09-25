@@ -331,6 +331,11 @@ TDD-for-skills：先在**無 skill / 弱 skill** 下跑這些情境，逐字記�
 
 ## 待補情境（2026-08-06 記；規則已上線但無行為 eval 證據）
 
+> **現行狀態（2026-09-25 補註）**：下列清單保留 2026-08-06 當時的待測規格，不是現行 oracle。
+> 第 1 項「多 commit 必問」已由 Scenario 8 的 2026-08-07 決策取代；現行裸 merge＝rebase、不重問，
+> 並有該節 2026-09-14 雙 runtime 證據。其餘項目的詢問／squash 敘述也須按現行 Log Step 4、
+> ship-paths 說法表與下方 Scenario 13 起的對應 oracle 判讀；本補註不重判或改寫任何舊結果。
+
 > Iron Law 的反向欠債：這幾條都是**先有規則、後補情境**，與正常的 RED→GREEN 相反。列在此處是為了不假裝已驗證——跑過並記錄結果前，這些行為都屬未知。
 
 1. **多 commit PR 的 merge 三選一**（Scenario 8 的新分支）：branch 有 ≥2 顆語意 commit、PR 已開，使用者只說「merge」→ 應給三選項並列出 commit 清單；使用者**再答一次「merge」**→ 應重問而非自行挑一個。反向錨：單一 commit 時直接 `--squash`、不多問。

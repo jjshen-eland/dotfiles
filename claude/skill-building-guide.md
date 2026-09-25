@@ -80,7 +80,7 @@ description: Extract text and tables from PDF files, fill forms, merge documents
 - **引用只能一層深**：所有 reference 檔直接從 SKILL.md 連出。巢狀引用（A→B→C）會讓 Claude 只 `head -100` 預覽、讀到不完整資訊
 - **> 100 行的 reference 檔開頭放 table of contents**，讓 Claude 預覽時看得到全貌
 - 檔名要描述性（`form_validation_rules.md` 不是 `doc2.md`）；用 forward slash，不用 Windows 反斜線
-- **路徑慣例（本 repo）**：skill 文件內凡是 runtime 要讀/執行的自家資源（`scripts/`、`references/`）一律寫 `~/.claude/skills/<name>/...`——該 adapter 由 setup 腳本建立、其 nested links 解析到 repo 內的 neutral core，與 clone 路徑解耦；只有描述「skill 原始碼在 repo 何處」（開發/編輯情境）才寫 `~/.dotfiles/{claude,codex,shared}/skills/`。同檔混用 runtime 安裝路徑與 repo source path 視為待修的不一致
+- **路徑慣例（本 repo）**：自家資源（`scripts/`、`references/`）以本次載入的 skill directory 為基準，經 adapter 的 nested links 解析；shared core 的限制以 `docs/skill-portability.md` 為準。`~/.claude/skills/<name>/...` 只描述 Claude 的安裝位置，不作為 shared core 或隔離 worktree 的固定執行路徑；repo source path 只用於開發／編輯定位。
 
 ## Claude Code 特有機制（code.claude.com skills 文件；2026-07 新增）
 
