@@ -455,3 +455,9 @@
   - 放棄:為 branch collision 增加每次預檢；只修單一 branch 文案；繼續要求使用者輸入需回讀前文的短關鍵字
   - 重議:文字 fallback 再次省略完整選項，或因此規則新增預檢、詢問點或其他正常路徑成本
   - 關聯:D-20260925-project-numbered-text-options;shared/skills/project/references/pressure-tests.md;61e944e
+
+- **M-20260925-project-numbered-options-ci-manifest · 2026-09-25 PR #236 的 integration assertion manifest 已同步**：Ubuntu 24.04 與 macOS 15 required suites 的 integration shard 內部均為 `1096 PASS／0 FAIL`，但 `tests/shard-manifest.tsv` 仍預期 1095，兩平台因同一 aggregate mismatch 失敗。本地 `./tests/run-parallel.sh` 以相同 mismatch 重現 RED；最小修正只將 integration manifest 同步為 1096，不移除或放寬 assertion，修後三 shard 聚合 `1500 PASS／0 FAIL`。
+  - 日期來源:direct
+  - 放棄:盲目重跑失敗 CI；容忍任意 assertion 數；刪除新增 gate 或放寬 aggregate fail-closed 判準
+  - 重議:新增或移除 assertion 後 manifest 再次漂移，或不同平台的實際 assertion 集合不一致
+  - 關聯:PR#236;M-20260925-project-numbered-text-options;tests/run.sh;tests/shard-manifest.tsv
