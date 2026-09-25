@@ -473,3 +473,9 @@
   - 放棄:用程序正常結束代表全部行為 PASS；用局部 probe 冒充完整線上驗收；為交付數量強改條件式候選
   - 重議:正式交付的檢查暴露具體退步；新行為證據支持原 defer 候選
   - 關聯:docs/plans/2026-09-25-instruction-quality.md;D-20260925-instruction-quality-scope
+
+- **M-20260925-instruction-quality-delivery · 2026-09-25 規則撰寫品質實作完成並進入明示交付**：使用者以 `$project --merge` 指定本批終點。實作 `0dbcc8d` 保留 active assignment；結案提交將計劃凍結為 implemented、移除唯一完成的 instruction-quality item，post-completion 無剩餘項目指向 `codex:instruction-quality`。交付 Q1/Q2/Q4/Q5/Q6 的最小對齊，Q3/Q7/Q8 依證據 defer；18 次 native probes 的指定結果與限制、通知 fake、1500/0 tests、validator 與 doc audit 維持原紀錄，不宣稱完整 #229 或遠端部署完成。此 milestone 記錄送出前完成狀態，merge 結果以 GitHub PR／Git ancestry 為準。
+  - 日期來源:direct
+  - 放棄:結案時抹掉唯一 authority；沿用計劃批次授權；以本批交付關閉 #229
+  - 重議:required checks 失敗或新事實顯示本批改寫改變既定語意
+  - 關聯:0dbcc8d;docs/plans/2026-09-25-instruction-quality.md;M-20260925-instruction-quality-local;D-20260925-instruction-quality-scope
