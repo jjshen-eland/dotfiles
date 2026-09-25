@@ -449,3 +449,9 @@
   - 放棄:因登入恢復重跑模型驗收、要求使用者重給merge授權、將本地紀錄冒充遠端合併證據
   - 重議:本批required CI失敗時依原授權有界修復；其他未解缺口依backlog觸發條件處理
   - 關聯:Issue#229;M-20260925-workflow-usable-delivery;855ee57
+
+- **M-20260925-project-numbered-text-options · 2026-09-25 Project 文字 fallback 恢復完整編號選項**：以 Scenario 35 與 static gate 重現「只要求回覆確認／停止」的回歸，將 shared runtime adapter 改為在 user-input primitive 不可用時列 2–3 個完整編號選項，建議項先列、取消項明述不修改。本修正不新增 branch／PR 預檢或詢問點，不改 authority／scope／shipping 邊界。實作與 active contract 已由 `61e944e` 保存；完整 suite `1500 PASS／0 FAIL`，Codex validator 與 doc audit 通過。單 repo 唯一 active item 結案後無其他項目指向 retiring actor。
+  - 日期來源:direct
+  - 放棄:為 branch collision 增加每次預檢；只修單一 branch 文案；繼續要求使用者輸入需回讀前文的短關鍵字
+  - 重議:文字 fallback 再次省略完整選項，或因此規則新增預檢、詢問點或其他正常路徑成本
+  - 關聯:D-20260925-project-numbered-text-options;shared/skills/project/references/pressure-tests.md;61e944e
