@@ -2,10 +2,10 @@
 
 - 工作項：instruction-quality
 - 日期：2026-09-25
-- 狀態：in-progress
+- 狀態：implemented
 - 種類：implementation
 - 需求來源：使用者要求在規格、功能及效果不變下改善效率、一致性與品質，先核對 [#229](https://github.com/jjshen-eland/dotfiles/issues/229) 再提出計劃。
-- 本輪授權：使用者明示「開始實作計畫，我充分授權，沒有必要不需要停下來問我」；包含候選實作與必要本機／模型驗證，不沿用前次計劃批次的 shipping 授權。
+- 本輪授權：使用者明示實作與必要本機／模型驗證；本批實作完成後另以 `$project --merge` 授權送出終點，不沿用前次計劃批次授權。
 - 查證基線：`b7e32ffde5dec543fb208a6f0a140e032f851747`；起始 working tree clean；#229 於 2026-09-25 查詢仍 OPEN、無 comments。
 - Writer／Dossier Steward：`codex:instruction-quality`；Workspace：`branch=refactor/instruction-quality`。實作基線 `1a2228f2acc67a4ebdca8a411d22b9c6ac3ee6b0`，main clean；候選在隔離 worktree，不啟用全域 symlink。
 
@@ -120,7 +120,7 @@ Claude results 的 `subtype=success` 與實際 modelUsage identifier、Codex `tu
 本機檢查：18 次 probes 全部正常結束、原始失敗輸出保留；四份 Q2 產碼皆通過 fake runner。
 `./tests/run.sh` exit 0，1500 PASS／0 FAIL；Codex project `quick_validate.py` 通過，Claude 原生 metadata 未改、由既有 packaging gates 驗證；
 doc-governance ship audit 與 diff check 通過。原歷史待補清單及舊 evidence 零刪改；shared notification／handoff／review core、scripts、kernel、metadata／linkage 均未改。
-此結果不代表統計穩定性、整體 latency/token 降幅或完整 #229 驗收。正式交付前維持 in-progress／active assignment，以保留後續結案所需的 ownership 祖先。
+此結果不代表統計穩定性、整體 latency/token 降幅或完整 #229 驗收。實作與 active assignment 已先提交於 `0dbcc8d`；後續結案提交移除 active item，保留可查證的 ownership 祖先。
 
 ## 交付、回復與 scope 邊界
 
@@ -129,4 +129,4 @@ doc-governance ship audit 與 diff check 通過。原歷史待補清單及舊 ev
 未確認語意維持原文，不先改 oracle；本計劃不授權變更 helper 行為、核准新規格或放寬既有安全結果。
 
 實際 write scope 限上表候選及必要驗證記錄、本工作 STATUS／計劃／event-time records。
-不自動啟動 project/deep-plan/repo-review、不寫 GitHub comments、不 commit/push/merge/dotsync，不關閉 #229。
+未因實作自動啟動 project/deep-plan/repo-review；本批後由使用者明示 `$project --merge` 交付。未執行 dotsync，不關閉 #229；Q3/Q7/Q8 的條件式 defer 與上列驗證限制保留。
