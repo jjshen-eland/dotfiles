@@ -12,17 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### instruction-quality — 規則與 skill 撰寫品質優化計劃
-
-- **Writer**：codex:instruction-quality
-- **Workspace**：branch=docs/instruction-quality-plan
-- **Write Scope**：docs/plans/2026-09-25-instruction-quality.md；STATUS.md 本工作項
-- **Dossier Steward**：codex:instruction-quality
-- **Context／Goal**：使用者要求維持規格與功能，核對 #229 後提出效率、一致性與品質優化計劃。
-- **Acceptance Criteria**：逐項對應現行 authority、#229 已接受決策、候選範圍及正常／安全驗證；不改生效規則、不重開已驗收工作。
-- **進度**：已核對 GitHub #229、後續決策及 frozen plans；分項計劃 draft 已備妥，doc audit／diff check 通過，完整 tests/run.sh exit 0（1500 PASS／0 FAIL）。未修改生效規則。
-- **下一步**：後續實作待使用者指派，依計劃逐項驗證；不自動啟動 eval 或 shipping。
-- **關聯**：docs/plans/2026-09-25-instruction-quality.md；D-20260924-remove-unrequested-eval-budget；D-20260925-task-continuity-and-steward-scope
+目前無進行中項目。
 
 ## 暫停中
 
