@@ -467,3 +467,9 @@
   - 放棄:以刪字量代替品質；為文字整理重開已驗收整批；把合併計劃解作實作授權
   - 重議:使用者指派實作時依原計劃逐項建立證據；新規格衝突只暫停受影響項目
   - 關聯:docs/plans/2026-09-25-instruction-quality.md;47d46a0;D-20260924-remove-unrequested-eval-budget;D-20260925-task-continuity-and-steward-scope
+
+- **M-20260925-instruction-quality-local · 2026-09-25 規則文字最小候選通過本機指定驗證**：隔離 `refactor/instruction-quality` 的 Q1/Q2/Q4/Q5/Q6 改寫已取得 18 次完整 native before/after 輸出。Sonnet 未授權先 push 的草擬由 RED 轉為先問；雙 production authoring 改用 skill-relative 引用；通知四份產碼通過 local secret-bearing fake。Q2/Q6 僅證實選定行為保持，不宣稱模型提升；Q6 額外 review-strategy 推論限制保留於計劃，未改 review core。完整 tests exit 0（1500/0）、Codex validator、doc audit、diff check 通過。Q3/Q7/Q8 defer，原歷史 evidence 保留。這是本機候選里程碑，不是完整 shipping E2E、#229 結案或部署；main 未改，變更尚未 commit／push，active assignment 留待本批正式交付。
+  - 日期來源:direct
+  - 放棄:用程序正常結束代表全部行為 PASS；用局部 probe 冒充完整線上驗收；為交付數量強改條件式候選
+  - 重議:正式交付的檢查暴露具體退步；新行為證據支持原 defer 候選
+  - 關聯:docs/plans/2026-09-25-instruction-quality.md;D-20260925-instruction-quality-scope

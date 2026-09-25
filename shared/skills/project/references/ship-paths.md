@@ -251,8 +251,8 @@ git -C <repo> branch -D <feature>       # 本地 branch 若仍殘留。squash/re
 
 | 使用者說 | 引數 flag（等價） | 送到哪 | `<merge-flag>` |
 |---|---|---|---|
-| （無送出詞） | — | push branch + 開 PR，**停在 PR，然後問一題** | — |
-| 「開 PR」／「開 pr」／「停在 PR」／「pr」 | `--pr` | push branch + 開 PR，**停在 PR，零提問** | — |
+| （無送出詞） | — | **先依 Log Step 4 B 詢問，獲授權後才送出**；終點依答案 | — |
+| 「開 PR」／「開 pr」／「停在 PR」／「pr」 | `--pr` | push branch + 開 PR，**停在 PR，不重問終點** | — |
 | 「merge」／「合併」 | `--merge` | 全程走完 | `--rebase` |
 | 「merge 壓成一顆」／「squash merge」 | `--merge --squash` | 全程走完 | `--squash` |
 | 「merge 不壓」／「merge 保留 commit」 | `--merge`（同預設） | 全程走完 | `--rebase` |
@@ -272,7 +272,7 @@ commit、更新feature branch、重新等待required checks及merge。首次送�
 force-push、production或永久刪除不包含在修復批次；新事實需要這些操作才一次詢問具體差異。
 其他STOP仍維持其安全判準；完成可安全進行的既定準備後，若確有必要決策才結束回合並提出可續行選項。
 
-> **「（無送出詞）」與 `--pr` 的差別只有一個：問不問。** 兩者最終狀態相同（PR 開著、沒 merge）；`--pr` 是「我知道我要停在 PR」，所以跳過那一題。
+> **`--pr` 已指定停在 PR，不重問終點。** 無送出詞則先由 Step 4 B 取得授權；只有選「送出，停在 PR」時才與 `--pr` 同終點。兩者均不豁免既有 gates 與受阻處理。
 
 **預設保留、不預設壓**：語意 commit 在 PR 裡逐顆可讀、日後可追，那是它們存在的理由。GitHub 的 squash-merge 全有全無、做不到只壓部分，故「壓」必須是使用者說出口的意圖，**不是流程的預設**。
 

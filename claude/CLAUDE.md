@@ -111,7 +111,7 @@ When the user pastes third-party review findings, read the source code and verif
 
 ## 跨 Repo 工作流
 
-主 agent 是唯一擁有跨 repo 全局 context 的角色。觸發跨 repo skill（`/deep-review`、`/project log`）時，依 session 記憶列出 `(repo, 檔案數)` 清單讓使用者確認（ok / 只看 X / 還有 Y），**不掃描** `~/Projects/`。確認流程細節見各 skill 的 Step 0。context 被壓縮就以 pwd 的 repo 為底讓使用者補充；使用者指定的 repo 即使無 diff 也納入（檢查一致性）。
+觸發跨 repo skill（`/deep-review`、`/project log`）時，保留使用者已指定的 repo／range，不重問已定範圍；具名 repo 即使無 diff 也納入。候選集合未定時才依當前 session context 列清單確認，**不掃描** `~/Projects/`；context 不足時以 pwd repo 為底請使用者補充。範圍解析與必要詢問依各 skill：deep-review「Resolve an exact scope」、Project Log「Step 0：範圍鎖定」。
 
 ## 跨 Agent 工作分配（Claude Code / Codex 並用）
 
@@ -137,12 +137,12 @@ When the user pastes third-party review findings, read the source code and verif
 
 特定情境下，相關 SOP 已抽成 skill 按需載入。遇以下情境**主動載入對應 skill**（避免 silent miss）：
 
-- 寫 **cron / 背景腳本（爬蟲/回補）/ pipeline** 的開始·完成·失敗 → `nc-notify`（必發通知；NC 不可用須靜默不影響主流程）
+- 寫 **cron / 背景腳本（爬蟲/回補）/ pipeline** 的開始·完成·失敗 → `nc-notify`（整合生命週期通知；缺設定 no-op，通知失敗留 secret-safe warning，均不改變主工作結果）
 - 使用者要求**「寄信 / mail 給我」** → `send-mail`（收件人依 skill 內〈收件人解析〉優先序，勿用 `# userEmail` 推斷）
 - 遇 **bug / 測試失敗 / 非預期行為** → `root-cause-first`（先 root cause 再修）
 - 使用者要 **/clear 但後續工作延續**（「交接」「接續上次的工作」）→ `handoff`（resume 必先 verify 錨點；消費即歸檔；**同主機限定**——跨主機延續走 repo STATUS.md）
 - 使用者要**移交專案給同事 / 換 owner**（「移交」「交接給同事」「請他接手」）→ **建議使用者執行** `/project transfer`（user-invoked only——該 skill 為 `disable-model-invocation`，勿嘗試以 Skill tool 載入；其 dossier 完整度檢查 + 移交指南、credentials 絕不進 git）
-- 使用者說**「uap」「ship」「推上去」「提交送 PR」**（收尾送出語意）→ **建議使用者執行** `/project --merge`（一路做到 merge）或 `/project --pr`（開 PR 即止）——**兩者都零提問**；要走多遠不確定就建議裸 `/project`（會問一題）。說法表與 flag 對照見 `~/.claude/skills/project/references/ship-paths.md`（唯一權威，勿在此重述）。（user-invoked only，同上勿以 Skill tool 載入）
+- 使用者說**「uap」「ship」「推上去」「提交送 PR」**（收尾送出語意）→ **建議使用者執行** `/project --merge`（一路做到 merge）或 `/project --pr`（開 PR 即止）——**不重問已指定終點，仍遵守原有 gate 與受阻處理**；要走多遠不確定就建議裸 `/project`（問終點）。說法表與 flag 對照見 `~/.claude/skills/project/references/ship-paths.md`（唯一權威，勿在此重述）。（user-invoked only，同上勿以 Skill tool 載入）
 - 使用者說**「收尾」「sync 一下」「可以 quit 了嗎」「結束前檢查」**（結束 session 語意）→ **建議使用者執行** `/ready4quit`（user-invoked only，同上勿以 Skill tool 載入。它是 pre-quit flush：驗 git 殘留、flush memory、盤點背景/排程任務與 loose ends，**本身不 ship**——git 殘留仍導向上一條的 `/project`）
 
 ---

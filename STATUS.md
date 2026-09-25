@@ -12,7 +12,15 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-目前無進行中項目。
+### instruction-quality：規格不變的規則／skill 撰寫優化
+
+- **Writer**：codex:instruction-quality
+- **Workspace**：branch=refactor/instruction-quality
+- **Write Scope**：計劃 Q1–Q7 的候選文字及必要 eval evidence；本工作 STATUS、計劃與 event-time records。Q8、腳本行為、既有歷史結果及其他 backlog 不改。
+- **Dossier Steward**：codex:instruction-quality
+- **成功條件**：依[計劃](docs/plans/2026-09-25-instruction-quality.md)保留原規格、安全與完成語意；只交付有可觀察改善且受影響驗證通過的候選。
+- **進度**：Q1/Q2/Q4/Q5/Q6 候選已本機實作；Q3/Q7/Q8 有理由 defer。18 次固定 native before/after probes 已取得完整輸出，指定行為及限制記於計劃；notification fake 通過，完整 tests 1500/0、Codex validator、doc audit、diff check 通過。main 與全域 symlink 未動，變更尚未 commit。
+- **下一步**：待交付本批變更；shipping 需本批明示 endpoint，不沿用計劃批次授權。若啟動 shipping，先保留本 assignment 的提交祖先，再結案 active item；計劃在正式交付前保持 in-progress。
 
 ## 暫停中
 

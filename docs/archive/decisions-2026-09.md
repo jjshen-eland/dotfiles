@@ -215,3 +215,9 @@
   - 放棄:為 branch collision 增加每次預檢或提前合併詢問；只修單一 branch 文案；繼續要求使用者輸入需回讀前文的短關鍵字
   - 重議:文字 fallback 再次省略完整選項，或因此規則新增預檢、詢問點或其他正常路徑成本
   - 關聯:D-20260825-project-prompt-bound-authority-recovery;M-20260825-project-guided-authority-recovery;shared/skills/project/references/pressure-tests.md
+
+- **D-20260925-instruction-quality-scope · 2026-09-25 撰寫優化以既有契約及分項證據收斂**：使用者授權實作規格不變的優化計劃。Q1 的 fresh Sonnet 離線草擬明確引用說法表，產生「未授權先 push／開 PR」的順序；只將矛盾摘要對齊既有 Critical 與 Step 4 B，不新增 gate。Q5 的雙 production baseline 將 worktree 入口寫成私人安裝路徑；最小 guide 改寫後改用載入 skill directory／相對引用。Q2/Q6 對照本來即符合選定行為，僅保留摘要與既有 authority 的一致性修正，不宣稱模型增益。Q3 的規則 promotion 與未沉澱決策 carry-forward 仍保留既有區分，未觀察本輪失敗不改 Critical；Q7 資訊順序、Q8 拆檔也不為風格偏好實作。Native probes 只驗指定決策／產碼，不冒充 shipping E2E 或 #229 全面驗收。
+  - 日期來源:direct
+  - 放棄:所有候選必須改完；把 static 矛盾冒充 behavioral RED；刪除舊 eval 或重判歷史；為維護文字改 topology／review 策略／handoff 授權
+  - 重議:Q3/Q7/Q8 有可重現失敗或可觀察收益；所選正常／安全臂退步；需要新產品決策時只暫停該項
+  - 關聯:docs/plans/2026-09-25-instruction-quality.md;D-20260825-portable-skill-authoring-default;D-20260826-portable-nc-notify;D-20260924-remove-unrequested-eval-budget
