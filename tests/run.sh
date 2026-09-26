@@ -8676,10 +8676,22 @@ fi
 
 echo "▶ 27. Codex config merge 與 dotsync 聚合終判"
 CODEX_CONFIG_HELPER="$ROOT/scripts/ensure-codex-config.py"
+if ! rg -q 'preferred_auth_method|preferredAuthMethod' \
+    "$ROOT/codex/config.toml" \
+    "$ROOT/scripts/ensure-codex-config.py" \
+    "$ROOT/setup-mac-env.sh" \
+    "$ROOT/setup-linux-env.sh" \
+    "$ROOT/scripts/brewup.sh" \
+    "$ROOT/scripts/dotfiles-sync.sh"; then
+    ok "Codex config 與所有部署入口不再定義 preferred_auth_method"
+else
+    bad "Codex config 或部署入口仍定義 preferred_auth_method"
+fi
 ccm="$TMP/codex-config-merge"
 mkdir -p "$ccm/dotfiles/codex" "$ccm/home"
 cat > "$ccm/dotfiles/codex/config.toml" <<'CCMBASE'
 model = "repo"
+preferred_auth_method = "apikey"
 sandbox_mode = "danger-full-access"
 
 [notice.model_migrations]
@@ -8713,6 +8725,10 @@ assert_eq "local project trust 覆蓋 generated state" "untrusted" "$(yq eval '.
 ccm_before="$(cksum < "$ccm/home/config.toml")"
 DOTFILES_DIR="$ccm/dotfiles" CODEX_HOME="$ccm/home" python3 "$CODEX_CONFIG_HELPER" >/dev/null 2>&1
 assert_eq "Codex config merge 冪等" "$ccm_before" "$(cksum < "$ccm/home/config.toml")"
+sed -i.bak '/^preferred_auth_method = /d' "$ccm/dotfiles/codex/config.toml"
+rm "$ccm/dotfiles/codex/config.toml.bak"
+DOTFILES_DIR="$ccm/dotfiles" CODEX_HOME="$ccm/home" python3 "$CODEX_CONFIG_HELPER" >/dev/null 2>&1
+assert_eq "repo base 移除的舊 managed auth key 不會殘留" "null" "$(yq eval '.preferred_auth_method' -p toml "$ccm/home/config.toml" 2>/dev/null)"
 printf '%s\n' 'model = "local"' > "$ccm/home/config.local.toml"
 DOTFILES_DIR="$ccm/dotfiles" CODEX_HOME="$ccm/home" python3 "$CODEX_CONFIG_HELPER" >/dev/null 2>&1
 assert_eq "local override 移除後不會黏成 runtime state" "null" "$(yq eval '.local_only' -p toml "$ccm/home/config.toml" 2>/dev/null)"

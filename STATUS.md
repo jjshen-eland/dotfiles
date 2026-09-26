@@ -12,7 +12,15 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-目前無進行中項目。
+### remove-codex-preferred-auth-method：移除已棄用的 Codex 登入設定
+
+- **Writer**：codex:remove-codex-preferred-auth-method
+- **Workspace**：branch=fix/remove-codex-preferred-auth-method
+- **Write Scope**：`codex/config.toml`、Codex config 生成／setup／brewup 路徑與其回歸測試；本工作 `STATUS.md` 與必要 event-time records
+- **Dossier Steward**：codex:remove-codex-preferred-auth-method
+- **成功條件**：repo、setup、brewup 與 config merge 路徑都不再定義或重新產生 `preferred_auth_method`；既有 live config 可收斂移除該 repo-managed 舊值；針對性回歸與 `./tests/run.sh` 通過。
+- **進度**：根因已確認並自 repo base 移除；setup／brewup／dotsync 共用 helper 且沒有其他硬編碼；回歸與完整 suite 1502 PASS／0 FAIL，doc audit 通過。
+- **下一步**：保存本 assignment 與實作的語意 commit，再以 completion docs commit 結案並依 `$project --merge` 送出。
 
 ## 暫停中
 
