@@ -479,3 +479,9 @@
   - 放棄:結案時抹掉唯一 authority；沿用計劃批次授權；以本批交付關閉 #229
   - 重議:required checks 失敗或新事實顯示本批改寫改變既定語意
   - 關聯:0dbcc8d;docs/plans/2026-09-25-instruction-quality.md;M-20260925-instruction-quality-local;D-20260925-instruction-quality-scope
+
+- **M-20260926-codex-preferred-auth-method-removal · 2026-09-26 Codex 已棄用登入設定自全部署路徑移除**:`preferred_auth_method = "apikey"` 的來源確認為 repo-managed `codex/config.toml`；macOS／Linux setup、`brewup` 與 `dotsync` 沒有各自複製該值，而是統一呼叫三層 merge helper。先新增靜態與升級 fixture，舊來源得到唯一 RED（1501 PASS／1 FAIL），同時證明 helper 能依 managed-path manifest 清掉舊 base 曾管理的 live key；移除 base 設定後，config、helper 與四個部署入口的 scoped audit 零命中，完整 suite 1502 PASS／0 FAIL。實作與 durable assignment 已由 `f3580c7` 保存；本 record 結束該 workline，散佈與 live config 收斂在 merge 後由既有 helper 完成。
+  - 日期來源:direct
+  - 放棄:在每個 setup／brewup 入口各加一次文字刪除（重複且繞過既有 managed-path 收斂）；直接手改 generated live config（下次舊版 helper 仍會補回，且破壞單一來源）
+  - 重議:Codex 再次引入等價的明示 auth-selection 設定；或 config merge 不再使用 managed-path manifest
+  - 關聯:D-20260912-codex-config-three-layer-merge;f3580c7;codex/config.toml;scripts/ensure-codex-config.py;setup-mac-env.sh;setup-linux-env.sh;scripts/brewup.sh;scripts/dotfiles-sync.sh;docs/testing-contract.md;tests/run.sh
