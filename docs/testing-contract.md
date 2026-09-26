@@ -723,6 +723,8 @@ Codex 的 prefix rule 是詞彙前綴，因此 direct `git push --dry-run` 也�
 `config.local.toml` 合併；同一路徑由 setup、brewup、dotsync 使用。任一輸入 TOML 無效、缺 yq、
 writer lock 衝突、render 期間 target 被外部 writer 改動，都必須保留進場時的有效 config 並回非零。
 成功輸出須能由 yq 重新解析、原子 replace，重跑 byte-identical。
+repo base 與所有部署入口不得再定義已棄用的 `preferred_auth_method`；從舊 base 升級時，helper 必須依
+managed-path manifest 移除既有 live config 中原本由 repo 管理的該 key，不得將它誤留為 runtime state。
 
 dotsync 必須把本機 pull／helper 與每台 remote 的結果全數納入終判；任一失敗仍跑完其餘 requested
 hosts，最後輸出 `local`、`remote_ok`、`remote_failed` 聚合總計，只有全綠時 exit 0。
