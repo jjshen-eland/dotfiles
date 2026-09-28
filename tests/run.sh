@@ -3942,6 +3942,14 @@ if grep -q 'Scenario 25 — 多 repo 確認可直接選全部偵測結果' "$PJS
     && grep -q '不得要求重新輸入' <<< "$project_step0"; then
     ok "project 多 repo Step 0 明列全選路徑且不重建 invocation"
 else bad "project 多 repo Step 0 未把『全部偵測到』做成可直接續行的確認選項"; fi
+if grep -q 'Scenario 36 — Spec 後的 multi-repo' \
+        "$PJS_CLAUDE/references/pressure-tests.md" \
+    && grep -q 'closed repo-set evidence' <<< "$project_step0" \
+    && grep -q '完全相同.*不顯示.*確認路徑' <<< "$project_step0" \
+    && grep -q '只詢問 repo-set delta' <<< "$project_step0" \
+    && grep -q '不得授予.*authority.*shipping authorization' <<< "$project_step0"; then
+    ok "project Step 0 沿用已重驗且未變的 closed repo set"
+else bad "project Step 0 未沿用已重驗且未變的 closed repo set"; fi
 pjs_codex_frontmatter="$(awk 'NR == 1 { next } /^---$/ { exit } { print }' "$PJS_CODEX/SKILL.md")"
 if ! grep -Eq '^(user-invocable|disable-model-invocation|argument-hint|allowed-tools|context|agent):' <<< "$pjs_codex_frontmatter"; then
     ok "Codex project frontmatter 無 Claude Code 專屬欄位"
@@ -3998,6 +4006,46 @@ else
     cat "$TMP/project-session-binding.out"
     bad "project session binding regression"
 fi
+project_step2_and_3="$(sed -n '/^## Step 2：/,/^## Step 4：/p' \
+    "$PJS_CLAUDE/references/log-workflow.md")"
+if grep -q 'Scenario 36 — Spec 後的 multi-repo' "$PJS_CLAUDE/references/pressure-tests.md" \
+    && grep -q 'shared dossier.*candidate 前.*authority' <<< "$project_step2_and_3" \
+    && grep -q -- '--candidate-parent' <<< "$project_step2_and_3" \
+    && grep -q 'candidate-rebuild: READY' <<< "$project_step2_and_3" \
+    && grep -q '當前 logical Project invocation' <<< "$project_step2_and_3" \
+    && grep -q '直接子 commit' <<< "$project_step2_and_3" \
+    && grep -q '尚未 push.*尚未開 PR' <<< "$project_step2_and_3" \
+    && grep -q '不得冒稱' <<< "$project_step2_and_3" \
+    && grep -q 'formal transfer' <<< "$project_step2_and_3" \
+    && grep -q '使用者.*worker.*混入.*STOP' <<< "$project_step2_and_3"; then
+    ok "project candidate provenance 在寫入前解析，錯 actor local candidate 僅有界重建"
+else bad "project candidate provenance 仍可能延後成使用者決策或無界重寫"; fi
+if grep -q -- '--completion-parent' <<< "$project_step2_and_3" \
+    && grep -q 'completion-candidate: READY' <<< "$project_step2_and_3" \
+    && grep -q 'plain.*no-active-items.*不得.*PASS' <<< "$project_step2_and_3" \
+    && grep -q 'endpoint.*未達成.*不得.*shipped' <<< "$project_step2_and_3"; then
+    ok "project completion candidate 以 parent authority 驗證且不提前宣稱 shipped"
+else bad "project completion candidate 可在移除 active item 後洗掉 authority 或提前宣稱 shipped"; fi
+project_step4="$(sed -n '/^## Step 4：/,/^## Step 5：/p' \
+    "$PJS_CLAUDE/references/log-workflow.md")"
+if grep -q 'summary-emitted: yes' <<< "$project_step4" \
+    && grep -q '當前 invocation.*user-visible' <<< "$project_step4" \
+    && grep -q 'post-push.*不算' <<< "$project_step4" \
+    && grep -q 'explicit.*merge.*不能省略摘要' <<< "$project_step4"; then
+    ok "project Step 4 摘要必須在當前 invocation 的第一個 outward action 前可見"
+else bad "project Step 4 摘要仍可能延後到 push 之後"; fi
+project_step5="$(sed -n '/^## Step 5：/,$p' \
+    "$PJS_CLAUDE/references/log-workflow.md")"
+if grep -q '進入條件' <<< "$project_step5" \
+    && grep -q 'immediately preceding assistant content' <<< "$project_step5" \
+    && grep -q '必須以.*Ship 摘要：.*開頭' <<< "$project_step5" \
+    && grep -q 'canonical repo root' <<< "$project_step5" \
+    && grep -q 'repo root:' <<< "$project_step4" \
+    && grep -q '狀態更新' <<< "$project_step5" \
+    && grep -q '不算 Ship 摘要' <<< "$project_step5" \
+    && grep -q '不滿足.*不得進入.*outward' <<< "$project_step5"; then
+    ok "project Step 5 以緊鄰 literal Ship 摘要作為 outward entry condition"
+else bad "project Step 5 可把一般 gate 狀態更新誤當成送出前摘要"; fi
 PSG="$TMP/project-steward-gate"
 mkdir -p "$PSG/repo/docs/archive" "$PSG/repo/src"
 git init -q -b main "$PSG/repo"
@@ -4157,6 +4205,23 @@ if grep -q 'Scenario 27 — Spec 收尾同時提示短版與 exact resume 明確
     && grep -q 'BROKEN.*recovery-kind.*scope mismatch' <<< "$project_spec_completion"; then
     ok "project Spec 收尾只在 helper 精確證明時同列短版與 resume 明確版"
 else bad "project Spec 收尾未安全區分短版 invocation、workline binding 與新 endpoint 授權"; fi
+project_log_authority="$(sed -n '/^## Step 2：/,/^### Runtime steward retirement gate/p' \
+    "$PJS_CLAUDE/references/log-workflow.md")"
+if grep -q 'Scenario 36 — Spec 後的 multi-repo' "$PJS_CLAUDE/references/pressure-tests.md" \
+    && grep -q 'current-session binding packet' <<< "$project_spec_completion" \
+    && grep -q 'Spec.*新建.*active contract.*current-session workline assignment' <<< "$project_spec_completion" \
+    && grep -q -- '--session-resume-actor' <<< "$project_spec_completion" \
+    && grep -q '不要求.*resume=' <<< "$project_spec_completion" \
+    && grep -q 'canonical repo root' <<< "$project_spec_completion" \
+    && grep -q 'exact actor' <<< "$project_spec_completion" \
+    && grep -q 'assignment fingerprint' <<< "$project_spec_completion" \
+    && grep -q '先消費.*binding packet.*branch-derived actor' <<< "$project_log_authority" \
+    && grep -q '重驗通過.*不詢問.*resume=' <<< "$project_log_authority" \
+    && grep -q 'binding delta' <<< "$project_log_authority" \
+    && grep -q '套用既有 recovery' <<< "$project_log_authority" \
+    && grep -q '不得授予.*shipping endpoint' <<< "$project_spec_completion"; then
+    ok "project Log 消費同 session Spec workline binding，無 delta 不重問 resume"
+else bad "project Log 未可靠消費同 session Spec workline binding"; fi
 
 PSG_PARENT="$TMP/project-steward-parent"
 mkdir -p "$PSG_PARENT/repo/docs/archive"

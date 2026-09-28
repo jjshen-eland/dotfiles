@@ -114,7 +114,20 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
 2. **單一呼叫**確認全部 repo 狀態：`<project-scripts>/ship-state.sh <repo1> <repo2> ...`（先把
    `<project-scripts>` 展開為 shared workflow 所解析的絕對路徑；default branch 偵測、三點/兩點變更集、
    upstream 邊界、protection 判定全在腳本內）。Step 1 直接沿用同一份輸出，**不重跑**。
-3. 展示清單並明列三種互斥確認路徑；第一項是預設建議，不把 `ok` 的語意藏在自由回答裡：
+3. 顯示確認前先檢查是否有 **closed repo-set evidence**。這只是省略重複互動的 session-local evidence，
+   不是 durable authority；只有以下條件**全部**成立才可沿用：
+   - 當前明確任務，或同一段未壓縮對話中緊接且成功完成的 Project Spec，已列出並接受一組 exact canonical
+     repo roots；checkpoint、runtime memory、basename 推測或較早且中間已有 scope 指令的紀錄都不算。
+   - 第 1 項重新偵測出的 canonical root 集合與該組證據完全相同，且使用者此後沒有增刪 repo。
+   - 第 2 項對完整集合的單次重驗沒有 missing／UNKNOWN／路徑歧義；結果能逐一對回同一組 roots。
+
+   三項全成立時，顯示鎖定集合與重驗摘要，標明證據來源；集合**完全相同就不顯示三種確認路徑、不再詢問
+   repo range**，直接沿用第 2 項輸出進 Step 1。若重新偵測多出或少了 repo，只列受影響的 roots、保留未變的
+   交集並**只詢問 repo-set delta**要加入、保留或移除；不得連帶重問已驗證集合。missing／UNKNOWN／歧義
+   仍停在該 delta，不得猜測。沿用或處理 delta 均不得授予 `as=`／`resume=` authority、shipping authorization、
+   endpoint 或任何 STOP 豁免。
+4. 沒有可沿用的 closed repo-set evidence 時，展示清單並明列三種互斥確認路徑；第一項是預設建議，
+   不把 `ok` 的語意藏在自由回答裡：
    ```
    本次涉及 2 個 repo：
      1. krepo（領先 default 2 commit）
@@ -128,9 +141,10 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
    detection。範圍回覆只決定 repo 集合，不寫回 normalized invocation arguments，也不授予 `as=`／`resume=`、
    shipping authorization 或任何 STOP 豁免。選「只處理指定」時才過濾既有集合；選「補充其他」時才用
    `resolve` 解析新增 repo 並補取其狀態。
-4. context 被壓縮 → 以 pwd 的 repo 為底讓使用者補充；使用者指定的 repo 即使無變更也納入。
-5. 全部 repo 既無領先 default 的 commit 又無 working tree 變更 → **勿直接結束**：先逐 repo 依 Step 1 第 2 項的 **docs-only mode** 判定（session 有已 ship 變更的 repo 仍納入，跑文檔同步）。git 無變更**且** session 記憶亦無已 ship 工作 → 才告知並結束。
-6. **單一 repo → 跳過此步，直接 Step 1。**
+5. context 被壓縮 → closed repo-set evidence 不可用；以 pwd 的 repo 為底讓使用者補充，使用者指定的 repo
+   即使無變更也納入。
+6. 全部 repo 既無領先 default 的 commit 又無 working tree 變更 → **勿直接結束**：先逐 repo 依 Step 1 第 2 項的 **docs-only mode** 判定（session 有已 ship 變更的 repo 仍納入，跑文檔同步）。git 無變更**且** session 記憶亦無已 ship 工作 → 才告知並結束。
+7. **單一 repo → 跳過此步，直接 Step 1。**
 
 ## Step 1：逐 repo 狀態 + 流程偵測（先於任何 commit）
 
@@ -177,9 +191,23 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
    先依 transfer workflow 定位該 record 所在 commit、fetch canonical endpoint 並驗 remote-visible ancestry；
    未抵達時 active fields 中的 next actor 只是 pending value，effective authority 仍取 guide 的 current steward，
    查不到證據就 STOP。當次明確順序改派先依 `workflow.md`「同機順序 local reassignment」完成角色更新及重驗，
-   不另要Spec invocation或改派確認。其他情況用 shared workflow 的 `steward-authority.py` 跑 ordinary gate，runtime prefix 只能
-   由入口提供；initial call 的 `resume=`／`as=` 只能來自 normalized invocation arguments；當次 session 工作線指派
-   另依 shared workflow 的 authority 規則，以獨立 provenance 與原 assignment snapshot 重驗。ordinary identity claim is not delegation；
+   不另要Spec invocation或改派確認。其他情況先按 canonical repo root 查找 shared workflow 在同一段未壓縮對話
+   為這條 logical workline 封存的 **current-session binding packet**；有 packet 時必須**先消費該 binding packet、不得先回退到 branch-derived actor**。
+   逐 repo 重讀 active items 與本輪 full HEAD，再帶 packet 的 exact actor、
+   **原始** assignment fingerprint 與剛查得的 HEAD 執行 `steward-authority.py --session-resume-actor ...
+   --expected-assignment ... --expected-head ...`。helper 回 `current-session-workline-binding`／PASS 就沿用該 actor，
+   **重驗通過即不詢問或要求 `resume=`**，也不再補跑 ordinary gate。HEAD／progress 正常前進不構成 delta；不得
+   用目前 fingerprint 覆蓋 packet 原值消除 mismatch。
+
+   Packet 缺席（含新 session、context 壓縮、只有 memory／checkpoint）才走 ordinary gate。Packet 存在但 item
+   identity、Writer／Workspace／Write Scope／Steward、runtime、transfer state 或 fingerprint 改變時，只對
+   **binding delta** 的 repo 套用既有 recovery／STOP；未變 repo 不連帶重問，仍可繼續安全的唯讀檢查，但所有
+   repo 的必要 shipping gates 通過前不得做 outward action。這份 binding 不 carry 舊 endpoint；本輪 push／PR／
+   merge 仍只看當次 invocation 的 authorization。
+
+   Ordinary gate 仍用 shared workflow 的 `steward-authority.py`，runtime prefix 只能由入口提供；initial call 的
+   `resume=`／`as=` 只能來自 normalized invocation arguments；當次 session 工作線指派另依 shared workflow 的
+   authority 規則，以獨立 provenance 與原 assignment snapshot 重驗。ordinary identity claim is not delegation；
    「我是 owner」、Git author、GitHub login 或同 runtime 都不得改 helper 的 executor actor。
    若啟用 `active_item_contract`，helper 的 authority actor 必須等於所有 active items 的 durable steward，
    才能進入 shared dossier／commit／shipping 流程。`resume=` must use the same runtime prefix and exact actor；
@@ -195,6 +223,25 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
    current／parent 都沒有 durable steward 而 candidate 觸碰 shared surface 時，initial helper 必須 STOP；只有符合
    下節 guided recovery 的 exact local candidate 才能在同一 logical invocation 先走 Spec subflow，否則仍要求
    先建立 work item。
+
+   **Candidate provenance 前置**：寫任何 shared dossier candidate 前先解析並通過 durable authority；以沒有
+   `--commit` 的 ordinary／session-binding helper 固定 exact actor、原 assignment fingerprint 與 pre-candidate
+   full HEAD，確認 actor 等於 durable steward 後才改 STATUS／backlog／history／plan 並進 Step 3。不得先用
+   branch-derived actor 寫完，再把錯誤 provenance 變成使用者的 resume／transfer 決策。
+
+   若錯誤 provenance 的 candidate 已由**當前 logical Project invocation**產生，只在它是 pre-candidate HEAD 的
+   **直接子 commit**、目前仍為 HEAD、working tree clean、Step 1／本輪 trace 證明尚未 push 且尚未開 PR、
+   session binding 仍以原 fingerprint PASS，且 diff 已驗證只含本 workline scope 時，才可帶
+   `--commit <full-candidate-oid> --candidate-parent <pre-candidate-full-oid>` 重跑 helper。只有同時輸出
+   `candidate-provenance: current-session-direct-child`、`candidate-rebuild: READY` 與 `verdict: PASS`，才把 branch
+   有界退回該 parent、保留這一顆的 diff，依本輪已通過的 steward authority 重跑 Step 2／3、明確 staging、
+   staged diff 檢查及必要驗證，最後以新 full OID 再跑同一 gate。這是 local provenance repair，**不得冒稱
+   formal transfer**，也不新增 endpoint authority。
+
+   Candidate 已進任何 remote-tracking ref、已 push／已有 PR、不是單一直接子 commit、HEAD／parent／binding
+   改變、tree 不乾淨、scope 不可證明，或有任何使用者／worker／parallel work 混入時一律 STOP；不得自動重寫、
+   不得把 `candidate-rebuild: BLOCKED` 降級成確認題。既有 worker candidate 永遠走 Dossier delta／steward
+   integration，不得借本路徑洗成 current workline candidate。
    唯一特例是 repo 已有 `$project transfer` 產生的 `PREPARED` pending transfer，且依上述 ancestry gate 判定目前
    actor 仍是其中記錄的
    current steward：先重跑 portable-knowledge／recipient／endpoint gates，再在本輪 Step 3 的**同一顆 transfer
@@ -205,7 +252,18 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
    通過才 cherry-pick，衝突或越界就 STOP，不自動解衝突。
 3. 工作完成時寫 `M-*` milestone、從 `STATUS.md` 移除 completed active item；先依workflow的
    「同機順序 local reassignment」確保新assignment已在parent可查證，不在同一commit抹掉唯一authority。
-   暫停項必須有恢復條件。
+   暫停項必須有恢復條件。執行 completion mutation 前，先用 current-session binding PASS 固定原
+   assignment fingerprint 與 pre-completion full HEAD；Step 3 形成包含 milestone／active-item removal 的單一
+   direct-child candidate 後、任何 push 前，以
+   `--session-resume-actor <actor> --expected-assignment <original-fingerprint> --expected-head <candidate-oid>
+   --commit <candidate-oid> --completion-parent <pre-completion-oid>` 重驗。只有
+   `durable-steward-source: completion-candidate-parent-active-state`、`completion-candidate: READY` 與
+   `verdict: PASS` 同時出現才可送出；任何 exit 2／STOP 都必須停下修正，plain `no-active-items` 結果不得當成 PASS，
+   也不得在 active item 已移除後省略 candidate 再跑 helper 洗掉 parent authority。
+
+   Milestone 只記當時已發生的事：endpoint 尚未達成時不得以 ID、標題或正文宣稱 `shipped`／已 merge／已送出；
+   可寫 implementation／candidate 已完成且 endpoint pending。後續只有 remote-visible endpoint evidence 才能在
+   對外報告宣稱送出完成，provider／PR／checks／merge 任一 gate 失敗都保留 pending 事實，不回寫假歷史。
    Backlog 新項給 `B-*`；解決／放棄／變成決策時寫對應 history record、保留 `B-*` 關聯後移除原 item。
 4. 同一 work item 的 plan 只修原檔；本次實作真正完成才把狀態改 `implemented`，不得另建 `-v2`／`-final`。
 5. 文檔更新後執行 `python3 "<project-scripts>/doc-governance.py" --root "$repo" audit --ship`。exit 0 才通過；exit 1 的 findings 必須處置；
@@ -320,9 +378,17 @@ commit message 以 target repo contract 的格式為優先；只有 repo 沒有 
 
 push **之前**，逐 repo 印摘要等使用者確認（plan → validate → execute）：
 
+**Outward ordering hard gate**：所有會改變待送 commit set 的處置與 candidate authority gate 完成後，必須先在
+當前 invocation 送出一則 user-visible Ship 摘要；只有該訊息已實際交付，才記為 `summary-emitted: yes`。
+Internal draft、tool-call reasoning、預計稍後補摘要或 post-push 摘要都不算；未達 `summary-emitted: yes` 時，
+不得呼叫 `git push`、`git send-pack`、`gh pr create`、merge 或其他 outward command，必須先回到本 Step。
+explicit `--merge`／merge 說法只移除送出問題，不能省略摘要，也不能把摘要延後到第一個 outward action 之後。
+
 ```
 Ship 摘要：
-  krepo  路徑=PR（main 受保護）
+  krepo
+    repo root: /absolute/canonical/path/to/krepo
+    ship 路徑=PR（main 受保護）
     feature branch: feat/mops-announce-backfill
     branch commit（相對 default，= PR 內容）: 2 feat + 1 docs（push 為冪等，已 push 則 no-op）
     變更檔: src/..., scripts/..., STATUS.md, docs/archive/...
@@ -374,6 +440,15 @@ runtime user-input primitive（Claude Code 的 `AskUserQuestion` 或 Codex 對�
 ## Step 5：依路徑送出
 
 確認後逐 repo 執行（完整指令序列見 `ship-paths.md`）：
+
+**進入條件（逐次 outward call 的本地可判定 oracle）**：第一個 outward tool call 的
+immediately preceding assistant content 必須以字面 `Ship 摘要：` 開頭，並逐 repo 列出 Step 4
+要求的 exact `canonical repo root`、ship 路徑、branch、commit set、變更檔與 stewardship
+（輕量路徑用其三行版，仍不得省略 `repo root:`）。`ship 路徑=PR` 只是送出方式，
+不能代替 filesystem root；basename 也不是 canonical root。
+`結案 gate 通過`、`送出前重驗`或其他狀態更新，即使先出現在 tool call 前，也不算 Ship 摘要。
+不滿足此形狀就不得進入任何 outward command；回到 Step 4 補齊摘要。摘要後若又改了
+commit set，舊摘要即失效，必須以新的緊鄰 `Ship 摘要：` 重做一次。
 
 > **修飾條件（不是第四條路徑）**：本輪做過 branch 內 squash 且該 branch 已 push 過 → 下列各路徑的 push 指令改為 `git -C <repo> push --force-with-lease=<feature-branch>:<squash 前記下的遠端 SHA> origin <feature-branch>`（**必須帶 expected SHA**——裸 lease 比對本地 tracking ref，而本流程自己會 fetch，詳見 `ship-paths.md`）（**NEVER `--force`**；被拒的分流見 `ship-paths.md`「push 失敗處理」——那裡 `pull --rebase` 會把剛壓掉的 commit 拉回來）。未 push 過的 branch 照常首推，不需要 force。
 - **PR 路徑**：`git -C <repo> push -u origin <feature-branch>` → 偵測既有 PR（`gh pr view`，多 repo 須 `-R <owner/repo>` 綁定）：有則指向、無則 `gh pr create`（同樣 `-R` 綁定；title/body 由 commits 組；deep-review 的「第三方審查資訊」若有一併放進 body）。完整綁定指令見 `ship-paths.md`。輸出 PR URL。**接著依 Step 4 的授權來源分流**：
