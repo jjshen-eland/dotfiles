@@ -172,6 +172,54 @@ def parent_active_items(root: Path, commit: str, status_path: Path) -> list[Acti
     return active_items(parent_text)
 
 
+def candidate_rebuild_evidence(
+    root: Path,
+    branch: str,
+    head: str,
+    candidate: str,
+    candidate_parent: str,
+    surfaces: list[str],
+) -> tuple[str, list[str]]:
+    """Prove the narrow Git shape required for a local provenance rebuild."""
+    resolved_parent = git(root, "rev-parse", f"{candidate_parent}^{{commit}}")
+    if resolved_parent != candidate_parent:
+        raise ValueError("--candidate-parent must be a full commit object ID")
+
+    blockers: list[str] = []
+    if candidate != head:
+        blockers.append("candidate-is-not-current-head")
+    parents = git(root, "rev-list", "--parents", "-n", "1", candidate).split()
+    if len(parents) != 2 or parents[1] != resolved_parent:
+        blockers.append("parent-mismatch")
+    dirty = git(
+        root,
+        "-c", "diff.autoRefreshIndex=false",
+        "status", "--porcelain=v1", "--untracked-files=all",
+    )
+    if dirty:
+        blockers.append("working-tree-not-clean")
+    if not surfaces:
+        blockers.append("candidate-has-no-shared-surface")
+
+    remote_refs = git(
+        root,
+        "for-each-ref", "--format=%(refname)", "--contains", candidate,
+        "refs/remotes",
+    ).splitlines()
+    if remote_refs:
+        blockers.append("remote-tracking-ref-contains-candidate")
+
+    local_refs = git(
+        root,
+        "for-each-ref", "--format=%(refname)", "--contains", candidate,
+        "refs/heads", "refs/tags",
+    ).splitlines()
+    expected_ref = f"refs/heads/{branch}" if branch else ""
+    if any(ref != expected_ref for ref in local_refs):
+        blockers.append("other-local-ref-contains-candidate")
+    return resolved_parent, blockers
+
+
 def sequential_assignment(args: argparse.Namespace, root: Path, items: list[ActiveItem], branch: str) -> int:
     """Check a user-directed handover; never confer authority before its durable update.
 
@@ -236,6 +284,8 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--assigned-item", action="append", default=[])
     result.add_argument("--owned-path", action="append", default=[])
     result.add_argument("--commit")
+    result.add_argument("--candidate-parent")
+    result.add_argument("--completion-parent")
     result.add_argument("--expected-head")
     result.add_argument("--expected-assignment")
     return result
@@ -258,6 +308,19 @@ def main() -> int:
                 return fail("session resume actor must use the same runtime prefix")
         elif args.expected_assignment and not args.reassign_from:
             return fail("--expected-assignment requires --session-resume-actor")
+        if args.candidate_parent and args.completion_parent:
+            return fail("--candidate-parent and --completion-parent are mutually exclusive")
+        proof_parent = args.candidate_parent or args.completion_parent
+        if proof_parent and not (
+            args.session_resume_actor
+            and args.expected_assignment
+            and args.expected_head
+            and args.commit
+        ):
+            return fail(
+                "candidate parent proof requires session binding, candidate commit, "
+                "expected assignment and expected HEAD"
+            )
         confirmed = (
             args.confirmed_resume_actor
             or args.confirmed_human
@@ -283,6 +346,10 @@ def main() -> int:
         if not status_path.is_file():
             return fail(f"active-item contract enabled but status file missing: {status_path}")
         items = active_items(status_path.read_text(encoding="utf-8"))
+        steward_source = "current-active-state"
+        if args.completion_parent:
+            items = parent_active_items(root, args.commit, status_path)
+            steward_source = "completion-candidate-parent-active-state"
         fingerprint = assignment_fingerprint(root, items)
         print(f"assignment-fingerprint: {fingerprint}")
         if (args.session_resume_actor or args.reassign_from) and (
@@ -294,14 +361,15 @@ def main() -> int:
             print("verdict: STOP")
             return 1
         surfaces = shared_surfaces(root, config, args.commit)
-        steward_source = "current-active-state"
-        if not items and args.commit:
+        if not items and args.commit and not args.completion_parent:
             items = parent_active_items(root, args.commit, status_path)
             if items:
                 steward_source = "commit-parent-active-state"
         branch = git(root, "branch", "--show-current")
         head = git(root, "rev-parse", "HEAD")
         candidate = git(root, "rev-parse", f"{args.commit}^{{commit}}") if args.commit else None
+        if proof_parent and args.commit != candidate:
+            return fail("--commit must be a full commit object ID with candidate parent proof")
         if args.expected_head:
             expected_head = git(root, "rev-parse", f"{args.expected_head}^{{commit}}")
             if args.expected_head != expected_head:
@@ -425,6 +493,28 @@ def main() -> int:
                 print("recovery-kind: none")
             print("verdict: STOP")
             return 1
+        if proof_parent:
+            parent, blockers = candidate_rebuild_evidence(
+                root, branch, head, candidate, proof_parent, surfaces
+            )
+            print(f"candidate-parent: {parent}")
+            if blockers:
+                for blocker in blockers:
+                    prefix = (
+                        "completion-candidate-blocker"
+                        if args.completion_parent
+                        else "candidate-rebuild-blocker"
+                    )
+                    print(f"{prefix}: {blocker}")
+                state = "completion-candidate" if args.completion_parent else "candidate-rebuild"
+                print(f"{state}: BLOCKED")
+                print("verdict: STOP")
+                return 1
+            if args.completion_parent:
+                print("completion-candidate: READY")
+            else:
+                print("candidate-provenance: current-session-direct-child")
+                print("candidate-rebuild: READY")
         print("verdict: PASS")
         return 0
     except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as exc:

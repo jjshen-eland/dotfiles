@@ -97,5 +97,96 @@ class BindingTests(unittest.TestCase):
         out = self.call("--session-resume-actor", "codex:orders", "--expected-assignment", self.bound, "--expected-head", head, "--commit", head)
         self.assertEqual(out.returncode, 1, out.stdout + out.stderr)
 
+    def test_completion_candidate_uses_exact_parent_assignment(self):
+        parent = self.git("rev-parse", "HEAD")
+        (self.repo / "STATUS.md").write_text("# Status\n\n## 進行中\n\n## 暫停中\n")
+        self.git("add", "STATUS.md")
+        self.git("commit", "-qm", "docs: complete task")
+        candidate = self.git("rev-parse", "HEAD")
+        out = self.call(
+            "--session-resume-actor", "codex:orders",
+            "--expected-assignment", self.bound,
+            "--expected-head", candidate,
+            "--commit", candidate,
+            "--completion-parent", parent,
+        )
+        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+        self.assertIn("durable-steward-source: completion-candidate-parent-active-state", out.stdout)
+        self.assertIn("authority-source: current-session-workline-binding", out.stdout)
+        self.assertIn("completion-candidate: READY", out.stdout)
+
+    def test_completion_candidate_rejects_wrong_parent(self):
+        parent = self.git("rev-parse", "HEAD")
+        (self.repo / "STATUS.md").write_text("# Status\n\n## 進行中\n\n## 暫停中\n")
+        self.git("add", "STATUS.md")
+        self.git("commit", "-qm", "docs: complete task")
+        candidate = self.git("rev-parse", "HEAD")
+        out = self.call(
+            "--session-resume-actor", "codex:orders",
+            "--expected-assignment", self.bound,
+            "--expected-head", candidate,
+            "--commit", candidate,
+            "--completion-parent", candidate,
+        )
+        self.assertEqual(out.returncode, 1, out.stdout + out.stderr)
+        self.assertIn("completion-candidate-blocker: parent-mismatch", out.stdout)
+
+    def candidate_rebuild_call(self, parent, candidate=None):
+        candidate = candidate or self.git("rev-parse", "HEAD")
+        return self.call(
+            "--session-resume-actor", "codex:orders",
+            "--expected-assignment", self.bound,
+            "--expected-head", candidate,
+            "--commit", candidate,
+            "--candidate-parent", parent,
+        )
+
+    def make_shared_candidate(self):
+        parent = self.git("rev-parse", "HEAD")
+        self.status("candidate updates shared active state")
+        self.git("add", "STATUS.md")
+        self.git("commit", "-qm", "docs: candidate active-state update")
+        return parent, self.git("rev-parse", "HEAD")
+
+    def test_current_session_direct_child_candidate_is_rebuildable(self):
+        parent, candidate = self.make_shared_candidate()
+        out = self.candidate_rebuild_call(parent, candidate)
+        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+        self.assertIn("candidate-provenance: current-session-direct-child", out.stdout)
+        self.assertIn("candidate-rebuild: READY", out.stdout)
+
+    def test_candidate_rebuild_requires_exact_parent_and_clean_tree(self):
+        parent, candidate = self.make_shared_candidate()
+        wrong_parent = self.git("rev-parse", f"{parent}^") if self.git("rev-list", "--count", parent) != "1" else candidate
+        out = self.candidate_rebuild_call(wrong_parent, candidate)
+        self.assertEqual(out.returncode, 1, out.stdout + out.stderr)
+        self.assertIn("candidate-rebuild-blocker: parent-mismatch", out.stdout)
+
+        (self.repo / "unowned.tmp").write_text("dirty\n")
+        out = self.candidate_rebuild_call(parent, candidate)
+        self.assertEqual(out.returncode, 1, out.stdout + out.stderr)
+        self.assertIn("candidate-rebuild-blocker: working-tree-not-clean", out.stdout)
+
+    def test_remote_visible_candidate_is_not_rebuildable(self):
+        parent, candidate = self.make_shared_candidate()
+        self.git("update-ref", "refs/remotes/origin/already-pushed", candidate)
+        out = self.candidate_rebuild_call(parent, candidate)
+        self.assertEqual(out.returncode, 1, out.stdout + out.stderr)
+        self.assertIn("candidate-rebuild-blocker: remote-tracking-ref-contains-candidate", out.stdout)
+
+    def test_candidate_parent_requires_session_binding_snapshot(self):
+        parent, candidate = self.make_shared_candidate()
+        out = self.call("--commit", candidate, "--candidate-parent", parent)
+        self.assertEqual(out.returncode, 2, out.stdout + out.stderr)
+
+        out = self.call(
+            "--session-resume-actor", "codex:orders",
+            "--expected-assignment", self.bound,
+            "--expected-head", candidate,
+            "--commit", "HEAD",
+            "--candidate-parent", parent,
+        )
+        self.assertEqual(out.returncode, 2, out.stdout + out.stderr)
+
 
 unittest.main()

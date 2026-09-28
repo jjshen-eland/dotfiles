@@ -158,10 +158,26 @@ endpoint authorization 不 carry；提示命令本身也不是授權。尚未要
 Endpoint flag 取自使用者為下一步明確選定的終點，依
 `ship-paths.md` 說法表正規化；未選定就不得自行預填。下例以使用者已選定 merge 為例。
 
+**Spec 本輪新建 active contract 時，同時建立 current-session workline assignment**：這只適用於
+原本沒有 active item、使用者以本次明確工作要求授權 Spec 建立 exact same-runtime Writer／Steward，
+或上節 local reassignment 已完整通過的情況。以剛寫入的 coordination fields 作最初 assignment snapshot，
+取得其 fingerprint 與本輪 full HEAD，立即用
+`--session-resume-actor <new-exact-actor> --expected-assignment <new-original-fingerprint> --expected-head <full-oid>`
+重驗；不得先用 branch-derived ordinary gate 再改跑 `--resume-actor`，也不要求使用者補 `resume=`。Workspace
+此時仍為 `unassigned`、其後依 branch-first 正常前進，都不撤銷這份指派；fingerprint 只有在 coordination／
+item identity 實際改變時才失配。若原本已有 active item 且不符合既有 assignment／reassignment authority，
+本段不會把 Spec invocation 自己變成接管授權，仍走原 gate。
+
 對 same-runtime durable workline，在寫入 active contract 後重新執行一次上節 helper：當次 session 工作線指派
 仍有效時用其專用 flags／原 fingerprint／本輪 HEAD；否則刻意**不帶任何 `resume=`、`as=` 或 confirmed flag**。
 只有 exit 0、`verdict: PASS`、executor actor 與 durable steward exact match，且 authority-source 為
-`active-writer-workspace-match` 或 `current-session-workline-binding`，才同時顯示短版與明確版：
+`active-writer-workspace-match` 或 `current-session-workline-binding`，才可為每個 repo 封存一份
+**current-session binding packet**：`canonical repo root`、`exact actor`、helper 輸出的原始
+`assignment fingerprint`、active item identities 與其 Writer／Workspace／Write Scope／Steward snapshot，
+以及本輪查證的 full HEAD。若來源是既有 `current-session-workline-binding`，沿用該 packet 的原始
+fingerprint，不拿目前值替換。Packet 只活在同一段未壓縮對話與同一 logical workline；不得寫入
+memory／checkpoint／repo authority store，也不得授予或 carry shipping endpoint。完成這個封存後才同時
+顯示短版與明確版：
 
 ```text
 下一步請擇一輸入：

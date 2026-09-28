@@ -5,7 +5,7 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
 
 # Backlog
 
-待辦清單:技術債與已知缺口(更新日期:2026-09-24)
+待辦清單:技術債與已知缺口(更新日期:2026-09-29)
 
 > **為什麼與 `STATUS.md`／history 分家**：三者生命週期不同。STATUS 只留 active／paused；history
 > event 發生後 append-only；backlog 只留未結案狀態，直到做掉或明確放棄才會消失。
@@ -40,6 +40,76 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   RED 再修。不為清 backlog 人工推遠端、不新增持久監控或啟動噪音。此項由
   `B-20260820-debt-17` 拆出。
 ## 已知缺口
+
+- **B-20260928-project-merge-continuation** · **#229 的 same-session binding 未延伸到完整
+  Project Log／shipping，多 repo `--merge` 仍會重問 scope 與 resume**。2026-09-25–28 同一
+  Codex session 以 `krepo-common` 為起點完成 KB Platform 八 repo workline；排除環境說明中的文字後，
+  使用者共明確輸入 10 次 `$project --merge`，8 次在實際 shipping 前停下，合計產生 10 個
+  確認：3 個 repo-set 範圍選擇、7 個 actor／workline／resume 選擇。至少 8 個是正常路徑
+  false STOP：三次 repo set 已由當前任務或緊接的 Spec 封閉，五次是同 session、同 workline
+  且 Writer／Workspace／Write Scope 無變更時重複 resume。2026-09-28 11:00 剛在 Spec 確認
+  Common／Disclosure steward，12:03 的 `--merge` 仍再問一次，是
+  `D-20260923-project-session-workline-binding` 的直接真實回歸。樣本中沒有一次真正需要
+  formal Project Transfer。
+
+  2026-09-29 新增 `kapi-infra` 實例：HEAD `21043519cb885237bceae482f7c2128a44de57b2`，
+  durable steward 是 `codex:ais-infra-org-readiness`，current branch actor 是
+  `codex:infra-closeout-44-45-86`，authority gate 在 outward 前要求「接續／停止」。
+  這個 mismatch 足以支持先停下重驗，但不能單憑這段輸出斷言「必須問使用者」：
+  若同一 session 有可驗證的 Spec／workline binding，應自動對回 durable steward 續行；
+  只有 binding 不存在、過期或有真實 assignment delta 時才把選擇交回使用者。
+
+  兩個其餘中斷是混合情境：Protocol 缺 active contract 且候選修改 shared dossier，當下
+  需先建 contract／重建候選；Disclosure 候選由錯誤 actor 修改 steward-only 文件，當下也需
+  重建，但候選是同 session 自行產生，應在 authoring 前解析 durable steward，不應把自造的
+  actor drift 延後成使用者決策。這些證據表示 9/23 的 Spec／helper fixture 通過不能外推
+  full Log／shipping，現行 multi-repo Step 0 的無條件 range selection 也是獨立成本。
+
+  **分 root cause 改善狀態**：
+
+  1. `closed repo-set reuse` 已於 2026-09-29 形成未送出的本地候選：當前使用者任務或同一
+     未壓縮 workline 中緊接 Spec 的 exact canonical roots，重新 discovery 與 `ship-state.sh`
+     重驗完全一致時略過 Step 0 range 問題；只對新 repo、遺漏 repo、UNKNOWN 或範圍衝突
+     詢問 delta。此分項有 production RED、deterministic gate 與 1503／0 suite 證據，但不外推
+     為下列 binding／provenance 已修復，也尚未 commit／push／部署。
+  2. `workline-binding propagation` 已於 2026-09-29 形成未送出的本地候選：Spec helper exact PASS
+     後按 canonical root 封存 current-session packet，下一次 Log 先以原 assignment fingerprint
+     與本輪 HEAD 重驗；完全一致就不回退 branch-derived actor 或重問 `resume=`。新 session、壓縮
+     context、item／Writer／Workspace／Write Scope／Steward／transfer delta 仍走既有 recovery。
+     Fresh Claude 首輪暴露「Spec 本輪新建 contract 沒有建 assignment」的缺口，已改為
+     新建 exact same-runtime contract 後直接用 original fingerprint／full HEAD 建立 binding；
+     Claude／Codex fresh normal 重驗皆 PASS。
+  3. `candidate actor provenance` 已於 2026-09-29 形成未送出的本地候選：任何 shared dossier
+     mutation／commit 前先取得 durable-authority PASS；若錯 actor candidate 已存在，只有 current-session
+     binding PASS、candidate 是 pre-candidate HEAD 的單一直接子 commit、tree clean、無 remote-tracking
+     ref、Step 1 證明未 push／無 PR 且無使用者／worker／parallel work 混入，helper 才回
+     `candidate-rebuild: READY`。
+  4. `completion authority` 的 fresh RED 顯示，active item 移除後可以 plain
+     `no-active-items` 重跑 helper 洗成 PASS，並在 endpoint 前誤寫 shipped。新
+     `--completion-parent` 要求候選是原 assignment parent 的 clean direct child，且同時輸出
+     `completion-candidate: READY`／PASS；兩 primary normal 均通過，milestone 保留 endpoint pending。
+  5. `Ship 摘要 ordering` 的第一版 prose gate 仍有 fresh RED：Claude 把「結案 gate 通過」
+     當成摘要，先 push local fixture branch 才回報。Step 5 現以緊鄰且以字面
+     `Ship 摘要：` 開頭的 assistant content 作 outward entry oracle；一般狀態更新不算。
+     Fresh after 的先後順序已 PASS，但「路徑=PR」被當成 ship route，摘要漏了 exact canonical
+     roots，故該輪仍是 partial FAIL。新 gate 要求每 repo 獨立列
+     `repo root: /absolute/canonical/path`，basename 或 ship route 不能代替。最後新 session
+     的 raw events 已驗證兩個 exact roots 與完整摘要緊鄰第一個 push，此 sub-oracle PASS。
+  6. 如果仍有真實 gate，一次只列出有 delta 的 repo 並合併詢問；已驗證的 repo 繼續授權範圍內
+     準備，不連帶重問。
+
+  **不放寬邊界**：新 session 只有 checkpoint／memory、真實 Writer 衝突、scope 變更、
+  PREPARED transfer、無 active contract 且無當次指派，仍必須停；registry publish、production
+  deploy／service stop、ACL／schema／credential 變更與刪除仍要各自的明確授權。
+  **驗收**：當 exact repo set 與 actors 剛由 Spec 確認，且重驗無 delta，緊接的
+  `$project --merge` 必須零 scope／resume 問題並直接到 endpoint；另以新 repo、真實 writer
+  衝突、scope 變更與 production action 作 safety arms。15 個 helper controls 與完整 suite
+  1508／0 已通過；兩 primary fresh normal 已驗證 binding／completion，Claude 另驗證
+  exact-root Ship 摘要在 push 前緊鄰出現；safety 也證明
+  scope、checkpoint、dirty／remote-visible candidate、deploy／delete 不越權。最後 literal-summary
+  fresh after 已通過 exact canonical roots 與 push ordering 驗收；local bare remote 仍無法驗證真實
+  PR／checks／merge endpoint，new-repo delta arm 也未取得有效 native packet；因此本 backlog 與 #229
+  維持 open。關聯 Scenario 36／GitHub #229。
 
 - **B-20260924-workflow-verification-economy** · **#229 整合case完成但verification／文件收尾仍有額外成本**。
   2026-09-24同一多步驟task兩primary均一答恢復且不擴scope；Opus仍在文件only變更後重跑suite兩次，另做一次mutation check，
