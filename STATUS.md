@@ -12,7 +12,16 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-目前無進行中項目。
+### B-20260928-project-merge-continuation
+
+- **Writer**: `codex:project-merge-continuation-evidence`
+- **Workspace**: `branch=fix/project-merge-continuation-evidence`
+- **Write Scope**: `shared/skills/project/references/{workflow.md,log-workflow.md,pressure-tests.md}`,
+- **Dossier Steward**: `codex:project-merge-continuation-evidence`
+- **Goal**: 保存已驗證的 same-session workline authority，完成本批 Project workflow 改善的送出。
+- **Acceptance Criteria**: 本批測試、文件與 authority gates 通過後，以 `$project --merge` 完成 PR endpoint。
+- **Progress**: 實作與本機驗收已完成；目前正在建立 durable completion parent，尚未 push／開 PR／merge。
+- **Next step**: 建立 direct-child completion commit，通過 `--completion-parent` gate 後送出。
 
 ## 暫停中
 
