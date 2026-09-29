@@ -156,7 +156,7 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
 2. **變更集**（= 此 branch **相對 default 的變更**，即 PR 將含的內容；**不等於「未 push」**——已 push 到 feature branch upstream 的 commit 仍落在此範圍，push 狀態由 Step 5 處理且 push 為冪等）：取腳本的 `files-vs-default` + `working-tree` 合併為完整**檔案**清單（Step 2 判模組、Step 4 列變更檔都靠它；`commits-ahead` 只有主旨、無檔名，deep-review 交接的「clean tree + 只剩 branch commit」情境靠 `files-vs-default` 列檔）。無變更（腳本印 `changes: NONE`）→ 跳過此 repo，**除非符合下述 docs-only mode**。
    **Docs-only mode**：repo git 無變更（tree clean、無領先 default 的 commit），但 session 記憶中有本 session **已 ship**（已 merge／已 push）的變更 → 不跳過。變更集改由那批 commit 重建檔案清單：逐 commit `git -C <repo> show --name-only <sha>`（已 merge 進 default 者用 default 上的對應 commit）。後續步驟照常：Step 2 據此同步文檔、Step 3 只會產生符合 target repo convention 的文檔 commit、branch-first／protection／Step 4 確認全部適用；Step 2 掃完確認文檔皆已同步 → 該 repo 無事可做，如實回報。**A clean tree does not mean "nothing to ship" — "code shipped, docs lagging" is the common case this mode exists for.**
 3. **branch protection**：取腳本的 `protection:` verdict（classic + ruleset 都查過）——`PROTECTED` / `OPEN` / `UNKNOWN → treat as PROTECTED`。**Never reinterpret the script's UNKNOWN as "probably open" — Unknown = protected, the script already says so.** verdict 附 `viewerPermission=READ`（classic `Not Found`）→ 身分分離情境，後續處置（`git push --dry-run` 探權限、Step 4 摘要點明、不自行硬推）見 `ship-paths.md`。
-4. **決定 ship 路徑**：腳本印 `verdict: BOOTSTRAP`（遠端零 branch，且 intended default／baseline／creation policy 全部可驗）→ 走 **bootstrap 路徑**（`ship-paths.md`「Bootstrap」），Step 4 摘要標明 intended default 與 baseline SHA。先讀 target root contract；若它與 provider metadata 衝突，先用確認型問題選定 authority，再以 `ship-state.sh --bootstrap-default <name> <repo>` 重驗。若 `bootstrap-baseline: NEEDS_CONFIRMATION`，使用 runtime user-input primitive 提出「暫停（預設）／目前 HEAD full SHA／列出的 ancestor」選項；選定後照抄 `bootstrap-baseline.sh`，再帶同一個 `--bootstrap-default` 重跑偵測，**不得**自行挑 commit。其餘 `verdict: STOP` 一律停下照訊息處理，**不得**自行當成 bootstrap。否則取腳本的 `ship-path:`——protected（或未知）→ **PR 路徑**（推 feature branch + 必開 PR）；確定無保護 → **仍預設 PR 路徑**（跨 repo 單一形狀，省掉每輪「這個 repo 要不要 PR」的判斷，並留下審查紀錄與可回溯 diff）。**"No protection" is not a reason to skip the PR** —— 只有使用者明說「不用 PR / 只推 branch」才退為直接 push 該 feature branch（escape hatch，不主動勸退）。**兩條路徑都推 feature branch、都不直推 default**（branch-first 無條件）——「直接 push」指**省去開 PR 的步驟、直接 push 該 branch**，不是直推 default。合進default須有明確merge授權；有授權且gates通過就由agent完成，絕不直推default。
+4. **決定 ship 路徑**：腳本印 `verdict: BOOTSTRAP`（遠端零 branch，且 intended default／baseline／creation policy 全部可驗）→ 走 **bootstrap 路徑**（`ship-paths.md`「Bootstrap」），Step 4 摘要標明 intended default 與 baseline SHA。先讀 target root contract；若它與 provider metadata 衝突，先用確認型問題選定 authority，再以 `ship-state.sh --bootstrap-default <name> <repo>` 重驗。若 `bootstrap-baseline: NEEDS_CONFIRMATION`，依 Runtime adapter 提出「暫停（預設）／目前 HEAD full SHA／列出的 ancestor」選項；選定後照抄 `bootstrap-baseline.sh`，再帶同一個 `--bootstrap-default` 重跑偵測，**不得**自行挑 commit。其餘 `verdict: STOP` 一律停下照訊息處理，**不得**自行當成 bootstrap。否則取腳本的 `ship-path:`——protected（或未知）→ **PR 路徑**（推 feature branch + 必開 PR）；確定無保護 → **仍預設 PR 路徑**（跨 repo 單一形狀，省掉每輪「這個 repo 要不要 PR」的判斷，並留下審查紀錄與可回溯 diff）。**"No protection" is not a reason to skip the PR** —— 只有使用者明說「不用 PR / 只推 branch」才退為直接 push 該 feature branch（escape hatch，不主動勸退）。**兩條路徑都推 feature branch、都不直推 default**（branch-first 無條件）——「直接 push」指**省去開 PR 的步驟、直接 push 該 branch**，不是直推 default。合進default須有明確merge授權；有授權且gates通過就由agent完成，絕不直推default。
 5. **Branch-first（無條件，依全域「if on default branch, branch first」）**：目標——**到 Step 5 送出前，當前 branch 一定不是 default branch（也不是 detached HEAD）**，**不論 protection**。已在 feature branch（如 deep-review 結尾）→ 跳過。否則執行：
 
    ```
@@ -338,8 +338,8 @@ authority，仍須由該 steward 重建越界內容；零 steward 路徑則要�
 尚未送出的 local candidate，再繼續」，不能只補 STATUS 後原樣 ship。
 
 詢問時逐 repo 顯示 exact actor、snapshot、將執行的 action 與後果。多 repo 的所有修復都符合上列條件時，優先
-合併成一題：`套用列出的精確修復並繼續（建議）`／`停止，不修改`；若 runtime user-input primitive 有題數上限，
-不要把同類 repo 拆成逐一 token 題。primitive 不可用時，輸出相同的精確編號選項並暫停；使用者對緊接著的
+合併成一題：`套用列出的精確修復並繼續（建議）`／`停止，不修改`；若 runtime question channel 有題數上限，
+不要把同類 repo 拆成逐一 token 題。依 Runtime adapter 使用文字時，輸出相同的精確編號選項並暫停；使用者對緊接著的
 該題直接回答選項，就在同一個 logical Project invocation 續行，不得要求重新輸入 `$project`。取消時零 mutation。
 
 確認後先重驗 root、HEAD、candidate、working tree 與 remote/PR 狀態，再用 initial output 的 full OID 重跑 helper：
@@ -409,7 +409,7 @@ bounded delegation，不能寫成 ownership transfer 或供下次 invocation 沿
 
 > **「執行到底」的終點由說法決定，不是一律 merge**：`--merge` 類 → 做完 Merge 最後一哩；**`--pr`／「開 PR」→ 開完 PR 就停**（與路徑 B 選「送出，停在 PR」同一個終點，差別只在沒問你）；`--no-pr` → push 完 branch 就停。
 
-**B. 沒有送出說法** → 用目前 runtime 的 **user-input primitive**（Claude Code：`AskUserQuestion`；Codex：對應的 user-input 工具）收確認，單一題「這批怎麼處理？」：PR 路徑三選項 `送出，停在 PR` ／ `送出並 merge` ／ `取消`；直接 push 與 Bootstrap 路徑無 PR 可 merge，退為 `送出` / `取消`。選了「送出並 merge」＝ explicit merge instruction，**開完 PR 接著做完，不再問第二次**。
+**B. 沒有送出說法** → 依 Runtime adapter 收確認，單一題「這批怎麼處理？」：PR 路徑三選項 `送出，停在 PR` ／ `送出並 merge` ／ `取消`；直接 push 與 Bootstrap 路徑無 PR 可 merge，退為 `送出` / `取消`。選了「送出並 merge」＝ explicit merge instruction，**開完 PR 接著做完，不再問第二次**。
 
 > 想連這一題都省掉又不要 merge → 下次用 `--pr`（或說「開 PR」）。
 
@@ -426,13 +426,13 @@ bounded delegation，不能寫成 ownership transfer 或供下次 invocation 沿
 
 **處置先於送出**：本輪若要套用會改變待送內容的處置（squash、Step 3 的 commit），順序一律是**套用 → 重新 commit → 摘要印的是套用後的結果 → 才 push**。**Never push a commit set that differs from the one the summary displayed.** 含 `fetch` 的處置（stale-branch 清掃）**建議**排在 push 之後（順序清楚）；lease 帶了錨定 SHA 之後它已不是安全前提，見 `ship-paths.md`。
 
-runtime user-input primitive（Claude Code 的 `AskUserQuestion` 或 Codex 對應工具）不可用（背景 turn／工具被停用）且落在路徑 B → 退回文字編號選項並 **STOP**。
+Claude Code 的 `AskUserQuestion` 不可用（背景 turn／工具被停用）且落在路徑 B → 依 Runtime adapter 退回文字編號選項並 **STOP**；Codex 一律使用文字編號選項並 STOP 等待回答。
 
 ### 說法覆蓋不了的事實前提（一律停）
 
 `ship-state.sh` 印 `verdict: STOP` → **停下照訊息處理，即使使用者已給說法**。**A ship keyword authorizes HOW to ship, NEVER whether a batch may ship at all.** doc-governance findings／BROKEN 必須產生 `verdict: STOP`；其他來源包含無 remote、非 bootstrap 的 default 解析失敗、以及——
 
-- **`review-terminal:`**：上一場 deep-review autofix 在 blocking findings 尚存或必要驗證受阻時終止，且那場涵蓋當前 HEAD（腳本已驗過 ancestry，不必自行判斷）。停下用 runtime user-input primitive 給兩個選項：`重跑審查`（通過且 scope 涵蓋該終止點後 signal 清除）／`知道了，照送`（PR body 記一筆「未完整審查」）。**anchor 的欄位與指令不要攤給使用者看**——那是相容層實作細節，使用者只需回答這一題。
+- **`review-terminal:`**：上一場 deep-review autofix 在 blocking findings 尚存或必要驗證受阻時終止，且那場涵蓋當前 HEAD（腳本已驗過 ancestry，不必自行判斷）。停下依 Runtime adapter 給兩個選項：`重跑審查`（通過且 scope 涵蓋該終止點後 signal 清除）／`知道了，照送`（PR body 記一筆「未完整審查」）。**anchor 的欄位與指令不要攤給使用者看**——那是相容層實作細節，使用者只需回答這一題。
   - 例外：使用者說的是**「merge 照送」／「merge 未審完」**（見說法表）→ 已預先放行，不停、照送，PR 仍記一筆。
 
 > 為什麼這條存在：Step 4 從「每批停下確認」改成「說法即授權」之後，原本那道 gate 順帶接住的「這批還沒審完」就沒有別人接了。**拆掉守衛就得補上它接住的東西。**

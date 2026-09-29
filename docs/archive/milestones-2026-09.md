@@ -535,3 +535,9 @@
   - 放棄:把 timeout 繼續加長；盲目 rerun 洗綠；忽略 transient lock；放寬 required checks 或 production sender contract
   - 重議:fake loopback server 再次卡在已跳過的 name lookup 以外 boundary；isolated fixture 在 auto maintenance 關閉後仍出現 metadata delta
   - 關聯:PR#243;d3d9efa;dc0f352;d84982b;M-20260929-wait4me-fleet-rollout;M-20260929-wait4me-nc-wire-repair;tests/run.sh;tests/review-readonly.py
+
+- **M-20260930-codex-mobile-text-questions · 2026-09-30 Codex 跨 session 文字編號選項完成本機驗證**：全域 `codex/AGENTS.md` 已要求一般確認在聊天中列通常 2–3 個編號選項、簡述後果、標建議項並等待數字回答；Project 與 handoff 共用 workflow 的 Codex 路徑不再要求 `request_user_input`／`request_user_input_async`，Claude Code 與主機權限核准流程保持原樣。`~/.codex/AGENTS.md` 的 symlink 指向此來源；fresh Codex CLI read-only session 對一般選擇題輸出 1／2／3 文字選項並請使用者回數字。兩個 Codex skill validator、doc-governance ship audit、diff check 與完整 `./tests/run.sh` `1536 PASS／0 FAIL`。互動式 Project／handoff 選單及手機端尚未做 live E2E；下次真實待答問題可直接驗證，不把文件與非互動式 eval 冒充手機驗收。本地 feature branch 已準備提交；未 push／merge／dotsync。
+  - 日期來源:direct
+  - 放棄:只在當前 session 承諾、讓 skill 內相反工具規則繼續生效、以關閉主機 approval 取代一般提問修復
+  - 重議:新 session 的普通問題仍叫出選項 UI；Project／handoff 真實互動違反文字編號契約；手機回數字未能續行同一任務
+  - 關聯:D-20260930-codex-mobile-text-questions;codex/AGENTS.md;shared/skills/project/references/pressure-tests.md;shared/skills/handoff/evals.md

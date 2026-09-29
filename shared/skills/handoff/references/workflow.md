@@ -14,7 +14,7 @@
 
 - normalized invocation arguments 第一個 token 是 `resume` → resume mode；其餘情況 → write mode。
 - **write `[slug]`**：寫 checkpoint。無 slug 就依工作線自取（kebab-case，如 `dotfiles-handoff-skill`）。
-- **resume `[slug]`**：接續 checkpoint。無 slug → `survey` 只列到一份 active 就直接用，多份列給使用者選；使用目前 runtime 的 user-input primitive，沒有結構化工具就以文字提問並 STOP。
+- **resume `[slug]`**：接續 checkpoint。無 slug → `survey` 只列到一份 active 就直接用，多份列給使用者選；Codex 在聊天中列出編號、簡短說明與建議項（若有），請使用者直接回覆數字，不呼叫 `request_user_input`／`request_user_input_async`，並 STOP 等待回答。Claude Code 沿用原本的 user-input primitive，沒有結構化工具就以文字提問並 STOP。
 
 ## Critical — Guardrails
 

@@ -298,8 +298,10 @@ Transfer state 是 `BLOCKED → PREPARED → TRANSFERRED`：
 
 ## Runtime adapter
 
-- 需要使用者回答時，使用目前 runtime 的 user-input primitive；若不可用，輸出 2–3 個精簡文字編號選項並暫停當前
-  turn。每個選項本身必須寫出完整動作與後果；有建議項時將它放在第一項並標示「建議」，取消項明述不修改。
+- 需要使用者回答時，Codex 直接在聊天中輸出 2–3 個精簡文字編號選項並暫停當前 turn，
+  不呼叫 `request_user_input`／`request_user_input_async`；Claude Code 使用 `AskUserQuestion`，
+  該工具不可用時同樣改用文字編號選項並暫停。以下 references 的「依 Runtime adapter 提問」均指此規則。
+  每個選項本身必須寫出完整動作與後果；有建議項時將它放在第一項並標示「建議」，取消項明述不修改。
   不得只要求使用者回覆「確認」／「停止」、「是」／「否」或其他須回讀前文才知道後果的短 token；請其回覆編號或完整選項。
   使用者緊接著的直接選項回答延續同一 logical Project invocation；自由文字身分宣稱或其他工作後的回答不算，必須重新偵測。
   這是已經需要詢問時的呈現契約；不新增 branch／PR 預檢、工具呼叫或詢問點，不改變原有詢問時機與 authority／scope／shipping 邊界。

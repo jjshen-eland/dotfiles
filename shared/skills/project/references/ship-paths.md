@@ -51,7 +51,7 @@ provider 不支援、403、schema 不明、creation restriction，或 required c
 選定後才把答案傳給 `ship-state.sh --bootstrap-default <name> <repo>`。該 flag 是當輪 explicit evidence，
 不是讓 agent 靜默覆蓋 metadata 的 escape hatch。
 
-若 intended-default local ref 不存在，Project 必須用 runtime user-input primitive 提出確認型選項，第一項是安全預設：
+若 intended-default local ref 不存在，Project 必須依 Runtime adapter 提出確認型選項，第一項是安全預設：
 
 1. 暫停並先整理 baseline。
 2. 以畫面列出的目前 HEAD full SHA 作 baseline（明說：全部現有內容會直接成為初始 default）。
@@ -232,7 +232,7 @@ git -C <toplevel> commit -m "<符合 target repo convention 的語意描述>
 **無 PR 可 merge 時**（形狀：使用者先前明說「不用 PR」走了 escape hatch，或全新空 repo 剛建 baseline——總之從頭到尾沒開過 PR）：**do NOT guess what "merge" meant.** 先跑 `ship-state.sh` 取當下狀態，再依狀態停下確認：
 
 - `verdict: BOOTSTRAP` → 使用者要的其實是「把東西弄上去」，走上方〈Bootstrap〉節（首推 baseline），這不是 merge。
-- default 已存在、當前在 feature branch、但無 PR → 用 runtime user-input primitive 給兩個選項：**開 PR 再 merge**（留紀錄，預設建議），或**只把 branch push 上去**由使用者自行合併。
+- default 已存在、當前在 feature branch、但無 PR → 依 Runtime adapter 給兩個選項：**開 PR 再 merge**（留紀錄，預設建議），或**只把 branch push 上去**由使用者自行合併。
 - feature branch 尚未 push → 先照 Step 4/5 送出，再回到本節。
 - **"merge" is never permission to push the default branch.** 使用者要的是變更進 default，不是繞過流程進 default。
 

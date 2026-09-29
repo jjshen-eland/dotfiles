@@ -233,3 +233,9 @@
   - 放棄:沿用 Bearer 對 base URL POST 舊內部 schema；任意 2xx 即消耗去重資格；source shell env file；把 key／URL 或 raw response 寫入 warning
   - 重議:Notification Center 正式改變 Gateway endpoint、認證或 acknowledgement schema；真實 channel 回覆 sent 但使用者持續收不到，需另查 downstream provider
   - 關聯:M-20260929-wait4me-nc-wire-repair;shared/skills/wait4me/references/workflow.md;shared/skills/wait4me/scripts/wait4me-send.py;shared/skills/wait4me/evals.md
+
+- **D-20260930-codex-mobile-text-questions · 2026-09-30 Codex 一般決策採手機可回覆的文字編號選項**：使用者確認近期多個 Codex session 的選項 UI 需要 Shift＋左箭頭才能自由輸入，手機無法操作，明選跨 session 修復。近六日 trace 在七個 session 記錄二十次 `request_user_input`／`request_user_input_async`，其中三個 session 無明確 `$project` 呼叫；Project／handoff 共用 workflow 另有明文工具優先規則。Codex 全域 guidance 改為一般問題以聊天文字列編號、後果與建議項，Project／handoff 的 Codex runtime adapter 同步取消結構化提問工具優先；Claude Code 與主機強制的命令／工具 approval 流程不變。新增必要的全域契約超過原 8 KiB loaded budget，依既有 correctness 先例將 `codex/AGENTS.md` 預算升至下一個二進位級距 16 KiB，不刪改無關安全規則。此決策只取代 D-20260925-project-numbered-text-options 中 Codex 工具可用時仍優先使用的呈現路徑，保留其完整選項與授權邊界。
+  - 日期來源:direct
+  - 放棄:只在單一 session 口頭承諾；只改全域指令而讓 skill 的相反規則留下；關閉主機權限核准來消除選項 UI
+  - 重議:新 Codex session 仍在一般問題呼叫結構化提問工具；主機提供真正可在手機直接點選或輸入的原生問題 UI；Claude Code 提問或既有 authorization gate 回歸
+  - 關聯:supersedes:D-20260925-project-numbered-text-options（僅 Codex 工具優先路徑）;D-20260824-cross-runtime-dossier-stewardship;codex/AGENTS.md;.doc-governance.json;shared/skills/project/references/pressure-tests.md;shared/skills/handoff/evals.md

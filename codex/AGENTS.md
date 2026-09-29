@@ -11,6 +11,11 @@
 - After an approval UI has been emitted, treat that request as **PENDING** until the host returns an explicit approved, denied, cancelled, tool-error, or timeout result. Elapsed wall time, user silence, and lack of progress output are never evidence that the request failed.
 - While an approval request is pending, do not retry it, rewrite the command to trigger a replacement prompt, research a workaround, or report the action as failed. Resume only from the host's terminal result or new user direction; never create two live approval requests for the same action.
 
+## Questions for the user
+
+- For ordinary clarifications and choices, ask in the chat with numbered text options (usually 2–3), a short explanation of each outcome, and a clearly marked recommended option when there is one. End the turn and wait; the user can reply with just the number from a phone. Do not use `request_user_input` or `request_user_input_async` for these questions, even when those tools are available.
+- Keep host-required command, network, file, and connected-tool approval requests in their required approval flow. This preference does not grant permission for any action.
+
 ## Repo contract precedence
 
 Read root `AGENTS.md`, then `CLAUDE.md`, before repo work. Repo conventions override the kernel's fallback
