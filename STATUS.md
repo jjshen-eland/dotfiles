@@ -12,19 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### Codex 手機可回覆的文字選項
-
-- **Context**：多個 Codex session 的一般問題使用 CLI 選項 UI，手機難以切換到自由輸入。
-- **Goal**：一般問題在聊天中顯示可直接回覆數字的選項與建議項。
-- **Acceptance Criteria**：全域 Codex 指令與 Project／handoff workflow 一致；fresh Codex session 顯示文字編號選項；相關 eval、validator、完整測試及 doc audit 通過。
-- **Constraints**：保留主機強制的命令與工具核准流程；不變更 Claude Code 的提問路徑。
-- **Writer**：codex:mobile-text-questions
-- **Workspace**：branch=fix/mobile-text-questions
-- **Write Scope**：.doc-governance.json, codex/AGENTS.md, shared/skills/project/, shared/skills/handoff/
-- **Dossier Steward**：codex:mobile-text-questions
-- **進度**：本機實作及驗證完成；尚未 push、開 PR 或 merge。
-- **下一步**：重建尚未推送的 candidate，重驗 authority 與測試，再依 `$project --merge` 送出。
-- **關聯**：D-20260930-codex-mobile-text-questions；M-20260930-codex-mobile-text-questions。
+目前無進行中項目。
 
 ## 暫停中
 
