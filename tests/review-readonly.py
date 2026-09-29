@@ -25,6 +25,8 @@ class ReadonlyReview(unittest.TestCase):
             run("git", "init", "-q", "-b", "fix/example")
             run("git", "config", "user.name", "fixture")
             run("git", "config", "user.email", "fixture@example.invalid")
+            run("git", "config", "maintenance.auto", "false")
+            run("git", "config", "gc.auto", "0")
             tracked = repo / "data.txt"
             tracked.write_text("unchanged content\n")
             run("git", "add", "data.txt")
