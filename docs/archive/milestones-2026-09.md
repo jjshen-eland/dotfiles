@@ -525,3 +525,7 @@
   - 放棄:只修 env inheritance；將 404 視為 Notification Center 不可用；HTTP success 即視為下游送達；直接由 agent 繞過 hook 呼叫 NC
   - 重議:使用者在 Gateway 已回 sent 後仍確認終端裝置未收到；或 NC Gateway contract 改版
   - 關聯:D-20260929-wait4me-nc-wire-contract;D-20260929-wait4me-session-hook-boundary;shared/skills/wait4me/scripts/wait4me-send.py;tests/run.sh
+
+- **M-20260929-wait4me-fleet-rollout · 2026-09-29 wait4me NC 修正已合併並完成全機隊部署**：PR #242 已合併至 `origin/main`，merge commit 為 `6d79e63cb57bf07c587a8a1e3c47bf98c62c4d25`；本機 main 已同步且功能 branch 已移除。隨後執行 `dotsync`，local 與 inventory 14/14 remote 全數成功、`remote_failed=0`，各機已更新 shared sender、Codex／Claude hook wiring 與 generated Codex config。使用者確認 live NC 通知收到。既有已開啟的 Codex session 不保證 hot-reload 新 hook definition，應開新 session、在 `/hooks` 確認新 hash 的 trust，並依 session-scoped contract 重新執行 `$wait4me on`；不需重啟整個 Codex app。
+  - 日期來源:direct
+  - 關聯:M-20260929-wait4me-nc-wire-repair;M-20260929-wait4me-portable-session-notifications;D-20260929-wait4me-nc-wire-contract;PR#242;shared/skills/wait4me/references/workflow.md;codex/config.toml;claude/settings.json
