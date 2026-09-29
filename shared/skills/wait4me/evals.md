@@ -47,6 +47,11 @@
 
 - 缺 `NC_API_URL` 或 `NC_API_KEY` 時 no-op；不把 agent 成功或等待狀態改成失敗。
 - timeout、serialization、HTTP failure 或 exception 只產生 bounded、secret-safe warning，hook exit 0。
+- hook未繼承NC環境時，可從adapter明示的owner-only env file載入兩個設定鍵；不得執行該檔內容。
+- transport未成功時不得提前寫入sent marker；同一事件後續一次有界重試仍可送達。
+- `NC_API_URL` 是NC base URL；sender必須POST `/api/v1/events`、使用 `X-API-Key`，並送合法的
+  `alert` Gateway event。只有回覆顯示 `forward`／`escalate` 且 `notification_status` 為
+  `sent`／`deduplicated` 才算送達；404、drop或channel failed都不得消耗去重資格。
 - payload 為單行且不超過 200 Unicode characters；不得包含 command、prompt、transcript、raw
   tool input、Authorization 或 API key。
 - notification task identity 固定且可辨識；測試只用 local capture，不送 live notification。

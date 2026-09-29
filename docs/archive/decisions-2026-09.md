@@ -227,3 +227,9 @@
   - 放棄:每個 Stop 都通知；以自然語言 heuristic 分類；純 skill 靠 conversation memory 維持開關；將 command／prompt／transcript 塞進 NC payload；讓 notification transport 阻塞 approval
   - 重議:runtime 提供原生、語意精確的 user-response-required event 或真正 per-session notify toggle；hook payload／output schema 改變；真實使用顯示 marker 漏報或 notification noise
   - 關聯:W-20260929-wait4me-session-notify;M-20260929-wait4me-portable-session-notifications;shared/skills/wait4me/references/workflow.md;shared/skills/wait4me/evals.md
+
+- **D-20260929-wait4me-nc-wire-contract · 2026-09-29 wait4me 以 NC Gateway acknowledgement 判定送達**：`NC_API_URL` 是 base URL，不是可直接 POST 的 endpoint；sender 固定送到 `/api/v1/events`，以 `X-API-Key` 認證並把內部 bounded payload 轉成 `alert` event。HTTP 2xx 本身不構成送達，只有 Gateway 回覆 `forward`／`escalate` 且 channel status 為 `sent`／`deduplicated` 才寫本地 sent marker；404、drop、failed 或 transport exception 都釋放 claim，允許相同事件後續有界重試。Runtime hook 未繼承環境時，只能由 adapter 明示 owner-only regular env file，且 parser 僅讀兩個設定鍵、不執行 shell。
+  - 日期來源:direct
+  - 放棄:沿用 Bearer 對 base URL POST 舊內部 schema；任意 2xx 即消耗去重資格；source shell env file；把 key／URL 或 raw response 寫入 warning
+  - 重議:Notification Center 正式改變 Gateway endpoint、認證或 acknowledgement schema；真實 channel 回覆 sent 但使用者持續收不到，需另查 downstream provider
+  - 關聯:M-20260929-wait4me-nc-wire-repair;shared/skills/wait4me/references/workflow.md;shared/skills/wait4me/scripts/wait4me-send.py;shared/skills/wait4me/evals.md

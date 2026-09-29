@@ -5899,7 +5899,7 @@ fi
 
 if jq -e \
     --arg timestamp '"$HOME"/.dotfiles/scripts/agent-turn-end-timestamp.sh' \
-    --arg wait4me '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh stop' '
+    --arg wait4me 'WAIT4ME_ENV_FILE="$HOME/Projects/krepo/.env" "$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh stop' '
     .hooks.Stop == [{hooks: [
         {type: "command", command: $timestamp, timeout: 3},
         {type: "command", command: $wait4me, timeout: 5, async: true}
@@ -5924,7 +5924,7 @@ timeout = 3
 
 [[hooks.Stop.hooks]]
 type = "command"
-command = '\''"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh stop'\''
+command = '\''WAIT4ME_ENV_FILE="$HOME/Projects/krepo/.env" "$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh stop'\''
 timeout = 5
 async = true'
 if [ "$codex_tet_hook" = "$codex_tet_expected" ] \
@@ -5939,11 +5939,18 @@ w4m_fix="$TMP/wait4me"
 w4m_state="$w4m_fix/state"
 w4m_capture="$w4m_fix/capture.jsonl"
 mkdir -p "$w4m_fix"
+w4m_env_file="$w4m_fix/notify.env"
+cat > "$w4m_env_file" <<'EOF'
+NC_API_URL=https://invalid.example/from-env-file
+NC_API_KEY=fixture-env-file-key
+EOF
+chmod 600 "$w4m_env_file"
 
 w4m_run() {
     local mode="$1" input="$2"
     printf '%s\n' "$input" | env -u NC_API_URL -u NC_API_KEY \
         WAIT4ME_STATE_ROOT="$w4m_state" WAIT4ME_TEST_CAPTURE="$w4m_capture" \
+        WAIT4ME_ENV_FILE="$w4m_env_file" \
         "$W4M_HOOK" "$mode"
 }
 
@@ -6007,17 +6014,159 @@ w4m_secret='wait4me-super-secret'
 w4m_error="$(printf '%s\n' '{"message":"等待回應: fixture","level":"info","task":"agent-response-needed"}' \
     | NC_API_URL='https://invalid.example/secret-url' NC_API_KEY="$w4m_secret" WAIT4ME_TEST_ERROR=1 \
         "$W4M_SEND" 2>&1)"
-assert_rc "notification transport failure 仍 exit 0" 0 $?
+assert_rc "sender transport failure回報hook內部non-success" 75 $?
 if ! grep -qF "$w4m_secret" <<< "$w4m_error" \
     && ! grep -qF 'secret-url' <<< "$w4m_error" \
     && grep -q 'RuntimeError' <<< "$w4m_error"; then
     ok "transport warning bounded 且不回顯 secret／URL"
 else bad "transport warning 洩漏敏感 transport 細節或缺少安全摘要：$w4m_error"; fi
 
+w4m_env_error="$(printf '%s\n' '{"message":"等待回應: fixture","level":"info","task":"agent-response-needed"}' \
+    | env -u NC_API_URL -u NC_API_KEY WAIT4ME_ENV_FILE="$w4m_env_file" WAIT4ME_TEST_ERROR=1 \
+        "$W4M_SEND" 2>&1)"
+if grep -q 'RuntimeError' <<< "$w4m_env_error" \
+    && ! grep -qF 'fixture-env-file-key' <<< "$w4m_env_error" \
+    && ! grep -qF 'from-env-file' <<< "$w4m_env_error"; then
+    ok "sender在hook未繼承環境時從明示env file載入NC設定"
+else bad "sender未從明示env file載入NC設定或洩漏設定：$w4m_env_error"; fi
+
+w4m_nc_server="$w4m_fix/fake-nc.py"
+w4m_nc_port="$w4m_fix/fake-nc.port"
+w4m_nc_request="$w4m_fix/fake-nc-request.json"
+cat > "$w4m_nc_server" <<'PY'
+import json
+import sys
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+
+port_path, request_path, action_taken, notification_status = sys.argv[1:]
+if notification_status == "none":
+    notification_status = None
+
+
+class Handler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        length = int(self.headers.get("Content-Length", "0"))
+        body = json.loads(self.rfile.read(length))
+        with open(request_path, "w", encoding="utf-8") as stream:
+            json.dump(
+                {
+                    "path": self.path,
+                    "x_api_key": self.headers.get("X-API-Key"),
+                    "authorization": self.headers.get("Authorization"),
+                    "body": body,
+                },
+                stream,
+                ensure_ascii=False,
+            )
+        response = json.dumps(
+            {
+                "event_id": 1,
+                "action_taken": action_taken,
+                "matched_rule_id": 10,
+                "notification_id": 2,
+                "heartbeat_updated": False,
+                "notification_status": notification_status,
+                "notification_error": None,
+            }
+        ).encode()
+        self.send_response(201)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(response)))
+        self.end_headers()
+        self.wfile.write(response)
+
+    def log_message(self, _format, *_args):
+        pass
+
+
+server = HTTPServer(("127.0.0.1", 0), Handler)
+server.timeout = 5
+with open(port_path, "w", encoding="utf-8") as stream:
+    stream.write(str(server.server_port))
+server.handle_request()
+PY
+python3 "$w4m_nc_server" "$w4m_nc_port" "$w4m_nc_request" forward sent &
+w4m_nc_pid=$!
+for _ in {1..100}; do
+    [ -s "$w4m_nc_port" ] && break
+    sleep 0.02
+done
+if [ -s "$w4m_nc_port" ]; then
+    w4m_nc_base="http://127.0.0.1:$(cat "$w4m_nc_port")"
+    printf '%s\n' '{"message":"等待回應: fixture","level":"info","task":"agent-response-needed"}' \
+        | NC_API_URL="$w4m_nc_base" NC_API_KEY='fixture-env-file-key' "$W4M_SEND" >/dev/null 2>&1
+    w4m_nc_rc=$?
+    wait "$w4m_nc_pid"
+    assert_rc "sender接受NC Gateway已送達回覆" 0 "$w4m_nc_rc"
+    if jq -e '
+        .path == "/api/v1/events"
+        and .x_api_key == "fixture-env-file-key"
+        and .authorization == null
+        and .body.event_type == "alert"
+        and .body.source == "agent-wait4me"
+        and .body.level == "info"
+        and .body.message == "等待回應: fixture"
+        and (.body.task == null)
+    ' "$w4m_nc_request" >/dev/null 2>&1; then
+        ok "sender將base URL、認證與bounded payload轉成NC Gateway wire contract"
+    else
+        bad "sender未遵守NC Gateway wire contract：$(cat "$w4m_nc_request" 2>/dev/null)"
+    fi
+else
+    bad "fake NC server未啟動"
+    kill "$w4m_nc_pid" 2>/dev/null || true
+    wait "$w4m_nc_pid" 2>/dev/null || true
+fi
+
+for w4m_nc_result in 'forward failed' 'drop none'; do
+    rm -f "$w4m_nc_port" "$w4m_nc_request"
+    read -r w4m_nc_action w4m_nc_status <<< "$w4m_nc_result"
+    python3 "$w4m_nc_server" "$w4m_nc_port" "$w4m_nc_request" \
+        "$w4m_nc_action" "$w4m_nc_status" &
+    w4m_nc_pid=$!
+    for _ in {1..100}; do
+        [ -s "$w4m_nc_port" ] && break
+        sleep 0.02
+    done
+    if [ -s "$w4m_nc_port" ]; then
+        w4m_nc_base="http://127.0.0.1:$(cat "$w4m_nc_port")"
+        printf '%s\n' '{"message":"等待回應: fixture","level":"info","task":"agent-response-needed"}' \
+            | NC_API_URL="$w4m_nc_base" NC_API_KEY='fixture-env-file-key' "$W4M_SEND" >/dev/null 2>&1
+        w4m_nc_rc=$?
+        wait "$w4m_nc_pid"
+        assert_rc "sender拒絕未確認channel送達的Gateway回覆（${w4m_nc_result}）" 75 "$w4m_nc_rc"
+    else
+        bad "fake NC server未啟動（${w4m_nc_result}）"
+        kill "$w4m_nc_pid" 2>/dev/null || true
+        wait "$w4m_nc_pid" 2>/dev/null || true
+    fi
+done
+
+w4m_retry_state="$w4m_fix/retry-state"
+w4m_retry_capture="$w4m_fix/retry-capture.jsonl"
+w4m_retry='{"session_id":"retry-session","turn_id":"retry-turn","cwd":"/work/kapi-infra","last_assistant_message":"需要你的選擇。 <!-- wait4me: 選擇後續處理方式 -->"}'
+# shellcheck disable=SC2016 # `$wait4me` 是送給hook的literal command。
+printf '%s\n' '{"session_id":"retry-session","prompt":"$wait4me on"}' \
+    | WAIT4ME_STATE_ROOT="$w4m_retry_state" "$W4M_HOOK" prompt >/dev/null
+printf '%s\n' "$w4m_retry" \
+    | env -u NC_API_URL -u NC_API_KEY WAIT4ME_STATE_ROOT="$w4m_retry_state" \
+        WAIT4ME_ENV_FILE="$w4m_env_file" WAIT4ME_TEST_ERROR=1 "$W4M_HOOK" stop >/dev/null
+printf '%s\n' "$w4m_retry" \
+    | env -u NC_API_URL -u NC_API_KEY WAIT4ME_STATE_ROOT="$w4m_retry_state" \
+        WAIT4ME_ENV_FILE="$w4m_env_file" WAIT4ME_TEST_CAPTURE="$w4m_retry_capture" \
+        "$W4M_HOOK" stop >/dev/null
+if [ -f "$w4m_retry_capture" ]; then
+    assert_eq "delivery失敗不會提前消耗同一事件的去重資格" 1 \
+        "$(wc -l < "$w4m_retry_capture" | tr -d ' ')"
+else
+    bad "delivery失敗後相同事件無法重試"
+fi
+
 if jq -e \
     --arg prompt '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh prompt' \
-    --arg permission '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh permission' \
-    --arg stop '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh stop' \
+    --arg permission 'WAIT4ME_ENV_FILE="$HOME/Projects/krepo/.env" "$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh permission' \
+    --arg stop 'WAIT4ME_ENV_FILE="$HOME/Projects/krepo/.env" "$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh stop' \
     --arg end '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh session-end' '
     ([.hooks.UserPromptSubmit[].hooks[] | select(.command == $prompt)] | length) == 1
     and ([.hooks.PermissionRequest[].hooks[] | select(.command == $permission and .async == true)] | length) == 1

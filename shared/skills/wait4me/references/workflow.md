@@ -21,6 +21,12 @@ Do not add it for a completed answer, optional next step, progress update, rheto
 
 The marker reason must be a single short, actionable, non-sensitive summary. Do not include commands, prompts, transcript excerpts, credentials, tokens, private paths, raw tool input, or unbounded error text. The hook sends the notification; the agent must not call Notification Center directly.
 
+Notification transport prefers inherited `NC_API_URL`／`NC_API_KEY`. `NC_API_URL` is the Notification Center base URL;
+the sender posts an `alert` event to `/api/v1/events` with `X-API-Key`, and accepts delivery only when the Gateway reports
+`forward`／`escalate` plus `sent`／`deduplicated`. A runtime adapter may instead pass an explicit `WAIT4ME_ENV_FILE`;
+the sender reads only those two keys from an owner-only regular file and never executes the file as shell. An event becomes
+deduplicated only after the sender confirms local capture or Gateway delivery; a failed attempt releases its claim.
+
 If work ownership transfers while enabled, disable the current authorization before transfer completion and tell the user that the new actor needs a fresh `$wait4me on`.
 
 ## Failure semantics
