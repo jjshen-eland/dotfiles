@@ -6049,12 +6049,25 @@ def mark(stage):
 
 mark("interpreter-entered")
 import json
+import socketserver
 from http.server import BaseHTTPRequestHandler, HTTPServer
 mark("imports-complete")
 
 
 if notification_status == "none":
     notification_status = None
+
+
+class LoopbackHTTPServer(HTTPServer):
+    def server_bind(self):
+        # HTTPServer.server_bind() performs an unnecessary reverse-name lookup
+        # after binding. The fixture only needs a loopback port and never reads
+        # server_name, so keep the TCP bind while avoiding external DNS state.
+        mark("before-tcp-bind")
+        socketserver.TCPServer.server_bind(self)
+        mark("after-tcp-bind")
+        self.server_name = self.server_address[0]
+        self.server_port = self.server_address[1]
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -6094,7 +6107,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 mark("before-bind")
-server = HTTPServer(("127.0.0.1", 0), Handler)
+server = LoopbackHTTPServer(("127.0.0.1", 0), Handler)
 mark("after-bind")
 server.timeout = 5
 with open(port_path, "w", encoding="utf-8") as stream:

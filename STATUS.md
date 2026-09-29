@@ -26,16 +26,21 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
   CI-facing commits：第一顆只加入能區分 process／shared-state 假設的 bounded diagnostics，第二顆僅在 root cause
   confirmed 後做單一 causal repair。不修改 production sender／hook contract；不 bypass checks、不改 protection、
   不直推 default。
-- **Progress**：root-cause terminal state 為 `SYSTEMIC REVIEW NEEDED`。Diagnostic CI 曾證明兩個失敗的 Python
+- **Progress**：使用者授權重開 systemic diagnosis 後，root-cause terminal state 為 `ROOT CAUSE CONFIRMED`。
+  Diagnostic CI 曾證明兩個失敗的 Python
   child 在固定 10 秒 readiness budget 後仍存活、wait status 為 143（由診斷清理送出 TERM）、stderr 為空；但把
   window 改為 30 秒並降低輪詢頻率後，macOS CI 的三個 child 仍全數以相同 evidence 失敗，已反證「只是 10 秒太短」
   的 causal model。同一 macOS job 另重現 review fixture 的 Git `maintenance.lock` metadata 漂移；Ubuntu required
   suite 與本機 parallel suite `1536 PASS／0 FAIL`。舊 head 第三次 macOS CI 仍以相同四個 failures 重現。新 diagnostic
   candidate 會在 timeout 前擷取 child command／state／CPU time／wait channel／system process count，並以 bounded markers
   區分 interpreter、import、bind、port write 階段；review fixture 改回報 exact added／removed／changed paths，未改 pass／
-  fail 判準。本機 integration shard `1132 PASS／0 FAIL`。
-- **Next step**：跑本機完整 parallel suite，將第一顆 diagnostic-only CI-facing commit 送 PR #243；依 macOS evidence
-  重建 causal model，root cause confirmed 前不做第二顆 repair commit。
+  fail 判準。本機 integration shard `1132 PASS／0 FAIL`。macOS diagnostic head 顯示三個 child 均已完成 interpreter 與
+  imports；前兩個停在 `HTTPServer(...)` constructor 內 30 秒且 CPU time 僅 0.06–0.11 秒，第三個在 deadline 附近完成
+  bind／port write。CPython 3.14 的 `HTTPServer.server_bind()` 在 TCP bind 後執行 fixture 不需要的
+  `socket.getfqdn(host)`；這是 constructor path 中唯一會等待外部 name-service state、且符合 sleeping child、低 CPU、
+  intermittent completion 與 OS-specific control 的 causal divergence。Repair 是否完成仍待 exact-head CI 驗證。
+- **Next step**：第二顆也是本輪最後一顆 CI-facing commit 保留 TCP bind/listen，但以 fixture subclass 跳過未使用的
+  reverse-name lookup；先跑本機完整 parallel suite，再以 exact macOS head 的原 failure evidence 驗證因果。
 - **Writer**：codex:wait4me-fleet-rollout
 - **Workspace**：branch=docs/wait4me-fleet-rollout
 - **Write Scope**：STATUS.md, tests/run.sh, tests/run-parallel.sh, tests/review-readonly.py,
