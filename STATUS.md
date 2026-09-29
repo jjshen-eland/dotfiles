@@ -12,7 +12,24 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-目前無進行中項目。
+### W-20260929-wait4me-session-notify
+
+- **Writer**: `codex:wait4me`
+- **Workspace**: `branch=feat/wait4me`
+- **Write Scope**: `claude/settings.json`, `claude/skills/wait4me/`, `codex/config.toml`,
+  `codex/skills/wait4me/`, `shared/skills/wait4me/`, `tests/run.sh`,
+  `docs/archive/{decisions,milestones}-2026-09.md`, `STATUS.md`
+- **Dossier Steward**: `codex:wait4me`
+- **Goal**: 提供不持久、以 session lifecycle 為邊界的 `$wait4me` 通知開關。
+- **Acceptance Criteria**: 啟用後在 approval 或 main agent 因需使用者回應而停下時發送
+  bounded NC 通知；關閉、resume／clear／new／SessionEnd、普通完成、其他 session 與
+  subagent 不發送；雙 runtime packaging、validators、doc audit 與完整測試通過。
+- **Constraints**: 不傳 raw command／prompt／transcript／secret；通知 transport 失敗不得影響 agent
+  lifecycle；狀態不持久且不成為 authority。
+- **Progress**: 實作與本機驗收完成；正在建立可查證的 completion parent，尚未 push／開 PR／merge。
+- **Next step**: 建立 direct-child completion commit，通過 `--completion-parent` gate 後送出。
+- **關聯**: `D-20260929-wait4me-session-hook-boundary`,
+  `M-20260929-wait4me-portable-session-notifications`, `shared/skills/wait4me/evals.md`
 
 ## 暫停中
 

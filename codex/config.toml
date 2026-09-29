@@ -6,6 +6,21 @@ sandbox_mode = "danger-full-access"
 approval_policy = "on-request"
 
 # Codex 會對 hook 定義的 hash 建立信任；每次變更後在 CLI 用 /hooks 複核並信任。
+[[hooks.SessionStart]]
+matcher = "startup|clear|resume"
+
+[[hooks.SessionStart.hooks]]
+type = "command"
+command = '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh session-start'
+timeout = 3
+
+[[hooks.UserPromptSubmit]]
+
+[[hooks.UserPromptSubmit.hooks]]
+type = "command"
+command = '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh prompt'
+timeout = 3
+
 [[hooks.PreToolUse]]
 matcher = "Bash"
 
@@ -14,11 +29,32 @@ type = "command"
 command = 'python3 "$HOME"/.dotfiles/scripts/outward-action-gate.py --runtime codex'
 timeout = 5
 
+[[hooks.PermissionRequest]]
+
+[[hooks.PermissionRequest.hooks]]
+type = "command"
+command = '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh permission'
+timeout = 5
+async = true
+
 [[hooks.Stop]]
 
 [[hooks.Stop.hooks]]
 type = "command"
 command = '"$HOME"/.dotfiles/scripts/agent-turn-end-timestamp.sh'
+timeout = 3
+
+[[hooks.Stop.hooks]]
+type = "command"
+command = '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh stop'
+timeout = 5
+async = true
+
+[[hooks.SessionEnd]]
+
+[[hooks.SessionEnd.hooks]]
+type = "command"
+command = '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh session-end'
 timeout = 3
 
 [notice.model_migrations]

@@ -22,12 +22,14 @@
 #  12. repo-review 薄殼 packaging（evals 不進 runtime context）
 # 12f. root-cause-first skill 跨 Claude Code／Codex 共用 evidence gate
 # 12g. nc-notify skill 跨 Claude Code／Codex 共用 lifecycle contract
+# 12gg. wait4me skill 跨 runtime session notification contract
 # 12h. send-mail skill 跨 Claude Code／Codex 共用 recipient-authority contract
 #  13. handoff-anchor.sh（handoff skill script）錨點驗證與生命週期判定（含 consume 消費歸檔）
 #  14. codex-runtime-hygiene.sh（deep-review skill script）孤兒偵測 / 誤殺防護 / exit 契約
 #  15. ensure-rc-source.sh 幂等補 source shell/functions.sh 行
 #  16. session-pull-check.sh（SessionStart hook）落後偵測與靜默契約
 # 16b. agent-turn-end-timestamp.sh（Claude Code／Codex Stop hook）GMT+8 輸出與失敗隔離
+# 16bb. wait4me session 開關、wait/approval 通知、去重、lifecycle 與 failure isolation
 # 16c. check-network-isolation-collisions.py（OrbStack PF isolation table）碰撞與 fail-closed 契約
 #  17. codex-exec-review.sh（deep-review skill script）exit 契約 / job 產物 / resume（codex stub）
 #  18. ensure-codex-skills.sh 幂等連結 ~/.agents/skills → dotfiles，安全清理 repo-managed legacy links
@@ -4859,6 +4861,37 @@ if grep -q 'HTTP `POST`' "$NCN_CLAUDE/references/workflow.md" \
     ok "nc-notify fallback wire contract 不留給 runtime 自行猜測"
 else bad "nc-notify fallback wire contract 缺失"; fi
 
+echo "▶ 12gg. wait4me skill 跨 Claude Code／Codex 共用 session notification contract"
+W4M_CLAUDE="$ROOT/claude/skills/wait4me"
+W4M_CODEX="$ROOT/codex/skills/wait4me"
+W4M_SHARED="$ROOT/shared/skills/wait4me"
+if [ -f "$W4M_CLAUDE/SKILL.md" ] && [ -f "$W4M_CODEX/SKILL.md" ] \
+    && [ -L "$W4M_CLAUDE/references" ] && [ -L "$W4M_CODEX/references" ] \
+    && [ -L "$W4M_CLAUDE/scripts" ] && [ -L "$W4M_CODEX/scripts" ] \
+    && [ "$W4M_CODEX/references/workflow.md" -ef "$W4M_CLAUDE/references/workflow.md" ] \
+    && [ "$W4M_CODEX/scripts/wait4me-hook.sh" -ef "$W4M_SHARED/scripts/wait4me-hook.sh" ]; then
+    ok "wait4me 雙薄入口共用 canonical workflow 與 scripts"
+else bad "wait4me 跨 runtime 封裝未共用 canonical resources"; fi
+if [ "$W4M_CLAUDE/evals.md" -ef "$W4M_SHARED/evals.md" ] && [ ! -e "$W4M_CODEX/evals.md" ]; then
+    ok "wait4me eval oracle 只留 canonical tree"
+else bad "wait4me eval oracle topology 錯誤"; fi
+w4m_claude_description="$(sed -n 's/^description: //p' "$W4M_CLAUDE/SKILL.md")"
+w4m_codex_description="$(sed -n 's/^description: //p' "$W4M_CODEX/SKILL.md")"
+if [ -n "$w4m_claude_description" ] && [ "$w4m_claude_description" = "$w4m_codex_description" ]; then
+    ok "wait4me 雙端 description 語意入口一致"
+else bad "wait4me 雙端 description 漂移"; fi
+w4m_codex_frontmatter="$(awk 'NR == 1 { next } /^---$/ { exit } { print }' "$W4M_CODEX/SKILL.md")"
+if ! grep -Eq '^(user-invocable|disable-model-invocation|argument-hint|allowed-tools|context|agent):' \
+    <<< "$w4m_codex_frontmatter"; then
+    ok "Codex wait4me frontmatter 無 Claude Code 專屬欄位"
+else bad "Codex wait4me frontmatter 混入 Claude Code 專屬欄位"; fi
+# shellcheck disable=SC2016 # `$wait4me on` is the literal UI prompt under test.
+if grep -qF 'default_prompt: "$wait4me on"' "$W4M_CODEX/agents/openai.yaml" \
+    && grep -q 'Portable behavior oracle' "$W4M_SHARED/evals.md" \
+    && grep -q 'Notification delivery is always a side channel' "$W4M_SHARED/references/workflow.md"; then
+    ok "wait4me UI metadata、behavior oracle 與 failure contract 已接線"
+else bad "wait4me portable behavior contract 缺失"; fi
+
 echo "▶ 12h. send-mail skill 跨 Claude Code／Codex 共用 recipient-authority contract"
 SM_CLAUDE="$ROOT/claude/skills/send-mail"
 SM_CODEX="$ROOT/codex/skills/send-mail"
@@ -5864,12 +5897,17 @@ else
     bad "turn-end timestamp hook script 不存在或不可執行：$TET"
 fi
 
-if jq -e --arg command '"$HOME"/.dotfiles/scripts/agent-turn-end-timestamp.sh' '
-    .hooks.Stop == [{hooks: [{type: "command", command: $command, timeout: 3}]}]
+if jq -e \
+    --arg timestamp '"$HOME"/.dotfiles/scripts/agent-turn-end-timestamp.sh' \
+    --arg wait4me '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh stop' '
+    .hooks.Stop == [{hooks: [
+        {type: "command", command: $timestamp, timeout: 3},
+        {type: "command", command: $wait4me, timeout: 5, async: true}
+    ]}]
     and (.hooks.SubagentStop == null)
 ' "$ROOT/claude/settings.json" >/dev/null 2>&1; then
-    ok "Claude Code 只在主 agent Stop 接線 turn-end timestamp"
-else bad "Claude Code Stop hook 未精確接線 turn-end timestamp"; fi
+    ok "Claude Code 主 agent Stop 同時接線 timestamp 與 wait4me"
+else bad "Claude Code Stop hook 未精確接線 timestamp／wait4me"; fi
 
 codex_tet_hook="$(awk '
     /^\[\[hooks\.Stop\]\]$/ { capture = 1 }
@@ -5882,11 +5920,117 @@ codex_tet_expected='[[hooks.Stop]]
 [[hooks.Stop.hooks]]
 type = "command"
 command = '\''"$HOME"/.dotfiles/scripts/agent-turn-end-timestamp.sh'\''
-timeout = 3'
+timeout = 3
+
+[[hooks.Stop.hooks]]
+type = "command"
+command = '\''"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh stop'\''
+timeout = 5
+async = true'
 if [ "$codex_tet_hook" = "$codex_tet_expected" ] \
     && ! grep -q '^\[\[hooks\.SubagentStop' "$ROOT/codex/config.toml"; then
-    ok "Codex 只在主 agent Stop 接線 turn-end timestamp"
-else bad "Codex Stop hook 未精確接線 turn-end timestamp"; fi
+    ok "Codex 主 agent Stop 同時接線 timestamp 與 wait4me"
+else bad "Codex Stop hook 未精確接線 timestamp／wait4me"; fi
+
+echo "▶ 16bb. wait4me session 開關與 notification failure isolation"
+W4M_HOOK="$ROOT/shared/skills/wait4me/scripts/wait4me-hook.sh"
+W4M_SEND="$ROOT/shared/skills/wait4me/scripts/wait4me-send.py"
+w4m_fix="$TMP/wait4me"
+w4m_state="$w4m_fix/state"
+w4m_capture="$w4m_fix/capture.jsonl"
+mkdir -p "$w4m_fix"
+
+w4m_run() {
+    local mode="$1" input="$2"
+    printf '%s\n' "$input" | env -u NC_API_URL -u NC_API_KEY \
+        WAIT4ME_STATE_ROOT="$w4m_state" WAIT4ME_TEST_CAPTURE="$w4m_capture" \
+        "$W4M_HOOK" "$mode"
+}
+
+if [ -x "$W4M_HOOK" ] && [ -x "$W4M_SEND" ]; then
+    ok "wait4me hook 與 sender 存在且可執行"
+else bad "wait4me hook 或 sender 缺失／不可執行"; fi
+
+w4m_out="$(w4m_run prompt "{\"session_id\":\"session-a\",\"prompt\":\"\$wait4me\",\"cwd\":\"/work/kapi-infra\"}")"
+if jq -e '.hookSpecificOutput.additionalContext | contains("wait4me-control: enabled")' \
+    <<< "$w4m_out" >/dev/null 2>&1; then
+    ok "bare wait4me 只啟用目前 session 並回傳 hook context"
+else bad "bare wait4me 未啟用或未回傳可驗證 context：$w4m_out"; fi
+
+w4m_out="$(w4m_run prompt "{\"session_id\":\"session-b\",\"prompt\":\"\$wait4me status\"}")"
+if jq -e '.hookSpecificOutput.additionalContext | contains("status=disabled")' \
+    <<< "$w4m_out" >/dev/null 2>&1; then
+    ok "另一個 session 維持 disabled"
+else bad "wait4me state 洩漏到另一個 session：$w4m_out"; fi
+
+w4m_out="$(w4m_run prompt '{"session_id":"session-a","prompt":"continue"}')"
+if jq -e '.hookSpecificOutput.additionalContext | contains("<!-- wait4me: concise reason -->")' \
+    <<< "$w4m_out" >/dev/null 2>&1; then
+    ok "enabled session 每回合取得 deterministic wait marker contract"
+else bad "enabled session 未取得 wait marker contract：$w4m_out"; fi
+
+w4m_run stop '{"session_id":"session-a","turn_id":"done-1","cwd":"/work/kapi-infra","last_assistant_message":"工作完成。"}' >/dev/null
+if [ ! -e "$w4m_capture" ]; then
+    ok "普通完成的 Stop 不通知"
+else bad "普通完成被誤判為等待回應"; fi
+
+w4m_wait='{"session_id":"session-a","turn_id":"wait-1","cwd":"/work/kapi-infra","last_assistant_message":"需要你的選擇。 <!-- wait4me: 選擇要接續的 durable steward -->"}'
+w4m_run stop "$w4m_wait" >/dev/null
+assert_eq "blocking Stop 發出一則通知" 1 "$(wc -l < "$w4m_capture" | tr -d ' ')"
+w4m_run stop "$w4m_wait" >/dev/null
+assert_eq "相同 blocking Stop 去重" 1 "$(wc -l < "$w4m_capture" | tr -d ' ')"
+
+w4m_permission='{"session_id":"session-a","tool_use_id":"approval-1","tool_name":"Bash","cwd":"/work/kapi-infra","tool_input":{"command":"rm -rf TOP-SECRET-COMMAND"}}'
+w4m_run permission "$w4m_permission" >/dev/null
+assert_eq "PermissionRequest 發出一則獨立通知" 2 "$(wc -l < "$w4m_capture" | tr -d ' ')"
+w4m_run permission "$w4m_permission" >/dev/null
+assert_eq "相同 PermissionRequest 去重" 2 "$(wc -l < "$w4m_capture" | tr -d ' ')"
+if ! grep -qF 'TOP-SECRET-COMMAND' "$w4m_capture" \
+    && jq -s -e 'all(.[]; (.task == "agent-response-needed") and (.level == "info") and ((.message | length) <= 200) and (.message | contains("\n") | not))' \
+        "$w4m_capture" >/dev/null 2>&1; then
+    ok "notification payload 有界且不含 raw tool input"
+else bad "notification payload 洩漏 raw input 或違反 message contract"; fi
+
+w4m_run session-start '{"session_id":"session-a","source":"compact"}' >/dev/null
+w4m_out="$(w4m_run prompt "{\"session_id\":\"session-a\",\"prompt\":\"\$wait4me status\"}")"
+if grep -q 'status=enabled' <<< "$w4m_out"; then ok "compact 保留 switch"; else bad "compact 誤清 switch"; fi
+w4m_run session-start '{"session_id":"session-a","source":"resume"}' >/dev/null
+w4m_out="$(w4m_run prompt "{\"session_id\":\"session-a\",\"prompt\":\"\$wait4me status\"}")"
+if grep -q 'status=disabled' <<< "$w4m_out"; then ok "resume 清除 switch"; else bad "resume 延續了舊授權"; fi
+
+w4m_run prompt "{\"session_id\":\"session-a\",\"prompt\":\"\$wait4me on\"}" >/dev/null
+w4m_run prompt "{\"session_id\":\"session-a\",\"prompt\":\"\$wait4me off\"}" >/dev/null
+w4m_out="$(w4m_run prompt "{\"session_id\":\"session-a\",\"prompt\":\"\$wait4me status\"}")"
+if grep -q 'status=disabled' <<< "$w4m_out"; then ok "off 立即且幂等停用"; else bad "off 未停用"; fi
+
+w4m_secret='wait4me-super-secret'
+w4m_error="$(printf '%s\n' '{"message":"等待回應: fixture","level":"info","task":"agent-response-needed"}' \
+    | NC_API_URL='https://invalid.example/secret-url' NC_API_KEY="$w4m_secret" WAIT4ME_TEST_ERROR=1 \
+        "$W4M_SEND" 2>&1)"
+assert_rc "notification transport failure 仍 exit 0" 0 $?
+if ! grep -qF "$w4m_secret" <<< "$w4m_error" \
+    && ! grep -qF 'secret-url' <<< "$w4m_error" \
+    && grep -q 'RuntimeError' <<< "$w4m_error"; then
+    ok "transport warning bounded 且不回顯 secret／URL"
+else bad "transport warning 洩漏敏感 transport 細節或缺少安全摘要：$w4m_error"; fi
+
+if jq -e \
+    --arg prompt '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh prompt' \
+    --arg permission '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh permission' \
+    --arg stop '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh stop' \
+    --arg end '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh session-end' '
+    ([.hooks.UserPromptSubmit[].hooks[] | select(.command == $prompt)] | length) == 1
+    and ([.hooks.PermissionRequest[].hooks[] | select(.command == $permission and .async == true)] | length) == 1
+    and ([.hooks.Stop[].hooks[] | select(.command == $stop and .async == true)] | length) == 1
+    and ([.hooks.SessionEnd[].hooks[] | select(.command == $end)] | length) == 1
+    and (.hooks.SubagentStop == null)
+' "$ROOT/claude/settings.json" >/dev/null 2>&1 \
+    && grep -q '^\[\[hooks\.UserPromptSubmit\]\]$' "$ROOT/codex/config.toml" \
+    && grep -q '^\[\[hooks\.PermissionRequest\]\]$' "$ROOT/codex/config.toml" \
+    && grep -q '^\[\[hooks\.SessionEnd\]\]$' "$ROOT/codex/config.toml" \
+    && ! grep -q '^\[\[hooks\.SubagentStop\]\]$' "$ROOT/codex/config.toml"; then
+    ok "Claude Code／Codex hooks 接線且不通知 SubagentStop"
+else bad "wait4me runtime hooks wiring 缺失或誤接 SubagentStop"; fi
 
 echo "▶ 16c. check-network-isolation-collisions.py（OrbStack PF isolation table）"
 NIC="$ROOT/scripts/check-network-isolation-collisions.py"
@@ -8887,7 +9031,7 @@ if grep -q 'local=ok remote_ok=1 remote_failed=0' <<< "$out"; then ok "dotsync �
 
 echo "▶ 28. neutral shared skill core topology"
 SHARED_SKILLS="$ROOT/shared/skills"
-portable_skills="check-crawl-quality deep-plan handoff nc-notify ready4quit root-cause-first send-mail"
+portable_skills="check-crawl-quality deep-plan handoff nc-notify ready4quit root-cause-first send-mail wait4me"
 if [ -d "$SHARED_SKILLS" ] && [ -z "$(find "$SHARED_SKILLS" -name SKILL.md -print 2>/dev/null)" ]; then
     ok "shared skill core 存在且不暴露 runtime entry"
 else bad "shared skill core 缺漏或誤放 SKILL.md"; fi
