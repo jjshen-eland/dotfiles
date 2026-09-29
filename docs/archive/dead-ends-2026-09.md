@@ -25,3 +25,9 @@
   - 放棄:把誤寫真實 repo 的輸出算入 Claude 實驗；未留 rescue ref 就改寫 branch；因兩顆 README commit 內容看似合理就留在 B05 scope
   - 重議:再寫任何直接呼叫 agent CLI 的隔離 harness 時，先以可比對的 absolute cwd 證據與 parent HEAD 錨點分離 fixture 失敗與 host-repo mutation
   - 關聯:B-20260810-gap-05;rescue/b05-claude-cwd-mistake-20260917;ff20eda;8edaf27
+
+- **X-20260930-mobile-questions-steward-candidate · 2026-09-30 未建立 active contract 就提交共用歷史紀錄，candidate 不能原樣送出**：`67fceb5` 同時修改 decision 與 milestone shard，但它與 parent 的 `STATUS.md` 均無 active steward；Project Log authority helper 因此回 `confirm-create-active-contract`／`STOP`。使用者選擇 guided recovery 後，先為 `codex:mobile-text-questions` 建立可驗證的 active contract，再於尚未 push、無 PR 且工作樹來源已核對的本地 branch 重建 candidate。原 10 個變更檔的內容保持一致，新 candidate `b4c28a5` 通過 steward gate。
+  - 日期來源:direct
+  - 放棄:把「沒有進行中項目」當作共用 history 寫入免驗 stewardship；只補 `STATUS.md` 卻原樣推送舊 candidate
+  - 重議:Project Log 再次遇到無 steward 的 shared-surface candidate，依 exact recovery classification 與未送出證據決定能否重建
+  - 關聯:D-20260930-codex-mobile-text-questions;M-20260930-codex-mobile-text-questions;67fceb5;b4c28a5
