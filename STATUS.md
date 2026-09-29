@@ -24,13 +24,14 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
   或放寬 required checks 冒充修復；PR #243 合併後本地 main 同步並清除 branch。
 - **Constraints**：本輪最多兩個 CI repair commits；只處理 wait4me fake-server test harness 的已證實原因，不修改
   production sender／hook contract；不 bypass checks、不改 protection、不直推 default。
-- **Progress**：root-cause terminal state 為 `ROOT CAUSE CONFIRMED`；diagnostic CI 證明兩個失敗的 Python child
-  在固定 10 秒 readiness budget 後仍存活、wait status 為 143（由診斷清理送出 TERM）、stderr 為空，較晚啟動的
-  第三個同類 server 則成功。第一個 causal divergence 是高負載 macOS parallel runner 的排程延遲超過測試夾具的
-  固定 10 秒上限，不是 production sender／hook contract；最小修復保留 child-liveness gate，改用較少輪詢程序的
-  bounded 30 秒 startup window。
-- **Next step**：跑本機 CI-equivalent parallel suite，提交第二個也是最後一個 CI repair commit，送同一 PR 驗證
-  Ubuntu 24.04 與 macOS 15 required suites。
+- **Progress**：root-cause terminal state 為 `SYSTEMIC REVIEW NEEDED`。Diagnostic CI 曾證明兩個失敗的 Python
+  child 在固定 10 秒 readiness budget 後仍存活、wait status 為 143（由診斷清理送出 TERM）、stderr 為空；但把
+  window 改為 30 秒並降低輪詢頻率後，macOS CI 的三個 child 仍全數以相同 evidence 失敗，已反證「只是 10 秒太短」
+  的 causal model。同一 macOS job 另重現 review fixture 的 Git `maintenance.lock` metadata 漂移；Ubuntu required
+  suite 與本機 parallel suite `1536 PASS／0 FAIL`。本輪兩個 CI repair commits 已用完，PR #243 保持未合併。
+- **Next step**：先重議 macOS parallel harness 的 shared-state／process coupling；下一個可區分假設的 evidence 是在
+  timeout 前擷取 child 的 `ps` state／CPU time／wait channel，並在 Python import 前後與 bind／port-file write 前後寫入
+  bounded boot markers，以區分未 exec、卡在 interpreter/import、卡在 bind，或只是未排程。取得 evidence 前不再調 timeout。
 - **Writer**：codex:wait4me-fleet-rollout
 - **Workspace**：branch=docs/wait4me-fleet-rollout
 - **Write Scope**：STATUS.md, tests/run.sh, docs/archive/milestones-2026-09.md
