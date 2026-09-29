@@ -36,18 +36,31 @@ class ReadonlyReview(unittest.TestCase):
                 return {str(p.relative_to(repo)): hashlib.sha256(p.read_bytes()).hexdigest()
                         for p in repo.rglob("*") if p.is_file()}
 
+            def assert_snapshot(expected, action):
+                actual = snapshot()
+                if expected == actual:
+                    return
+                expected_paths = set(expected)
+                actual_paths = set(actual)
+                added = sorted(actual_paths - expected_paths)
+                removed = sorted(expected_paths - actual_paths)
+                changed = sorted(path for path in expected_paths & actual_paths
+                                 if expected[path] != actual[path])
+                self.fail(f"{action} altered target metadata: added={added}; "
+                          f"removed={removed}; changed={changed}")
+
             before = snapshot()
             scope = str(ROOT / "shared/skills/deep-review/scripts/review-scope.sh")
             output = run("bash", scope, "capture", "--repo", str(repo), "--mode", "working-tree")
-            self.assertEqual(before, snapshot(), "capture altered target metadata")
+            assert_snapshot(before, "capture")
             manifest = next(line.removeprefix("manifest: ") for line in output.splitlines()
                             if line.startswith("manifest: "))
             for action in ("show", "verify", "autofix-check"):
                 run("bash", scope, action, "--manifest", manifest)
-                self.assertEqual(before, snapshot(), action + " altered target metadata")
+                assert_snapshot(before, action)
             run("bash", str(ROOT / "shared/skills/deep-review/scripts/review-terminal.sh"),
                 "show", "--repo", str(repo))
-            self.assertEqual(before, snapshot(), "read-only review altered repository metadata")
+            assert_snapshot(before, "read-only review")
 
 
 unittest.main()

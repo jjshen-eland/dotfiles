@@ -6034,13 +6034,25 @@ w4m_nc_server="$w4m_fix/fake-nc.py"
 w4m_nc_port="$w4m_fix/fake-nc.port"
 w4m_nc_request="$w4m_fix/fake-nc-request.json"
 w4m_nc_stderr="$w4m_fix/fake-nc.stderr"
+w4m_nc_boot="$w4m_fix/fake-nc.boot"
 cat > "$w4m_nc_server" <<'PY'
-import json
 import sys
+
+
+port_path, request_path, action_taken, notification_status, boot_path = sys.argv[1:]
+
+
+def mark(stage):
+    with open(boot_path, "a", encoding="utf-8") as stream:
+        stream.write(stage + "\n")
+
+
+mark("interpreter-entered")
+import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
+mark("imports-complete")
 
 
-port_path, request_path, action_taken, notification_status = sys.argv[1:]
 if notification_status == "none":
     notification_status = None
 
@@ -6081,16 +6093,19 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
 
+mark("before-bind")
 server = HTTPServer(("127.0.0.1", 0), Handler)
+mark("after-bind")
 server.timeout = 5
 with open(port_path, "w", encoding="utf-8") as stream:
     stream.write(str(server.server_port))
+mark("port-written")
 server.handle_request()
+mark("request-complete")
 PY
 w4m_wait_nc_server() {
-    # Parallel macOS CI can leave an otherwise healthy Python child runnable but
-    # unscheduled for more than 10 seconds. Keep the child-liveness gate, while
-    # giving loaded runners a bounded startup window with fewer polling processes.
+    # Keep readiness bounded and fail early if the child exits. Diagnostics below
+    # distinguish scheduling/exec, import, bind, and port-file stages on timeout.
     for _ in {1..60}; do
         [ -s "$w4m_nc_port" ] && return 0
         kill -0 "$w4m_nc_pid" 2>/dev/null || return 1
@@ -6099,21 +6114,29 @@ w4m_wait_nc_server() {
     return 1
 }
 w4m_capture_nc_failure() {
-    local w4m_nc_state w4m_nc_wait_rc w4m_nc_error
+    local w4m_nc_state w4m_nc_wait_rc w4m_nc_error w4m_nc_process w4m_nc_processes w4m_nc_markers
     if kill -0 "$w4m_nc_pid" 2>/dev/null; then
         w4m_nc_state="alive-after-readiness-timeout"
+        w4m_nc_process="$(ps -o pid= -o ppid= -o state= -o time= -o wchan= -o command= \
+            -p "$w4m_nc_pid" 2>&1 | tr '\n' ' ' | cut -c1-400)"
+        w4m_nc_processes="$(ps -ax -o pid= 2>/dev/null | wc -l | tr -d ' ')"
         kill "$w4m_nc_pid" 2>/dev/null || true
     else
         w4m_nc_state="exited-before-ready"
+        w4m_nc_process="<exited>"
+        w4m_nc_processes="$(ps -ax -o pid= 2>/dev/null | wc -l | tr -d ' ')"
     fi
     wait "$w4m_nc_pid" 2>/dev/null
     w4m_nc_wait_rc=$?
     w4m_nc_error="$(sed -n '1p' "$w4m_nc_stderr" 2>/dev/null)"
     [ -n "$w4m_nc_error" ] || w4m_nc_error="<empty>"
-    w4m_nc_failure_detail="state=${w4m_nc_state}; wait_rc=${w4m_nc_wait_rc}; stderr=${w4m_nc_error}"
+    w4m_nc_markers="$(tr '\n' ',' < "$w4m_nc_boot" 2>/dev/null | cut -c1-300)"
+    [ -n "$w4m_nc_markers" ] || w4m_nc_markers="<none>"
+    w4m_nc_failure_detail="state=${w4m_nc_state}; wait_rc=${w4m_nc_wait_rc}; processes=${w4m_nc_processes}; process=${w4m_nc_process}; markers=${w4m_nc_markers}; stderr=${w4m_nc_error}"
 }
 
-python3 "$w4m_nc_server" "$w4m_nc_port" "$w4m_nc_request" forward sent \
+rm -f "$w4m_nc_boot"
+python3 "$w4m_nc_server" "$w4m_nc_port" "$w4m_nc_request" forward sent "$w4m_nc_boot" \
     2> "$w4m_nc_stderr" &
 w4m_nc_pid=$!
 if w4m_wait_nc_server; then
@@ -6143,10 +6166,10 @@ else
 fi
 
 for w4m_nc_result in 'forward failed' 'drop none'; do
-    rm -f "$w4m_nc_port" "$w4m_nc_request" "$w4m_nc_stderr"
+    rm -f "$w4m_nc_port" "$w4m_nc_request" "$w4m_nc_stderr" "$w4m_nc_boot"
     read -r w4m_nc_action w4m_nc_status <<< "$w4m_nc_result"
     python3 "$w4m_nc_server" "$w4m_nc_port" "$w4m_nc_request" \
-        "$w4m_nc_action" "$w4m_nc_status" 2> "$w4m_nc_stderr" &
+        "$w4m_nc_action" "$w4m_nc_status" "$w4m_nc_boot" 2> "$w4m_nc_stderr" &
     w4m_nc_pid=$!
     if w4m_wait_nc_server; then
         w4m_nc_base="http://127.0.0.1:$(cat "$w4m_nc_port")"

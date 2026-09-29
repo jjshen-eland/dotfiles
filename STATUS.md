@@ -30,10 +30,12 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
   child 在固定 10 秒 readiness budget 後仍存活、wait status 為 143（由診斷清理送出 TERM）、stderr 為空；但把
   window 改為 30 秒並降低輪詢頻率後，macOS CI 的三個 child 仍全數以相同 evidence 失敗，已反證「只是 10 秒太短」
   的 causal model。同一 macOS job 另重現 review fixture 的 Git `maintenance.lock` metadata 漂移；Ubuntu required
-  suite 與本機 parallel suite `1536 PASS／0 FAIL`。本輪兩個 CI repair commits 已用完，PR #243 保持未合併。
-- **Next step**：新一輪先在 timeout 前擷取 child 的 `ps` state／CPU time／wait channel，並在 Python import 前後與
-  bind／port-file write 前後寫入 bounded boot markers，以區分未 exec、卡在 interpreter/import、卡在 bind，或只是
-  未排程；同時讓 review fixture 揭露 transient Git metadata 的 exact path delta。取得 evidence 前不再調 timeout。
+  suite 與本機 parallel suite `1536 PASS／0 FAIL`。舊 head 第三次 macOS CI 仍以相同四個 failures 重現。新 diagnostic
+  candidate 會在 timeout 前擷取 child command／state／CPU time／wait channel／system process count，並以 bounded markers
+  區分 interpreter、import、bind、port write 階段；review fixture 改回報 exact added／removed／changed paths，未改 pass／
+  fail 判準。本機 integration shard `1132 PASS／0 FAIL`。
+- **Next step**：跑本機完整 parallel suite，將第一顆 diagnostic-only CI-facing commit 送 PR #243；依 macOS evidence
+  重建 causal model，root cause confirmed 前不做第二顆 repair commit。
 - **Writer**：codex:wait4me-fleet-rollout
 - **Workspace**：branch=docs/wait4me-fleet-rollout
 - **Write Scope**：STATUS.md, tests/run.sh, tests/run-parallel.sh, tests/review-readonly.py,
