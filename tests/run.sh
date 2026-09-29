@@ -6033,6 +6033,7 @@ else bad "sender未從明示env file載入NC設定或洩漏設定：$w4m_env_err
 w4m_nc_server="$w4m_fix/fake-nc.py"
 w4m_nc_port="$w4m_fix/fake-nc.port"
 w4m_nc_request="$w4m_fix/fake-nc-request.json"
+w4m_nc_stderr="$w4m_fix/fake-nc.stderr"
 cat > "$w4m_nc_server" <<'PY'
 import json
 import sys
@@ -6086,13 +6087,19 @@ with open(port_path, "w", encoding="utf-8") as stream:
     stream.write(str(server.server_port))
 server.handle_request()
 PY
-python3 "$w4m_nc_server" "$w4m_nc_port" "$w4m_nc_request" forward sent &
+w4m_wait_nc_server() {
+    for _ in {1..500}; do
+        [ -s "$w4m_nc_port" ] && return 0
+        kill -0 "$w4m_nc_pid" 2>/dev/null || return 1
+        sleep 0.02
+    done
+    return 1
+}
+
+python3 "$w4m_nc_server" "$w4m_nc_port" "$w4m_nc_request" forward sent \
+    2> "$w4m_nc_stderr" &
 w4m_nc_pid=$!
-for _ in {1..100}; do
-    [ -s "$w4m_nc_port" ] && break
-    sleep 0.02
-done
-if [ -s "$w4m_nc_port" ]; then
+if w4m_wait_nc_server; then
     w4m_nc_base="http://127.0.0.1:$(cat "$w4m_nc_port")"
     printf '%s\n' '{"message":"等待回應: fixture","level":"info","task":"agent-response-needed"}' \
         | NC_API_URL="$w4m_nc_base" NC_API_KEY='fixture-env-file-key' "$W4M_SEND" >/dev/null 2>&1
@@ -6114,22 +6121,18 @@ if [ -s "$w4m_nc_port" ]; then
         bad "sender未遵守NC Gateway wire contract：$(cat "$w4m_nc_request" 2>/dev/null)"
     fi
 else
-    bad "fake NC server未啟動"
+    bad "fake NC server未就緒：$(sed -n '1p' "$w4m_nc_stderr" 2>/dev/null)"
     kill "$w4m_nc_pid" 2>/dev/null || true
     wait "$w4m_nc_pid" 2>/dev/null || true
 fi
 
 for w4m_nc_result in 'forward failed' 'drop none'; do
-    rm -f "$w4m_nc_port" "$w4m_nc_request"
+    rm -f "$w4m_nc_port" "$w4m_nc_request" "$w4m_nc_stderr"
     read -r w4m_nc_action w4m_nc_status <<< "$w4m_nc_result"
     python3 "$w4m_nc_server" "$w4m_nc_port" "$w4m_nc_request" \
-        "$w4m_nc_action" "$w4m_nc_status" &
+        "$w4m_nc_action" "$w4m_nc_status" 2> "$w4m_nc_stderr" &
     w4m_nc_pid=$!
-    for _ in {1..100}; do
-        [ -s "$w4m_nc_port" ] && break
-        sleep 0.02
-    done
-    if [ -s "$w4m_nc_port" ]; then
+    if w4m_wait_nc_server; then
         w4m_nc_base="http://127.0.0.1:$(cat "$w4m_nc_port")"
         printf '%s\n' '{"message":"等待回應: fixture","level":"info","task":"agent-response-needed"}' \
             | NC_API_URL="$w4m_nc_base" NC_API_KEY='fixture-env-file-key' "$W4M_SEND" >/dev/null 2>&1
@@ -6137,7 +6140,7 @@ for w4m_nc_result in 'forward failed' 'drop none'; do
         wait "$w4m_nc_pid"
         assert_rc "sender拒絕未確認channel送達的Gateway回覆（${w4m_nc_result}）" 75 "$w4m_nc_rc"
     else
-        bad "fake NC server未啟動（${w4m_nc_result}）"
+        bad "fake NC server未就緒（${w4m_nc_result}）：$(sed -n '1p' "$w4m_nc_stderr" 2>/dev/null)"
         kill "$w4m_nc_pid" 2>/dev/null || true
         wait "$w4m_nc_pid" 2>/dev/null || true
     fi
