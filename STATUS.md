@@ -25,8 +25,9 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **Constraints**：本輪最多兩個 CI repair commits；只處理 wait4me fake-server test harness 的已證實原因，不修改
   production sender／hook contract；不 bypass checks、不改 protection、不直推 default。
 - **Progress**：root-cause terminal state 為 `UNCONFIRMED`；已排除 PR executable diff、runner image 差異與單次
-  transient，下一個辨識證據是 child process 的 wait status 與 readiness reason。
-- **Next step**：加入不改變 pass/fail 判準的 child lifecycle diagnostics，更新同一 PR，讀取 macOS CI evidence。
+  transient。Diagnostic candidate 已讓 readiness failure 在 wait 後回報 child state／wait status／stderr，未改判準；
+  本機 CI-equivalent parallel suite `1536 PASS／0 FAIL`。
+- **Next step**：送出 diagnostic candidate 至同一 PR，讀取 macOS CI 的 child lifecycle evidence後再決定最小修復。
 - **Writer**：codex:wait4me-fleet-rollout
 - **Workspace**：branch=docs/wait4me-fleet-rollout
 - **Write Scope**：STATUS.md, tests/run.sh, docs/archive/milestones-2026-09.md
