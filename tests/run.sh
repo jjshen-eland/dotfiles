@@ -6088,10 +6088,13 @@ with open(port_path, "w", encoding="utf-8") as stream:
 server.handle_request()
 PY
 w4m_wait_nc_server() {
-    for _ in {1..500}; do
+    # Parallel macOS CI can leave an otherwise healthy Python child runnable but
+    # unscheduled for more than 10 seconds. Keep the child-liveness gate, while
+    # giving loaded runners a bounded startup window with fewer polling processes.
+    for _ in {1..60}; do
         [ -s "$w4m_nc_port" ] && return 0
         kill -0 "$w4m_nc_pid" 2>/dev/null || return 1
-        sleep 0.02
+        sleep 0.5
     done
     return 1
 }
