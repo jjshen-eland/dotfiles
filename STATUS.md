@@ -12,7 +12,26 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-目前無進行中項目。
+### W-20260929-wait4me-macos-ci-readiness
+
+- **Context**：PR #243 的 Ubuntu required suite、本機 serial 與本機 parallel 均全綠，但 macOS 15 required suite
+  在同一 head 連續兩次無法啟動 wait4me fake NC HTTP server；第一次 1/3 失敗，重跑 3/3 失敗，現有 stderr
+  在 child wait 前讀取而為空，尚無法區分 process exit、signal 或 readiness timeout。
+- **Goal**：以可反駁的 child lifecycle evidence 確認 macOS-only failure 的第一個 causal divergence，做最小修復，
+  讓 PR #243 的 required checks 在 exact head 全綠後完成 merge。
+- **Acceptance Criteria**：先保留原 CI failure 並讓 readiness failure 回報 child exit／signal／timeout；因果來源有
+  control evidence；最小修復使本機 serial／parallel、Ubuntu 24.04 與 macOS 15 suites 全綠；不得以 retry、bypass
+  或放寬 required checks 冒充修復；PR #243 合併後本地 main 同步並清除 branch。
+- **Constraints**：本輪最多兩個 CI repair commits；只處理 wait4me fake-server test harness 的已證實原因，不修改
+  production sender／hook contract；不 bypass checks、不改 protection、不直推 default。
+- **Progress**：root-cause terminal state 為 `UNCONFIRMED`；已排除 PR executable diff、runner image 差異與單次
+  transient，下一個辨識證據是 child process 的 wait status 與 readiness reason。
+- **Next step**：加入不改變 pass/fail 判準的 child lifecycle diagnostics，更新同一 PR，讀取 macOS CI evidence。
+- **Writer**：codex:wait4me-fleet-rollout
+- **Workspace**：branch=docs/wait4me-fleet-rollout
+- **Write Scope**：STATUS.md, tests/run.sh, docs/archive/milestones-2026-09.md
+- **Dossier Steward**：codex:wait4me-fleet-rollout
+- **關聯**：PR#243;M-20260929-wait4me-fleet-rollout;M-20260929-wait4me-nc-wire-repair;D-20260929-wait4me-nc-wire-contract
 
 ## 暫停中
 
