@@ -6095,6 +6095,20 @@ w4m_wait_nc_server() {
     done
     return 1
 }
+w4m_capture_nc_failure() {
+    local w4m_nc_state w4m_nc_wait_rc w4m_nc_error
+    if kill -0 "$w4m_nc_pid" 2>/dev/null; then
+        w4m_nc_state="alive-after-readiness-timeout"
+        kill "$w4m_nc_pid" 2>/dev/null || true
+    else
+        w4m_nc_state="exited-before-ready"
+    fi
+    wait "$w4m_nc_pid" 2>/dev/null
+    w4m_nc_wait_rc=$?
+    w4m_nc_error="$(sed -n '1p' "$w4m_nc_stderr" 2>/dev/null)"
+    [ -n "$w4m_nc_error" ] || w4m_nc_error="<empty>"
+    w4m_nc_failure_detail="state=${w4m_nc_state}; wait_rc=${w4m_nc_wait_rc}; stderr=${w4m_nc_error}"
+}
 
 python3 "$w4m_nc_server" "$w4m_nc_port" "$w4m_nc_request" forward sent \
     2> "$w4m_nc_stderr" &
@@ -6121,9 +6135,8 @@ if w4m_wait_nc_server; then
         bad "sender未遵守NC Gateway wire contract：$(cat "$w4m_nc_request" 2>/dev/null)"
     fi
 else
-    bad "fake NC server未就緒：$(sed -n '1p' "$w4m_nc_stderr" 2>/dev/null)"
-    kill "$w4m_nc_pid" 2>/dev/null || true
-    wait "$w4m_nc_pid" 2>/dev/null || true
+    w4m_capture_nc_failure
+    bad "fake NC server未就緒：${w4m_nc_failure_detail}"
 fi
 
 for w4m_nc_result in 'forward failed' 'drop none'; do
@@ -6140,9 +6153,8 @@ for w4m_nc_result in 'forward failed' 'drop none'; do
         wait "$w4m_nc_pid"
         assert_rc "sender拒絕未確認channel送達的Gateway回覆（${w4m_nc_result}）" 75 "$w4m_nc_rc"
     else
-        bad "fake NC server未就緒（${w4m_nc_result}）：$(sed -n '1p' "$w4m_nc_stderr" 2>/dev/null)"
-        kill "$w4m_nc_pid" 2>/dev/null || true
-        wait "$w4m_nc_pid" 2>/dev/null || true
+        w4m_capture_nc_failure
+        bad "fake NC server未就緒（${w4m_nc_result}）：${w4m_nc_failure_detail}"
     fi
 done
 
