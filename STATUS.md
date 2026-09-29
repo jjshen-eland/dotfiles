@@ -12,7 +12,26 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-目前無進行中項目。
+### W-20260929-wait4me-fleet-rollout-closeout
+
+- **Context**：ready4quit 已把 PR #242 合併、wait4me live NC 驗收與 14/14 `dotsync` 部署結果追加至
+  2026-09 milestone shard；首次 completion candidate 的 parent 尚無 durable steward，已由 authority gate 阻擋。
+- **Goal**：以可驗證的 parent authority 重建並送出 wait4me fleet rollout completion milestone，使 repo history
+  與已完成的遠端／機隊狀態一致。
+- **Acceptance Criteria**：milestone 保留 PR #242、merge commit、14/14 rollout、live notification 與既有 Codex
+  session 重載注意事項；doc-governance audit、diff check 與 repo tests 通過；active assignment 先形成 parent
+  commit，completion candidate 通過 parent-authority gate；變更經 feature branch PR 合併至 `origin/main`，本地 main
+  同步且本輪 branch 清除。
+- **Constraints**：不改寫既有已 commit history record；只重建尚未 push 的 local candidate `7078e2fc6bdc339cd9f3fecbad604869e886dd0f`；
+  不修改 wait4me code 或 hooks；不得直推 default；本輪 `$project --merge` 只涵蓋同一 repo／PR／目標的必要修復。
+- **Progress**：使用者已選擇 prompt-bound recovery；candidate 尚未 push、無 PR、working tree 在 recovery 前 clean。
+- **Next step**：取得 prompt-bound new-workline authority，重建 assignment parent 與 completion candidate，再完成 PR
+  required checks 與 merge 最後一哩。
+- **Writer**：codex:wait4me-fleet-rollout
+- **Workspace**：branch=docs/wait4me-fleet-rollout
+- **Write Scope**：STATUS.md, docs/archive/milestones-2026-09.md
+- **Dossier Steward**：codex:wait4me-fleet-rollout
+- **關聯**：M-20260929-wait4me-fleet-rollout;M-20260929-wait4me-nc-wire-repair;D-20260929-wait4me-nc-wire-contract;PR#242
 
 ## 暫停中
 
