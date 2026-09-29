@@ -35,6 +35,39 @@
             "timeout": 15
           }
         ]
+      },
+      {
+        "matcher": "startup|clear|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh session-start",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh prompt",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh permission",
+            "timeout": 5,
+            "async": true
+          }
+        ]
       }
     ],
     "Stop": [
@@ -43,6 +76,23 @@
           {
             "type": "command",
             "command": "\"$HOME\"/.dotfiles/scripts/agent-turn-end-timestamp.sh",
+            "timeout": 3
+          },
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh stop",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh session-end",
             "timeout": 3
           }
         ]

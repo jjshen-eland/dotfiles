@@ -1,0 +1,4 @@
+interface:
+  display_name: "Wait4me"
+  short_description: "Notify me when this session needs my reply"
+  default_prompt: "$wait4me on"

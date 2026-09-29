@@ -221,3 +221,9 @@
   - 放棄:所有候選必須改完；把 static 矛盾冒充 behavioral RED；刪除舊 eval 或重判歷史；為維護文字改 topology／review 策略／handoff 授權
   - 重議:Q3/Q7/Q8 有可重現失敗或可觀察收益；所選正常／安全臂退步；需要新產品決策時只暫停該項
   - 關聯:docs/plans/2026-09-25-instruction-quality.md;D-20260825-portable-skill-authoring-default;D-20260826-portable-nc-notify;D-20260924-remove-unrequested-eval-budget
+
+- **D-20260929-wait4me-session-hook-boundary · 2026-09-29 `$wait4me` 以 portable skill 管語意、lifecycle hooks 管事件**：純 skill 無法攔截後續 approval UI，也不能在每回合可靠判斷是否真的等待使用者；內建 machine-level notify 又不是 session switch。因此採常駐但預設休眠的 `UserPromptSubmit`／`PermissionRequest`／main-agent `Stop`／session lifecycle hooks，狀態只放在以 session ID 雜湊隔離的 temp store。`UserPromptSubmit` 對 enabled session 注入精確 marker contract，`Stop` 只認 marker、不解析 transcript 或以問號猜測，`PermissionRequest` 只送 repo 與 tool 類別、不送 raw input；通知失敗永遠不改 agent 結果。Bare／`on` 是截至 `off` 或 lifecycle boundary 的有界通知授權，不延續到 resume／ownership transfer。
+  - 日期來源:direct
+  - 放棄:每個 Stop 都通知；以自然語言 heuristic 分類；純 skill 靠 conversation memory 維持開關；將 command／prompt／transcript 塞進 NC payload；讓 notification transport 阻塞 approval
+  - 重議:runtime 提供原生、語意精確的 user-response-required event 或真正 per-session notify toggle；hook payload／output schema 改變；真實使用顯示 marker 漏報或 notification noise
+  - 關聯:W-20260929-wait4me-session-notify;M-20260929-wait4me-portable-session-notifications;shared/skills/wait4me/references/workflow.md;shared/skills/wait4me/evals.md
