@@ -16,7 +16,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 - **Context**：多個 Codex session 的一般問題使用 CLI 選項 UI，手機難以切換到自由輸入。
 - **Goal**：一般問題在聊天中顯示可直接回覆數字的選項與建議項。
-- **Acceptance Criteria**：全域 Codex 指令與 Project／handoff workflow 一致；fresh Codex session 顯示文字編號選項；相關 eval、validator、完整測試及 doc audit 通過；本批變更經 PR 進入 `main`。
+- **Acceptance Criteria**：全域 Codex 指令與 Project／handoff workflow 一致；fresh Codex session 顯示文字編號選項；相關 eval、validator、完整測試及 doc audit 通過。
 - **Constraints**：保留主機強制的命令與工具核准流程；不變更 Claude Code 的提問路徑。
 - **Writer**：codex:mobile-text-questions
 - **Workspace**：branch=fix/mobile-text-questions
