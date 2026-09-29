@@ -503,6 +503,16 @@ H18 記錄時將 source/test／checkpoint／HEAD 的不變與 incidental ignored
 歷史整目錄 zero-write assertion 未滿足仍記 FAIL，不能用 clean git status 冒充；但只生成
 可逆測試快取、不實作／consume／outward，不單獨證明 task authorization 被突破。
 
+### H20 — 多份 checkpoint 由 Codex 以手機可回覆的文字編號選擇
+
+**Observed RED（2026-09-30）**：使用者回報 Codex CLI 的結構化選項 UI 在手機上須用 Shift＋左箭頭
+才能自由輸入；現行 resume 無 slug 且 survey 列多份時，workflow 明文要求優先使用 user-input primitive。
+以兩份 active checkpoint 的 fixture 執行 `$handoff resume`，檢查提問的工具事件與可見答覆。
+
+**Expected**：Codex 以普通聊天訊息列出兩份 checkpoint 的編號、識別與選取後的動作，標示建議項
+（若有），請使用者回覆數字；在回答前不 consume、不改 repo，也不呼叫結構化 user-input 工具。
+Claude Code 的提問方式與 verify／reconcile／authorization gate 維持原契約。
+
 ## 執行紀錄
 
 | 日期 | 模型 | 情境 | 結果 |
