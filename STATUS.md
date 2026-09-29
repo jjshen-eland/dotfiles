@@ -12,21 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### W-20260929-wait4me-nc-wire-repair
-
-- **Writer**：codex:wait4me-nc-wire-repair
-- **Workspace**：branch=fix/wait4me-env-source
-- **Write Scope**：STATUS.md, shared/skills/wait4me/{evals.md,references/workflow.md,scripts/wait4me-hook.sh,
-  scripts/wait4me-send.py}, claude/settings.json, codex/config.toml, tests/run.sh, 結案時既有 history authority
-- **Dossier Steward**：codex:wait4me-nc-wire-repair
-
-修復 `$wait4me` 已啟用但 NC 通知未送達。承接前一 session 尚未提交的 env-file／failed-delivery dedup
-修補，不改 topology、runtime entries 或其他 skills。
-完成條件：先以 fake server 重現 base URL、`X-API-Key` 與 Gateway event schema mismatch；修後 exact
-failure 轉綠，owner-only env file、secret-safe failure、session isolation、marker／approval 去重與雙 runtime
-wiring 不退步；兩端 validator、`./tests/run.sh`、doc audit、diff check 通過；最後以使用者已授權的一則
-live test 確認 NC 回覆實際 `sent`，不將單純 HTTP 2xx 冒充 channel delivery。Commit／push／PR／merge／
-部署不在原實作批授權內；本輪 `$project --merge` 另行授權其 lifecycle endpoint。
+目前無進行中項目。
 
 ## 暫停中
 
