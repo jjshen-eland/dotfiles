@@ -33,7 +33,7 @@ timeout = 5
 
 [[hooks.PermissionRequest.hooks]]
 type = "command"
-command = '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh permission'
+command = 'WAIT4ME_ENV_FILE="$HOME/Projects/krepo/.env" "$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh permission'
 timeout = 5
 async = true
 
@@ -46,7 +46,7 @@ timeout = 3
 
 [[hooks.Stop.hooks]]
 type = "command"
-command = '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh stop'
+command = 'WAIT4ME_ENV_FILE="$HOME/Projects/krepo/.env" "$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh stop'
 timeout = 5
 async = true
 

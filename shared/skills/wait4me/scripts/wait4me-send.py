@@ -5,12 +5,16 @@ from __future__ import annotations
 
 import json
 import os
+import stat
 import sys
 import urllib.request
 
 
 ALLOWED_LEVELS = {"info", "warning", "error"}
 TASK = "agent-response-needed"
+SOURCE = "agent-wait4me"
+EVENT_TYPE = "alert"
+DELIVERY_UNAVAILABLE = 75
 
 
 def safe_warning(kind: str) -> None:
@@ -52,41 +56,104 @@ def capture(payload: dict[str, str], path: str) -> None:
         stream.write(encoded)
 
 
+def load_env_file(path: str) -> dict[str, str]:
+    """讀取兩個明示設定鍵；不執行shell語法或展開其他變數。"""
+    descriptor: int | None = None
+    try:
+        descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        metadata = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(metadata.st_mode)
+            or metadata.st_uid != os.getuid()
+            or metadata.st_mode & 0o077
+        ):
+            safe_warning("unsafe-env-file")
+            os.close(descriptor)
+            return {}
+        with os.fdopen(descriptor, encoding="utf-8") as stream:
+            descriptor = None
+            lines = stream.read().splitlines()
+    except (OSError, UnicodeError):
+        if descriptor is not None:
+            os.close(descriptor)
+        safe_warning("env-file-unavailable")
+        return {}
+
+    values: dict[str, str] = {}
+    for raw in lines:
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.removeprefix("export ").strip()
+        if key not in {"NC_API_URL", "NC_API_KEY"}:
+            continue
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+            value = value[1:-1]
+        if value:
+            values[key] = value
+    return values
+
+
+def transport_config() -> tuple[str, str] | None:
+    url = os.environ.get("NC_API_URL")
+    api_key = os.environ.get("NC_API_KEY")
+    env_path = os.environ.get("WAIT4ME_ENV_FILE")
+    if (not url or not api_key) and env_path:
+        values = load_env_file(env_path)
+        url = url or values.get("NC_API_URL")
+        api_key = api_key or values.get("NC_API_KEY")
+    if not url or not api_key:
+        safe_warning("missing-config")
+        return None
+    return url, api_key
+
+
 def main() -> int:
     payload = load_payload()
     if payload is None:
         return 0
 
-    capture_path = os.environ.get("WAIT4ME_TEST_CAPTURE")
-    if capture_path:
-        try:
-            capture(payload, capture_path)
-        except OSError:
-            safe_warning("capture-failed")
-        return 0
-
-    url = os.environ.get("NC_API_URL")
-    api_key = os.environ.get("NC_API_KEY")
-    if not url or not api_key:
-        return 0
+    config = transport_config()
+    if config is None:
+        return DELIVERY_UNAVAILABLE
+    base_url, api_key = config
 
     try:
+        capture_path = os.environ.get("WAIT4ME_TEST_CAPTURE")
+        if capture_path:
+            capture(payload, capture_path)
+            return 0
         if os.environ.get("WAIT4ME_TEST_ERROR"):
             raise RuntimeError("synthetic transport failure")
-        body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode()
+        gateway_url = base_url.rstrip("/") + "/api/v1/events"
+        wire_payload = {
+            "event_type": EVENT_TYPE,
+            "source": SOURCE,
+            "level": payload["level"],
+            "message": payload["message"],
+        }
+        body = json.dumps(wire_payload, ensure_ascii=False, separators=(",", ":")).encode()
         request = urllib.request.Request(
-            url,
+            gateway_url,
             data=body,
             method="POST",
             headers={
-                "Authorization": f"Bearer {api_key}",
+                "X-API-Key": api_key,
                 "Content-Type": "application/json",
             },
         )
         with urllib.request.urlopen(request, timeout=3) as response:
-            response.read(1)
+            result = json.load(response)
+        if result.get("action_taken") not in {"forward", "escalate"} or result.get(
+            "notification_status"
+        ) not in {"sent", "deduplicated"}:
+            safe_warning("delivery-unconfirmed")
+            return DELIVERY_UNAVAILABLE
     except Exception as error:  # Notification failure must never escape into the hook.
         safe_warning(type(error).__name__)
+        return DELIVERY_UNAVAILABLE
     return 0
 
 

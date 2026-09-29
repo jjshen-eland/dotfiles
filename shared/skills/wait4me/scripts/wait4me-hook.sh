@@ -43,8 +43,10 @@ enable_session() {
 
 cleanup_session() {
     rm -f "$enabled_file" 2>/dev/null
-    local sent_dirs=("$state_dir"/sent-*)
-    [ -e "${sent_dirs[0]:-}" ] && rmdir "${sent_dirs[@]}" 2>/dev/null
+    local marker_dir
+    for marker_dir in "$state_dir"/sent-* "$state_dir"/sending-*; do
+        [ -d "$marker_dir" ] && rmdir "$marker_dir" 2>/dev/null
+    done
     rmdir "$state_dir" 2>/dev/null
 }
 
@@ -62,11 +64,25 @@ clean_text() {
     jq -nr --arg value "$1" '$value | gsub("[\\r\\n\\t]+"; " ") | gsub("  +"; " ") | .[0:120]' 2>/dev/null
 }
 
-mark_once() {
-    local fingerprint
-    fingerprint="$(printf '%s' "$1" | hash_text)"
-    [ -n "$fingerprint" ] || return 1
-    mkdir "$state_dir/sent-$fingerprint" 2>/dev/null
+begin_notification() {
+    notification_fingerprint="$(printf '%s' "$1" | hash_text)"
+    [ -n "$notification_fingerprint" ] || return 1
+    [ ! -d "$state_dir/sent-$notification_fingerprint" ] || return 1
+    mkdir "$state_dir/sending-$notification_fingerprint" 2>/dev/null
+}
+
+finish_notification() {
+    local sending="$state_dir/sending-$notification_fingerprint"
+    local sent="$state_dir/sent-$notification_fingerprint"
+    if [ "$1" = success ]; then
+        if [ -d "$sent" ]; then
+            rmdir "$sending" 2>/dev/null
+        else
+            mv "$sending" "$sent" 2>/dev/null || rmdir "$sending" 2>/dev/null
+        fi
+    else
+        rmdir "$sending" 2>/dev/null
+    fi
 }
 
 send_notification() {
@@ -76,7 +92,16 @@ send_notification() {
     [ -x "$sender" ] || return 0
     jq -n --arg message "$message" \
         '{message:$message,level:"info",task:"agent-response-needed"}' 2>/dev/null \
-        | "$sender" || true
+        | "$sender"
+}
+
+notify_once() {
+    begin_notification "$1" || return 0
+    if send_notification "$2"; then
+        finish_notification success
+    else
+        finish_notification failure
+    fi
 }
 
 case "$mode" in
@@ -123,8 +148,8 @@ case "$mode" in
         repo="$(basename "${cwd:-session}")"
         event_id="$(jq -r '.tool_use_id // .permission_request_id // .turn_id // empty' <<< "$payload" 2>/dev/null)"
         [ -n "$event_id" ] || event_id="$(printf '%s' "$payload" | hash_text)"
-        mark_once "permission|$event_id|$tool_name" || exit 0
-        send_notification "等待核准: $repo 的 $tool_name 動作需要你回 terminal 回應。"
+        notify_once "permission|$event_id|$tool_name" \
+            "等待核准: $repo 的 $tool_name 動作需要你回 terminal 回應。"
         ;;
     stop)
         is_enabled || exit 0
@@ -136,8 +161,8 @@ case "$mode" in
         repo="$(basename "${cwd:-session}")"
         turn_id="$(jq -r '.turn_id // empty' <<< "$payload" 2>/dev/null)"
         [ -n "$turn_id" ] || turn_id="$(printf '%s' "$reason" | hash_text)"
-        mark_once "stop|$turn_id|$reason" || exit 0
-        send_notification "等待回應: $repo — ${reason}。請回 terminal。"
+        notify_once "stop|$turn_id|$reason" \
+            "等待回應: $repo — ${reason}。請回 terminal。"
         ;;
     control)
         action="${2:-status}"
