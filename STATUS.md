@@ -22,19 +22,22 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **Acceptance Criteria**：先保留原 CI failure 並讓 readiness failure 回報 child exit／signal／timeout；因果來源有
   control evidence；最小修復使本機 serial／parallel、Ubuntu 24.04 與 macOS 15 suites 全綠；不得以 retry、bypass
   或放寬 required checks 冒充修復；PR #243 合併後本地 main 同步並清除 branch。
-- **Constraints**：本輪最多兩個 CI repair commits；只處理 wait4me fake-server test harness 的已證實原因，不修改
-  production sender／hook contract；不 bypass checks、不改 protection、不直推 default。
+- **Constraints**：前輪兩個 CI repair commits 已用完；使用者已授權新的 systemic-diagnosis round，最多兩個新的
+  CI-facing commits：第一顆只加入能區分 process／shared-state 假設的 bounded diagnostics，第二顆僅在 root cause
+  confirmed 後做單一 causal repair。不修改 production sender／hook contract；不 bypass checks、不改 protection、
+  不直推 default。
 - **Progress**：root-cause terminal state 為 `SYSTEMIC REVIEW NEEDED`。Diagnostic CI 曾證明兩個失敗的 Python
   child 在固定 10 秒 readiness budget 後仍存活、wait status 為 143（由診斷清理送出 TERM）、stderr 為空；但把
   window 改為 30 秒並降低輪詢頻率後，macOS CI 的三個 child 仍全數以相同 evidence 失敗，已反證「只是 10 秒太短」
   的 causal model。同一 macOS job 另重現 review fixture 的 Git `maintenance.lock` metadata 漂移；Ubuntu required
   suite 與本機 parallel suite `1536 PASS／0 FAIL`。本輪兩個 CI repair commits 已用完，PR #243 保持未合併。
-- **Next step**：先重議 macOS parallel harness 的 shared-state／process coupling；下一個可區分假設的 evidence 是在
-  timeout 前擷取 child 的 `ps` state／CPU time／wait channel，並在 Python import 前後與 bind／port-file write 前後寫入
-  bounded boot markers，以區分未 exec、卡在 interpreter/import、卡在 bind，或只是未排程。取得 evidence 前不再調 timeout。
+- **Next step**：新一輪先在 timeout 前擷取 child 的 `ps` state／CPU time／wait channel，並在 Python import 前後與
+  bind／port-file write 前後寫入 bounded boot markers，以區分未 exec、卡在 interpreter/import、卡在 bind，或只是
+  未排程；同時讓 review fixture 揭露 transient Git metadata 的 exact path delta。取得 evidence 前不再調 timeout。
 - **Writer**：codex:wait4me-fleet-rollout
 - **Workspace**：branch=docs/wait4me-fleet-rollout
-- **Write Scope**：STATUS.md, tests/run.sh, docs/archive/milestones-2026-09.md
+- **Write Scope**：STATUS.md, tests/run.sh, tests/run-parallel.sh, tests/review-readonly.py,
+  docs/archive/milestones-2026-09.md
 - **Dossier Steward**：codex:wait4me-fleet-rollout
 - **關聯**：PR#243;M-20260929-wait4me-fleet-rollout;M-20260929-wait4me-nc-wire-repair;D-20260929-wait4me-nc-wire-contract
 
