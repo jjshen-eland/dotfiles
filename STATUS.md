@@ -24,8 +24,9 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
   或放寬 required checks 冒充修復；PR #243 合併後本地 main 同步並清除 branch。
 - **Constraints**：前輪兩個 CI repair commits 已用完；使用者已授權新的 systemic-diagnosis round，最多兩個新的
   CI-facing commits：第一顆只加入能區分 process／shared-state 假設的 bounded diagnostics，第二顆僅在 root cause
-  confirmed 後做單一 causal repair。不修改 production sender／hook contract；不 bypass checks、不改 protection、
-  不直推 default。
+  confirmed 後做單一 causal repair。該 repair 已讓 macOS required suite 轉綠；使用者另授權一顆窄修復 commit，只處理
+  已證實的 review fixture Git maintenance race。不修改 production sender／hook contract；不 bypass checks、不改
+  protection、不直推 default。
 - **Progress**：使用者授權重開 systemic diagnosis 後，root-cause terminal state 為 `ROOT CAUSE CONFIRMED`。
   Diagnostic CI 曾證明兩個失敗的 Python
   child 在固定 10 秒 readiness budget 後仍存活、wait status 為 143（由診斷清理送出 TERM）、stderr 為空；但把
@@ -38,9 +39,12 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
   imports；前兩個停在 `HTTPServer(...)` constructor 內 30 秒且 CPU time 僅 0.06–0.11 秒，第三個在 deadline 附近完成
   bind／port write。CPython 3.14 的 `HTTPServer.server_bind()` 在 TCP bind 後執行 fixture 不需要的
   `socket.getfqdn(host)`；這是 constructor path 中唯一會等待外部 name-service state、且符合 sleeping child、低 CPU、
-  intermittent completion 與 OS-specific control 的 causal divergence。Repair 是否完成仍待 exact-head CI 驗證。
-- **Next step**：第二顆也是本輪最後一顆 CI-facing commit 保留 TCP bind/listen，但以 fixture subclass 跳過未使用的
-  reverse-name lookup；先跑本機完整 parallel suite，再以 exact macOS head 的原 failure evidence 驗證因果。
+  intermittent completion 與 OS-specific control 的 causal divergence。Fixture subclass 跳過該 lookup 後，macOS
+  required suite 由連續失敗轉為 `PASS`（2m14s），確認 wait4me root cause 與 repair。相同 exact head 的 Ubuntu 唯一
+  failure 精確顯示 snapshot 前存在、capture 後消失的 `.git/objects/maintenance.lock`；Git 的 `maintenance.auto` 預設
+  會 detached background maintenance，故 assertion 量到的是 fixture 自己尚未收斂的 transient state，不是 review mutation。
+- **Next step**：在 review fixture 寫入任何 Git objects 前，局部設定 `maintenance.auto=false` 與 `gc.auto=0`，保留完整
+  metadata assertion；跑本機完整 parallel suite後提交唯一獲授權的額外修復，再以 Ubuntu／macOS exact-head CI 驗證。
 - **Writer**：codex:wait4me-fleet-rollout
 - **Workspace**：branch=docs/wait4me-fleet-rollout
 - **Write Scope**：STATUS.md, tests/run.sh, tests/run-parallel.sh, tests/review-readonly.py,
