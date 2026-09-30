@@ -12,7 +12,13 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-目前無進行中項目。
+### global-agent-guidance
+
+- **Writer**: codex:global-agent-guidance
+- **Workspace**: branch=refactor/global-agent-guidance
+- **Write Scope**: `codex/AGENTS.md`, `claude/CLAUDE.md`, `STATUS.md`, `docs/archive/{decisions,milestones}-2026-09.md`
+- **Dossier Steward**: codex:global-agent-guidance
+- **Success Criteria**: 盤點兩端實際載入的全域 guidance、權限設定與 hook；只修可定位的重複或衝突，保留 kernel、授權和 shipping 行為；相關 gate 與全套測試通過，記錄保留設定差異的理由。
 
 ## 暫停中
 
