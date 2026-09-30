@@ -41,8 +41,8 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   `B-20260820-debt-17` 拆出。
 ## 已知缺口
 
-- **B-20260928-project-merge-continuation** · **#229 的 same-session binding 未延伸到完整
-  Project Log／shipping，多 repo `--merge` 仍會重問 scope 與 resume**。2026-09-25–28 同一
+- **B-20260928-project-merge-continuation** · **#229 Scenario 36 的主要修復已驗證，剩餘
+  first-delta safety coverage 與本輪發佈待完成**。原始 RED：2026-09-25–28 同一
   Codex session 以 `krepo-common` 為起點完成 KB Platform 八 repo workline；排除環境說明中的文字後，
   使用者共明確輸入 10 次 `$project --merge`，8 次在實際 shipping 前停下，合計產生 10 個
   確認：3 個 repo-set 範圍選擇、7 個 actor／workline／resume 選擇。至少 8 個是正常路徑
@@ -67,19 +67,19 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
 
   **分 root cause 改善狀態**：
 
-  1. `closed repo-set reuse` 已於 2026-09-29 形成未送出的本地候選：當前使用者任務或同一
+  1. `closed repo-set reuse` 於 2026-09-29 形成候選、後經 PR #240 合併：當前使用者任務或同一
      未壓縮 workline 中緊接 Spec 的 exact canonical roots，重新 discovery 與 `ship-state.sh`
      重驗完全一致時略過 Step 0 range 問題；只對新 repo、遺漏 repo、UNKNOWN 或範圍衝突
-     詢問 delta。此分項有 production RED、deterministic gate 與 1503／0 suite 證據，但不外推
-     為下列 binding／provenance 已修復，也尚未 commit／push／部署。
-  2. `workline-binding propagation` 已於 2026-09-29 形成未送出的本地候選：Spec helper exact PASS
+     詢問 delta。此分項有 production RED、deterministic gate 與 1503／0 suite 證據；不能單獨
+     外推為下列 binding／provenance 已修復。
+  2. `workline-binding propagation` 於 2026-09-29 形成候選、後經 PR #240 合併：Spec helper exact PASS
      後按 canonical root 封存 current-session packet，下一次 Log 先以原 assignment fingerprint
      與本輪 HEAD 重驗；完全一致就不回退 branch-derived actor 或重問 `resume=`。新 session、壓縮
      context、item／Writer／Workspace／Write Scope／Steward／transfer delta 仍走既有 recovery。
      Fresh Claude 首輪暴露「Spec 本輪新建 contract 沒有建 assignment」的缺口，已改為
      新建 exact same-runtime contract 後直接用 original fingerprint／full HEAD 建立 binding；
      Claude／Codex fresh normal 重驗皆 PASS。
-  3. `candidate actor provenance` 已於 2026-09-29 形成未送出的本地候選：任何 shared dossier
+  3. `candidate actor provenance` 於 2026-09-29 形成候選、後經 PR #240 合併：任何 shared dossier
      mutation／commit 前先取得 durable-authority PASS；若錯 actor candidate 已存在，只有 current-session
      binding PASS、candidate 是 pre-candidate HEAD 的單一直接子 commit、tree clean、無 remote-tracking
      ref、Step 1 證明未 push／無 PR 且無使用者／worker／parallel work 混入，helper 才回
@@ -107,9 +107,16 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   1508／0 已通過；兩 primary fresh normal 已驗證 binding／completion，Claude 另驗證
   exact-root Ship 摘要在 push 前緊鄰出現；safety 也證明
   scope、checkpoint、dirty／remote-visible candidate、deploy／delete 不越權。最後 literal-summary
-  fresh after 已通過 exact canonical roots 與 push ordering 驗收；local bare remote 仍無法驗證真實
-  PR／checks／merge endpoint，new-repo delta arm 也未取得有效 native packet；因此本 backlog 與 #229
-  維持 open。關聯 Scenario 36／GitHub #229。
+  fresh after 已通過 exact canonical roots 與 push ordering 驗收。真實 GitHub PR／兩平台 required checks／
+  rebase merge／本地同步已由 PR #240 驗證；原本未取得的 new-repo delta native packet 於 2026-09-30
+  在雙 primary fresh fixture 重現 RED：從有未送出 commit 的 C 啟動，明列 A/B 為 closed roots，兩端都
+  靜默排除 C 並先推送 A/B local bare feature refs。Step 0 最小修正後，雙端 delta 均只問 C、
+  且三個 repo 的 tree／index／HEAD／remote refs 不變；雙端 normal 均零 range 重問並推送 A/B
+  local feature branches，provider 缺席時不直推 main。修正與原始 trace 雜湊見
+  [#229 驗收計畫](plans/2026-09-30-issue-229-closure-evidence.md)。本輪新修正尚未送出；其餘
+  Scenario 36 safety arms 仍有 fixture 在第一個語意 delta 前停下的限制，需依相同獨立 oracle
+  補有效 native packet，故此項與 #229 目前仍 open。
+  關聯 Scenario 36／GitHub #229／PR #240。
 
 - **B-20260924-workflow-verification-economy** · **#229 整合case完成但verification／文件收尾仍有額外成本**。
   2026-09-24同一多步驟task兩primary均一答恢復且不擴scope；Opus仍在文件only變更後重跑suite兩次，另做一次mutation check，
