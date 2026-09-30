@@ -5,7 +5,7 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
 
 # Backlog
 
-待辦清單:技術債與已知缺口(更新日期:2026-09-29)
+待辦清單:技術債與已知缺口(更新日期:2026-10-01)
 
 > **為什麼與 `STATUS.md`／history 分家**：三者生命週期不同。STATUS 只留 active／paused；history
 > event 發生後 append-only；backlog 只留未結案狀態，直到做掉或明確放棄才會消失。
@@ -41,8 +41,8 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   `B-20260820-debt-17` 拆出。
 ## 已知缺口
 
-- **B-20260928-project-merge-continuation** · **#229 Scenario 36 的主要修復已驗證，剩餘
-  first-delta safety coverage 與本輪發佈待完成**。原始 RED：2026-09-25–28 同一
+- **B-20260928-project-merge-continuation** · **#229 Scenario 36 的主要修復已交付，剩餘
+  first-delta safety coverage 待驗證**。原始 RED：2026-09-25–28 同一
   Codex session 以 `krepo-common` 為起點完成 KB Platform 八 repo workline；排除環境說明中的文字後，
   使用者共明確輸入 10 次 `$project --merge`，8 次在實際 shipping 前停下，合計產生 10 個
   確認：3 個 repo-set 範圍選擇、7 個 actor／workline／resume 選擇。至少 8 個是正常路徑
@@ -113,11 +113,11 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   靜默排除 C 並先推送 A/B local bare feature refs。Step 0 最小修正後，雙端 delta 均只問 C、
   且三個 repo 的 tree／index／HEAD／remote refs 不變；雙端 normal 均零 range 重問並推送 A/B
   local feature branches，provider 缺席時不直推 main。修正與原始 trace 雜湊見
-  [#229 驗收計畫](plans/2026-09-30-issue-229-closure-evidence.md)。本輪新修正已在本地 feature branch
-  提交 `314fac4`，尚未 push／PR／merge；其餘
-  Scenario 36 safety arms 仍有 fixture 在第一個語意 delta 前停下的限制，需依相同獨立 oracle
-  補有效 native packet，故此項與 #229 目前仍 open。
-  關聯 Scenario 36／GitHub #229／PR #240。
+  [#229 驗收計畫](plans/2026-09-30-issue-229-closure-evidence.md)。2026-10-01，修正經 PR #247
+  rebase merge 至 `main`（交付 commit `a3c4170`，結案文件 commit `195732e`）；兩平台 required checks
+  通過、本地 default 已同步，#229 依凍結批次條件關閉。其餘 Scenario 36 safety arms 仍有 fixture
+  在第一個語意 delta 前停下的限制，需依相同獨立 oracle 補有效 native packet；本 backlog 項因此保留。
+  關聯 Scenario 36／GitHub #229／PR #240／PR #247。
 
 - **B-20260924-workflow-verification-economy** · **#229 整合case完成但verification／文件收尾仍有額外成本**。
   2026-09-24同一多步驟task兩primary均一答恢復且不擴scope；Opus仍在文件only變更後重跑suite兩次，另做一次mutation check，
