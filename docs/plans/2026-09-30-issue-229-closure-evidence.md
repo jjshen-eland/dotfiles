@@ -2,12 +2,12 @@
 
 - 日期：2026-09-30
 - 工作項：229-closure-evidence
-- 狀態：in-progress
+- 狀態：implemented
 - 種類：驗收
 - 需求來源：使用者要求依 #229 原驗收路徑規劃並完成隔離 repo 驗證
 - Writer／Steward：codex:issue-229-closure-evidence
 - 基準：`7fa240cf076b27e167b13960a3e0c4a96d749c68`，進場 `main...origin/main` 且 clean
-- 範圍：本檔、`STATUS.md`、必要時的既有 backlog 與本月 event-time history；fixture／raw traces 留在 repo 外
+- 範圍：本檔、`STATUS.md`、既有 backlog／本月 event-time history；雙端有效 RED 後追加共用 `log-workflow.md` Step 0 與 Scenario 36 oracle；fixture／raw traces 留在 repo 外
 
 ## 問題與已知證據
 
@@ -48,7 +48,7 @@
 
 四組 `before-snapshot.json`／`after-snapshot.json` 與 raw trace 同存於各自 case；兩個 delta 的前後 JSON 分別 byte-identical（Codex SHA-256 `5c1283123d260351a6d46a266dcc681230e489f826429295ce8fdadcbb979435`；Claude `21bf0980e71be911ffa0a1323e3b46518fb0b46fb33ed917b2dfe31167febf2f`）。Control 的 PR／merge 不可達是 local bare provider 的 fixture 邊界，不冒充真實 GitHub endpoint；該 endpoint 已由 PR #240 單獨驗證。時間差受模型與工具變異影響，不能從這四次推論整體吞吐改善。
 
-驗證：Codex Project skill validator PASS；`python3 scripts/doc-governance.py audit --ship` PASS；`git diff --check` PASS；完整 `./tests/run.sh` 1536 PASS／0 FAIL、exit 0。新增本節後仍需重跑跨引用 gate 的最終版。
+驗證：Codex Project skill validator PASS；`python3 scripts/doc-governance.py audit --ship` PASS；`git diff --check` PASS；完整 `./tests/run.sh` 1536 PASS／0 FAIL、exit 0。最終 completion 文件版再次完整執行，仍為 1536 PASS／0 FAIL、exit 0（148 秒）。
 
 ## 成功判準
 
@@ -78,4 +78,4 @@
 | 13 | repo regression suite 與 cross-runtime gates | 本輪 `./tests/run.sh` 1536 PASS／0 FAIL、exit 0；`doc-governance audit --ship`、Codex validator、diff check 通過 | 真實遠端 required checks 屬發佈階段；PR #240 是舊 revision 的 provider E2E |
 | 14 | 排除 Astra-only／無證據 editorial diff | 本輪只保留雙端 RED 對應的 Step 0 最小修正 | 原 umbrella 全部歷史變更仍需與各自 disposition 逐項核對 |
 
-**關閉判斷**：Scenario 36 的本輪 new-repo delta 若修後四臂與 Git oracle 全綠，可將這個缺口標成已驗；#229 原 acceptance 的 2／4／5／6／7／8／10／11／12／14 尚非全部通過。後續只需針對 [verification economy](../backlog.md) 與 [review residuals](../backlog.md) 中已有的真實觸發／未通過 packet 補可比較的正常及安全證據，先完成逐 gate 索引，再決定採用哪個最小機制；不能僅用本輪模擬 repo 關閉 umbrella issue。
+**關閉判斷**：Scenario 36 本輪 new-repo delta 的修後四臂與 Git oracle 全綠，這個缺口已完成本機驗證；#229 原 acceptance 的第 2–12、14 項尚非全部通過。後續依既有 backlog 的 verification economy、review residuals、Scenario 36 其餘 first-delta safety 限制補有效雙端證據，並建立每個 gate 的雙臂索引及歷史實作 manifest；對仍未改善的大型案例再決定最小機制。不能僅用本輪模擬 repo 關閉 umbrella issue。

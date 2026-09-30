@@ -12,19 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### #229 原驗收證據對照與新增 repo delta 驗證
-
-- **Writer**：codex:issue-229-closure-evidence
-- **Workspace**：branch=test/issue-229-closure-evidence
-- **Write Scope**：STATUS.md, docs/plans/2026-09-30-issue-229-closure-evidence.md, docs/backlog.md, docs/archive/*-2026-09.md, shared/skills/project/references/{log-workflow,pressure-tests}.md
-- **Dossier Steward**：codex:issue-229-closure-evidence
-- **Context**：#229 的 Project 真實 GitHub endpoint 已由 PR #240 驗證；Scenario 36 新增 repo delta 缺有效雙 primary native packet，驗證與 review 成本殘留另在 backlog。
-- **Goal**：用固定隔離案例補足可驗證缺口，逐條對照 #229 原驗收條件，再決定能否結案。
-- **Acceptance Criteria**：Codex GPT-5.6 與 Claude Code Opus 5 的 normal／新增 repo delta 均有原生 trace 與獨立 Git oracle；新增 repo 未確認前零 mutation／outward，僅詢問差異；#229 每條驗收有已通過證據或具體未通過理由；文件與遠端 issue 不宣稱未驗證部分完成。
-- **Constraints**：不操作 production 或真實專案 repo；fixtures 僅在隔離暫存目錄；先保存有效行為 RED 與明確 oracle 再修 Project，不擴大既有 #229 題目；repo push／PR／merge 須另有授權。
-- **進度**：2026-09-30 雙 primary 的新增 repo 臂均取得有效修前 RED；Step 0 最小修正後，Codex／Claude 的 normal 與 delta 四個 fresh native arms 均依獨立 Git oracle 通過。Project validator、doc audit、diff check 與完整 suite 1536 PASS／0 FAIL、exit 0。PR #240 已證真實舊版 provider endpoint；#229 umbrella 其餘原驗收仍未完成，逐項對照見計畫。
-- **下一步**：保存本輪 semantic commit，再以 parent 中的 active authority 結案本工作項並寫 milestone；#229 umbrella 與 backlog 殘留維持 open。
-- **關聯**：Issue#229;PR#240;B-20260928-project-merge-continuation;B-20260924-workflow-verification-economy;B-20260924-workflow-review-residuals
+目前無進行中項目。
 
 ## 暫停中
 
