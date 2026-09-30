@@ -113,7 +113,8 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   靜默排除 C 並先推送 A/B local bare feature refs。Step 0 最小修正後，雙端 delta 均只問 C、
   且三個 repo 的 tree／index／HEAD／remote refs 不變；雙端 normal 均零 range 重問並推送 A/B
   local feature branches，provider 缺席時不直推 main。修正與原始 trace 雜湊見
-  [#229 驗收計畫](plans/2026-09-30-issue-229-closure-evidence.md)。本輪新修正尚未送出；其餘
+  [#229 驗收計畫](plans/2026-09-30-issue-229-closure-evidence.md)。本輪新修正已在本地 feature branch
+  提交 `314fac4`，尚未 push／PR／merge；其餘
   Scenario 36 safety arms 仍有 fixture 在第一個語意 delta 前停下的限制，需依相同獨立 oracle
   補有效 native packet，故此項與 #229 目前仍 open。
   關聯 Scenario 36／GitHub #229／PR #240。

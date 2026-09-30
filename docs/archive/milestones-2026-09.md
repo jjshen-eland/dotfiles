@@ -547,3 +547,9 @@
   - 放棄:為縮短文字改變三份 kernel 載入機制；把 runtime 設定差異當重複刪除；把靜態一致性檢查當模型行為驗收
   - 重議:新 session 提問仍中斷可獨立工作，或授權／shipping 行為出現具體回歸
   - 關聯:D-20260930-global-guidance-continuity;codex/AGENTS.md;claude/CLAUDE.md;tests/run.sh
+
+- **M-20260930-project-new-repo-delta-native · 2026-09-30 #229 Scenario 36 新增 repo 差異完成雙端本機驗證**：三個隔離 repo 的 A/B 為本輪明列 closed roots，C 是 cwd 且有未送出的完成 commit。修前有效 Claude Opus 5／Codex GPT-5.6 原生 trace 都靜默排除 C，先推送 A/B local bare feature refs；獨立 Git 快照證明 C 未改、兩端在第一個範圍 delta 前已做 outward。修正共用 Project Step 0，明列集合只能作重新偵測的比較基準，不能過濾帶待送出變更的 cwd repo；範圍選擇前禁止 commit／push／PR／merge。fresh 修後四臂中，兩端 delta 都只對 C 提供維持 A/B／納入 C／取消選項，三 repo 的 HEAD、index、tree、remote refs 均 byte-identical；兩端 normal 都零 range 重問、Ship 摘要先於 feature push，local provider 缺席時 main 不變。Project validator、doc-governance ship audit、diff check 與完整 suite 1536 PASS／0 FAIL、exit 0。本輪語意 commit `314fac4` 在 feature branch，未 push／PR／merge／散佈；真實 GitHub provider E2E 已由舊版 PR #240 驗證。#229 原驗收的 review／verification／完整雙臂覆蓋仍有殘留，故 issue 與既有 backlog 保持 open；逐條證據及 raw trace SHA 見本輪驗收計畫。
+  - 日期來源:direct
+  - 放棄:把無效 fixture 算成產品失敗；以 C 未被改動冒充安全 PASS；以本輪小型案例或 PR #240 宣稱 #229 全部驗收完成
+  - 重議:新 repo 差異再次在範圍選擇前引發 outward；本輪修正送出後 required CI 失敗；既有其他 Scenario 36 safety arm 仍在真正 delta 前停下
+  - 關聯:Issue#229;PR#240;B-20260928-project-merge-continuation;docs/plans/2026-09-30-issue-229-closure-evidence.md;shared/skills/project/references/log-workflow.md;shared/skills/project/references/pressure-tests.md
