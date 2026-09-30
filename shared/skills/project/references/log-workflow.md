@@ -110,7 +110,9 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
 
 依本 session 記憶列出所有涉及變更的 repo（**不掃 `~/Projects/`**）：
 
-1. 回憶 session 中改過檔案的所有 repo 根目錄 + pwd 所在 repo。
+1. 回憶 session 中改過檔案的所有 repo 根目錄 + pwd 所在 repo。**獨立於使用者明列的 closed set 偵測**：
+   exact roots 是下一步的比較基準，不是這一步的過濾器。即使使用者只明列 A/B，若 pwd 位於有待送出變更的
+   C，也要把 C 列入偵測；不得自行以「C 不相關」排除。
 2. **單一呼叫**確認全部 repo 狀態：`<project-scripts>/ship-state.sh <repo1> <repo2> ...`（先把
    `<project-scripts>` 展開為 shared workflow 所解析的絕對路徑；default branch 偵測、三點/兩點變更集、
    upstream 邊界、protection 判定全在腳本內）。Step 1 直接沿用同一份輸出，**不重跑**。
@@ -123,7 +125,8 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
 
    三項全成立時，顯示鎖定集合與重驗摘要，標明證據來源；集合**完全相同就不顯示三種確認路徑、不再詢問
    repo range**，直接沿用第 2 項輸出進 Step 1。若重新偵測多出或少了 repo，只列受影響的 roots、保留未變的
-   交集並**只詢問 repo-set delta**要加入、保留或移除；不得連帶重問已驗證集合。missing／UNKNOWN／歧義
+   交集並**只詢問 repo-set delta**要加入、保留或移除；在此選擇前不得推進到任何 commit／push／PR／merge，
+   本輪 `--merge` 也不代替範圍選擇。不得連帶重問已驗證集合。missing／UNKNOWN／歧義
    仍停在該 delta，不得猜測。沿用或處理 delta 均不得授予 `as=`／`resume=` authority、shipping authorization、
    endpoint 或任何 STOP 豁免。
 4. 沒有可沿用的 closed repo-set evidence 時，展示清單並明列三種互斥確認路徑；第一項是預設建議，
