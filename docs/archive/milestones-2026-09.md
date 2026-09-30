@@ -541,3 +541,9 @@
   - 放棄:只在當前 session 承諾、讓 skill 內相反工具規則繼續生效、以關閉主機 approval 取代一般提問修復
   - 重議:新 session 的普通問題仍叫出選項 UI；Project／handoff 真實互動違反文字編號契約；手機回數字未能續行同一任務
   - 關聯:D-20260930-codex-mobile-text-questions;codex/AGENTS.md;shared/skills/project/references/pressure-tests.md;shared/skills/handoff/evals.md
+
+- **M-20260930-global-guidance-continuity · 2026-09-30 雙端全域提問規則的續作順序對齊**：核對 `~/.codex/AGENTS.md`、`~/.claude/CLAUDE.md`、Claude settings symlink 及 Codex config 合成來源後，修正 Codex 提問時機，合併 Claude 的歧義分支，移除 Codex shipping 的 merge 授權重述；未動三份 kernel、Auto mode、approval、hooks 或 skill。兩次完整 `./tests/run.sh` 皆 `1536 PASS／0 FAIL`，最終 kernel gate、doc-governance ship audit 與 diff check 通過。這是規則一致性與維護面修正，尚無 fresh runtime 行為 eval，故不宣稱量得完成率或耗時改善；本地 feature branch 保留，未 push／merge／散佈。
+  - 日期來源:direct
+  - 放棄:為縮短文字改變三份 kernel 載入機制；把 runtime 設定差異當重複刪除；把靜態一致性檢查當模型行為驗收
+  - 重議:新 session 提問仍中斷可獨立工作，或授權／shipping 行為出現具體回歸
+  - 關聯:D-20260930-global-guidance-continuity;codex/AGENTS.md;claude/CLAUDE.md;tests/run.sh

@@ -13,7 +13,7 @@
 
 ## Questions for the user
 
-- For ordinary clarifications and choices, ask in the chat with numbered text options (usually 2–3), a short explanation of each outcome, and a clearly marked recommended option when there is one. End the turn and wait; the user can reply with just the number from a phone. Do not use `request_user_input` or `request_user_input_async` for these questions, even when those tools are available.
+- For ordinary clarifications and choices, first finish safe, authorized work that does not depend on the answer. Then ask in the chat with numbered text options (usually 2–3), a short explanation of each outcome, and a clearly marked recommended option when there is one. End the turn and wait; the user can reply with just the number from a phone. Do not use `request_user_input` or `request_user_input_async` for these questions, even when those tools are available.
 - Keep host-required command, network, file, and connected-tool approval requests in their required approval flow. This preference does not grant permission for any action.
 
 ## Repo contract precedence
@@ -58,7 +58,7 @@ conventions, never its safety floor; stricter rules stack. Without a repo contra
 
 - With authorization in hand (see the kernel's push rule), follow **the repo's own shipping workflow** — its protection and dossier checks, its ship summary, its PR step. Use the repo's shipping skill when one exists.
 - **No shipping workflow in the repo → commit on the feature branch and stop.** Do not assemble an approximation of one; the checks you would be skipping are the reason the workflow exists.
-- Merge only on an explicit merge instruction. Without authorization, leave the work committed on the feature branch and report it.
+- Without authorization to push, leave the work committed on the feature branch and report it.
 
 ## Explicit workflow pointers
 

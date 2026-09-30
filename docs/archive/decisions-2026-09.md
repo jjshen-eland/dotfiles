@@ -239,3 +239,9 @@
   - 放棄:只在單一 session 口頭承諾；只改全域指令而讓 skill 的相反規則留下；關閉主機權限核准來消除選項 UI
   - 重議:新 Codex session 仍在一般問題呼叫結構化提問工具；主機提供真正可在手機直接點選或輸入的原生問題 UI；Claude Code 提問或既有 authorization gate 回歸
   - 關聯:supersedes:D-20260925-project-numbered-text-options（僅 Codex 工具優先路徑）;D-20260824-cross-runtime-dossier-stewardship;codex/AGENTS.md;.doc-governance.json;shared/skills/project/references/pressure-tests.md;shared/skills/handoff/evals.md
+
+- **D-20260930-global-guidance-continuity · 2026-09-30 全域提問規則先完成獨立工作，保留 runtime 設定差異**：盤點實際部署來源後，Codex 全域「提問後結束回合」與共用 kernel 的安全續作要求在執行順序上衝突；Claude 全域把互動與無人值守的歧義處置拆成兩條，其中「寫入任何東西前先問」也會攔住不依賴答案的已授權工作。兩端改為先完成安全且獨立的工作，再問依賴答案的部分；Claude 將互動／無人值守分支收為同一條。Codex shipping 只刪已由 kernel 保證的 merge 授權重述，保留未獲 push 授權時留下 feature-branch commit 的結果。Claude settings 的 Auto mode 分類、Codex approval/hook 設定及三份 kernel 複本有各自的既有契約與 gate，本輪未觀察可歸因的設定失效，不以文字縮減為由改其行為。
+  - 日期來源:direct
+  - 放棄:用人工指標取代三份受 gate 保護的 kernel；為求兩端設定檔外觀一致而改核准或 hook 行為；刪掉 Codex 未授權時的本地 commit 結果
+  - 重議:兩端提問仍使可獨立工作中斷，或設定／kernel gate 出現具體回歸時按失效面處理
+  - 關聯:D-20260930-codex-mobile-text-questions;D-20260925-instruction-quality-scope;codex/AGENTS.md;claude/CLAUDE.md;AGENTS.md;claude/settings.json;codex/config.toml;tests/run.sh
