@@ -6,13 +6,25 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 # STATUS.md
 
-個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-09-30)
+個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-10-01)
 
 ---
 
 ## 進行中
 
-目前無進行中項目。
+### #229 backlog 發佈狀態校正
+
+- **Writer**：codex:issue-229-backlog-status
+- **Workspace**：branch=docs/issue-229-backlog-status
+- **Write Scope**：docs/backlog.md
+- **Dossier Steward**：codex:issue-229-backlog-status
+- **Context**：PR #247 已合併且 #229 已關閉，`B-20260928-project-merge-continuation` 仍以合併前時態描述發佈狀態。
+- **Goal**：校正 backlog 現況，保留尚未完成的 first-delta safety 驗證。
+- **Acceptance Criteria**：條目正確記載交付 SHA、PR 與 issue 狀態；未完成 safety arm 仍留在同一 B-*；doc-governance ship audit 通過。
+- **Constraints**：僅改此工作項的既有 backlog 條目及必要 lifecycle 文件；不改已凍結驗收計畫，不重開 #229。
+- **進度**：原本地提交 `98663aa` 未 push、無 PR，已依使用者確認保留 diff 並重建 steward authority。
+- **下一步**：提交 assignment，再以 steward 身分重建 backlog 修正與 completion milestone；驗證後依本次 `$project --merge` 送出。
+- **關聯**：Issue#229;PR#247;B-20260928-project-merge-continuation
 
 ## 暫停中
 
