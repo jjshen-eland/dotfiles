@@ -12,19 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### Handoff frontmatter 錨點驗證
-
-- **Writer**：codex:handoff-anchor-frontmatter
-- **Workspace**：branch=fix/handoff-anchor-frontmatter
-- **Write Scope**：shared/skills/handoff/scripts/handoff-anchor.sh, tests/run.sh, STATUS.md, docs/archive/milestones-2026-10.md
-- **Dossier Steward**：codex:handoff-anchor-frontmatter
-- **Context**：本地候選 `1b101c0` 已修正 handoff 錨點解析，但其 parent 沒有已提交的 active stewardship contract；Project Log 的 shared-history gate 因此 STOP。
-- **Goal**：受控重建同一筆 handoff 修正，並依本輪 `$project --merge` 送達 `main`。
-- **Acceptance Criteria**：只讀封閉 frontmatter；正文範例不造成假 FRESH／假 STALE-RISK；缺少 `dirty=N` 不放行；雙入口 validator、現存交接檔相容性、全 repo 測試與文件稽核通過；候選 commit 以已提交的本指派為 parent evidence 通過 completion gate。
-- **Constraints**：只處理本工作項既有三檔差異與必要 dossier 生命週期；不改其他 skill 或 backlog。
-- **Progress**：修正與回歸測試已完成；原本的本地候選尚未 push／開 PR，待受控重建。
-- **Next step**：提交本指派，重建原候選內容與結案里程碑，重驗並送出。
-- **關聯**：D-20260823-portable-handoff-skill；M-20261001-handoff-frontmatter-anchor-verify。
+目前無進行中項目。
 
 ## 暫停中
 
