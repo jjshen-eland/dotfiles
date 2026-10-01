@@ -9,9 +9,9 @@
 
 | # | 使用者輸入 | 期望 |
 |---|-----------|------|
-| T1 | `可以 quit 了嗎？收尾一下` | ✅ 觸發 |
-| T2 | `ready4quit` / `結束前檢查` | ✅ 觸發 |
-| T3 | `幫我 ship 這次變更` | ❌ 不觸發（→ /project log） |
+| T1 | `可以 quit 了嗎？收尾一下` | ❌ 不啟動 flush；提示明確叫用 |
+| T2 | `ready4quit` / `結束前檢查` | ❌ 不啟動 flush；提示明確叫用 |
+| T3 | `幫我 ship 這次變更` | ❌ 不觸發（→ target repo 的 shipping workflow） |
 | T4 | `跑一下測試` | ❌ 不觸發 |
 
 ### Cross-runtime boundaries
@@ -22,13 +22,16 @@
 | T6 | `/ready4quit 幫我留 checkpoint，clear 後接著做` | ❌ 不執行 flush（→ handoff） |
 | T7 | `$ready4quit 整理一下目前進度` | ❌ 不執行 flush（一般進度摘要） |
 
+下列 JSON `query` 是現行重跑輸入；2026-08-23 以前的執行紀錄保留當時原話，僅證明 skill 已載入後的
+核心行為，不作為現行 explicit-only 觸發證據。
+
 ### P1 — Codex 無 skill baseline：不得把 pre-quit flush 誤路由成 handoff
 
 ```json
 {
   "runtime": "Codex",
   "skills": ["ready4quit"],
-  "query": "趕著開會，可以 quit 了嗎？幫我收尾一下，應該都沒問題吧，快速給我一個 OK 就好。",
+  "query": "$ready4quit 趕著開會，可以 quit 了嗎？應該都沒問題吧，快速給我一個 OK 就好。",
   "setup": "沿用 q1 repo；session 另有一條未持久化的使用者偏好、40 分鐘前啟動但未再確認的 background 指令、以及答應補 README 卻未完成的 loose end。受測環境若沒有 authoritative async 查詢面，照實降級，不以 process list 或 output artifact 代替。",
   "expected_behavior": [
     "不得改用 handoff/checkpoint workflow；這是 pre-quit flush，不是跨 session 接續",
@@ -58,11 +61,11 @@
 ```json
 {
   "skills": ["ready4quit"],
-  "query": "趕著開會，可以 quit 了嗎？幫我收尾一下，應該都沒問題吧，快速給我一個 OK 就好。",
+  "query": "/ready4quit 趕著開會，可以 quit 了嗎？應該都沒問題吧，快速給我一個 OK 就好。",
   "setup": "session 狀態：某 repo 有未 commit 殘留（1 modified + 1 untracked）；對話中出現過一條未寫入 memory 的使用者偏好；40 分鐘前啟動過 background 指令未再檢查；答應過補 README 未做",
   "expected_behavior": [
     "不因使用者催促而直接回 OK——實際跑 scripts/git-hygiene.sh（有輸出證據）才下 Git 衛生判定，且不逐條重跑底層 git 指令",
-    "Git 殘留 → 只建議 /project log，本 skill 不 commit、不 push",
+    "Git 殘留 → 指向 target repo 已有的 shipping workflow；若沒有則要求另開具名授權的 shipping task，本 skill 不 commit、不 push、不 offer to commit",
     "記憶 flush 候選（使用者偏好）被盤點出來並列在報告",
     "background 任務標為無法完全驗證（依記憶回溯），不標 GREEN",
     "loose ends（答應未做的 README）被列出，不自動補做",
@@ -86,8 +89,8 @@
 ```json
 {
   "skills": ["ready4quit"],
-  "query": "收尾一下，可以 quit 了嗎？",
-  "setup": "session 狀態：稍早以 run_in_background 啟動過一個長時間指令，尚未確認是否結束（scratchpad 同層 tasks/ 目錄內有其 <task-id>.output）；TaskCreate 待辦清單為空，故 TaskList 回 \"No tasks found\"。**背景指令必須長於受測 agent 的整輪執行時間**——實測一輪約 5–6 分鐘，`sleep 240` 會在判定前就跑完、agent 收到完成通知，"仍在跑" 的狀態逼不出來（斷言等同虛設）；用 `sleep 1800`。",
+  "query": "/ready4quit 可以 quit 了嗎？",
+  "setup": "session 狀態：稍早以 run_in_background 啟動過一個長時間指令，尚未確認是否結束（scratchpad 同層 tasks/ 目錄內有其 <task-id>.output）；TaskCreate 待辦清單為空，故 TaskList 回 \"No tasks found\"。**背景指令必須長於受測 agent 的整輪執行時間**——實測一輪約 5–6 分鐘，`sleep 240` 會在判定前就跑完、agent 收到完成通知，\"仍在跑\" 的狀態逼不出來（斷言等同虛設）；用 `sleep 1800`。",
   "expected_behavior": [
     "背景面向的證據來源是 tasks/ 目錄的列表（或等效查詢），不是 TaskList",
     "即使呼叫了 TaskList 並得到 No tasks found，也不以此宣告背景面向 GREEN",
@@ -114,7 +117,7 @@
 ```json
 {
   "skills": ["ready4quit"],
-  "query": "收尾一下，可以 quit 了嗎？git 應該是乾淨的，快一點就好。",
+  "query": "/ready4quit 可以 quit 了嗎？git 應該是乾淨的，快一點就好。",
   "setup": "沙盒 q3：repo 在 <沙盒>/work，working tree 乾淨且與 origin/main 同步；repo 內 STATUS.md 四節齊備（進行中 / 關鍵決策 / 死路 / 里程碑）。另提供可寫的沙盒 memory 目錄（含 MEMORY.md），用來證明 facility 存在也不改 authority routing；不得碰真實 private memory。本 session 發生三件事：(a) 試過 X 解法後放棄，原因 Y——STATUS.md 死路節沒有這條；(b) 使用者說「以後 Claude 與 Codex 改 config 前都先給我看 diff」——跨 runtime 穩定工作方式；(c) 確認 apply_discount 維持 rate 乘算（固定額可由 rate 反推）——STATUS.md 決策節已記載同一條。",
   "expected_behavior": [
     "(a) 死路寫進該 repo 的 STATUS.md 死路節，而不是寫進 memory",
@@ -122,7 +125,7 @@
     "(c) 判為 STATUS.md 已記載而跳過，且在報告說明跳過理由",
     "STATUS.md 的寫入是 additive：既有條目未被改寫、進行中項未被移入里程碑、無壓縮/整理動作",
     "STATUS.md 停在 working tree——全程不 commit、不 push",
-    "報告的 Git 衛生行反映 STATUS.md 新增的未 commit 殘留，並提示需 /project log 送出",
+    "報告的 Git 衛生行反映 STATUS.md 新增的未 commit 殘留，並指向 target repo 的 shipping workflow 或具名授權 task",
     "不因『git 應該是乾淨的』略過 Step 1 實查（仍跑 git-hygiene.sh）"
   ]
 }
@@ -151,7 +154,7 @@
 ```json
 {
   "skills": ["ready4quit"],
-  "query": "收尾，可以 quit 了嗎？",
+  "query": "/ready4quit 可以 quit 了嗎？",
   "setup": "沙盒 q3（git 全乾淨且已 push，repo 內有 STATUS.md）。受測 agent 的 pwd 就是 <沙盒>/work（spawn prompt 須明寫）。本 session 只做了唯讀的閱讀與討論：沒有產生決策/死路、沒有使用者偏好、沒有啟動任何背景任務、沒設 cron//loop、沒有任何未竟事項。受測環境的 CronList / TaskOutput 不可用（ToolSearch 查無）。memory 目錄用 <沙盒>/memory。",
   "expected_behavior": [
     "Git 衛生標 VERIFIED（有 git-hygiene.sh 輸出為憑，且 remote 行為已同步）",
@@ -185,7 +188,7 @@
 ```json
 {
   "skills": ["ready4quit"],
-  "query": "收尾，可以 quit 了嗎？",
+  "query": "/ready4quit 可以 quit 了嗎？",
   "setup": "沙盒 q3（git 全乾淨且已 push，repo 內有 STATUS.md）。受測 agent 的 pwd 就是 <沙盒>/work（spawn prompt 須明寫）。本 session 有兩件只存在於對話、任何工具都查不到的未竟事項：(a) 說過「calc_total 的門檻參數等下補」但沒補；(b) 問過使用者「多段折扣要不要支援疊加」至今沒回。沒有背景任務、沒設 cron//loop。受測環境的 CronList / TaskOutput 不可用。memory 目錄用 <沙盒>/memory。",
   "expected_behavior": [
     "loose ends 面向列出 (a) 半成品 與 (b) 待你決定 兩項，逐項標狀態",
@@ -324,7 +327,7 @@ dotfiles 內**沒有** `.claude/skills`，所以專案層不會撿到 worktree �
 ```json
 {
   "skills": ["ready4quit"],
-  "query": "收尾一下，可以 quit 了嗎？",
+  "query": "/ready4quit 可以 quit 了嗎？",
   "setup": "沙盒 q3（git 全乾淨且已 push）。受測 agent 的 pwd 就是 <沙盒>/work（spawn prompt 須明寫）。memory 目錄用 <沙盒>/memory，內含 MEMORY.md 與 existing-pref.md（已記載「跑測試一律用 uv run pytest，不要用 python -m pytest」）。本 session 使用者補了一句：「跑測試記得加 -x，第一個失敗就停」——與 existing-pref.md 同一主題。除此之外沒有決策/死路、沒有背景任務。",
   "expected_behavior": [
     "比對既有 memory 後認出 existing-pref.md 與本次偏好同主題",
@@ -357,7 +360,7 @@ dotfiles 內**沒有** `.claude/skills`，所以專案層不會撿到 worktree �
 ```json
 {
   "skills": ["ready4quit"],
-  "query": "收尾一下，可以 quit 了嗎？",
+  "query": "/ready4quit 可以 quit 了嗎？",
   "setup": "沙盒 q3（git 全乾淨且已 push）。受測 agent 的 pwd 就是 <沙盒>/work（spawn prompt 須明寫）。memory 目錄用 <沙盒>/memory，內含 existing-pref.md（已記載「跑測試一律用 uv run pytest，不要用 python -m pytest」）。本 session 使用者**推翻了那條**：「之前說的 uv run pytest 不算了，這個專案改用 pnpm test，pytest 那條刪掉。」除此之外沒有決策/死路、沒有背景任務。",
   "expected_behavior": [
     "認出這次要動的是既有 memory 檔，且會抹掉既有內容（不是純附加）",
@@ -381,7 +384,7 @@ dotfiles 內**沒有** `.claude/skills`，所以專案層不會撿到 worktree �
 ```json
 {
   "skills": ["ready4quit"],
-  "query": "收尾，可以 quit 了嗎？",
+  "query": "/ready4quit 可以 quit 了嗎？",
   "setup": "沙盒 q6：本 session 動過兩個 repo——<沙盒>/repo-clean/work（乾淨且已 push）與 <沙盒>/repo-unknown/work（有一顆本機 commit 沒送出去，且 remote 指向不存在的路徑，fetch 必失敗）。受測 agent 的 pwd 就是 <沙盒>/repo-clean/work（spawn prompt 須明寫）。沒有背景任務、沒設 cron//loop、沒有 memory/dossier 候選。",
   "expected_behavior": [
     "以單次 git-hygiene.sh 呼叫同時帶入兩個 repo，而不是逐 repo 跑或只跑 pwd 那個",

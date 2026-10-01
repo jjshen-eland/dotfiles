@@ -1109,6 +1109,24 @@ out="$("$GH_SCRIPT" "$TMP/gh-work")"
 assert_rc "clean repo → exit 0" 0 $?
 if echo "$out" | grep -q "verdict: CLEAN"; then ok "clean repo → CLEAN"; else bad "clean repo 未判 CLEAN"; fi
 
+# status 本身失敗時，空 stdout 不能等同 working tree 乾淨。只讓 status 失敗，
+# 其餘 Git 操作（包括 fetch）仍使用真 git，避免其他 UNKNOWN 掩蓋這條失敗路徑。
+real_hyg_git="$(command -v git)"
+mkdir -p "$TMP/hyg-bin"
+cat > "$TMP/hyg-bin/git" <<'STUB'
+#!/usr/bin/env bash
+case " $* " in
+    *' status --porcelain -uall '*) echo 'fatal: simulated status failure' >&2; exit 128 ;;
+esac
+exec "$REAL_HYG_GIT" "$@"
+STUB
+chmod +x "$TMP/hyg-bin/git"
+out="$(PATH="$TMP/hyg-bin:$PATH" REAL_HYG_GIT="$real_hyg_git" "$GH_SCRIPT" "$TMP/gh-work" 2>/dev/null)"
+assert_rc "status 失敗 → exit 1" 1 $?
+if grep -q 'uncommitted: UNKNOWN' <<< "$out" && grep -q 'verdict: UNKNOWN' <<< "$out"; then
+    ok "status 失敗 → 不把空 stdout 當作 CLEAN"
+else bad "status 失敗卻未降為 UNKNOWN：$out"; fi
+
 echo dirty > "$TMP/gh-work/untracked.txt"
 out="$("$GH_SCRIPT" "$TMP/gh-work")"
 assert_rc "untracked 殘留 → exit 1" 1 $?
@@ -1167,6 +1185,47 @@ out="$("$GH_SCRIPT" "$TMP/mx-work")"
 if grep -q "verdict: CLEAN" <<< "$out"; then
     bad "fetch 的 remote 與 baseline 的不一致，stale origin ref 過關判 CLEAN：$out"
 else ok "baseline 所屬 remote 一併 fetch → 不再誤判 CLEAN"; fi
+
+# 成功 fetch remote 不代表 baseline ref 已刷新：自訂 remote.origin.fetch 只涵蓋
+# keep，origin/main 被遠端刪除後，fetch --prune keep 不會刪掉 stale origin/main。
+git init --bare -q -b main "$TMP/refspec-origin.git"
+git init -q -b main "$TMP/refspec-work"
+(cd "$TMP/refspec-work" \
+    && echo hi > f && "${GITC[@]}" add f && "${GITC[@]}" commit -qm init \
+    && git remote add origin "$TMP/refspec-origin.git" && git push -qu origin main)
+refspec_head="$(git -C "$TMP/refspec-work" rev-parse HEAD)"
+git -C "$TMP/refspec-origin.git" update-ref refs/heads/keep "$refspec_head"
+git -C "$TMP/refspec-origin.git" update-ref -d refs/heads/main
+git -C "$TMP/refspec-work" config --replace-all remote.origin.fetch \
+    '+refs/heads/keep:refs/remotes/origin/keep'
+out="$("$GH_SCRIPT" "$TMP/refspec-work")"
+assert_rc "fetch refspec 漏刷 baseline → exit 1" 1 $?
+if grep -q 'unpushed: UNKNOWN' <<< "$out" && ! grep -q 'verdict: CLEAN' <<< "$out"; then
+    ok "fetch 成功但 baseline ref 未涵蓋 → 不判 CLEAN"
+else bad "stale baseline ref 在自訂 fetch refspec 下誤判 CLEAN：$out"; fi
+
+# upstream feature 本身新鮮，也不能用漏刷的 origin/main 判「相對 default 無 commit」。
+# 先讓遠端 main 到 feature head、正常 fetch，再由遠端 rewind，留下真實的 stale ref。
+git init --bare -q -b main "$TMP/refspec-pr-origin.git"
+git init -q -b main "$TMP/refspec-pr-work"
+(cd "$TMP/refspec-pr-work" \
+    && echo a > f && "${GITC[@]}" add f && "${GITC[@]}" commit -qm init \
+    && git remote add origin "$TMP/refspec-pr-origin.git" && git push -qu origin main)
+refspec_base="$(git -C "$TMP/refspec-pr-work" rev-parse HEAD)"
+(cd "$TMP/refspec-pr-work" \
+    && git switch -qc feat/refspec && echo b >> f \
+    && "${GITC[@]}" commit -qam feature && git push -qu origin feat/refspec)
+refspec_feature="$(git -C "$TMP/refspec-pr-work" rev-parse HEAD)"
+git -C "$TMP/refspec-pr-origin.git" update-ref refs/heads/main "$refspec_feature"
+git -C "$TMP/refspec-pr-work" fetch -q origin
+git -C "$TMP/refspec-pr-origin.git" update-ref refs/heads/main "$refspec_base" "$refspec_feature"
+git -C "$TMP/refspec-pr-work" config --replace-all remote.origin.fetch \
+    '+refs/heads/feat/refspec:refs/remotes/origin/feat/refspec'
+out="$("$GH_SCRIPT" "$TMP/refspec-pr-work")"
+assert_rc "fetch refspec 漏刷 PR default → exit 1" 1 $?
+if grep -q 'pr: UNKNOWN' <<< "$out" && ! grep -q 'verdict: CLEAN' <<< "$out"; then
+    ok "feature upstream 新鮮但 default ref 過期 → PR 不判 n/a/CLEAN"
+else bad "stale default ref 架空 PR 檢查：$out"; fi
 
 # git-hygiene 的 gh stub：只回應 `pr view`。腳本取 url,state,isDraft 三欄（tsv），
 # 因為只讀 url 會把 CLOSED（未合併就關掉）與 draft 都當成「已有 PR、無殘留」

@@ -128,6 +128,28 @@ refresh_remote() {   # <repo> <remote>...
     return "$rc"
 }
 
+# 一般 wildcard fetch 會更新該 remote 的所有 heads；自訂 refspec 可能只刷到
+# 無關分支，fetch exit 0 仍留著 stale tracking ref。對自訂設定以遠端實際 OID
+# 核對本輪要用的 ref；不吻合或查不到時，絕不能用該 ref 判 CLEAN。
+tracking_ref_fresh() {   # <repo> <remote> <remote-ref> <tracking-ref>
+    local repo="$1" remote="$2" remote_ref="$3" tracking_ref="$4"
+    local refspecs remote_refs remote_oid local_oid
+    [ -n "$remote" ] && [ -n "$remote_ref" ] || return 1
+    [ "$remote" != "." ] || return 0  # local upstream，沒有 remote-tracking ref
+    refspecs="$(git -C "$repo" config --get-all "remote.${remote}.fetch" 2>/dev/null)" || refspecs=""
+    if [ "$refspecs" = "+refs/heads/*:refs/remotes/${remote}/*" ] \
+        || [ "$refspecs" = "refs/heads/*:refs/remotes/${remote}/*" ]; then
+        return 0
+    fi
+    local_oid="$(git -C "$repo" rev-parse --verify --quiet "$tracking_ref" 2>/dev/null)" || return 1
+    remote_refs="$(run_with_timeout "$FETCH_TIMEOUT_SECS" \
+        env GIT_TERMINAL_PROMPT=0 \
+            GIT_SSH_COMMAND="ssh -o ConnectTimeout=${SSH_CONNECT_TIMEOUT} -o BatchMode=yes" \
+            git -C "$repo" ls-remote --exit-code "$remote" "$remote_ref" 2>/dev/null)" || return 1
+    remote_oid="$(printf '%s\n' "$remote_refs" | awk -v ref="$remote_ref" '$2 == ref { print $1 }')"
+    [ -n "$remote_oid" ] && [ "$local_oid" = "$remote_oid" ]
+}
+
 check_repo() {
     local repo="$1"
     # residue 依來源分開記：PR 判定為 MERGED 時要能單獨撤銷 unpushed 那筆
@@ -153,15 +175,19 @@ check_repo() {
     # -- 未 commit（含 untracked）--
     # -uall：預設會把整個未追蹤目錄折疊成 "?? dir/"，殘留檔數被低估、檔名也看不到
     local porcelain n_uncommitted
-    porcelain="$(git -C "$repo" status --porcelain -uall)"
-    if [ -n "$porcelain" ]; then
-        n_uncommitted="$(printf '%s\n' "$porcelain" | wc -l | tr -d ' ')"
-        echo "uncommitted: $n_uncommitted 檔"
-        printf '%s\n' "$porcelain" | head -n "$MAX_LIST" | sed 's/^/  /'
-        [ "$n_uncommitted" -gt "$MAX_LIST" ] && echo "  ...（其餘 $((n_uncommitted - MAX_LIST)) 檔略）"
-        residue_uncommitted=1
+    if porcelain="$(git -C "$repo" status --porcelain -uall 2>"$ERR_FILE")"; then
+        if [ -n "$porcelain" ]; then
+            n_uncommitted="$(printf '%s\n' "$porcelain" | wc -l | tr -d ' ')"
+            echo "uncommitted: $n_uncommitted 檔"
+            printf '%s\n' "$porcelain" | head -n "$MAX_LIST" | sed 's/^/  /'
+            [ "$n_uncommitted" -gt "$MAX_LIST" ] && echo "  ...（其餘 $((n_uncommitted - MAX_LIST)) 檔略）"
+            residue_uncommitted=1
+        else
+            echo "uncommitted: none"
+        fi
     else
-        echo "uncommitted: none"
+        echo "uncommitted: UNKNOWN（git status 失敗：$(head -n 1 "$ERR_FILE")）"
+        unknown=1
     fi
 
     # -- remote 新鮮度：unpushed 的可信度完全建立在 tracking ref 是否反映此刻遠端 --
@@ -172,17 +198,16 @@ check_repo() {
         # shellcheck disable=SC2086  # 刻意分詞：remote_name 可能是多個 remote
         if refresh_remote "$repo" $remote_name; then
             remote_fresh=1
-            echo "remote: 已同步（fetch --prune ${remote_name}）"
-        else
-            echo "remote: UNKNOWN（fetch ${remote_name} 失敗/逾時——tracking ref 可能過期，unpushed 不可信）"
         fi
     fi
 
     # -- baseline（未 push 比較基準）：upstream → origin/<default> → 無 --
-    local baseline="" upstream default_branch="" baseline_kind=""
+    local baseline="" upstream default_branch="" baseline_kind="" baseline_remote="" baseline_remote_ref=""
     if upstream="$(git -C "$repo" rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)"; then
         baseline="$upstream"
         baseline_kind="upstream"
+        baseline_remote="$(git -C "$repo" config --get "branch.${branch}.remote" 2>/dev/null)" || baseline_remote=""
+        baseline_remote_ref="$(git -C "$repo" config --get "branch.${branch}.merge" 2>/dev/null)" || baseline_remote_ref=""
         echo "baseline: upstream $upstream"
     elif [ "$branch" != "DETACHED" ] \
         && git -C "$repo" rev-parse --verify --quiet "origin/$branch" >/dev/null; then
@@ -190,17 +215,40 @@ check_repo() {
         # 早已在 remote 的 commit 全報成「未 push」——同名 remote branch 才是正確基準
         baseline="origin/$branch"
         baseline_kind="same-name"
+        baseline_remote="origin"
+        baseline_remote_ref="refs/heads/$branch"
         echo "baseline: ${baseline}（無 upstream，退用同名 remote branch）"
     else
         default_branch="$(detect_default_branch "$repo")"
         if [ -n "$default_branch" ]; then
             baseline="origin/$default_branch"
             baseline_kind="default"
+            baseline_remote="origin"
+            baseline_remote_ref="refs/heads/$default_branch"
             echo "baseline: ${baseline}（無 upstream，退用 default branch）"
         elif [ -z "$(git -C "$repo" remote)" ]; then
             echo "baseline: NO-REMOTE（local-only repo，無從判斷 push 狀態）"
         else
             echo "baseline: NONE（有 remote 但找不到 origin/HEAD、origin/main、origin/master）"
+        fi
+    fi
+
+    [ -n "$default_branch" ] || default_branch="$(detect_default_branch "$repo")"
+    if [ "$remote_fresh" -eq 1 ] && [ -n "$baseline" ] \
+        && ! tracking_ref_fresh "$repo" "$baseline_remote" "$baseline_remote_ref" "$baseline"; then
+        remote_fresh=0
+    fi
+    # PR 比較使用 origin/default；即使 upstream 已刷新，也不能採信漏刷的 default ref。
+    if [ "$remote_fresh" -eq 1 ] && [ "$branch" != "DETACHED" ] \
+        && [ -n "$default_branch" ] && [ "$branch" != "$default_branch" ] \
+        && ! tracking_ref_fresh "$repo" origin "refs/heads/$default_branch" "origin/$default_branch"; then
+        remote_fresh=0
+    fi
+    if [ "$has_remote" -eq 1 ]; then
+        if [ "$remote_fresh" -eq 1 ]; then
+            echo "remote: 已同步（fetch --prune ${remote_name}）"
+        else
+            echo "remote: UNKNOWN（fetch 或必要 tracking ref 驗證失敗——unpushed/PR 比較不可信）"
         fi
     fi
 
@@ -231,9 +279,11 @@ check_repo() {
 
     # -- 待開 PR：feature branch（≠ default）且相對 default 有 commit 才需要查 --
     # default_branch 可能已在 baseline fallback 算過；沒算過（走 upstream 分支）再算一次
-    [ -n "$default_branch" ] || default_branch="$(detect_default_branch "$repo")"
     if [ "$branch" = "DETACHED" ]; then
         echo "pr: n/a（detached HEAD）"
+    elif [ "$remote_fresh" -eq 0 ] && [ -n "$default_branch" ] && [ "$branch" != "$default_branch" ]; then
+        echo "pr: UNKNOWN（default branch tracking ref 不可信）"
+        unknown=1
     elif [ -z "$default_branch" ]; then
         echo "pr: n/a（無法判定 default branch）"
     elif [ "$branch" = "$default_branch" ]; then
