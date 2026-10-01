@@ -12,19 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### PR #249 integration assertion manifest 同步
-
-- **Writer**：codex:handoff-anchor-frontmatter
-- **Workspace**：branch=fix/handoff-anchor-frontmatter
-- **Write Scope**：tests/shard-manifest.tsv, STATUS.md, docs/archive/milestones-2026-10.md
-- **Dossier Steward**：codex:handoff-anchor-frontmatter
-- **Context**：PR #249 的 Ubuntu 24.04 與 macOS 15 required suite 均在 integration shard `1138 PASS／0 FAIL` 後因 manifest 仍寫 1132 而 fail；六個差額正是本批新增的回歸斷言。
-- **Goal**：同步 assertion manifest，讓本批原有測試在 CI 正確收斂。
-- **Acceptance Criteria**：manifest 的 integration 期望值等於實測 1138；本機 parallel aggregate 與 serial suite 通過；同 PR 新 head 的兩個 required checks 通過；結案候選有 parent active steward 並通過 Project completion gate。
-- **Constraints**：只修本批新增測試的計數清單，不移除或放寬測試與 aggregate 判準；沿用 PR #249 的同批修復授權。
-- **Progress**：雙平台 CI failure 已定位為相同的計數差異，尚未修改 manifest。
-- **Next step**：提交本指派，更新 manifest、執行 parallel 與 serial 驗證，結案後更新同一 PR。
-- **關聯**：PR#249；run:36798375305；M-20261001-handoff-frontmatter-anchor-verify。
+目前無進行中項目。
 
 ## 暫停中
 
