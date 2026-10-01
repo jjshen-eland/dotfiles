@@ -51,8 +51,8 @@
 - timeout、serialization、HTTP failure 或 exception 只產生 bounded、secret-safe warning，hook exit 0。
 - enabled `Stop` 留下 owner-only 的最後階段與 sender exit／錯誤類別；中途取消保留 `sending`，
   普通完成標 `marker-absent`。紀錄不得含理由、通知內容、URL、key 或 raw hook input。
-- 網路不可達與連線被拒須能在去敏錯誤類別中區分；失敗不得標送達，後續成功須更新最後狀態。
-- sender 直接執行時不得被 `PATH` 中的 Python 取代；在該 Python 無法執行的隔離 fixture 下，仍可完成 fake capture。
+- 網路不可達與連線被拒須能在去敏錯誤類別中區分；HTTP 錯誤不得回顯 curl verbose 中的金鑰或 URL；失敗不得標送達，後續成功須更新最後狀態。
+- Python socket 受限時，sender 仍以已驗證可連私網的系統 curl 完成 Gateway POST；金鑰不得出現在命令列或暫存檔。
 - hook未繼承NC環境時，可從adapter明示的owner-only env file載入兩個設定鍵；不得執行該檔內容。
 - transport未成功時不得提前寫入sent marker；同一事件後續一次有界重試仍可送達。
 - `NC_API_URL` 是NC base URL；sender必須POST `/api/v1/events`、使用 `X-API-Key`，並送合法的

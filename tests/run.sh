@@ -6138,34 +6138,19 @@ if ! grep -qF "$w4m_secret" <<< "$w4m_error" \
     ok "transport warning bounded 且不回顯 secret／URL"
 else bad "transport warning 洩漏敏感 transport 細節或缺少安全摘要：$w4m_error"; fi
 
-w4m_python_stub="$w4m_fix/python-stub"
-mkdir -p "$w4m_python_stub"
-cat > "$w4m_python_stub/python3" <<'EOF'
-#!/bin/sh
-exit 42
-EOF
-chmod +x "$w4m_python_stub/python3"
-w4m_path_capture="$w4m_fix/path-capture.jsonl"
-printf '%s\n' '{"message":"wait4me interpreter fixture","level":"info","task":"agent-response-needed"}' \
-    | env -u NC_API_URL -u NC_API_KEY PATH="$w4m_python_stub:$PATH" \
-        WAIT4ME_ENV_FILE="$w4m_env_file" WAIT4ME_TEST_CAPTURE="$w4m_path_capture" \
-        "$W4M_SEND" >/dev/null 2>&1
-w4m_path_rc=$?
-if [ "$w4m_path_rc" -eq 0 ] && [ -s "$w4m_path_capture" ]; then
-    ok "sender 不受 PATH 中網路受限的 Python 取代"
-else bad "sender 被 PATH 的 Python 取代，通知無法送出"; fi
-
 python3 - "$W4M_SEND" <<'PY'
 import errno
 import importlib.util
-import urllib.error
 import sys
 
 spec = importlib.util.spec_from_file_location("wait4me_send", sys.argv[1])
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
-assert module.failure_kind(urllib.error.URLError(OSError(errno.EHOSTUNREACH, "private detail"))) == "network-unreachable"
-assert module.failure_kind(urllib.error.URLError(ConnectionRefusedError(errno.ECONNREFUSED, "private detail"))) == "connection-refused"
+assert module.failure_kind(OSError(errno.EHOSTUNREACH, "private detail")) == "network-unreachable"
+assert module.failure_kind(ConnectionRefusedError(errno.ECONNREFUSED, "private detail")) == "connection-refused"
+assert module.curl_failure_kind(7, b"No route to host") == "network-unreachable"
+assert module.curl_failure_kind(7, b"Connection refused") == "connection-refused"
+assert module.curl_failure_kind(22, b"private detail") == "http-error"
 assert module.failure_kind(RuntimeError("private detail")) == "RuntimeError"
 PY
 assert_rc "sender 把網路例外歸為不含細節的錯誤類別" 0 $?
@@ -6245,7 +6230,7 @@ class Handler(BaseHTTPRequestHandler):
                 "notification_error": None,
             }
         ).encode()
-        self.send_response(201)
+        self.send_response(401 if action_taken == "reject" else 201)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(response)))
         self.end_headers()
@@ -6327,6 +6312,40 @@ else
     bad "fake NC server未就緒：${w4m_nc_failure_detail}"
 fi
 
+w4m_blocked_python="$w4m_fix/blocked-python"
+mkdir -p "$w4m_blocked_python"
+cat > "$w4m_blocked_python/sitecustomize.py" <<'PY'
+import socket
+
+
+def blocked_connect(self, address):
+    raise OSError(65, "Python socket denied by fixture")
+
+
+socket.socket.connect = blocked_connect
+PY
+rm -f "$w4m_nc_port" "$w4m_nc_request" "$w4m_nc_stderr" "$w4m_nc_boot"
+python3 "$w4m_nc_server" "$w4m_nc_port" "$w4m_nc_request" forward sent "$w4m_nc_boot" \
+    2> "$w4m_nc_stderr" &
+w4m_nc_pid=$!
+if w4m_wait_nc_server; then
+    w4m_nc_base="http://127.0.0.1:$(cat "$w4m_nc_port")"
+    printf '%s\n' '{"message":"wait4me blocked Python fixture","level":"info","task":"agent-response-needed"}' \
+        | PYTHONPATH="$w4m_blocked_python" NC_API_URL="$w4m_nc_base" \
+            NC_API_KEY='fixture"key\value' "$W4M_SEND" >/dev/null 2>&1
+    w4m_nc_rc=$?
+    wait "$w4m_nc_pid"
+    if [ "$w4m_nc_rc" -eq 0 ] \
+        && jq -e --arg key 'fixture"key\value' \
+            '.x_api_key == $key and .body.message == "wait4me blocked Python fixture"' \
+            "$w4m_nc_request" >/dev/null 2>&1; then
+        ok "Python socket 受限時 sender 仍經 curl 完成私網 POST"
+    else bad "Python socket 受限使 sender 無法送出"; fi
+else
+    w4m_capture_nc_failure
+    bad "blocked Python fake NC server未就緒：${w4m_nc_failure_detail}"
+fi
+
 for w4m_nc_result in 'forward failed' 'drop none'; do
     rm -f "$w4m_nc_port" "$w4m_nc_request" "$w4m_nc_stderr" "$w4m_nc_boot"
     read -r w4m_nc_action w4m_nc_status <<< "$w4m_nc_result"
@@ -6345,6 +6364,26 @@ for w4m_nc_result in 'forward failed' 'drop none'; do
         bad "fake NC server未就緒（${w4m_nc_result}）：${w4m_nc_failure_detail}"
     fi
 done
+
+rm -f "$w4m_nc_port" "$w4m_nc_request" "$w4m_nc_stderr" "$w4m_nc_boot"
+python3 "$w4m_nc_server" "$w4m_nc_port" "$w4m_nc_request" reject failed "$w4m_nc_boot" \
+    2> "$w4m_nc_stderr" &
+w4m_nc_pid=$!
+if w4m_wait_nc_server; then
+    w4m_nc_base="http://127.0.0.1:$(cat "$w4m_nc_port")"
+    w4m_http_error="$(printf '%s\n' '{"message":"wait4me HTTP error fixture","level":"info","task":"agent-response-needed"}' \
+        | NC_API_URL="$w4m_nc_base" NC_API_KEY='fixture-secret-for-redaction' \
+            "$W4M_SEND" 2>&1)"
+    w4m_http_rc=$?
+    wait "$w4m_nc_pid"
+    if [ "$w4m_http_rc" -eq 75 ] \
+        && [ "$w4m_http_error" = 'wait4me: notification skipped (http-error)' ]; then
+        ok "curl HTTP 錯誤只回傳去敏分類，不回顯 verbose 中的金鑰或 URL"
+    else bad "curl HTTP 錯誤診斷未正確去敏"; fi
+else
+    w4m_capture_nc_failure
+    bad "HTTP error fake NC server未就緒：${w4m_nc_failure_detail}"
+fi
 
 w4m_retry_state="$w4m_fix/retry-state"
 w4m_retry_capture="$w4m_fix/retry-capture.jsonl"
