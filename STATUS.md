@@ -12,14 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### ready4quit Git 證據誤判與 eval 對齊
-
-- **Writer**：`codex:main`
-- **Workspace**：`branch=fix/ready4quit-git-evidence`
-- **Write Scope**：`STATUS.md`, `docs/archive/milestones-2026-10.md`, `shared/skills/ready4quit/scripts/git-hygiene.sh`, `shared/skills/ready4quit/evals.md`, `tests/run.sh`, `tests/shard-manifest.tsv`
-- **Dossier Steward**：`codex:main`
-- **成功條件**：隔離 fixture 先重現自訂 fetch refspec 漏刷 baseline 與 `git status` 失敗卻回報 CLEAN；修正後兩者 fail closed，原有正常／多 remote／PR 判定不退步；eval 觸發與 shipping 預期符合 explicit-only 現行契約；skill validation、文檔 audit、完整測試通過。
-- **狀態**：修正與隔離回歸測試完成；serial／parallel 均 1548 PASS、0 FAIL，文檔稽核通過；尚未 shipping。
+目前無進行中項目。
 
 ## 暫停中
 
