@@ -19,7 +19,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **Write Scope**：`STATUS.md`, `shared/skills/wait4me/scripts/wait4me-hook.sh`, `shared/skills/wait4me/scripts/wait4me-send.py`, `shared/skills/wait4me/references/workflow.md`, `shared/skills/wait4me/evals.md`, `codex/config.toml`, `claude/settings.json`, `tests/run.sh`, `tests/shard-manifest.tsv`, `docs/archive/milestones-2026-10.md`
 - **Dossier Steward**：`codex:main`
 - **成功條件**：真實 Codex Stop 的去敏階段、exit 與錯誤類別可查；`on` 與已啟用的 `status` 各發一則測試通知，明確分開開關與 Gateway 回覆；以正常終端與 hook 同時段對照定位私網首次差異後才修其因果來源；假 Gateway 驗證僅需回覆時送一次、普通完成不送、失敗不誤報送達；真實環境完成一次使用者收件驗收。
-- **狀態**：2026-10-01 一般 Terminal 執行同一 sender 回 exit 0，使用者確認裝置收件；同一 Codex 工具程序內，`nc` 與 `/usr/bin/python3` 可連私網 Gateway，PATH 指向的 Homebrew Python 回 `OSError:65`。系統 Python 直接執行 sender 回 0；sender 改以它執行後，實際 `on` hook 回 `probe=accepted`，完整 `./tests/run.sh` 為 1558 PASS／0 FAIL。這定位並修正目前可重現的 interpreter-specific 發送失敗，不推論 macOS 權限或 Codex 網路代理的內部原因。隔離 Codex Stop 可送 fake capture，同步 Stop 排除 ephemeral session 取消背景 hook 的實測失效；但 repo 設定尚未同步到 live `~/.codex/config.toml`，新 session 的真實 Codex Stop 與裝置收件尚待驗收，#250 維持 open。
+- **狀態**：2026-10-01 一般 Terminal 執行同一 sender 回 exit 0，使用者確認裝置收件；同一 Codex 工具程序內，`nc`、系統 Python 與系統 curl 可連私網 Gateway，Homebrew Python socket 回 `OSError:65`。曾將 sender 固定到 `/usr/bin/python3` 並取得 live `on` probe 的 Gateway acknowledgement，但本機系統 Python 為已終止上游支援的 3.9.6，因此改由 PATH 中 Python（本機 3.14.7）處理資料、`/usr/bin/curl` 負責 POST。Python socket 受限與 HTTP 錯誤去敏的隔離 fixture、完整 `./tests/run.sh` 1559 PASS／0 FAIL、雙端 skill validator 與文件稽核均通過；新版 sender 的 live `on` probe 回 `probe=accepted`。Gateway 回覆不等於裝置收件，也不推論 macOS 權限或 Codex 網路代理內因。同步 Stop 的 fake capture 已驗證；repo 設定尚未同步到 live `~/.codex/config.toml`，新 session 的真實 Codex Stop 與裝置收件尚待驗收，#250 維持 open。
 
 ## 暫停中
 
