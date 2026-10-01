@@ -19,7 +19,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **Write Scope**：`STATUS.md`, `shared/skills/wait4me/scripts/wait4me-hook.sh`, `shared/skills/wait4me/scripts/wait4me-send.py`, `shared/skills/wait4me/references/workflow.md`, `shared/skills/wait4me/evals.md`, `codex/config.toml`, `claude/settings.json`, `tests/run.sh`, `tests/shard-manifest.tsv`, `docs/archive/milestones-2026-10.md`
 - **Dossier Steward**：`codex:main`
 - **成功條件**：真實 Codex Stop 的去敏階段、exit 與錯誤類別可查；`on` 與已啟用的 `status` 各發一則測試通知，明確分開開關與 Gateway 回覆；以正常終端與 hook 同時段對照定位私網首次差異後才修其因果來源；假 Gateway 驗證僅需回覆時送一次、普通完成不送、失敗不誤報送達；真實環境完成一次使用者收件驗收。
-- **狀態**：本地修正候選與自我測試已完成；隔離 Codex Stop 可送 fake capture、連線拒絕會留 `send-failed`，同步 Stop 排除 ephemeral session 取消背景 hook 的實測失效。2026-10-01 實際 NC 測試已載入設定，但 sender 回 `network-unreachable`（exit 75），未取得 Gateway 確認；同一執行環境可連公開 TLS，卻對兩個本機網段的多個目標皆回 `OSError:65`，私網 NC 目標的 ARP 未解析。工具命令在較少限制模式重試仍同樣失敗；這只定位到目前執行環境的私網路徑，不代表使用者網路離線，也尚不能判定是 Codex 網路代理、macOS 權限或目的端網路所致。下一步須以本機一般 Terminal 同時段對照同一 sender，再依第一個不同邊界修正；真實收件仍待驗證，#250 維持 open。
+- **狀態**：2026-10-01 一般 Terminal 執行同一 sender 回 exit 0，使用者確認裝置收件；同一 Codex 工具程序內，`nc` 與 `/usr/bin/python3` 可連私網 Gateway，PATH 指向的 Homebrew Python 回 `OSError:65`。系統 Python 直接執行 sender 回 0；sender 改以它執行後，實際 `on` hook 回 `probe=accepted`，完整 `./tests/run.sh` 為 1558 PASS／0 FAIL。這定位並修正目前可重現的 interpreter-specific 發送失敗，不推論 macOS 權限或 Codex 網路代理的內部原因。隔離 Codex Stop 可送 fake capture，同步 Stop 排除 ephemeral session 取消背景 hook 的實測失效；但 repo 設定尚未同步到 live `~/.codex/config.toml`，新 session 的真實 Codex Stop 與裝置收件尚待驗收，#250 維持 open。
 
 ## 暫停中
 

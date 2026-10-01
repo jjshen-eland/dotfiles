@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 """Send one bounded wait4me notification without exposing transport errors."""
 
 from __future__ import annotations
