@@ -6013,12 +6013,11 @@ timeout = 3
 [[hooks.Stop.hooks]]
 type = "command"
 command = '\''WAIT4ME_ENV_FILE="$HOME/Projects/krepo/.env" "$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh stop'\''
-timeout = 5
-async = true'
+timeout = 5'
 if [ "$codex_tet_hook" = "$codex_tet_expected" ] \
     && ! grep -q '^\[\[hooks\.SubagentStop' "$ROOT/codex/config.toml"; then
-    ok "Codex 主 agent Stop 同時接線 timestamp 與 wait4me"
-else bad "Codex Stop hook 未精確接線 timestamp／wait4me"; fi
+    ok "Codex 主 agent Stop 同時接線 timestamp 與同步 wait4me"
+else bad "Codex Stop hook 未精確接線 timestamp／同步 wait4me"; fi
 
 echo "▶ 16bb. wait4me session 開關與 notification failure isolation"
 W4M_HOOK="$ROOT/shared/skills/wait4me/scripts/wait4me-hook.sh"
@@ -6026,6 +6025,7 @@ W4M_SEND="$ROOT/shared/skills/wait4me/scripts/wait4me-send.py"
 w4m_fix="$TMP/wait4me"
 w4m_state="$w4m_fix/state"
 w4m_capture="$w4m_fix/capture.jsonl"
+w4m_probe_capture="$w4m_fix/probe-capture.jsonl"
 mkdir -p "$w4m_fix"
 w4m_env_file="$w4m_fix/notify.env"
 cat > "$w4m_env_file" <<'EOF'
@@ -6035,9 +6035,9 @@ EOF
 chmod 600 "$w4m_env_file"
 
 w4m_run() {
-    local mode="$1" input="$2"
+    local mode="$1" input="$2" capture="${3-$w4m_capture}"
     printf '%s\n' "$input" | env -u NC_API_URL -u NC_API_KEY \
-        WAIT4ME_STATE_ROOT="$w4m_state" WAIT4ME_TEST_CAPTURE="$w4m_capture" \
+        WAIT4ME_STATE_ROOT="$w4m_state" WAIT4ME_TEST_CAPTURE="$capture" \
         WAIT4ME_ENV_FILE="$w4m_env_file" \
         "$W4M_HOOK" "$mode"
 }
@@ -6046,17 +6046,38 @@ if [ -x "$W4M_HOOK" ] && [ -x "$W4M_SEND" ]; then
     ok "wait4me hook 與 sender 存在且可執行"
 else bad "wait4me hook 或 sender 缺失／不可執行"; fi
 
-w4m_out="$(w4m_run prompt "{\"session_id\":\"session-a\",\"prompt\":\"\$wait4me\",\"cwd\":\"/work/kapi-infra\"}")"
+w4m_out="$(w4m_run prompt "{\"session_id\":\"session-a\",\"prompt\":\"\$wait4me\",\"cwd\":\"/work/kapi-infra\"}" "$w4m_probe_capture")"
 if jq -e '.hookSpecificOutput.additionalContext | contains("wait4me-control: enabled")' \
     <<< "$w4m_out" >/dev/null 2>&1; then
     ok "bare wait4me 只啟用目前 session 並回傳 hook context"
 else bad "bare wait4me 未啟用或未回傳可驗證 context：$w4m_out"; fi
+if jq -e '.hookSpecificOutput.additionalContext | contains("probe=accepted")' <<< "$w4m_out" >/dev/null 2>&1 \
+    && [ "$(wc -l < "$w4m_probe_capture" | tr -d ' ')" -eq 1 ] \
+    && jq -e '.message | contains("wait4me 通知測試")' "$w4m_probe_capture" >/dev/null 2>&1; then
+    ok "on 立即發一則可辨識的 NC 測試通知"
+else bad "on 未發測試通知或誤報送達：$w4m_out"; fi
 
-w4m_out="$(w4m_run prompt "{\"session_id\":\"session-b\",\"prompt\":\"\$wait4me status\"}")"
+w4m_out="$(w4m_run prompt "{\"session_id\":\"session-b\",\"prompt\":\"\$wait4me status\"}" "$w4m_probe_capture")"
 if jq -e '.hookSpecificOutput.additionalContext | contains("status=disabled")' \
     <<< "$w4m_out" >/dev/null 2>&1; then
     ok "另一個 session 維持 disabled"
 else bad "wait4me state 洩漏到另一個 session：$w4m_out"; fi
+if jq -e '.hookSpecificOutput.additionalContext | contains("probe=not-sent")' <<< "$w4m_out" >/dev/null 2>&1 \
+    && [ "$(wc -l < "$w4m_probe_capture" | tr -d ' ')" -eq 1 ]; then
+    ok "off 的 status 回報狀態且不發測試通知"
+else bad "off 的 status 誤發通知或未回報 probe 狀態：$w4m_out"; fi
+
+w4m_out="$(w4m_run prompt "{\"session_id\":\"session-a\",\"prompt\":\"\$wait4me status\"}" "$w4m_probe_capture")"
+if jq -e '.hookSpecificOutput.additionalContext | contains("status=enabled") and contains("probe=accepted")' <<< "$w4m_out" >/dev/null 2>&1 \
+    && [ "$(wc -l < "$w4m_probe_capture" | tr -d ' ')" -eq 2 ]; then
+    ok "on 的 status 回報狀態且發一則測試通知"
+else bad "on 的 status 未完成通知測試：$w4m_out"; fi
+
+w4m_out="$(WAIT4ME_TEST_ERROR=1 w4m_run prompt "{\"session_id\":\"session-a\",\"prompt\":\"\$wait4me status\"}" "" 2>/dev/null)"
+if jq -e '.hookSpecificOutput.additionalContext | contains("status=enabled") and contains("probe=failed") and contains("kind=RuntimeError")' <<< "$w4m_out" >/dev/null 2>&1 \
+    && [ "$(wc -l < "$w4m_probe_capture" | tr -d ' ')" -eq 2 ]; then
+    ok "通知失敗時 status 仍為 on，但不假報送達"
+else bad "status 未區分開關與通知送達：$w4m_out"; fi
 
 w4m_out="$(w4m_run prompt '{"session_id":"session-a","prompt":"continue"}')"
 if jq -e '.hookSpecificOutput.additionalContext | contains("<!-- wait4me: concise reason -->")' \
@@ -6068,6 +6089,11 @@ w4m_run stop '{"session_id":"session-a","turn_id":"done-1","cwd":"/work/kapi-inf
 if [ ! -e "$w4m_capture" ]; then
     ok "普通完成的 Stop 不通知"
 else bad "普通完成被誤判為等待回應"; fi
+w4m_first_diag=("$w4m_state"/*/last-stop)
+if [ "${#w4m_first_diag[@]}" -eq 1 ] && [ -f "${w4m_first_diag[0]}" ] \
+    && grep -q '^stage=marker-absent rc=0 kind=none$' "${w4m_first_diag[0]}"; then
+    ok "普通完成留下去敏 marker-absent 診斷"
+else bad "普通完成無法與 sender 未執行區分"; fi
 
 w4m_wait='{"session_id":"session-a","turn_id":"wait-1","cwd":"/work/kapi-infra","last_assistant_message":"需要你的選擇。 <!-- wait4me: 選擇要接續的 durable steward -->"}'
 w4m_run stop "$w4m_wait" >/dev/null
@@ -6087,13 +6113,16 @@ if ! grep -qF 'TOP-SECRET-COMMAND' "$w4m_capture" \
 else bad "notification payload 洩漏 raw input 或違反 message contract"; fi
 
 w4m_run session-start '{"session_id":"session-a","source":"compact"}' >/dev/null
-w4m_out="$(w4m_run prompt "{\"session_id\":\"session-a\",\"prompt\":\"\$wait4me status\"}")"
+w4m_out="$(w4m_run prompt "{\"session_id\":\"session-a\",\"prompt\":\"\$wait4me status\"}" "$w4m_probe_capture")"
 if grep -q 'status=enabled' <<< "$w4m_out"; then ok "compact 保留 switch"; else bad "compact 誤清 switch"; fi
 w4m_run session-start '{"session_id":"session-a","source":"resume"}' >/dev/null
-w4m_out="$(w4m_run prompt "{\"session_id\":\"session-a\",\"prompt\":\"\$wait4me status\"}")"
+w4m_out="$(w4m_run prompt "{\"session_id\":\"session-a\",\"prompt\":\"\$wait4me status\"}" "$w4m_probe_capture")"
 if grep -q 'status=disabled' <<< "$w4m_out"; then ok "resume 清除 switch"; else bad "resume 延續了舊授權"; fi
+if [ ! -e "${w4m_first_diag[0]}" ]; then
+    ok "session 清理會移除暫存 Stop 診斷"
+else bad "session 清理遺留 Stop 診斷"; fi
 
-w4m_run prompt "{\"session_id\":\"session-a\",\"prompt\":\"\$wait4me on\"}" >/dev/null
+w4m_run prompt "{\"session_id\":\"session-a\",\"prompt\":\"\$wait4me on\"}" "$w4m_probe_capture" >/dev/null
 w4m_run prompt "{\"session_id\":\"session-a\",\"prompt\":\"\$wait4me off\"}" >/dev/null
 w4m_out="$(w4m_run prompt "{\"session_id\":\"session-a\",\"prompt\":\"\$wait4me status\"}")"
 if grep -q 'status=disabled' <<< "$w4m_out"; then ok "off 立即且幂等停用"; else bad "off 未停用"; fi
@@ -6108,6 +6137,21 @@ if ! grep -qF "$w4m_secret" <<< "$w4m_error" \
     && grep -q 'RuntimeError' <<< "$w4m_error"; then
     ok "transport warning bounded 且不回顯 secret／URL"
 else bad "transport warning 洩漏敏感 transport 細節或缺少安全摘要：$w4m_error"; fi
+
+python3 - "$W4M_SEND" <<'PY'
+import errno
+import importlib.util
+import urllib.error
+import sys
+
+spec = importlib.util.spec_from_file_location("wait4me_send", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+assert module.failure_kind(urllib.error.URLError(OSError(errno.EHOSTUNREACH, "private detail"))) == "network-unreachable"
+assert module.failure_kind(urllib.error.URLError(ConnectionRefusedError(errno.ECONNREFUSED, "private detail"))) == "connection-refused"
+assert module.failure_kind(RuntimeError("private detail")) == "RuntimeError"
+PY
+assert_rc "sender 把網路例外歸為不含細節的錯誤類別" 0 $?
 
 w4m_env_error="$(printf '%s\n' '{"message":"等待回應: fixture","level":"info","task":"agent-response-needed"}' \
     | env -u NC_API_URL -u NC_API_KEY WAIT4ME_ENV_FILE="$w4m_env_file" WAIT4ME_TEST_ERROR=1 \
@@ -6290,14 +6334,25 @@ w4m_retry_capture="$w4m_fix/retry-capture.jsonl"
 w4m_retry='{"session_id":"retry-session","turn_id":"retry-turn","cwd":"/work/kapi-infra","last_assistant_message":"需要你的選擇。 <!-- wait4me: 選擇後續處理方式 -->"}'
 # shellcheck disable=SC2016 # `$wait4me` 是送給hook的literal command。
 printf '%s\n' '{"session_id":"retry-session","prompt":"$wait4me on"}' \
-    | WAIT4ME_STATE_ROOT="$w4m_retry_state" "$W4M_HOOK" prompt >/dev/null
+    | WAIT4ME_STATE_ROOT="$w4m_retry_state" WAIT4ME_TEST_CAPTURE="$w4m_probe_capture" \
+        WAIT4ME_ENV_FILE="$w4m_env_file" "$W4M_HOOK" prompt >/dev/null
 printf '%s\n' "$w4m_retry" \
     | env -u NC_API_URL -u NC_API_KEY WAIT4ME_STATE_ROOT="$w4m_retry_state" \
         WAIT4ME_ENV_FILE="$w4m_env_file" WAIT4ME_TEST_ERROR=1 "$W4M_HOOK" stop >/dev/null
+w4m_diag_files=("$w4m_retry_state"/*/last-stop)
+if [ "${#w4m_diag_files[@]}" -eq 1 ] && [ -f "${w4m_diag_files[0]}" ] \
+    && grep -q '^stage=send-failed rc=75 kind=RuntimeError$' "${w4m_diag_files[0]}" \
+    && ! grep -qE 'fixture-env-file-key|from-env-file|選擇後續' "${w4m_diag_files[0]}"; then
+    ok "Stop 失敗保留去敏階段、exit 與錯誤類別"
+else bad "Stop 失敗沒有可查且不洩漏的診斷狀態"; fi
 printf '%s\n' "$w4m_retry" \
     | env -u NC_API_URL -u NC_API_KEY WAIT4ME_STATE_ROOT="$w4m_retry_state" \
         WAIT4ME_ENV_FILE="$w4m_env_file" WAIT4ME_TEST_CAPTURE="$w4m_retry_capture" \
         "$W4M_HOOK" stop >/dev/null
+if [ "${#w4m_diag_files[@]}" -eq 1 ] && [ -f "${w4m_diag_files[0]}" ] \
+    && grep -q '^stage=delivered rc=0 kind=none$' "${w4m_diag_files[0]}"; then
+    ok "後續成功送達更新診斷狀態"
+else bad "送達成功未更新診斷狀態"; fi
 if [ -f "$w4m_retry_capture" ]; then
     assert_eq "delivery失敗不會提前消耗同一事件的去重資格" 1 \
         "$(wc -l < "$w4m_retry_capture" | tr -d ' ')"
@@ -6305,17 +6360,30 @@ else
     bad "delivery失敗後相同事件無法重試"
 fi
 
+codex_wait4me_prompt="$(awk '
+    /^\[\[hooks\.UserPromptSubmit\]\]$/ { capture = 1 }
+    capture && /^\[/ && $0 !~ /^\[\[hooks\.UserPromptSubmit(\.hooks)?\]\]$/ { exit }
+    capture { print }
+' "$ROOT/codex/config.toml")"
+# shellcheck disable=SC2016 # $HOME stays literal until the hook runtime expands it.
+codex_wait4me_prompt_expected='[[hooks.UserPromptSubmit]]
+
+[[hooks.UserPromptSubmit.hooks]]
+type = "command"
+command = '\''WAIT4ME_ENV_FILE="$HOME/Projects/krepo/.env" "$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh prompt'\''
+timeout = 5'
 if jq -e \
-    --arg prompt '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh prompt' \
+    --arg prompt 'WAIT4ME_ENV_FILE="$HOME/Projects/krepo/.env" "$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh prompt' \
     --arg permission 'WAIT4ME_ENV_FILE="$HOME/Projects/krepo/.env" "$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh permission' \
     --arg stop 'WAIT4ME_ENV_FILE="$HOME/Projects/krepo/.env" "$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh stop' \
     --arg end '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh session-end' '
-    ([.hooks.UserPromptSubmit[].hooks[] | select(.command == $prompt)] | length) == 1
+    ([.hooks.UserPromptSubmit[].hooks[] | select(.command == $prompt and .timeout == 5)] | length) == 1
     and ([.hooks.PermissionRequest[].hooks[] | select(.command == $permission and .async == true)] | length) == 1
     and ([.hooks.Stop[].hooks[] | select(.command == $stop and .async == true)] | length) == 1
     and ([.hooks.SessionEnd[].hooks[] | select(.command == $end)] | length) == 1
     and (.hooks.SubagentStop == null)
 ' "$ROOT/claude/settings.json" >/dev/null 2>&1 \
+    && [ "$codex_wait4me_prompt" = "$codex_wait4me_prompt_expected" ] \
     && grep -q '^\[\[hooks\.UserPromptSubmit\]\]$' "$ROOT/codex/config.toml" \
     && grep -q '^\[\[hooks\.PermissionRequest\]\]$' "$ROOT/codex/config.toml" \
     && grep -q '^\[\[hooks\.SessionEnd\]\]$' "$ROOT/codex/config.toml" \
