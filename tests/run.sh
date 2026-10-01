@@ -5062,6 +5062,35 @@ out="$("$HA_SCRIPT" verify "$TMP/ha-handoffs/t.md")"
 assert_rc "verify 未動的 repo → exit 0" 0 $?
 if echo "$out" | grep -q "verdict: FRESH"; then ok "未動的 repo → FRESH"; else bad "未判 FRESH"; fi
 
+# verify 的 metadata 邊界：正文可以引用 created/anchor 範例，但不能參與驗證。
+# 一份有效交接若因正文範例多出壞錨點而降級，就是 false STALE-RISK。
+{ echo "---"; "$HA_SCRIPT" anchors "$TMP/ha-work"; echo "---";
+  printf '\n~~~text\nanchor: /example/not-a-repo main 0000000000000000000000000000000000000000 dirty=0\n~~~\n';
+} > "$TMP/ha-handoffs/body-example.md"
+out="$("$HA_SCRIPT" verify "$TMP/ha-handoffs/body-example.md")"
+assert_rc "verify 忽略正文錨點範例 → exit 0" 0 $?
+if echo "$out" | grep -q 'verdict: FRESH' && ! echo "$out" | grep -q 'status: MISSING'; then
+    ok "正文錨點範例不造成假 STALE-RISK"
+else bad "正文錨點範例污染驗證結果（${out}）"; fi
+
+# 更嚴重的反面：沒有 frontmatter，只有正文 code block 的 metadata，不能假裝通過驗證。
+{ echo '```text'; "$HA_SCRIPT" anchors "$TMP/ha-work"; echo '```'; } > "$TMP/ha-handoffs/body-only.md"
+out="$("$HA_SCRIPT" verify "$TMP/ha-handoffs/body-only.md")"
+assert_rc "verify 只有正文範例 → exit 1" 1 $?
+if echo "$out" | grep -q 'age: UNKNOWN' && echo "$out" | grep -q 'verdict: UNVERIFIABLE' \
+    && ! echo "$out" | grep -q 'status: FRESH'; then
+    ok "正文 metadata 不會假放行"
+else bad "正文 metadata 被誤認為 frontmatter（${out}）"; fi
+
+# 缺失的 dirty 欄位使錨點不完整；HEAD 恰相同也不得 FRESH。
+{ echo '---'; "$HA_SCRIPT" anchors "$TMP/ha-work" | sed 's/ dirty=[0-9][0-9]*$//'; echo '---'; } \
+    > "$TMP/ha-handoffs/missing-dirty.md"
+out="$("$HA_SCRIPT" verify "$TMP/ha-handoffs/missing-dirty.md")"
+assert_rc "verify 缺 dirty 欄位 → exit 1" 1 $?
+if echo "$out" | grep -q 'status: BAD-ANCHOR' && ! echo "$out" | grep -q 'status: FRESH'; then
+    ok "缺 dirty 欄位不得 FRESH"
+else bad "缺 dirty 欄位被放行（${out}）"; fi
+
 # verify：DRIFTED（記錄後 repo 前進，列出中間 commit）
 (cd "$TMP/ha-work" && echo v2 > f.txt && "${GITC[@]}" commit -qam "advance after handoff")
 out="$("$HA_SCRIPT" verify "$TMP/ha-handoffs/t.md")"

@@ -35,7 +35,7 @@
 #   DRIFTED    — 記錄的 HEAD 是現在 HEAD 的祖先（repo 已前進 N commits；列出中間 commit 供比對）
 #   DIVERGED   — 記錄的 HEAD 不在現行歷史上（rebase/換 branch/歷史改寫）；內容一律存疑
 #   MISSING    — repo 路徑不存在或不是 git repo
-#   BAD-ANCHOR — 錨點行欄位不足（如手寫殘缺），或 head 欄位不是完整 canonical object ID
+#   BAD-ANCHOR — 錨點行欄位不足／不合法（含缺 dirty=N），或 head 欄位不是完整 canonical object ID
 #                （`HEAD`／branch 名／短 sha 都會隨時間改指，無從判斷過時與否）
 #   另檢查 created 年齡，超過 EXPIRE_DAYS 標 EXPIRED。
 #
@@ -256,9 +256,16 @@ cmd_verify() {
 
     local overall=0
 
+    # 只接受檔案開頭且有結束分隔線的 frontmatter。正文常會引用 created:/anchor:
+    # 範例；全檔搜尋會讓範例冒充錨點，或把壞範例誤算成真錨點。
+    local frontmatter
+    frontmatter="$(awk 'NR == 1 { if ($0 != "---") exit; next }
+                       $0 == "---" { printf "%s", content; exit }
+                       { content = content $0 ORS }' "$file")"
+
     # -- 年齡 --
     local created age
-    created="$(sed -n 's/^created:[[:space:]]*//p' "$file" | head -1)"
+    created="$(printf '%s\n' "$frontmatter" | sed -n 's/^created:[[:space:]]*//p' | head -1)"
     if [ -n "$created" ] && age="$(age_days_from_created "$created")"; then
         if [ "$age" -gt "$EXPIRE_DAYS" ]; then
             echo "age: ${age}d — EXPIRED（超過 ${EXPIRE_DAYS} 天，內容以 repo 現況為準）"
@@ -273,7 +280,7 @@ cmd_verify() {
 
     # -- 錨點 --
     local anchors
-    anchors="$(grep '^anchor: ' "$file" || true)"
+    anchors="$(printf '%s\n' "$frontmatter" | grep '^anchor: ' || true)"
     if [ -z "$anchors" ]; then
         echo "anchors: NONE（無錨點——無法判斷交接內容是否過時，一律存疑）"
         echo "verdict: UNVERIFIABLE"
@@ -284,9 +291,10 @@ cmd_verify() {
     while IFS= read -r line; do
         # read 分欄不做 glob expansion（路徑含 * [ ? 也不會被展開成 cwd 檔名）
         IFS=' ' read -r repo branch sha dirty _extra <<< "${line#anchor: }"
-        if [ -z "$sha" ]; then
+        if [ -z "$repo" ] || [ -z "$branch" ] || [ -z "$sha" ] \
+            || [[ ! "$dirty" =~ ^dirty=[0-9]+$ ]] || [ -n "$_extra" ]; then
             echo "--- ${repo:-?} ---"
-            echo "status: BAD-ANCHOR（錨點行欄位不足，無法驗證：${line}）"
+            echo "status: BAD-ANCHOR（錨點行欄位不完整或不合法，無法驗證：${line}）"
             overall=1
             continue
         fi
