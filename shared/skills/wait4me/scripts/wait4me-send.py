@@ -4,9 +4,13 @@
 from __future__ import annotations
 
 import json
+import errno
 import os
+import socket
+import ssl
 import stat
 import sys
+import urllib.error
 import urllib.request
 
 
@@ -19,6 +23,25 @@ DELIVERY_UNAVAILABLE = 75
 
 def safe_warning(kind: str) -> None:
     print(f"wait4me: notification skipped ({kind})", file=sys.stderr)
+
+
+def failure_kind(error: Exception) -> str:
+    """Return a bounded diagnosis token, never an exception message or destination."""
+    if isinstance(error, urllib.error.HTTPError):
+        return "http-error"
+    cause = error.reason if isinstance(error, urllib.error.URLError) else error
+    if isinstance(cause, socket.gaierror):
+        return "dns-error"
+    if isinstance(cause, ssl.SSLError):
+        return "tls-error"
+    if isinstance(cause, TimeoutError):
+        return "timeout"
+    if isinstance(cause, OSError):
+        if cause.errno in {errno.EHOSTUNREACH, errno.ENETUNREACH}:
+            return "network-unreachable"
+        if cause.errno == errno.ECONNREFUSED:
+            return "connection-refused"
+    return type(error).__name__
 
 
 def load_payload() -> dict[str, str] | None:
@@ -152,7 +175,7 @@ def main() -> int:
             safe_warning("delivery-unconfirmed")
             return DELIVERY_UNAVAILABLE
     except Exception as error:  # Notification failure must never escape into the hook.
-        safe_warning(type(error).__name__)
+        safe_warning(failure_kind(error))
         return DELIVERY_UNAVAILABLE
     return 0
 

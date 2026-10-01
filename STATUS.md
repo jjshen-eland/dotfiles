@@ -12,7 +12,14 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-目前無進行中項目。
+### #250 wait4me Codex Stop 通知未送達
+
+- **Writer**：`codex:main`
+- **Workspace**：`branch=fix/wait4me-codex-hook-network`
+- **Write Scope**：`STATUS.md`, `shared/skills/wait4me/scripts/wait4me-hook.sh`, `shared/skills/wait4me/scripts/wait4me-send.py`, `shared/skills/wait4me/references/workflow.md`, `shared/skills/wait4me/evals.md`, `codex/config.toml`, `claude/settings.json`, `tests/run.sh`, `tests/shard-manifest.tsv`, `docs/archive/milestones-2026-10.md`
+- **Dossier Steward**：`codex:main`
+- **成功條件**：真實 Codex Stop 的去敏階段、exit 與錯誤類別可查；`on` 與已啟用的 `status` 各發一則測試通知，明確分開開關與 Gateway 回覆；以正常終端與 hook 同時段對照定位私網首次差異後才修其因果來源；假 Gateway 驗證僅需回覆時送一次、普通完成不送、失敗不誤報送達；真實環境完成一次使用者收件驗收。
+- **狀態**：本地修正候選與自我測試已完成；隔離 Codex Stop 可送 fake capture、連線拒絕會留 `send-failed`，同步 Stop 排除 ephemeral session 取消背景 hook 的實測失效。2026-10-01 的隔離 Codex Stop 與工具終端均可連 loopback fixture，但均對私網 Gateway 回 `OSError:65`；私網原因與真實收件仍待驗證，#250 維持 open。
 
 ## 暫停中
 

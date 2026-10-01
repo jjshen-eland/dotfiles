@@ -30,6 +30,7 @@ state_root="${WAIT4ME_STATE_ROOT:-${TMPDIR:-/tmp}/wait4me-$(id -u)}"
 state_dir="$state_root/$session_key"
 enabled_file="$state_dir/enabled"
 sender="$(cd "$(dirname "$0")" 2>/dev/null && pwd -P)/wait4me-send.py"
+stop_diagnostic="$state_dir/last-stop"
 
 ensure_state_dir() {
     mkdir -p "$state_dir" 2>/dev/null || return 1
@@ -42,7 +43,7 @@ enable_session() {
 }
 
 cleanup_session() {
-    rm -f "$enabled_file" 2>/dev/null
+    rm -f "$enabled_file" "$stop_diagnostic" 2>/dev/null
     local marker_dir
     for marker_dir in "$state_dir"/sent-* "$state_dir"/sending-*; do
         [ -d "$marker_dir" ] && rmdir "$marker_dir" 2>/dev/null
@@ -62,6 +63,13 @@ marker_contract='wait4me is enabled for this session. If and only if the main ag
 
 clean_text() {
     jq -nr --arg value "$1" '$value | gsub("[\\r\\n\\t]+"; " ") | gsub("  +"; " ") | .[0:120]' 2>/dev/null
+}
+
+# Only fixed stages and allowlisted error tokens go to this owner-only session file.
+# It survives a stopped async sender, so "sending" without a terminal stage is evidence.
+record_stop() {  # <stage> <sender-rc> <safe-kind>
+    [ -d "$state_dir" ] || return 0
+    printf 'stage=%s rc=%s kind=%s\n' "$1" "$2" "$3" > "$stop_diagnostic" 2>/dev/null || true
 }
 
 begin_notification() {
@@ -86,21 +94,54 @@ finish_notification() {
 }
 
 send_notification() {
-    local message
+    local message body sender_output sender_rc
+    sender_kind=none
     message="$(jq -nr --arg value "$1" '$value | gsub("[\\r\\n\\t]+"; " ") | gsub("  +"; " ") | .[0:200]' 2>/dev/null)"
-    [ -n "$message" ] || return 0
-    [ -x "$sender" ] || return 0
-    jq -n --arg message "$message" \
-        '{message:$message,level:"info",task:"agent-response-needed"}' 2>/dev/null \
-        | "$sender"
+    if [ -z "$message" ]; then sender_kind=message_unavailable; return 75; fi
+    if [ ! -x "$sender" ]; then sender_kind=sender_unavailable; return 75; fi
+    body="$(jq -n --arg message "$message" \
+        '{message:$message,level:"info",task:"agent-response-needed"}' 2>/dev/null)"
+    if [ -z "$body" ]; then sender_kind=payload_unavailable; return 75; fi
+    sender_output="$(printf '%s\n' "$body" | "$sender" 2>&1)"
+    sender_rc=$?
+    if [ "$sender_rc" -ne 0 ]; then
+        case "$sender_output" in
+            'wait4me: notification skipped ('*')')
+                sender_kind="${sender_output#wait4me: notification skipped (}"
+                sender_kind="${sender_kind%)}"
+                ;;
+            *) sender_kind=unknown ;;
+        esac
+        case "$sender_kind" in
+            ''|*[!a-zA-Z0-9_-]*) sender_kind=unknown ;;
+        esac
+        printf 'wait4me: notification skipped (%s)\n' "$sender_kind" >&2
+    fi
+    return "$sender_rc"
 }
 
 notify_once() {
+    notification_stage=claim-unavailable
+    notification_rc=0
+    sender_kind=none
     begin_notification "$1" || return 0
     if send_notification "$2"; then
         finish_notification success
+        notification_stage=delivered
     else
+        notification_rc=$?
         finish_notification failure
+        notification_stage=send-failed
+    fi
+}
+
+probe_control_notification() {
+    probe_result=failed
+    probe_kind=none
+    if send_notification 'wait4me 通知測試：目前已啟用。收到這則表示通知通道可用。'; then
+        probe_result=accepted
+    else
+        probe_kind="$sender_kind"
     fi
 }
 
@@ -112,20 +153,22 @@ case "$mode" in
         case "$control" in
             '$wait4me'|'$wait4me on')
                 if enable_session; then
-                    emit_context "wait4me-control: enabled for this session. Confirm briefly. $marker_contract"
+                    probe_control_notification
+                    emit_context "wait4me-control: enabled for this session; probe=$probe_result; kind=$probe_kind. Report switch and probe separately; accepted means Gateway acknowledgement, and the user still confirms device receipt. $marker_contract"
                 else
                     emit_context 'wait4me-control: enable failed because ephemeral session state was unavailable. Do not claim it is enabled.'
                 fi
                 ;;
             '$wait4me off')
                 cleanup_session
-                emit_context 'wait4me-control: disabled for this session. Confirm briefly.'
+                emit_context 'wait4me-control: disabled for this session; probe=not-sent. Confirm briefly.'
                 ;;
             '$wait4me status')
                 if is_enabled; then
-                    emit_context "wait4me-control: status=enabled for this session. Report without changing it. $marker_contract"
+                    probe_control_notification
+                    emit_context "wait4me-control: status=enabled for this session; probe=$probe_result; kind=$probe_kind. Report switch and probe separately; accepted means Gateway acknowledgement, and the user still confirms device receipt. $marker_contract"
                 else
-                    emit_context 'wait4me-control: status=disabled for this session. Report without changing it.'
+                    emit_context 'wait4me-control: status=disabled for this session; probe=not-sent. Report without changing it.'
                 fi
                 ;;
             *)
@@ -153,16 +196,19 @@ case "$mode" in
         ;;
     stop)
         is_enabled || exit 0
+        record_stop entered 0 none
         reason="$(jq -r 'try ((.last_assistant_message // "") | capture("<!-- wait4me: (?<reason>[^<>\\r\\n]{1,120}) -->").reason) catch ""' <<< "$payload" 2>/dev/null)"
-        [ -n "$reason" ] || exit 0
+        if [ -z "$reason" ]; then record_stop marker-absent 0 none; exit 0; fi
         reason="$(clean_text "$reason")"
-        [ -n "$reason" ] || exit 0
+        if [ -z "$reason" ]; then record_stop marker-invalid 0 none; exit 0; fi
         cwd="$(jq -r '.cwd // empty' <<< "$payload" 2>/dev/null)"
         repo="$(basename "${cwd:-session}")"
         turn_id="$(jq -r '.turn_id // empty' <<< "$payload" 2>/dev/null)"
         [ -n "$turn_id" ] || turn_id="$(printf '%s' "$reason" | hash_text)"
+        record_stop sending 0 none
         notify_once "stop|$turn_id|$reason" \
             "等待回應: $repo — ${reason}。請回 terminal。"
+        record_stop "$notification_stage" "$notification_rc" "$sender_kind"
         ;;
     control)
         action="${2:-status}"

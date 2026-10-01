@@ -4,12 +4,12 @@
 
 ## Control contract
 
-- Bare `$wait4me` and `$wait4me on` enable response-needed NC notifications only for the current foreground session.
+- Bare `$wait4me` and `$wait4me on` enable response-needed NC notifications only for the current foreground session and send one notification probe.
 - `$wait4me off` disables them immediately and idempotently.
-- `$wait4me status` reports the current session state without changing it.
+- `$wait4me status` reports the current session state without changing it; when enabled, it sends one notification probe.
 - Enabling is the user's bounded authorization to send these notifications until `off` or this session lifecycle ends. It authorizes no other outward action.
 
-The `UserPromptSubmit` hook performs the state change before the agent runs and supplies a `wait4me-control:` result in additional context. Report that observed result concisely. For a paraphrased request with no control result, direct the user to submit the exact `$wait4me`, `$wait4me on`, `$wait4me off`, or `$wait4me status` command and do not claim the state changed. If an exact command has no result, explain that the lifecycle hooks are not active in this process and that a new session is required after installation or hook trust changes.
+The `UserPromptSubmit` hook performs the state change and probe before the agent runs and supplies a `wait4me-control:` result in additional context. Report the switch state and probe result separately. `probe=accepted` means the Gateway acknowledged delivery; the user must still confirm device receipt. It checks the control hook and transport, not the later `Stop` marker path. A failed probe leaves the switch enabled and must not be reported as delivered. For a paraphrased request with no control result, direct the user to submit the exact `$wait4me`, `$wait4me on`, `$wait4me off`, or `$wait4me status` command and do not claim the state changed. If an exact command has no result, explain that the lifecycle hooks are not active in this process and that a new session is required after installation or hook trust changes.
 
 Treat new, clear, resume, ownership transfer, and session end as authorization boundaries. They require a fresh `on`; compact within the same live session may preserve the switch. Never infer an enabled state from conversation history or runtime memory.
 

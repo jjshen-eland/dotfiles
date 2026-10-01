@@ -18,8 +18,8 @@ timeout = 3
 
 [[hooks.UserPromptSubmit.hooks]]
 type = "command"
-command = '"$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh prompt'
-timeout = 3
+command = 'WAIT4ME_ENV_FILE="$HOME/Projects/krepo/.env" "$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh prompt'
+timeout = 5
 
 [[hooks.PreToolUse]]
 matcher = "Bash"
@@ -48,7 +48,6 @@ timeout = 3
 type = "command"
 command = 'WAIT4ME_ENV_FILE="$HOME/Projects/krepo/.env" "$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh stop'
 timeout = 5
-async = true
 
 [[hooks.SessionEnd]]
 
