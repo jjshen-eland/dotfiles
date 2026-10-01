@@ -6138,6 +6138,23 @@ if ! grep -qF "$w4m_secret" <<< "$w4m_error" \
     ok "transport warning bounded 且不回顯 secret／URL"
 else bad "transport warning 洩漏敏感 transport 細節或缺少安全摘要：$w4m_error"; fi
 
+w4m_python_stub="$w4m_fix/python-stub"
+mkdir -p "$w4m_python_stub"
+cat > "$w4m_python_stub/python3" <<'EOF'
+#!/bin/sh
+exit 42
+EOF
+chmod +x "$w4m_python_stub/python3"
+w4m_path_capture="$w4m_fix/path-capture.jsonl"
+printf '%s\n' '{"message":"wait4me interpreter fixture","level":"info","task":"agent-response-needed"}' \
+    | env -u NC_API_URL -u NC_API_KEY PATH="$w4m_python_stub:$PATH" \
+        WAIT4ME_ENV_FILE="$w4m_env_file" WAIT4ME_TEST_CAPTURE="$w4m_path_capture" \
+        "$W4M_SEND" >/dev/null 2>&1
+w4m_path_rc=$?
+if [ "$w4m_path_rc" -eq 0 ] && [ -s "$w4m_path_capture" ]; then
+    ok "sender 不受 PATH 中網路受限的 Python 取代"
+else bad "sender 被 PATH 的 Python 取代，通知無法送出"; fi
+
 python3 - "$W4M_SEND" <<'PY'
 import errno
 import importlib.util
