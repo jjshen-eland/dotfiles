@@ -81,3 +81,9 @@
 - **M-20261002-session-skills-final-tree-verified · 2026-10-02 收尾後固定最終樹複驗通過**：還原 adopted STATUS no-active 文字後，未再改 source/state 即跑完整 suite；`/tmp/session-skills-suite-verified-20261002.log` 為 exit 0、PASS=1564/FAIL=0。先前 1563/1 的 governance failure 仍保留，不改結果。Final tested workflow SHA-256 為 `21fa2fcf89f7085022cb165cf6b7fbb38b737f3b34d7308117898817b5d22aba`，與 native rollup packet 完全一致；本地 branch 及未 commit／shipping 邊界維持。
   - 日期來源:direct
   - 關聯:M-20261002-session-skills-model-review;X-20261002-session-close-placeholder;docs/plans/2026-10-02-session-skills-model-behavior.md
+
+- **M-20261003-session-skills-completion-candidate · 2026-10-03 新版模型 session skills 檢視完成結案候選，endpoint pending**：實作／eval／凍結 plan 已納入 `607d7f625eb002f3b37eeafb907a116fe1da3b0f`，同 commit 保留 `codex:session-skills-model-behavior` 的唯一 active assignment。單 repo locked set 的 post-completion view 無其他 active item 指向此 actor；paused backlog 保持不變。本輪移除 completed item，後續 candidate 必須以該 parent、原 assignment fingerprint 通過 completion authority；未以 no-active-items 當放行。本批 ready4quit source hash 與已驗 native rollup 完全一致，doc audit／相關九個 offline tests／diff check 通過；完整 clean-clone suite 與雙平台 required CI 尚待 shipping 階段驗證。使用者本輪明確授權 `$project --merge`，目前仍未 push／開 PR／merge，不宣稱 endpoint 已達成。
+  - 日期來源:direct
+  - 放棄:修改 frozen implemented plan；用 candidate 完成冒充 remote-visible merge；連帶結案既有 paused gaps
+  - 重議:completion authority、clean-clone suite 或本批 required checks 未通過時先修具體 gate
+  - 關聯:607d7f625eb002f3b37eeafb907a116fe1da3b0f;M-20261002-session-skills-final-tree-verified;X-20261003-session-skills-premature-active-removal;docs/plans/2026-10-02-session-skills-model-behavior.md
