@@ -12,7 +12,19 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-目前無進行中項目。
+### Handoff／Ready4quit 新版模型內容品質評估
+
+- **Writer**: codex:session-skills-model-behavior
+- **Workspace**: branch=refactor/session-skills-model-behavior
+- **Write Scope**: shared/skills/handoff, shared/skills/ready4quit, codex/skills/handoff, codex/skills/ready4quit, claude/skills/handoff, claude/skills/ready4quit, tests, docs/testing-contract.md
+- **Dossier Steward**: codex:session-skills-model-behavior
+- **Context**: 本機內容品質評估與候選驗證已完成；本輪使用者明確叫用 `$project --merge` 收尾。
+- **Goal**: 保存原工作線的可驗證 assignment，依既有 shipping 流程送出並合併本批。
+- **Acceptance Criteria**: 內容與已測候選一致；assignment 在 completion parent 可查；doc／authority gates 與雙平台 required checks 通過；PR rebase merge 並同步本地 main。
+- **Constraints**: 評估目標為完成品質，不以 token reduction 採用；不修改 frozen implemented plan，不新增產品範圍、不部署。
+- **進度**: PR #255 首輪 CI 的雙平台 integration shard 都為 1154/0，但 manifest 仍為 1153；本批修復只同步此計數，保留原失敗 log。
+- **下一步**: 以 CI 的 parallel runner 驗證修復；保留 assignment 到修復 parent，再做結案 candidate 並更新同一 PR。
+- **關聯**: D-20261002-ready4quit-contract-first;D-20261002-ready4quit-evidence-rollup;M-20261002-session-skills-final-tree-verified;docs/plans/2026-10-02-session-skills-model-behavior.md
 
 ## 暫停中
 
