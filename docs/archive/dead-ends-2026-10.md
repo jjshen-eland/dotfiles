@@ -41,3 +41,17 @@
   - 放棄:把 shard 內綠燈當整個 CI 綠燈；僅重跑 serial suite；放寬 count equality 或改 CI 以躲過 manifest
   - 重議:新增或移除 suite assertion 時，同步所屬 manifest 並用 parallel runner 驗證
   - 關聯:M-20261003-session-skills-completion-candidate;PR#255;tests/shard-manifest.tsv;tests/run.sh;docs/testing-contract.md
+
+- **X-20261003-review-checklist-ablation · 2026-10-03 新版 reviewer 不以通用能力控制支持刪除 checklist**：原文與只移除七項通用檢查類別的局部控制，各以 gpt-6.1-sol/high/Standard、Opus 5.5 [1m]/high/Standard 在三個 fresh reviewer-stage cases 執行一次。兩版都報出跨檔設定回歸、拒絕把合法 guard／正確說明列為 blocker，且找到會把 index 誤當 HEAD 的 Git 文件錯誤；全十二份 target 檔案與 Git metadata 保持不變。Claude 原文一案把同根因拆成兩條，控制合併一條，但沒有穩定或可歸因完成品質收益；原文另一案還正確隔離既有長字串限制，控制卻泛稱 parser 無 raise 路徑。這些單次差異不支持刪改。保留 checklist，不能把少字／少 tokens 或 native exit=0 當成功。
+  - 日期來源:direct
+  - 證據:`/tmp/review-skills-{baseline,ablation}-20261003` 的 source hashes、raw inputs／outputs、before／after 全樹實態；這是局部 reviewer-stage，不能冒充完整 orchestration 或 implicit trigger 驗收
+  - 放棄:新版模型已會 code review 就刪通用清單；拿單次去重或速度差異推論品質優勢
+  - 重議:新的真實 scope 擴張、漏報或誤報 trace，能支持單一 ablation 的可歸因完成品質收益時
+  - 關聯:D-20260925-instruction-quality-scope;docs/plans/2026-10-03-review-skills-model-behavior.md;tests/review-skills-model-eval.py
+
+- **X-20261003-review-route-position · 2026-10-03 不採未解釋風險分歧的位置候選**：設定 key rename fixture 的 original Sol 以小改動選 ordinary，Claude 以一起部署的說明選 full；完整修復均成功。只在 frozen source 把既有 risk criteria 搬到 partition 前，Sol 仍選 ordinary，位置假說未證實，正式 core 不變。早期將 Sol 選路直接稱 RED 過度確定：fixture 未提供 mixed-version compatibility window 或明定 coordinated cutover，沒有足夠證據把解讀差異歸因為指令 defect。保留原始／候選 trace 與更正，不以 reviewer 數量當分數；另用明確 permission boundary 核對 full，不重跑原材料洗綠。
+  - 日期來源:direct
+  - 證據:`/tmp/review-skills-route-position-20261003`；原文與候選同 raw snapshot／prompt／model；RCA 終態 UNCONFIRMED，不宣稱已修根因
+  - 放棄:未證明 cutover 條件便把跨 repo rename 判 full；因一端多派 reviewers 就視為較好；位置無收益仍加強語句
+  - 重議:具體 rollout／compatibility 契約能消除 fixture 歧義且重現錯誤選路時
+  - 關聯:docs/plans/2026-10-03-review-skills-model-behavior.md;shared/skills/deep-review/references/workflow.md
