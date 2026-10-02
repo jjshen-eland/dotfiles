@@ -6,11 +6,14 @@ from __future__ import annotations
 import errno
 import json
 import os
+import signal
 import socket
 import ssl
 import stat
-import subprocess
 import sys
+import urllib.error
+import urllib.parse
+import urllib.request
 
 
 ALLOWED_LEVELS = {"info", "warning", "error"}
@@ -26,10 +29,10 @@ def safe_warning(kind: str) -> None:
 
 def failure_kind(error: Exception) -> str:
     """Return a bounded diagnosis token, never an exception message or destination."""
-    if isinstance(error, subprocess.TimeoutExpired):
-        return "timeout"
-    if isinstance(error, FileNotFoundError):
-        return "curl-unavailable"
+    if isinstance(error, urllib.error.HTTPError):
+        return "http-error"
+    if isinstance(error, urllib.error.URLError):
+        error = error.reason
     if isinstance(error, socket.gaierror):
         return "dns-error"
     if isinstance(error, ssl.SSLError):
@@ -44,30 +47,15 @@ def failure_kind(error: Exception) -> str:
     return type(error).__name__
 
 
-def curl_failure_kind(returncode: int, stderr: bytes) -> str:
-    """Classify curl without exposing its verbose output, which includes auth headers."""
-    if returncode == 22:
-        return "http-error"
-    if returncode in {5, 6}:
-        return "dns-error"
-    if returncode == 7:
-        detail = stderr.lower()
-        if b"no route to host" in detail or b"network is unreachable" in detail:
-            return "network-unreachable"
-        if b"connection refused" in detail:
-            return "connection-refused"
-        return "connect-failed"
-    if returncode == 28:
-        return "timeout"
-    if returncode in {35, 51, 58, 59, 60, 77, 83}:
-        return "tls-error"
-    return "curl-error"
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Do not forward authenticated notifications to another destination."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
 
 
-def curl_quote(value: str) -> str:
-    if any(ord(character) < 32 or ord(character) == 127 for character in value):
-        raise ValueError("invalid curl config value")
-    return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+def delivery_timeout(_signum, _frame) -> None:
+    raise TimeoutError("notification deadline exceeded")
 
 
 def load_payload() -> dict[str, str] | None:
@@ -159,6 +147,15 @@ def transport_config() -> tuple[str, str] | None:
     if len(api_key) > 4096 or any(ord(character) < 32 or ord(character) == 127 for character in api_key):
         safe_warning("invalid-config")
         return None
+    try:
+        destination = urllib.parse.urlsplit(url)
+        if destination.scheme not in {"http", "https"} or not destination.hostname:
+            raise ValueError("unsupported destination")
+        if any(ord(character) < 32 or ord(character) == 127 for character in url):
+            raise ValueError("invalid destination")
+    except ValueError:
+        safe_warning("invalid-config")
+        return None
     return url, api_key
 
 
@@ -186,28 +183,23 @@ def main() -> int:
             "level": payload["level"],
             "message": payload["message"],
         }
-        body = json.dumps(wire_payload, ensure_ascii=False, separators=(",", ":"))
-        curl_config = "\n".join(
-            [
-                "header = " + curl_quote("X-API-Key: " + api_key),
-                "header = " + curl_quote("Content-Type: application/json"),
-                "data-binary = " + curl_quote(body),
-            ]
-        ) + "\n"
-        response = subprocess.run(
-            [
-                "/usr/bin/curl", "-q", "--fail", "--silent", "--show-error", "--verbose",
-                "--connect-timeout", "2", "--max-time", "3", "--proto", "=http,https",
-                "--request", "POST", "--config", "-", "--url", gateway_url,
-            ],
-            input=curl_config.encode(),
-            capture_output=True,
-            timeout=4,
+        body = json.dumps(wire_payload, ensure_ascii=False, separators=(",", ":")).encode()
+        request = urllib.request.Request(
+            gateway_url,
+            data=body,
+            headers={"X-API-Key": api_key, "Content-Type": "application/json"},
+            method="POST",
         )
-        if response.returncode != 0:
-            safe_warning(curl_failure_kind(response.returncode, response.stderr))
-            return DELIVERY_UNAVAILABLE
-        result = json.loads(response.stdout)
+        opener = urllib.request.build_opener(NoRedirect)
+        # This standalone Unix sender needs a total deadline, including slow reads.
+        previous_handler = signal.signal(signal.SIGALRM, delivery_timeout)
+        signal.alarm(3)
+        try:
+            with opener.open(request, timeout=3) as response:
+                result = json.load(response)
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, previous_handler)
         if result.get("action_taken") not in {"forward", "escalate"} or result.get(
             "notification_status"
         ) not in {"sent", "deduplicated"}:

@@ -6142,18 +6142,27 @@ python3 - "$W4M_SEND" <<'PY'
 import errno
 import importlib.util
 import sys
+import urllib.error
 
 spec = importlib.util.spec_from_file_location("wait4me_send", sys.argv[1])
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 assert module.failure_kind(OSError(errno.EHOSTUNREACH, "private detail")) == "network-unreachable"
 assert module.failure_kind(ConnectionRefusedError(errno.ECONNREFUSED, "private detail")) == "connection-refused"
-assert module.curl_failure_kind(7, b"No route to host") == "network-unreachable"
-assert module.curl_failure_kind(7, b"Connection refused") == "connection-refused"
-assert module.curl_failure_kind(22, b"private detail") == "http-error"
+assert module.failure_kind(urllib.error.URLError(OSError(errno.EHOSTUNREACH, "private detail"))) == "network-unreachable"
+assert module.failure_kind(urllib.error.URLError(ConnectionRefusedError(errno.ECONNREFUSED, "private detail"))) == "connection-refused"
+assert module.failure_kind(urllib.error.HTTPError("private URL", 401, "private detail", None, None)) == "http-error"
 assert module.failure_kind(RuntimeError("private detail")) == "RuntimeError"
 PY
 assert_rc "sender 把網路例外歸為不含細節的錯誤類別" 0 $?
+
+w4m_protocol_error="$(printf '%s\n' '{"message":"wait4me protocol fixture","level":"info","task":"agent-response-needed"}' \
+    | NC_API_URL='file:///private-fixture' NC_API_KEY='fixture-key' \
+        WAIT4ME_TEST_CAPTURE="$w4m_fix/protocol-capture.jsonl" "$W4M_SEND" 2>&1)"
+if [ "$?" -eq 75 ] && [ "$w4m_protocol_error" = 'wait4me: notification skipped (invalid-config)' ] \
+    && [ ! -e "$w4m_fix/protocol-capture.jsonl" ]; then
+    ok "sender 在傳輸前拒絕非 HTTP(S) 目的地"
+else bad "sender 接受非 HTTP(S) 目的地"; fi
 
 w4m_env_error="$(printf '%s\n' '{"message":"等待回應: fixture","level":"info","task":"agent-response-needed"}' \
     | env -u NC_API_URL -u NC_API_KEY WAIT4ME_ENV_FILE="$w4m_env_file" WAIT4ME_TEST_ERROR=1 \
@@ -6184,6 +6193,7 @@ def mark(stage):
 mark("interpreter-entered")
 import json
 import socketserver
+import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 mark("imports-complete")
 
@@ -6230,11 +6240,29 @@ class Handler(BaseHTTPRequestHandler):
                 "notification_error": None,
             }
         ).encode()
-        self.send_response(401 if action_taken == "reject" else 201)
+        self.send_response(302 if action_taken == "redirect" else 401 if action_taken == "reject" else 201)
+        if action_taken == "redirect":
+            self.send_header("Location", f"http://127.0.0.1:{self.server.server_port}/redirect-target")
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(response)))
         self.end_headers()
-        self.wfile.write(response)
+        if action_taken == "slow":
+            try:
+                for byte in response:
+                    self.wfile.write(bytes([byte]))
+                    self.wfile.flush()
+                    time.sleep(0.1)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+        else:
+            self.wfile.write(response)
+
+    def do_GET(self):
+        with open(request_path, "w", encoding="utf-8") as stream:
+            json.dump({"path": self.path, "x_api_key": self.headers.get("X-API-Key")}, stream)
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b'{}')
 
     def log_message(self, _format, *_args):
         pass
@@ -6248,6 +6276,9 @@ with open(port_path, "w", encoding="utf-8") as stream:
     stream.write(str(server.server_port))
 mark("port-written")
 server.handle_request()
+if action_taken == "redirect":
+    server.timeout = 1
+    server.handle_request()
 mark("request-complete")
 PY
 w4m_wait_nc_server() {
@@ -6312,17 +6343,17 @@ else
     bad "fake NC server未就緒：${w4m_nc_failure_detail}"
 fi
 
-w4m_blocked_python="$w4m_fix/blocked-python"
-mkdir -p "$w4m_blocked_python"
-cat > "$w4m_blocked_python/sitecustomize.py" <<'PY'
-import socket
+w4m_native_python="$w4m_fix/native-python"
+mkdir -p "$w4m_native_python"
+cat > "$w4m_native_python/sitecustomize.py" <<'PY'
+import subprocess
 
 
-def blocked_connect(self, address):
-    raise OSError(65, "Python socket denied by fixture")
+def blocked_process(*args, **kwargs):
+    raise RuntimeError("External transport denied by fixture")
 
 
-socket.socket.connect = blocked_connect
+subprocess.Popen = blocked_process
 PY
 rm -f "$w4m_nc_port" "$w4m_nc_request" "$w4m_nc_stderr" "$w4m_nc_boot"
 python3 "$w4m_nc_server" "$w4m_nc_port" "$w4m_nc_request" forward sent "$w4m_nc_boot" \
@@ -6330,20 +6361,20 @@ python3 "$w4m_nc_server" "$w4m_nc_port" "$w4m_nc_request" forward sent "$w4m_nc_
 w4m_nc_pid=$!
 if w4m_wait_nc_server; then
     w4m_nc_base="http://127.0.0.1:$(cat "$w4m_nc_port")"
-    printf '%s\n' '{"message":"wait4me blocked Python fixture","level":"info","task":"agent-response-needed"}' \
-        | PYTHONPATH="$w4m_blocked_python" NC_API_URL="$w4m_nc_base" \
+    printf '%s\n' '{"message":"wait4me native Python fixture","level":"info","task":"agent-response-needed"}' \
+        | PYTHONPATH="$w4m_native_python" NC_API_URL="$w4m_nc_base" \
             NC_API_KEY='fixture"key\value' "$W4M_SEND" >/dev/null 2>&1
     w4m_nc_rc=$?
     wait "$w4m_nc_pid"
     if [ "$w4m_nc_rc" -eq 0 ] \
         && jq -e --arg key 'fixture"key\value' \
-            '.x_api_key == $key and .body.message == "wait4me blocked Python fixture"' \
+            '.x_api_key == $key and .body.message == "wait4me native Python fixture"' \
             "$w4m_nc_request" >/dev/null 2>&1; then
-        ok "Python socket 受限時 sender 仍經 curl 完成私網 POST"
-    else bad "Python socket 受限使 sender 無法送出"; fi
+        ok "禁止外部程序時 sender 仍以原生 Python 完成 POST"
+    else bad "sender 仍依賴外部傳輸程序"; fi
 else
     w4m_capture_nc_failure
-    bad "blocked Python fake NC server未就緒：${w4m_nc_failure_detail}"
+    bad "native Python fake NC server未就緒：${w4m_nc_failure_detail}"
 fi
 
 for w4m_nc_result in 'forward failed' 'drop none'; do
@@ -6378,12 +6409,35 @@ if w4m_wait_nc_server; then
     wait "$w4m_nc_pid"
     if [ "$w4m_http_rc" -eq 75 ] \
         && [ "$w4m_http_error" = 'wait4me: notification skipped (http-error)' ]; then
-        ok "curl HTTP 錯誤只回傳去敏分類，不回顯 verbose 中的金鑰或 URL"
-    else bad "curl HTTP 錯誤診斷未正確去敏"; fi
+        ok "HTTP 錯誤只回傳去敏分類，不回顯金鑰或 URL"
+    else bad "HTTP 錯誤診斷未正確去敏"; fi
 else
     w4m_capture_nc_failure
     bad "HTTP error fake NC server未就緒：${w4m_nc_failure_detail}"
 fi
+
+for w4m_boundary in slow redirect; do
+    rm -f "$w4m_nc_port" "$w4m_nc_request" "$w4m_nc_stderr" "$w4m_nc_boot"
+    python3 "$w4m_nc_server" "$w4m_nc_port" "$w4m_nc_request" "$w4m_boundary" sent "$w4m_nc_boot" \
+        2> "$w4m_nc_stderr" &
+    w4m_nc_pid=$!
+    if w4m_wait_nc_server; then
+        w4m_nc_base="http://127.0.0.1:$(cat "$w4m_nc_port")"
+        w4m_boundary_error="$(printf '%s\n' '{"message":"wait4me boundary fixture","level":"info","task":"agent-response-needed"}' \
+            | NC_API_URL="$w4m_nc_base" NC_API_KEY='fixture-secret' "$W4M_SEND" 2>&1)"
+        w4m_boundary_rc=$?
+        wait "$w4m_nc_pid"
+        if [ "$w4m_boundary" = slow ]; then w4m_expected_kind=timeout; else w4m_expected_kind=http-error; fi
+        if [ "$w4m_boundary_rc" -eq 75 ] \
+            && [ "$w4m_boundary_error" = "wait4me: notification skipped ($w4m_expected_kind)" ] \
+            && jq -e '.path == "/api/v1/events"' "$w4m_nc_request" >/dev/null 2>&1; then
+            ok "sender 保留傳輸邊界（${w4m_boundary}）：總時限或拒絕認證轉址"
+        else bad "sender 傳輸邊界退步（${w4m_boundary}）"; fi
+    else
+        w4m_capture_nc_failure
+        bad "boundary fake NC server未就緒（${w4m_boundary}）：${w4m_nc_failure_detail}"
+    fi
+done
 
 w4m_retry_state="$w4m_fix/retry-state"
 w4m_retry_capture="$w4m_fix/retry-capture.jsonl"

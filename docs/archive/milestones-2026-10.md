@@ -49,3 +49,9 @@
   - 放棄:因簽署版首先成功就宣稱簽章是唯一原因；沿用 Homebrew Python 在 26.7 的失敗推論 26.7.1 仍被擋
   - 重議:若新 session 再現 `OSError:65`，同時記錄 macOS 版號／boot time、實際 Python 身分、同一目標的 system 與 Homebrew controls、私網阻擋日誌，再判定原因；真實 Stop 未送達時按去敏階段查 lifecycle
   - 關聯:Issue#250;M-20261001-wait4me-modern-python-system-curl;STATUS.md;shared/skills/wait4me/scripts/wait4me-send.py
+
+- **M-20261002-wait4me-native-python-transport · 2026-10-02 #250 依新驗證恢復原生 Python 傳輸**：使用者要求依新驗證調整 wait4me。兩端薄入口與 nested links 仍指向同一 neutral core；根據本機 macOS 26.7.1／Homebrew Python 3.14.8 已可原生連私網的證據，移除 sender 的系統 curl dependency，以 Python stdlib POST 保留既有 wire 與 acknowledgement contract。先禁止啟動外部程序，舊版 integration shard 為 1148 PASS／1 FAIL；新版通過相同 fixture，特殊字元金鑰原樣送達。新增慢速持續回覆、HTTP 轉址與非 HTTP(S) config fixture，確認三秒總傳輸時限、不帶認證跟隨轉址與協定限制未退步；HTTP／網路錯誤仍只輸出去敏分類，通知失敗不消耗去重資格。完整 `./tests/run.sh` 1562 PASS／0 FAIL、Claude Code／Codex 入口 validator 通過；經新版 hook 的一次 live `on` probe 得到 Gateway `probe=accepted`。這不是 Homebrew 升級足以修復的證明，同版 Python 在更新與重開機前仍曾失敗；原環境封鎖目前不可重現，因果來源尚不能唯一歸因。本筆為本地候選，hook 設定尚未部署，新 session 真實 Codex Stop 與裝置收件未驗收，#250 維持 open。
+  - 日期來源:direct
+  - 放棄:在原生 Python 已實測可用後長期保留系統 curl；僅用 socket timeout 而遺失總時限；將目前成功推論成所有主機只需更新 Homebrew Python
+  - 重議:私網再現 `network-unreachable` 時先對照同一目標、實際 interpreter、OS／boot 與同期 privacy 日誌；新 session 的 Stop 未收件時先查去敏階段與 hook lifecycle
+  - 關聯:Issue#250;M-20261002-wait4me-python-private-network-recheck;M-20261001-wait4me-modern-python-system-curl;shared/skills/wait4me/scripts/wait4me-send.py;shared/skills/wait4me/evals.md;tests/run.sh;tests/shard-manifest.tsv;STATUS.md
