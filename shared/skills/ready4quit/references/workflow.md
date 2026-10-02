@@ -77,6 +77,10 @@ Helper 的 aggregate verdict 採 residue-priority：同一 repo 可能同時是 
 
 ## 2. Durable knowledge flush
 
+對每個 target repo，先讀 root contract 與最接近改動位置的 contract，取得並讀完輸出後才查 instruction／cache sink；不得與尚未讀完 contract 的工具呼叫合併。若 repo 規定文檔搜尋 router，先用它定位。
+依 repo 現行 schema 寫入，不固定假設 `STATUS.md`，也不把 generated doc 當 authority。沒有 canonical sink 就不新建；
+報告 fact 與缺少的接收點。
+
 掃描本 session 才出現、未持久化且對未來有價值的 facts。先按**權威需求**分類；memory availability
 不得參與分類：
 
@@ -92,10 +96,6 @@ Helper 的 aggregate verdict 採 residue-priority：同一 repo 可能同時是 
 - 使用者本輪明確提出「記住／保存」的 **explicit retain request**，卻沒有合法 instruction、repo authority 或
   supported runtime cache sink → **`residue`**。必須列出未保存內容與缺少的 sink；不能因無設施假裝已 flush。
 - 一次性、可由 repo/code 推導且沒有未來價值 → 不保存，報告 `discarded` 或略述理由。
-
-對每個 target repo，先讀 root contract 與最接近改動位置的 contract；若 repo 規定文檔搜尋 router，先用它定位。
-依 repo 現行 schema 寫入，不固定假設 `STATUS.md`，也不把 generated doc 當 authority。沒有 canonical sink 就不新建；
-報告 fact 與缺少的接收點。
 
 Optional runtime cache 只有在目前 runtime 確實提供 facility、允許本 session contribute 且格式已知時才能寫。
 不得為本流程切換 global／project／chat memory 設定。寫前比對既有項：
@@ -132,7 +132,7 @@ Project records 同樣 additive only：已有同一事實就跳過；新增 reco
 - 未收到完成通知，不等於仍在執行。
 
 對每個 concrete candidate 列狀態與建議（保留、等待、或待確認後取消）。找不到 authoritative enumeration surface 時，
-該子面向標 `PARTIAL`；若對話也沒有 candidate，殘留仍為 `✓`，不得因不確定而虛構 `⚠`。
+該子面向標 `PARTIAL`，最終 Async／schedule 列取各子面向最弱證據；不能用完整對話的 `RECALLED` 覆蓋不可枚舉的 `PARTIAL`。若對話也沒有 candidate，殘留仍為 `✓`，不得因不確定而虛構 `⚠`。
 任何 kill／cancel／delete 都只列選項，第一次 pass 不執行。
 
 ## 4. Loose ends

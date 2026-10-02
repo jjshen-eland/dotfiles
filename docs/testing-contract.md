@@ -755,3 +755,24 @@ PASS 不代表 authority 或 mutation oracle 自動通過。原始 host trace �
 Serial／integration gate 只跑六個 offline normalization／transport regressions，不自動使用模型。
 最小單獨驗證：`python3 tests/project-reference-metrics-test.py`。不得用固定文字 grep 或 byte 節省冒充
 新版模型的行為收益，也不以此重做 #240 provider E2E 或宣稱 #229 剩餘 backlog 已驗收。
+
+## Session skills native eval（2026-10-02）
+
+`tests/session-skills-model-eval.py` 是 opt-in handoff／ready4quit CLI runner；重用 project native capture，
+`execute(..., host_server=...)` 的預設維持原 transport。`setup` 只建立 temp feature fixture／local bare clone origins、frozen skills
+與每個 case 的 fresh repo/store；從 frozen source 移除 evals.md，agent-visible prompt 不放 expected verdict。
+`run` 才使用模型，保存 command、resolved model、raw／timed events、每輪實態、probe 與 Git diff；已存在 native
+summary 時拒絕覆寫。Baseline 最早 product 首輪沒有 separate snapshot，判分須使用保留的原始工具軌跡。
+
+`--variant ablation` 是局部 no-instruction control，不能用 tokens／字數下降當採用證據；`contract-first`
+只變更 durable flush 的 contract output／sink lookup 順序；`evidence-rollup` 再單獨變更整列最弱證據彙總。`--guard-private` 以 session transport 攔截已觀察的
+shell private-path forms，整批命令不執行並保留 blocked attempt；它不是 sandbox，原始 Read/Edit inputs 仍須核對。
+被攔截的違規仍是 RED。它不截斷 output，不提供不存在的 async／schedule listing，不模擬 provider shipping。
+
+Suite 只跑 `tests/session-skills-host-mcp-test.py` 的三個 offline tests（private probe 無副作用、fixture path／
+output 保真、nonzero exit 保真），不自動使用模型。實測 corpus、每個 skill 的 disposition 與未驗分支見
+`docs/plans/2026-10-02-session-skills-model-behavior.md`；CLI terminal success 與 helper CLEAN 都不等於整個 skill PASS。
+
+
+`audit --root <packet>` 產生含 rebuild command 的 artifact index；helper call 依實際 verdict output schema
+核對，不把 `cat .../git-hygiene.sh` 當 execution。Semantic PASS 仍由 operator 的原始工具／實態 oracle 決定。

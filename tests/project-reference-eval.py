@@ -130,7 +130,7 @@ def fixture(root, model, source, case):
     return p, runtime
 
 
-def execute(p, model, runtime, reuse=True):
+def execute(p, model, runtime, reuse=True, host_server=None):
     session = None
     prior = {}
     results = []
@@ -189,7 +189,7 @@ def execute(p, model, runtime, reuse=True):
             server = {
                 "command": "python3",
                 "args": [
-                    str(REPO / "tests/project-reference-host-mcp.py"),
+                    str(host_server or REPO / "tests/project-reference-host-mcp.py"),
                     str(p / "work"),
                 ],
             }
