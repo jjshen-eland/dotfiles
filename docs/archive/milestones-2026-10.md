@@ -93,3 +93,8 @@
   - 放棄:刪除新增 assertion；放寬聚合器；重寫已送出的 commit；以舊 HEAD CI 當新 HEAD 證據
   - 重議:新 candidate 的 authority、parallel suite 或 required CI 未通過時，依本批修復額度與具體缺口處理
   - 關聯:f3f82c6acb76f2f437b59bf6e2ef985bccca381c;X-20261003-session-skills-ci-shard-manifest;PR#255;tests/shard-manifest.tsv
+
+- **M-20261003-review-skills-model-audit · 2026-10-03 Deep-review／Repo-review 新版模型本機評估完成**：28 次 fresh native invocations 的原文／checklist／route-position／compatible／permission packets 全部保存，独立 audit 核對 scoped repairs、整合／權限 probe、zero-write owner 終態、HEAD／branch／staged diffs 與 source hashes。沒有可歸因完成品質收益支持改正式指令，runtime entries、shared core、helpers 與既有 oracle 保持 7810046 原文；新增 opt-in runner 和內容處置／限制紀錄。Codex validators 雙入口、review-readonly regression、runner syntax／field fixtures、最终 full suite 1564／0、exit 0（161 秒）、doc audit／diff check 與 session-bound authority 通過。不以修復 PASS 冒充 cutover 分類根因已確認或 encrypted Codex dispatch body 已完整審核。本機 branch 尚未 commit／發佈，active assignment 保留供後續明確授權的 Log 使用，paused gaps 未改。
+  - 日期來源:direct
+  - 證據:`/tmp/review-skills-suite-final-20261003.log`；五個有效 native packet 的 audit.json 與保留 raw logs；plan 記載 source hashes／重建命令／INVALID setup
+  - 關聯:D-20261003-review-skills-retain-core;X-20261003-review-checklist-ablation;X-20261003-review-route-position;docs/plans/2026-10-03-review-skills-model-behavior.md;tests/review-skills-model-eval.py
