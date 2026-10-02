@@ -73,3 +73,11 @@
   - 放棄:在同一顆 commit 建立又抹除唯一 assignment；把本機結案候選當成已合併或 issue 已關閉
   - 重議:completion authority、doc audit 或當批 required checks 未通過時，先處理具體 gate；新的模型行為證據依原 decision 再議條件另立工作項
   - 關聯:Issue#246;M-20261002-project-model-eval-local;D-20261002-project-model-bootstrap;X-20261002-project-loading-candidates;STATUS.md;docs/plans/2026-10-02-project-model-behavior.md
+
+- **M-20261002-session-skills-model-review · 2026-10-02 Handoff／Ready4quit 新版模型品質檢視與本機候選完成**：固定 Codex 0.160.0/gpt-6.1-sol/high/Standard 與 Claude Code 2.1.287/Opus 5.5/high/Standard，58 native fixtures/62 turns、兩個額外 fresh blind Codex forwards。Handoff 原文／Red Flags control 無完成品質收益，保留；ready4quit 只採 contract-output-before-sink lookup 與 Async/schedule weakest-evidence rollup，原始 probe/RECALLED RED 與模糊 transport fixture 不改標 PASS。Final 雙端八案正確 PARTIAL/殘留分流且無越權 mutation/shipping/private probe；raw sources、HEAD/mock origin refs 與 forwarded files 已核對。Codex validators、Claude metadata、三個 offline containment tests、compile/diff/doc audit 與首份 full suite exit 0（1564/0）通過。可重建 runner、未驗 capability 分支、原 helper 計數的 append-only 更正與所有 packet 路徑見 plan。本機 feature branch 未 commit／發佈；無 provider shipping/部署授權，不新增 backlog 項目或將本輪外推成其他既有 gap 結案。
+  - 日期來源:direct
+  - 關聯:D-20261002-ready4quit-contract-first;D-20261002-ready4quit-evidence-rollup;X-20261002-session-skill-reminder-ablation;X-20261002-session-eval-command-count;docs/plans/2026-10-02-session-skills-model-behavior.md
+
+- **M-20261002-session-skills-final-tree-verified · 2026-10-02 收尾後固定最終樹複驗通過**：還原 adopted STATUS no-active 文字後，未再改 source/state 即跑完整 suite；`/tmp/session-skills-suite-verified-20261002.log` 為 exit 0、PASS=1564/FAIL=0。先前 1563/1 的 governance failure 仍保留，不改結果。Final tested workflow SHA-256 為 `21fa2fcf89f7085022cb165cf6b7fbb38b737f3b34d7308117898817b5d22aba`，與 native rollup packet 完全一致；本地 branch 及未 commit／shipping 邊界維持。
+  - 日期來源:direct
+  - 關聯:M-20261002-session-skills-model-review;X-20261002-session-close-placeholder;docs/plans/2026-10-02-session-skills-model-behavior.md

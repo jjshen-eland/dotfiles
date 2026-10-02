@@ -3977,6 +3977,9 @@ echo "▶ 12c. project skill 跨 Claude Code／Codex 共用核心"
 python3 "$ROOT/tests/project-reference-metrics-test.py" >"$TMP/project-reference-metrics-test.out" 2>&1
 project_metrics_rc=$?
 assert_rc "project native trace normalizer：完整末行／partial／重讀／截斷有效性／cache 計費" 0 "$project_metrics_rc"
+python3 "$ROOT/tests/session-skills-host-mcp-test.py" >"$TMP/session-skills-host-mcp-test.out" 2>&1
+session_skills_transport_rc=$?
+assert_rc "session skill eval transport：私人路徑 probe 不執行／fixture output 不截斷／exit 保真" 0 "$session_skills_transport_rc"
 PJS_CLAUDE="$ROOT/claude/skills/project"
 PJS_CODEX="$ROOT/codex/skills/project"
 project_scripts_shared=1
