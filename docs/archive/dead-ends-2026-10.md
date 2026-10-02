@@ -55,3 +55,10 @@
   - 放棄:未證明 cutover 條件便把跨 repo rename 判 full；因一端多派 reviewers 就視為較好；位置無收益仍加強語句
   - 重議:具體 rollout／compatibility 契約能消除 fixture 歧義且重現錯誤選路時
   - 關聯:docs/plans/2026-10-03-review-skills-model-behavior.md;shared/skills/deep-review/references/workflow.md
+
+- **X-20261003-deep-plan-checklist-ablation · 2026-10-03 Deep-plan 通用列表刪除未證明品質收益**：只移除 planner brief §4 通用逐條查證列表，保留其餘分類、歷史失效模式、criteria 與输出契約；原文／控制各三案 × gpt-6.1-sol／Opus 5.5，共十二個 fresh native reviewer-stage invocations。兩臂均抓到 items→orders 的 wire 破壞、producer 精確 dict 測試相依及 unmapped 新豁免的恢復缺口，均未強制永久 carrier；低級文件定位錯誤仍為低。Opus 對 review-only 授權前提的層別單次變動，控制 clean 案反而升為中級，無穩定改善，不能用少 findings／少字認定收益。告警案 Opus 兩臂均把 first_seen_days=45 過度外推為 unmapped 已持續45天或永久，不能歸因為列表存在。
+  - 日期來源:direct
+  - 證據:`/tmp/deep-plan-{baseline,ablation}-20261003`；frozen source／raw native inputs、reports、before／after snapshots；只屬局部 reviewer-stage，不代表 full orchestration
+  - 放棄:新版模型本身會查證就刪通用列表；把未授權實作的前提 gate 直接當內容缺陷；以 token 減量、輸出短或 finding 數為改善
+  - 重議:有可重現實際漏報、誤阻擋或 scope 擴張，且單一內容變因證明可歸因完成品質收益時
+  - 關聯:D-20260925-instruction-quality-scope;docs/plans/2026-10-03-deep-plan-model-behavior.md;tests/deep-plan-model-eval.py

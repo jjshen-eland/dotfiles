@@ -104,3 +104,10 @@
   - 放棄:同一顆首次提交抹掉唯一 assignment；以 no-active-items PASS 取代 completion parent authority；在 endpoint evidence 前宣稱 shipped
   - 重議:completion gate、clean clone、required checks 或 merge 受阻時，保留本事件的 pending 事實並依本批 shipping contract 處理
   - 關聯:92216a3ad513e1d467d876c3fc2374cffd15efa4;M-20261003-review-skills-model-audit;D-20261003-review-skills-retain-core;docs/plans/2026-10-03-review-skills-model-behavior.md
+
+- **M-20261003-deep-plan-model-audit · 2026-10-03 Deep-plan 新版模型內容評估本機完成**：完成 22 次 native 頂層 invocations（十二份原文／§4 控制 reviewer-stage，十次含補驗的 author flow），另 18 个原生獨立子審查。兩端 ordinary-ready／decision 正確分流；有效 Sol／Opus wire N2 × 兩輪修同一 scratch plan後 GO、無 repo 寫入；Sol alert 停待 blocking disposition，Opus alert 缺 severity／混層而正確停止、不輸出 gate。首批六個 Sol full child 因 shell capture 缺口不作模型證據，既有 --codex-bin 補驗保留另外六個明示 gpt-6.1-sol／high 原始 child commands／prompts／outputs。正式 skill／shared core／metadata／oracle 均不變，局部 ablation 無品質收益；模型過度外推及大型／production coverage 限制保留。
+  - 日期來源:direct
+  - 驗收:兩入口 quick_validate valid；repair-context focused tests 2/2；runner AST；三組 frozen source hashes、不變 target／Git snapshots、bytecode／symlink 補核；全套 ./tests/run.sh exit=0，PASS=1564 FAIL=0；doc-governance audit --ship、whitespace、history append-only、formal-source unchanged PASS
+  - 證據:docs/plans/2026-10-03-deep-plan-model-behavior.md;tests/deep-plan-model-eval.py;`/tmp/deep-plan-{baseline,ablation,child-capture}-20261003`;`/tmp/deep-plan-final-suite-20261003.out`
+  - 範圍:本機完成，branch=refactor/deep-plan-model-behavior；未 commit／push／PR／merge／deploy；B-20260924-workflow-review-residuals 不結案
+  - 關聯:D-20261003-deep-plan-retain-core;X-20261003-deep-plan-checklist-ablation
