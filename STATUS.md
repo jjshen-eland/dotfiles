@@ -6,7 +6,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 # STATUS.md
 
-個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-10-01)
+個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-10-02)
 
 ---
 
@@ -18,8 +18,8 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **Workspace**：`branch=fix/wait4me-codex-hook-network`
 - **Write Scope**：`STATUS.md`, `shared/skills/wait4me/scripts/wait4me-hook.sh`, `shared/skills/wait4me/scripts/wait4me-send.py`, `shared/skills/wait4me/references/workflow.md`, `shared/skills/wait4me/evals.md`, `codex/config.toml`, `claude/settings.json`, `tests/run.sh`, `tests/shard-manifest.tsv`, `docs/archive/milestones-2026-10.md`
 - **Dossier Steward**：`codex:main`
-- **成功條件**：真實 Codex Stop 的去敏階段、exit 與錯誤類別可查；`on` 與已啟用的 `status` 各發一則測試通知，明確分開開關與 Gateway 回覆；以正常終端與 hook 同時段對照定位私網首次差異後才修其因果來源；假 Gateway 驗證僅需回覆時送一次、普通完成不送、失敗不誤報送達；真實環境完成一次使用者收件驗收。
-- **狀態**：2026-10-02 重開機並由 macOS 26.7 升至 26.7.1 後，同一 Codex 工具環境中的 Homebrew Python 3.14.8 與暫存解包的 python.org 簽署版 3.14.8 都可直接連私網，無憑證的 Gateway health GET 均回 HTTP 200。26.7 時 Homebrew Python 曾回 `OSError:65`，同時有 macOS `local network blocked` 紀錄；現在未重現，不能把恢復歸因於簽章、升級或重開機的單一因素。共用 sender 仍使用 PATH 中 Python 處理資料、系統 curl 送 POST；完整 `./tests/run.sh` 1559 PASS／0 FAIL、雙端 skill validator 與文件稽核已通過，live `on` probe 回 `probe=accepted`。repo 設定尚未同步到 live `~/.codex/config.toml`，新 session 的真實 Codex Stop 與裝置收件仍待驗收，#250 維持 open；詳見 `M-20261002-wait4me-python-private-network-recheck`。
+- **成功條件**：真實 Codex Stop 的去敏階段、exit 與錯誤類別可查；`on` 與已啟用的 `status` 各發一則測試通知，明確分開開關與 Gateway 回覆；以正常終端與 hook 同時段對照定位私網首次差異後才修其因果來源；新驗證支持恢復 Python 原生 POST，禁止啟動外部程序時仍可送達假 Gateway，保留去敏錯誤分類；假 Gateway 驗證僅需回覆時送一次、普通完成不送、失敗不誤報送達；真實環境完成一次使用者收件驗收。
+- **狀態**：依 macOS 26.7.1／Homebrew Python 3.14.8 的私網重驗，共用 sender 已恢復 PATH 中 Python 的原生 HTTP POST，移除系統 curl 依賴；保留三秒總傳輸時限、HTTP(S) 限制、不跟隨認證轉址、去敏診斷與 Gateway acknowledgement gate。先以禁止外部程序 fixture 取得 1148 PASS／1 FAIL，再完成完整 `./tests/run.sh` 1562 PASS／0 FAIL、雙端 skill validator；新版 live `on` probe 回 `probe=accepted`。Python 3.14.8 在 macOS 26.7 曾失敗、更新與重開機後可連，故不能將恢復歸因於 Homebrew 升級的單一因素。repo hook 設定尚未同步到 live `~/.codex/config.toml`，新 session 的真實 Codex Stop 與裝置收件仍待驗收，#250 維持 open；詳見 `M-20261002-wait4me-native-python-transport`。
 
 ## 暫停中
 

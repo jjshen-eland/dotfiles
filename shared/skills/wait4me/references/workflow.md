@@ -33,4 +33,6 @@ If work ownership transfers while enabled, disable the current authorization bef
 
 Notification delivery is always a side channel. Missing NC configuration, timeout, non-success response, serialization failure, or any other notification error must not change the agent's result, approval decision, or ability to continue. Do not retry without a separately verified bounded retry contract.
 
+If diagnostics report `network-unreachable`, compare the same destination from the current runtime and a normal terminal using the actual Python executable. Record OS/Python versions and contemporaneous local-network privacy evidence before changing the environment; a Python upgrade alone is not a verified remedy.
+
 The switch does not make approval implicit. After receiving a notification, the user must still return to the terminal and answer the actual prompt.
