@@ -55,3 +55,9 @@
   - 放棄:在原生 Python 已實測可用後長期保留系統 curl；僅用 socket timeout 而遺失總時限；將目前成功推論成所有主機只需更新 Homebrew Python
   - 重議:私網再現 `network-unreachable` 時先對照同一目標、實際 interpreter、OS／boot 與同期 privacy 日誌；新 session 的 Stop 未收件時先查去敏階段與 hook lifecycle
   - 關聯:Issue#250;M-20261002-wait4me-python-private-network-recheck;M-20261001-wait4me-modern-python-system-curl;shared/skills/wait4me/scripts/wait4me-send.py;shared/skills/wait4me/evals.md;tests/run.sh;tests/shard-manifest.tsv;STATUS.md
+
+- **M-20261002-wait4me-live-device-receipt · 2026-10-02 #250 真實 Codex Stop 裝置收件驗收**：本次前景 session 的 `$wait4me on` 回報 Gateway `probe=accepted`，使用者明確確認收到啟用通知。使用者接著要求觸發 hook 測試；主 agent 以必要的收件確認回覆加上 wait4me marker，下一輪使用者明確確認收到 Stop 通知，補足先前缺少的新 session 與裝置收件證據。使用者另指出「請回 terminal」會混淆，要求改成明示至 terminal 進行回覆的文案；共用 hook 已調整等待回覆及核准文案，兩端本地擷取結果一致、skill validator 通過；完整 `./tests/run.sh` 重驗為 1562 PASS／0 FAIL，文件稽核通過。收件驗收已完成，#250 移出 repo active state；未對 GitHub issue 執行關閉操作，文案修改尚未發佈。
+  - 日期來源:direct
+  - 放棄:把 Gateway acknowledgement 或直接 sender probe 單獨當成真實 Stop 裝置收件驗收
+  - 重議:後續 session 再現未收件時，依去敏 Stop 階段與同期網路證據重新定位
+  - 關聯:Issue#250;M-20261002-wait4me-native-python-transport;shared/skills/wait4me/scripts/wait4me-hook.sh;STATUS.md

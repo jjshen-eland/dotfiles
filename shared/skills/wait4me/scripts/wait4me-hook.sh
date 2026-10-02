@@ -192,7 +192,7 @@ case "$mode" in
         event_id="$(jq -r '.tool_use_id // .permission_request_id // .turn_id // empty' <<< "$payload" 2>/dev/null)"
         [ -n "$event_id" ] || event_id="$(printf '%s' "$payload" | hash_text)"
         notify_once "permission|$event_id|$tool_name" \
-            "等待核准: $repo 的 $tool_name 動作需要你回 terminal 回應。"
+            "等待核准: $repo 的 $tool_name 動作需要你核准。請至 terminal 查看並回覆。"
         ;;
     stop)
         is_enabled || exit 0
@@ -207,7 +207,7 @@ case "$mode" in
         [ -n "$turn_id" ] || turn_id="$(printf '%s' "$reason" | hash_text)"
         record_stop sending 0 none
         notify_once "stop|$turn_id|$reason" \
-            "等待回應: $repo — ${reason}。請回 terminal。"
+            "等待回應: $repo — ${reason}。請至 terminal 進行回覆。"
         record_stop "$notification_stage" "$notification_rc" "$sender_kind"
         ;;
     control)

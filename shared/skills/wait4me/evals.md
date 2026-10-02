@@ -43,7 +43,7 @@
 
 - enabled session 的 `PermissionRequest` 立即發一次通知；未啟用 session 不發。
 - 同一 session／turn／tool request 重送 hook 時只通知一次；下一個獨立 request 仍會通知。
-- approval 通知只說明 repo、動作類別與「請回 terminal 查看」，不傳完整 command／tool input。
+- approval 通知只說明 repo、動作類別與至 terminal 查看並回覆的指示，不傳完整 command／tool input。
 
 ### W5 — transport failure 與 privacy
 
