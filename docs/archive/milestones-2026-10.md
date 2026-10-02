@@ -67,3 +67,9 @@
   - 放棄:用 bytes/token 下降冒充完成品質；把無注入或工具權限拒絕計為壓力通過；因先前其他批次 merge 授權而自動送出本批
   - 重議:新 endpoint 或 host truncation 的有效 trace 顯示回歸，或取得新的 quota／跨 runtime 收益證據時，另立當批改動與驗收
   - 關聯:Issue#246;D-20261002-project-model-bootstrap;X-20261002-project-loading-candidates;docs/plans/2026-10-02-project-model-behavior.md;tests/project-reference-eval.py;tests/project-reference-metrics.py;tests/run.sh
+
+- **M-20261002-project-model-workline-complete · 2026-10-02 #246 實作工作線結案候選**：實作與評估材料已提交於功能分支 `9ba1610a85457f661b7364aa7e885269693bf7c2`，該 parent 保留可查證的 Writer／Workspace／Write Scope／Dossier Steward assignment。依當次已通過的 `codex:project-model-behavior` authority 將唯一完成項移出 STATUS；單 repo post-completion view 無其他 active item 指向此 retiring actor。雙入口 bootstrap 修正、凍結評估 plan、決策與死路原樣保留；既有本機完整 suite 為1563 PASS／0 FAIL、doc audit 通過。此筆只記結案候選，PR、required checks、merge 與 GitHub issue 關閉仍待當次授權流程取得遠端證據，未宣稱已發佈。
+  - 日期來源:direct
+  - 放棄:在同一顆 commit 建立又抹除唯一 assignment；把本機結案候選當成已合併或 issue 已關閉
+  - 重議:completion authority、doc audit 或當批 required checks 未通過時，先處理具體 gate；新的模型行為證據依原 decision 再議條件另立工作項
+  - 關聯:Issue#246;M-20261002-project-model-eval-local;D-20261002-project-model-bootstrap;X-20261002-project-loading-candidates;STATUS.md;docs/plans/2026-10-02-project-model-behavior.md
