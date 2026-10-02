@@ -43,3 +43,9 @@
   - 放棄:長期固定已終止上游支援的系統 Python；在 argv 或磁碟暫存檔放金鑰；把 Gateway acknowledgement 當裝置收件
   - 重議:若 curl 在目標主機缺席或不能連私網，依該主機實測修正 transport；若新 session Codex Stop 未送達，先看 owner-only 去敏診斷階段
   - 關聯:Issue#250;M-20261001-wait4me-system-python-private-path;shared/skills/wait4me/scripts/wait4me-send.py;shared/skills/wait4me/evals.md;tests/run.sh
+
+- **M-20261002-wait4me-python-private-network-recheck · 2026-10-02 #250 Python 私網路徑重驗**：macOS 26.7 的 Codex 工具環境內，Homebrew Python 3.14.8 對同一私網目標仍回 `OSError:65`，系統 Python 可連；目標有 `en0` 直連路由，同時刻 macOS 記錄 `local network blocked`。主機於 09:01 重開機並更新到 macOS 26.7.1 後，從 python.org 下載同版 3.14.8 官方套件，在暫存目錄核對 release SHA-256、Developer ID 簽章與公證並解包執行，未安裝進系統。Codex 工具環境中的官方簽署版與 Homebrew 版 Python 都可完成直接 TCP 連線和不帶憑證的 Gateway health GET（HTTP 200）；近期日誌沒有新的 blocked 事件。故舊的 interpreter-specific 封鎖已不可重現，無法把恢復單獨歸因於簽章、作業系統更新或重開機；未改 repo 傳輸實作，也未把 GET 當通知送達。暫存套件與解包資料已清理；#250 的新 session 真實 Stop 與裝置收件仍待驗收。
+  - 日期來源:direct
+  - 放棄:因簽署版首先成功就宣稱簽章是唯一原因；沿用 Homebrew Python 在 26.7 的失敗推論 26.7.1 仍被擋
+  - 重議:若新 session 再現 `OSError:65`，同時記錄 macOS 版號／boot time、實際 Python 身分、同一目標的 system 與 Homebrew controls、私網阻擋日誌，再判定原因；真實 Stop 未送達時按去敏階段查 lifecycle
+  - 關聯:Issue#250;M-20261001-wait4me-modern-python-system-curl;STATUS.md;shared/skills/wait4me/scripts/wait4me-send.py
