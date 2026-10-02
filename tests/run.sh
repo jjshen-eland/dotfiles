@@ -1614,7 +1614,7 @@ if echo "$out" | grep -q "branch-first: REQUIRED"; then ok "main + 髒 tree → 
 (cd "$TMP/ss-work" && "${GITC[@]}" add new.txt && "${GITC[@]}" commit -qm "oops on main")
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ss-work")"
 if echo "$out" | grep -q "misplaced: WARNING"; then ok "誤 commit 在 main → misplaced WARNING"; else bad "misplaced 未偵測"; fi
-if echo "$out" | grep -q "branch-first-cmd: .*branch-first\.sh"; then ok "misplaced → 附 branch-first.sh 呼叫指令供照抄"; else bad "misplaced 未附 branch-first-cmd"; fi
+if grep -q "branch-first-cmd: .*branch-first\.sh" <<< "$out"; then ok "misplaced → 附 branch-first.sh 呼叫指令供照抄"; else bad "misplaced 未附 branch-first-cmd"; fi
 
 # 全乾淨 → changes NONE + docs-only 提醒；protection/ship-path/branch-first 仍須輸出
 # （docs-only mode 隨後會產生 docs commit 走 Step 4/5，Step 1 取 verdict 不可缺）
