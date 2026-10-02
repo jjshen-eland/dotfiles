@@ -111,3 +111,10 @@
   - 證據:docs/plans/2026-10-03-deep-plan-model-behavior.md;tests/deep-plan-model-eval.py;`/tmp/deep-plan-{baseline,ablation,child-capture}-20261003`;`/tmp/deep-plan-final-suite-20261003.out`
   - 範圍:本機完成，branch=refactor/deep-plan-model-behavior；未 commit／push／PR／merge／deploy；B-20260924-workflow-review-residuals 不結案
   - 關聯:D-20261003-deep-plan-retain-core;X-20261003-deep-plan-checklist-ablation
+
+- **M-20261003-deep-plan-completion-candidate · 2026-10-03 Deep-plan 評估工作線結案 candidate**：依本次 `$project --merge` 授權，先以 4efb0542e431904e505d3d19bbb19e7dae62e92d 提交 opt-in runner、frozen implemented audit plan、event-time D/X/M 與完整 assignment，再從 STATUS 移除已驗收的 deep-plan-model-behavior。本 repo 為唯一 locked root，其他 paused items 未改，post-completion 無 active contract 指向 retiring codex:deep-plan-model-behavior；本工作線結案，shipping endpoint 仍 pending。
+  - 日期來源:direct
+  - 驗收:本機完整 suite exit=0、1564/0，validator／repair-context／native trace 與實態驗收見 M-20261003-deep-plan-model-audit；completion candidate 仍須 parent authority／doc audit、乾淨 clone 與 required checks 通過後才可 merge
+  - 放棄:首次提交就抹掉唯一 assignment；以 no-active-items 取代 completion parent provenance；endpoint 前宣稱 merged
+  - 重議:completion gate、clean clone、required checks 或 merge 受阻時保留 pending 事實，依同批 shipping contract 處理
+  - 關聯:4efb0542e431904e505d3d19bbb19e7dae62e92d;M-20261003-deep-plan-model-audit;D-20261003-deep-plan-retain-core;X-20261003-deep-plan-checklist-ablation;docs/plans/2026-10-03-deep-plan-model-behavior.md
