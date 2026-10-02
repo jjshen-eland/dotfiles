@@ -118,3 +118,11 @@
   - 放棄:首次提交就抹掉唯一 assignment；以 no-active-items 取代 completion parent provenance；endpoint 前宣稱 merged
   - 重議:completion gate、clean clone、required checks 或 merge 受阻時保留 pending 事實，依同批 shipping contract 處理
   - 關聯:4efb0542e431904e505d3d19bbb19e7dae62e92d;M-20261003-deep-plan-model-audit;D-20261003-deep-plan-retain-core;X-20261003-deep-plan-checklist-ablation;docs/plans/2026-10-03-deep-plan-model-behavior.md
+
+- **M-20261003-deep-plan-compat-completion · 2026-10-03 Deep-plan runner 相容性修復後重建結案 candidate**：同一 --merge 批次在首次 clean-clone setup TypeError 後，以 f5f0c1f25adce3fa5c6b89b835fddf978cfab7b1 修正新 runner 的 tarfile filter keyword 能力判定並保留原 assignment，再次移除本工作項。Python 3.9.6／3.14.8 各完整建立十四 packets、核對 linked entry／oracle exclusion／exact §4 ablation／model subset，並拒絕 existing root、session restart、source drift；native dispatch 禁止哨兵確認沒有額外呼叫模型，原 failure evidence 轉綠。原始模型評估與 frozen plan 不改；唯一 locked repo 的 post-completion 沒有 active reference 指向此 retiring actor，paused items 原樣保留。Endpoint 尚 pending，仍需修復後 clean clone／required checks／parent authority 通過後 merge。
+  - 日期來源:direct
+  - 驗收:兩 interpreter automatic setup／negative guards exit=0；首次 candidate clone suite exit=0；doc-governance audit --ship／staged whitespace 通過；修復後 clone 與 required checks 待本次 shipping gate，不預填成功
+  - 證據:/tmp/deep-plan-ship-smoke-20261003.py;tests/deep-plan-model-eval.py;D-20261003-deep-plan-runner-python-compat
+  - 放棄:跳過 setup failure 直接送出；改寫既有 audit plan／commits／history；用 no-active-items 洗掉 completion parent authority
+  - 重議:修復後 clean clone／checks／merge 受阻時依同批 contract 處理，保留 pending 事實
+  - 關聯:f5f0c1f25adce3fa5c6b89b835fddf978cfab7b1;M-20261003-deep-plan-completion-candidate;D-20261003-deep-plan-runner-python-compat;M-20261003-deep-plan-model-audit
