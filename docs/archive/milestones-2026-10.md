@@ -98,3 +98,9 @@
   - 日期來源:direct
   - 證據:`/tmp/review-skills-suite-final-20261003.log`；五個有效 native packet 的 audit.json 與保留 raw logs；plan 記載 source hashes／重建命令／INVALID setup
   - 關聯:D-20261003-review-skills-retain-core;X-20261003-review-checklist-ablation;X-20261003-review-route-position;docs/plans/2026-10-03-review-skills-model-behavior.md;tests/review-skills-model-eval.py
+
+- **M-20261003-review-skills-completion-candidate · 2026-10-03 Review skills 評估工作線結案候選完成**：使用者本批明確叫用 `$project --merge`，audit runner、凍結 plan 與 event-time 紀錄已提交於 92216a3ad513e1d467d876c3fc2374cffd15efa4，該 parent 保留完整 writer／steward assignment。以原 fingerprint 與 pre-completion HEAD 重驗 current-session workline binding PASS；單一 locked repo 移除此已驗收項後無 remaining active item 或 retiring steward reference。此提交移除 completed active item、結束 codex:review-skills-model-behavior 工作線；paused gaps、backlog 與正式 review 指令均維持原狀。既有 full suite 1564／0、exit 0；candidate parent authority、clean clone 與 required CI 必須送出前／merge 前核對，PR／merge endpoint 尚 pending。
+  - 日期來源:direct
+  - 放棄:同一顆首次提交抹掉唯一 assignment；以 no-active-items PASS 取代 completion parent authority；在 endpoint evidence 前宣稱 shipped
+  - 重議:completion gate、clean clone、required checks 或 merge 受阻時，保留本事件的 pending 事實並依本批 shipping contract 處理
+  - 關聯:92216a3ad513e1d467d876c3fc2374cffd15efa4;M-20261003-review-skills-model-audit;D-20261003-review-skills-retain-core;docs/plans/2026-10-03-review-skills-model-behavior.md

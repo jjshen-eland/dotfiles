@@ -12,16 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### review-skills-model-behavior — Deep-review／Repo-review 新版模型內容品質
-
-- **目標**：以 gpt-6.1-sol／Opus 5.5 檢查現行指令是否有無效重述或妨礙表現；以行為品質決定保留／最小修正，不以 token 減量為目標。
-- **驗收**：固定雙端 native baseline、單一變因對照、實態與工具 trace 核對；只採有可歸因收益且安全邊界成立的候選。必要 validator、相關測試及文檔 audit 通過。
-- **進度**：28 次 fresh native invocations 與獨立實態 audit 已記錄於 plan；checklist／位置候選無可歸因品質收益，不採用。正式 entries／shared core／oracle 維持原文；ordinary、明確 permission full、ownership BLOCKED 有分項證據，未外推為完整 isolation／production 驗收。
-- **下一步**：最終 full suite 1564／0、exit 0，doc audit／authority PASS；已收到本批 `$project --merge` 授權。先提交 audit 與 assignment，再結案並核對 candidate parent authority、required CI 與 merge endpoint。
-- **Writer**：`codex:review-skills-model-behavior`
-- **Workspace**：`branch=refactor/review-skills-model-behavior`
-- **Write Scope**：`shared/skills/deep-review/**`、`claude/skills/deep-review/**`、`codex/skills/repo-review/**`、`tests/review-skills-model-eval.py`、`tests/shard-manifest.tsv`、`STATUS.md`、`docs/plans/2026-10-03-review-skills-model-behavior.md`、`docs/archive/{decisions,dead-ends,milestones}-2026-10.md`
-- **Dossier Steward**：`codex:review-skills-model-behavior`
+目前無進行中項目。
 
 ## 暫停中
 
