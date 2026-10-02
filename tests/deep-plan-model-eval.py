@@ -3,6 +3,7 @@
 import argparse
 import concurrent.futures
 import importlib.util
+import inspect
 import json
 import os
 from pathlib import Path
@@ -29,7 +30,10 @@ def setup(root, variant, cases, models):
         "git", "archive", BASE, "shared/skills/deep-plan", "claude/skills/deep-plan",
         "codex/skills/deep-plan"], cwd=REPO))
     with tarfile.open(archive) as bundle:
-        bundle.extractall(source, filter="fully_trusted")
+        # This archive comes from git archive of the fixed, trusted BASE.
+        # Older Python uses the same policy but has no filter keyword.
+        options = {"filter": "fully_trusted"} if "filter" in inspect.signature(bundle.extractall).parameters else {}
+        bundle.extractall(source, **options)
     for name in ["evals.md", "field-log.md"]:
         for p in source.rglob(name):
             p.unlink()
