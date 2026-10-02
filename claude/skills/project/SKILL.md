@@ -18,7 +18,9 @@ allowed-tools: Bash, Read, Glob, Grep, Edit, Write, AskUserQuestion
    使用者自述的姓名。
 2. 以本 `SKILL.md` 的實際位置解析 skill directory；所有 relative references、scripts 與 templates 都從該目錄
    解析。若從 worktree 測試，必須使用 worktree 這份，不得跳去全域安裝副本。
-3. 先用 `<skill-dir>/scripts/read-reference.py` 逐段讀取 `workflow.md`，每次只接收一個 chunk；看見該檔 `EOF` 前不得執行任何 repo mutation。
+3. 先用 `<skill-dir>/scripts/read-reference.py` 逐段讀取 `workflow.md`，每次 tool call 只呼叫 reader 取得一個 chunk，不合併其他命令或結果；看見該檔 `EOF` 前不得執行任何 repo mutation。
+   呼叫形式：`python3 "<skill-dir>/scripts/read-reference.py" workflow.md --start 1`；reference 引數只傳 basename。
+   若首段缺少 `NEXT`／`EOF`，從最後完整可見的 `Lnnnnnn` 下一行續讀；`RANGE` 不代表已收到全部內容。
    依每段 `NEXT` 接續，完整讀取 [references/workflow.md](references/workflow.md) 後再由它分派模式並執行。
    核心 lifecycle、授權、STOP 與 mutation contract 只在 shared references/scripts；本入口不得另建一套。
    不得在讀取 shared workflow 前就依 arguments 整體拒絕 invocation；可拒絕的子要求、

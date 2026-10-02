@@ -1,0 +1,14 @@
+diff --git a/shared/skills/project/references/workflow.md b/shared/skills/project/references/workflow.md
+--- a/shared/skills/project/references/workflow.md
++++ b/shared/skills/project/references/workflow.md
+@@ -21,7 +21,9 @@
+ Log 另讀 `log-workflow.md` 與 `ship-paths.md`，Transfer 另讀 `transfer-workflow.md`。
+ 其他模式也先唯讀檢查 target active state、transfer guide 與 conditional owner evidence；若有 pending
+ transfer／conditional owner，先完整載入 `transfer-workflow.md` 再判 effective authority，且在此之前零 repo mutation。
+-Log 需要 Spec subflow 時，在該 subflow 的寫入前完整載入 `spec-workflow.md`。未觸發的模式細節不載入。同session已完整收到EOF、內容仍在
++Log 需要 Spec subflow 時，在該 subflow 的寫入前完整載入 `spec-workflow.md`。
++只省略未選的 Spec／Transfer 程序；Log 的 `log-workflow.md` 與 `ship-paths.md` 是整組必讀，
++在執行 Log 程序前都必須收到 EOF，即使沒有新變更、尚未授權 push 或最後不送出也不能省略。同session已完整收到EOF、內容仍在
+ 可用context且實際檔案SHA256未變時沿用，不因內部stage切換、插問或重驗從頭再讀。
+ 新session、只剩摘要／memory、內容遺失或SHA改變才重讀；搜尋命中不算完整讀取。
+ 典型呼叫如下，`NEXT` 的值成為下一次 `--start`：

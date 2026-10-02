@@ -903,7 +903,7 @@ else
     bad "project bounded reference reader 缺失"
 fi
 # shellcheck disable=SC2016 # 比對 Markdown backtick 字面，不做 expansion
-project_reader_bootstrap='read-reference.py` 逐段讀取 `workflow.md`，每次只接收一個 chunk；看見該檔 `EOF` 前不得執行任何 repo mutation'
+project_reader_bootstrap='read-reference.py` 逐段讀取 `workflow.md`，每次 tool call 只呼叫 reader 取得一個 chunk，不合併其他命令或結果；看見該檔 `EOF` 前不得執行任何 repo mutation'
 if grep -Fq "$project_reader_bootstrap" "$ROOT/claude/skills/project/SKILL.md" \
     && grep -Fq "$project_reader_bootstrap" "$ROOT/codex/skills/project/SKILL.md"; then
     ok "Project 雙入口共用同一個 bounded workflow bootstrap"
@@ -3974,6 +3974,9 @@ drs_show="$("$DRS_CLAUDE"/scripts/review-terminal.sh show --repo "$drs_tmp/repo"
 assert_eq "deep-review clear 後 show 不把 legacy 當 terminal" "" "$drs_show"
 
 echo "▶ 12c. project skill 跨 Claude Code／Codex 共用核心"
+python3 "$ROOT/tests/project-reference-metrics-test.py" >"$TMP/project-reference-metrics-test.out" 2>&1
+project_metrics_rc=$?
+assert_rc "project native trace normalizer：完整末行／partial／重讀／截斷有效性／cache 計費" 0 "$project_metrics_rc"
 PJS_CLAUDE="$ROOT/claude/skills/project"
 PJS_CODEX="$ROOT/codex/skills/project"
 project_scripts_shared=1

@@ -1,0 +1,12 @@
+diff --git a/shared/skills/project/scripts/read-reference.py b/shared/skills/project/scripts/read-reference.py
+--- a/shared/skills/project/scripts/read-reference.py
++++ b/shared/skills/project/scripts/read-reference.py
+@@ -9,7 +9,7 @@
+ from pathlib import Path
+ 
+ 
+-DEFAULT_MAX_BYTES = 12_000
++DEFAULT_MAX_BYTES = 8000
+ MIN_MAX_BYTES = 256
+ 
+ 
