@@ -34,3 +34,10 @@
   - 放棄:把 no-active-items/PASS 當 steward evidence；同一顆 commit 新建又移除唯一 assignment；本機驗收即提前清掉 shipping gate 所需的 active state
   - 重議:未來本機交付尚無 commit 授權時，保留 active item 與完成證據，待 Log 提交階段再結案
   - 關聯:M-20261002-session-skills-final-tree-verified;docs/plans/2026-10-02-session-skills-model-behavior.md;shared/skills/project/references/log-workflow.md
+
+- **X-20261003-session-skills-ci-shard-manifest · 2026-10-03 新增 integration assertion 卻漏同步 parallel manifest**：PR #255 首輪 required run `37032920842` 的 Ubuntu 24.04／macOS 15 都是 integration `1154 PASS／0 FAIL`，聚合器因 manifest 還宣告 1153 而 exit 1。新增的唯一 assertion 是本批 session skill transport gate；本機 clean-clone serial suite 1564/0 不走聚合器，不能證實 parallel manifest 已同步。保存兩端失敗 log，抽取 Ubuntu 三個真實 SHARD_RESULT 並以原 manifest 重現相同 mismatch；最小修復只將 integration 更新為 1154，不放寬聚合器、不刪 gate。CI repair hold 中恢復同一 actor／scope 的 active assignment，保持原 fingerprint PASS，再提交修復與後續結案 candidate；不重寫已 push 的 commits，也不修改 frozen plan。
+  - 日期來源:direct
+  - 證據:`/tmp/session-skills-ci-{ubuntu,macos}-failure-20261003.log`；`/tmp/session-skills-ci-aggregate-repro-20261003` 的三個原始 summaries／exit artifacts；run `37032920842`
+  - 放棄:把 shard 內綠燈當整個 CI 綠燈；僅重跑 serial suite；放寬 count equality 或改 CI 以躲過 manifest
+  - 重議:新增或移除 suite assertion 時，同步所屬 manifest 並用 parallel runner 驗證
+  - 關聯:M-20261003-session-skills-completion-candidate;PR#255;tests/shard-manifest.tsv;tests/run.sh;docs/testing-contract.md
