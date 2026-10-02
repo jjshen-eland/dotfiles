@@ -108,7 +108,7 @@ def freeze(root, revision, variant):
                  "Otherwise select ordinary review. ")
         assert text.count(route) == 1
         text = text.replace(route, "")
-        text = text.replace("before loading reviewer instructions or dispatching. Ask genuine", 
+        text = text.replace("before loading reviewer instructions or dispatching. Ask genuine",
                             "before loading reviewer instructions or dispatching.\n\nAsk genuine")
         text = text.replace("## 1a. Risk and necessary decisions", "## 1a. Necessary decisions")
         text = text.replace("## 3. Partition and start isolated reviewers\n\n",
