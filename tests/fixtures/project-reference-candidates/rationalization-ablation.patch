@@ -1,0 +1,42 @@
+diff --git a/shared/skills/project/references/log-workflow.md b/shared/skills/project/references/log-workflow.md
+--- a/shared/skills/project/references/log-workflow.md
++++ b/shared/skills/project/references/log-workflow.md
+@@ -51,29 +51,6 @@
+ - **Branch FIRST, before any commit.** If changes must be committed while `HEAD` is the default branch (or detached), create a feature branch **before** committing — not at push time. This is unconditional: do it regardless of protection state (see Step 1, item 5), even when protection is confirmed off.
+ - **Unknown protection = protected.** If `gh` is missing or the protection query fails, treat the default branch as protected (PR path). Do not assume it is open.
+ - **A ship keyword authorizes HOW to ship, NEVER whether a batch may ship.** Any `verdict: STOP` from `ship-state.sh` — including `review-terminal:` — blocks shipping. Follow the specific failed gate; continue authorized in-scope preparation or repair. The same-PR repair batch in ship-paths defines endpoint continuity, not a bypass of any gate.
+-
+-### Rationalization table — STOP if you hear yourself say these
+-
+-| Excuse | Reality |
+-|--------|---------|
+-| "User said push, so push to main." | "push" means push the *feature branch*. A protected default branch needs a PR. |
+-| "The PR is open now, might as well merge it." | Opening ≠ merging. 需要 merge 類說法或 Step 4 勾選。兩者皆無 → 停。 |
+-| "They said merge, so the STOP doesn't apply." | The keyword answers *how*, not *whether*. `verdict: STOP` still stops. |
+-| "They said ship/送出, close enough to merge." | It is not. Only a merge keyword merges. Ambiguous wording → path B, ask once. |
+-| "The batch has ≥2 commits, I should ask whether to squash." | 預設已定義：保留。問就是把已決之事丟回去。Squash only on an explicit squash keyword. |
+-| "Docs are already committed on main, just push them." | You should have branched first. Move the commit to a feature branch; never push to protected main. |
+-| "Can't detect protection, so it's probably fine to push to main." | Unknown protection → treat as protected. Branch + PR, or stop and ask. |
+-| "Branching now is extra work; commit here first, move later." | Branch-first is one command and prevents an awkward main commit. Do it before the commit, every time. |
+-| "It's just a docs commit, the protection won't mind." | Protection does not care what the commit is. Same rules. |
+-| "Working tree is clean — nothing to ship, exit." | Docs may still lag behind already-shipped code. Check session memory for shipped work (docs-only mode, Step 1 item 2) before exiting. |
+-
+-### Red Flags — STOP and re-read Critical
+-
+-- About to run `git push origin <default-branch>` or `git push` while on the default branch.
+-- About to run `gh pr merge` / any merge **without an explicit user merge instruction** (with one, follow `ship-paths.md`「Merge 最後一哩」).
+-- About to `git commit` while `HEAD == default branch` **or detached HEAD** without having branched.
+-- About to push without having printed the Step 4 summary, or with neither a ship keyword nor a Step 4 answer in hand.
+-- About to ask which merge flag to use, or whether to squash. Both已有預設——see Step 4.
+ 
+ ## Step 0：範圍鎖定
+ 
+@@ -458,7 +435,7 @@
+ 
+   - 給了 **merge 類說法**（`--merge` / `--bypass-merge` / 對應裸說法）、或在 Step 4 選了「送出並 merge」→ 直接進「Merge 最後一哩」（flag 依「說法表」，`BLOCKED` 等受阻狀態依「merge 受阻時的分流」），**不再問一次**。
+   - 給了 **`--pr` /「開 PR」**、或在 Step 4 選了「送出，停在 PR」→ **開完 PR 即止**，附一句提示：「之後說『merge』即可由我接手最後一哩（merge + 清 branch + 同步本地 default），預設保留你的 commit；要壓成一顆就說『merge 壓成一顆』」。
+-  - **`--pr` 不是 merge 的預備動作**——它是一個完整的終點。**NEVER treat "the PR is now open" as a reason to continue into merge**（rationalization 表已列）。
++  - **`--pr` 不是 merge 的預備動作**——它是一個完整的終點。**NEVER treat "the PR is now open" as a reason to continue into merge**（Critical 已列）。
+ 
+   **不 push default branch；未獲明說 merge 前不 merge。**
+ - **直接 push 路徑**（escape hatch：確定無保護**且**使用者明說不用 PR）：push **當前 branch**（branch-first 無條件，故此處一定是 feature branch、非 default）：`git -C <repo> push -u origin <feature-branch>`（**顯式 remote + branch**，不用裸 `git push`——裸 push 受 `push.default` / `remote.pushDefault` / 非預期 upstream 影響，可能推到錯 remote 或多推 ref；`origin` 為 stand-in）。**本路徑不是無保護 repo 的預設**——預設仍是 PR（見 Step 1 第 4 項），走到這裡代表使用者已明說不用 PR，故不再回頭勸開 PR。

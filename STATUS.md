@@ -12,7 +12,18 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-目前無進行中項目。
+### #246 Project 載入成本與新版模型行為評估
+
+- **Writer**：`codex:project-model-behavior`
+- **Workspace**：`branch=refactor/project-model-behavior`
+- **Write Scope**：`STATUS.md`, `docs/plans/2026-10-02-project-model-behavior.md`, `claude/skills/project/`, `codex/skills/project/`, `shared/skills/project/`, `tests/`, `docs/testing-contract.md`, `docs/archive/decisions-2026-10.md`, `docs/archive/dead-ends-2026-10.md`, `docs/archive/milestones-2026-10.md`
+- **Dossier Steward**：`codex:project-model-behavior`
+- **目標**：依 #246 量測 Project 必讀 reference 的真實載入成本；另依本次使用者要求，評估新版模型已自行遵循的贅述與會妨礙表現的指令。後者以完成品質與行為為目標，不以刪減 token 為目標。
+- **成功條件**：固定模型／runtime／版本、prompt 與隔離 fixture，保存雙端首次及同 session 再叫用的原始 trace、reader calls、實際 tokens、載入與整體時間；區分模式／endpoint 的必要載入依賴。內容候選以保留／移除／改寫的獨立對照驗證，保留無 skill 或未注入該條指令的控制組，檢查正常完成、false STOP、scope、授權與失敗語意。只採用有行為收益且既有安全 oracle 不退步的最小修正；Scenario 31、相關 pressure/helper tests、雙端 fresh eval、validator、repo tests 與 doc audit 通過。證據不足時保留原文並記錄，不以文字縮短替代成功。
+- **限制**：不重做 #240 provider E2E 或 #229 已結案／其他 backlog 範圍，不改 kernel safety floor、shipping／transfer authority 或 canonical topology，不調高 chunk 上限繞過截斷、不用摘要或 memory 替代必要內容，不設定未授權的 token／費用／總時間預算；shipping authorization 只由當次明確 invocation 判定，不由本狀態檔授予或跨 session 沿用。
+- **進度**：已保存三模型固定入口 first/reuse、模式依賴及獨立候選對照。6.1 Sol／5.6 Sol 正常終態相同，Standard credit 等價合計 7.19165／17.81768；訂閱 quota 無可歸因證據，不聲稱配額優勢。模式拆分、8000-byte chunk 與反例表刪除不採用。只修雙入口 reader 呼叫及首段截斷提示；shared core／12000-byte chunk／四份 Log 必讀與 endpoint authority 原樣保留。最終兩端 normal Log、MCP footer-loss Spec 及 matched native Claude pressure 均完整讀到 EOF、mutations 只在必讀完成後，scope 與 HEAD 符合 oracle。最終完整 suite 1563 PASS／0 FAIL（exit 0），六項 offline regressions、ruff、雙入口 validator／metadata 檢查、doc audit 與 diff check 通過；評估 plan 已凍結。
+- **下一步**：先提交實作與可查證的 assignment，再依 Project completion gate 移除本 active item 並記候選結案里程碑；送出仍須當次 endpoint 授權、doc audit 及 required checks 通過。GitHub #246 尚未關閉。
+- **關聯**：Issue#246;D-20260822-portable-project-skill;M-20260822-portable-project-skill;D-20260825-portable-skill-authoring-default;D-20260925-instruction-quality-scope;D-20261002-project-model-bootstrap;X-20261002-project-loading-candidates;M-20261002-project-model-eval-local;shared/skills/project/references/pressure-tests.md;docs/plans/2026-10-02-project-model-behavior.md
 
 ## 暫停中
 

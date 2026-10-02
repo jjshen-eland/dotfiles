@@ -61,3 +61,9 @@
   - 放棄:把 Gateway acknowledgement 或直接 sender probe 單獨當成真實 Stop 裝置收件驗收
   - 重議:後續 session 再現未收件時，依去敏 Stop 階段與同期網路證據重新定位
   - 關聯:Issue#250;M-20261002-wait4me-native-python-transport;shared/skills/wait4me/scripts/wait4me-hook.sh;STATUS.md
+
+- **M-20261002-project-model-eval-local · 2026-10-02 #246 新模型內容與載入成本本機候選驗收**：完成固定入口三模型 first/reuse、模式依賴、on-demand/8000-byte chunk 與反例 ablation 的獨立比較；成本與內容品質兩目標分開判分，收益不足的載入候選不採用。保留 core/authority/安全反例，只修雙入口首次 reader 的 Python/basename、單 output 及 footer-loss 續讀提示。最後 native Log 兩端各14 readers且無 mutation；受控 MCP Spec footer-loss 兩端各6 readers、自 L11續讀、必要 EOF 後才寫 STATUS；matched native Claude 舊入口漏行、修後完整恢復。六個 offline normalization/transport regressions、ruff、Codex validator、Claude 原生 metadata 不變與共通 body schema 驗證、doc audit、diff check 通過；最終 `./tests/run.sh` 1563 PASS／0 FAIL、exit 0。Plan 凍結 implemented，但本輪未授權 shipping，保留未 commit 的本地 feature branch，#246 尚未對外更新或關閉。無效 fixtures 與測量限制完整保留，未宣稱 subscription quota 優勢或重做 provider E2E。
+  - 日期來源:direct
+  - 放棄:用 bytes/token 下降冒充完成品質；把無注入或工具權限拒絕計為壓力通過；因先前其他批次 merge 授權而自動送出本批
+  - 重議:新 endpoint 或 host truncation 的有效 trace 顯示回歸，或取得新的 quota／跨 runtime 收益證據時，另立當批改動與驗收
+  - 關聯:Issue#246;D-20261002-project-model-bootstrap;X-20261002-project-loading-candidates;docs/plans/2026-10-02-project-model-behavior.md;tests/project-reference-eval.py;tests/project-reference-metrics.py;tests/run.sh

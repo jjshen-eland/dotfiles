@@ -735,3 +735,23 @@ hosts，最後輸出 `local`、`remote_ok`、`remote_failed` 聚合總計，只�
 
 `tests/run.sh` 的節號是唯一權威——本檔若少了某節，代表**該節的設計理由尚未記錄**，
 不代表該節不存在。補記時請對照節號。
+
+## Project reference native eval（#246）
+
+`tests/project-reference-eval.py` 是 opt-in CLI runner，保存固定 prompt、source／fixture hashes、
+requested/resolved model、原始／timestamped JSONL、native usage、exit 與 Git 終態。`setup` 只建隔離
+local bare origin；`run` 才使用模型。它不判定模型完成品質，也不做真實 provider shipping。
+判分方法與實測限制見 `docs/plans/2026-10-02-project-model-behavior.md`。
+
+`tests/project-reference-metrics.py` 核對 reference SHA、完整行覆蓋與 EOF；末行被 host 去掉 LF 時，
+只有與 frozen source 整行一致才計入，partial line 不算。Codex 本輪 resume usage 為 session 累計值，
+runner 以 completion 差值記 incremental usage；cached input 不重複收費，credit 不等於訂閱 quota。
+
+`--truncate` 以 local MCP transport 截掉一次 reader footer，canonical helper 保持不變；兩臂使用相同
+tool surface，首個實際被截斷的 chunk 必須出現在 trace。沒有注入、MCP 權限拒絕或工具不可用都是
+無效／未確認案例，不能當作恢復通過。必讀 EOF 與 mutation timing 分別核對；normalizer 的行覆蓋
+PASS 不代表 authority 或 mutation oracle 自動通過。原始 host trace 同時保存完整 output 與 sent output。
+
+Serial／integration gate 只跑六個 offline normalization／transport regressions，不自動使用模型。
+最小單獨驗證：`python3 tests/project-reference-metrics-test.py`。不得用固定文字 grep 或 byte 節省冒充
+新版模型的行為收益，也不以此重做 #240 provider E2E 或宣稱 #229 剩餘 backlog 已驗收。
