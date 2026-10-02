@@ -12,17 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### deep-plan-model-behavior — Deep-plan 新版模型內容品質
-
-- **目標**：固定 gpt-6.1-sol／Opus 5.5，檢查 deep-plan 的贅述與反效果；以完成品質而非 token 減量決定處置，保留既有 portable topology。
-- **驗收**：先記原文／單一內容變因與 oracle，再以 fresh native reviewer-stage、普通路徑及完整審查／安全路徑核對真實 artifacts、typed findings、freshness、零未授權寫入。候選僅在可歸因品質收益成立時採用；validator、相關 tests、完整 suite、doc audit、diff check 通過。
-- **進度**：本機評估完成：22 次頂層 invocations／18 個 child reviews，原文／§4 控制無可歸因收益，正式內容保留。Opus alert 格式缺漏與過度外推照實保留；full suite exit=0、1564/0，validator／focused tests／治理與實態驗收通過。
-- **下一步**：依本次 `$project --merge` 先提交評估與 assignment，再建立結案 candidate，通過 authority／doc／required checks 後 rebase merge；endpoint 尚未達成。
-- **Writer**：`codex:deep-plan-model-behavior`
-- **Workspace**：`branch=refactor/deep-plan-model-behavior`
-- **Write Scope**：`shared/skills/deep-plan/**`、`claude/skills/deep-plan/**`、`codex/skills/deep-plan/**`、`tests/deep-plan-model-eval.py`、`tests/shard-manifest.tsv`、`STATUS.md`、`docs/plans/2026-10-03-deep-plan-model-behavior.md`、`docs/archive/{decisions,dead-ends,milestones}-2026-10.md`
-- **Dossier Steward**：`codex:deep-plan-model-behavior`
-- **關聯**：D-20260825-deep-plan-empty-wait；M-20260825-portable-deep-plan-revalidation；X-20260825-deep-plan-duplicate-port；D-20260925-instruction-quality-scope；D-20261003-deep-plan-retain-core；X-20261003-deep-plan-checklist-ablation；M-20261003-deep-plan-model-audit
+目前無進行中項目。
 
 ## 暫停中
 
