@@ -87,3 +87,9 @@
   - 放棄:修改 frozen implemented plan；用 candidate 完成冒充 remote-visible merge；連帶結案既有 paused gaps
   - 重議:completion authority、clean-clone suite 或本批 required checks 未通過時先修具體 gate
   - 關聯:607d7f625eb002f3b37eeafb907a116fe1da3b0f;M-20261002-session-skills-final-tree-verified;X-20261003-session-skills-premature-active-removal;docs/plans/2026-10-02-session-skills-model-behavior.md
+
+- **M-20261003-session-skills-ci-repair-candidate · 2026-10-03 PR #255 的 manifest 修復與結案候選，endpoint pending**：`f3f82c6acb76f2f437b59bf6e2ef985bccca381c` 同步 integration assertion manifest 為 1154，並保留原 actor／scope 的 active assignment；從首輪真實 CI summaries 重建的 aggregation control 已由原 manifest 的 exit 1 轉為 `SHARD_AGGREGATE pass=1564 fail=0 shards=3`、exit 0。僅此一個 causal code change；原始兩平台 failure 保留，不改標通過。單 repo post-completion view 無其他 active item 指向本 actor，paused 不變；本輪結案 candidate 的 authority 仍需從修復 parent 重驗。既有 implemented plan 凍結不修改；新 clean-clone parallel suite 與同 PR 新 HEAD 的雙平台 required CI 尚待驗證，尚未宣稱 merge 完成。本次修復及配套結案合計兩顆追加 commit，均在本輪同批修復範圍，未 force-push／bypass／改保護規則。
+  - 日期來源:direct
+  - 放棄:刪除新增 assertion；放寬聚合器；重寫已送出的 commit；以舊 HEAD CI 當新 HEAD 證據
+  - 重議:新 candidate 的 authority、parallel suite 或 required CI 未通過時，依本批修復額度與具體缺口處理
+  - 關聯:f3f82c6acb76f2f437b59bf6e2ef985bccca381c;X-20261003-session-skills-ci-shard-manifest;PR#255;tests/shard-manifest.tsv
