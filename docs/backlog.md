@@ -158,6 +158,12 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   Sol正常before／after均600秒未完成、safety240秒未完成，故候選未採用。scope helper的stdout sandbox
   阻塞已獨立修好，不把它當作上述完成率問題已解。詳見[修後驗證紀錄](plans/2026-09-24-review-followup-design.md)。
   本輪依D-20260924-workflow-bounded-delivery不追查、不加規則、不重跑原packet；正確程式產物仍保留，無效獨立review不得當shipping證據。
+  2026-10-03 code-review controller 已落實有界 admission／repair preflight／current receipt，雙端修正後 ordinary、
+  blind／focused 的程式產物及 cap／ownership controls 通過；保留共同 blind／三次修復預設，focused 明示 opt-in。
+  仍未解：Sonnet 改寫 generated packet 或只傳 path；Sonnet／Opus 用摘要替代原報告；Codex native task body
+  加密使逐字 transport 核對不可得。機械欄位／snapshot 驗證不代表內容忠實或全域隔離，原始 RED 保留，
+  不以 34 次 native 終態或小型 fixture 宣稱本項結案。證據與具體重議條件見
+  [controller 實作紀錄](plans/2026-10-03-review-repair-controller.md)及 D-20261003-review-repair-controller-adoption。
   **觸發條件**：下一個真正需要full review的日常工作，或新的機制能提出包含正常完成與安全控制的固定驗收；保留exact scope／prompt／工具結果／終態後只修該root。
   不重跑本次同一packet或單純加時洗綠；新證據需能區分修後範圍成本與runtime完成／等待成本。
   **驗收邊界**：小型同機Spec與parallel controls不能外推完整Log／shipping、跨host或所有必要互動；遇實際該路徑失敗再重議。

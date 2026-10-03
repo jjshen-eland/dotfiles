@@ -382,6 +382,13 @@ checked-out——任一不成立即 STOP 零 mutation。remote 走 `ls-remote` �
 range、arbitrary tree、detached／non-current head 與 three-dot rejection。Autofix 的結構安全由
 shared helper 回傳，ownership 仍由 workflow 依可觀察來源判定。
 
+`tests/review-repair-controller.py` 以實際 Git fixtures 守共同 controller 的 admission／dispatch／finish、
+跨重新 capture 不清零、完整 result set／fresh identity、修復失敗仍消耗額度、修後 check 與實際 snapshot、
+復發 diagnosis／raw severity 保留及唯讀 target 含 .git 不变。Terminal clear 必須有有效完整 receipt，
+且 paths／endpoints／dirty content 均覆蓋舊 signal；legacy ancestry-only clear 改為保留 signal。
+這是實際合成反例支持的收緊，不以更新舊 assertion 當行為證據；controller test 另驗可清除的正向路徑。
+它不自動判斷自然語言處置的真實性，也不證明 native agent 實際使用 gate；後者以 frozen native trace 驗收。
+
 ## 12. repo-review thin-adapter packaging
 
 Codex 只保留 `$repo-review` 公開入口；workflow、reviewer brief 與 scope／terminal helpers 必須和
