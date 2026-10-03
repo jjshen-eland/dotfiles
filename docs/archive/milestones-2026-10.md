@@ -147,3 +147,11 @@
   - 放棄:放寬聚合器；以 serial suite 代替平行聚合驗證；把舊 HEAD 結果套在新 HEAD；以候選完成冒充 endpoint
   - 重議:parallel suite、authority 或 required CI 未通過時，保留 failure 並依本批額度處理
   - 關聯:84dd13e6fa165ecf34792c2c483b04f705cb133c;X-20261003-deep-plan-ci-shard-manifest;PR#258;tests/shard-manifest.tsv
+
+- **M-20261003-review-repair-controller-completion-candidate · 2026-10-03 Code-review controller 工作線結案 candidate**：依本次 `$project --merge` 授權，先以 8844744dbf6eddb5175db6b7eb8134a6b8b17bb2 提交 controller、雙入口、測試、implemented plan 與完整 assignment，再移除 STATUS 的 review-repair-controller。本 repo 為唯一 locked root，post-completion 無 active contract 指向 retiring codex:review-repair-controller，paused items 不變；本機實作交付，PR／merge endpoint 仍 pending。
+  - 日期來源:direct
+  - 驗收:沿用相同程式內容的完整 parallel suite exit 0、1566 PASS／0 FAIL（含 18 項 controller 行為測試）及雙入口 quick_validate。34 次 native parent captures 的程式產物、cap／readonly／ownership 結果與原始 RED 均保留；結案文件另驗 doc audit，candidate 仍須 parent authority 與 required CI 通過後才可 merge，不因 Log 再跑相同本機 suite／native 矩陣
+  - 限制:共同預設保留 blind／三次修復，focused opt-in；Sonnet packet 改寫／path 傳遞、Sonnet／Opus 摘要替代原報告、Codex encrypted task body 限制未解，已補入既有 B-20260924-workflow-review-residuals，不宣稱完整 isolation／receipt 品質或該 backlog 結案
+  - 放棄:同一 commit 抹掉唯一 assignment；以 no-active-items 取代 completion parent provenance；為 shipping 重跑無變更測試或追加 prose review；未取得 remote-visible evidence 就宣稱已 merge
+  - 重議:completion／doc／required CI／merge gate 受阻時，保留 pending 事實，依本批 shipping contract 處理具體原因
+  - 關聯:8844744dbf6eddb5175db6b7eb8134a6b8b17bb2;D-20261003-review-repair-controller-adoption;D-20261003-review-repair-controller-direction;B-20260924-workflow-review-residuals;docs/plans/2026-10-03-review-repair-controller.md
