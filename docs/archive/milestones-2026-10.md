@@ -163,3 +163,9 @@
   - 放棄:因進入 merge 階段重測同一內容；以摘要冒充實際執行；同顆 commit 抹掉唯一 assignment；未達 remote endpoint 先宣稱已送出
   - 重議:completion／doc／required CI 或 merge gate 受阻時，保留 pending 事實並依本批 shipping contract 處理
   - 關聯:a6ce6413de492951281ed9486273cced4c575c2c;D-20261004-project-reuse-mechanical-adoption;D-20261004-project-reuse-mechanical-check;shared/skills/project/references/pressure-tests.md
+
+- **M-20261004-project-routing-candidate · 2026-10-04 Project 分階段載入工作線結案候選**：實作與 evidence 已提交於功能分支 `fb6ba7ec837f9d57d4841b8bf790574848831bfd`，parent 保留 `codex:project-reference-routing` 的 active assignment。依當次 authority PASS 將唯一已驗收工作項移出 STATUS，完整單 repo post-completion view 無其他 active item 指向此 actor。雙端 noop 15→3 reader calls、约少 87% bytes；測試沿用、截斷修正版、Transfer 壓力、本機 provider 的 PR 終點／CI 查詢失敗停止，以及修復 fixture 後的獨立 authority gate 均有原始證據。沿用原 suite 中通過的 integration 1157／0、ship_state 239／0 與 core 其他 cases；文件相關 RED 的兩個定向補驗通過，不把原 full-run exit 1 改寫成全套 exit 0。既有七個 offline checks、validator 與 native 結果保持適用；本輪僅為結案文件補 doc／xref 檢查。此筆是結案候選，PR、required CI 與 merge 尚待本次 --merge 流程取得遠端證據。
+  - 日期來源:direct
+  - 放棄:因進入 Log 重跑輸入未變的 suite／native eval；在同一 commit 建立又移除唯一 durable assignment；把本機結案當作已合併
+  - 重議:當批 completion authority、文件稽核或 required CI 未通過時，處理具體失敗再續行；新的行為缺口依既有 decision 條件評估
+  - 關聯:project-reference-routing;D-20261004-project-stage-routing;docs/plans/2026-10-04-project-reference-routing.md;STATUS.md
