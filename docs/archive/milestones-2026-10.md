@@ -126,3 +126,11 @@
   - 放棄:跳過 setup failure 直接送出；改寫既有 audit plan／commits／history；用 no-active-items 洗掉 completion parent authority
   - 重議:修復後 clean clone／checks／merge 受阻時依同批 contract 處理，保留 pending 事實
   - 關聯:f5f0c1f25adce3fa5c6b89b835fddf978cfab7b1;M-20261003-deep-plan-completion-candidate;D-20261003-deep-plan-runner-python-compat;M-20261003-deep-plan-model-audit
+
+- **M-20261003-deep-plan-state-routing-local · 2026-10-03 Deep-plan 狀態控制本機交付**：shared review-state helper、兩薄入口、Codex ticket admission、portable repair packet 與 opt-in native corpus 完成。20 個 routing tests 守上限、有效基線、原始 result IDs／shape、pressure 投影、漂移與新批次轉移；multi-repo 排序及 restart 基線兩個新缺陷都先重現再修正。未改普通風險 route、reviewer N／模型或正式預設。
+  - 日期來源:direct
+  - 驗收:20 routing＋2 repair-context tests、兩端 quick_validate 通過；完整 ./tests/run.sh exit 0，PASS=1565 FAIL=0，log `/tmp/deep-plan-routing-suite-final-20261003.log`；doc-governance audit --ship 通過。Native 14 原 arm 加 2 個僅修 transport 缺陷的補驗，12 個原生 child；cap 雙端零派遣、target repos 含 Git metadata 不變
+  - 證據:docs/plans/2026-10-03-deep-plan-state-routing.md;tests/deep-plan-routing.py;tests/deep-plan-model-eval.py;`/tmp/deep-plan-routing-native-20261003-evidence`;`/tmp/deep-plan-routing-native-order-fix-20261003`
+  - 限制:Native 內容與來源暴露不是全綠，見 adoption decision；保留兩輪與盲審預設，不以合成第三輪推導自然收斂率，既有 review residual backlog 未結案
+  - 範圍:本機 branch=feat/deep-plan-state-routing；未 commit／push／merge／部署。無 commit endpoint 授權，依 project workflow 保留 active assignment 與完成證據，避免後續 completion parent 失去 provenance
+  - 關聯:D-20261003-deep-plan-controller-adoption;D-20261003-deep-plan-state-routing-direction

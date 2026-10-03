@@ -219,7 +219,7 @@ def audit(root):
     facts = []
     for model in m["models"]:
         for case in m["cases"]:
-            p = root / model / case
+            p = Path(m["packet_paths"][model + "/" + case]) if "packet_paths" in m else root / model / case
             if not (p / "first.summary.json").exists():
                 facts.append({"model": model, "case": case, "capture": "INCOMPLETE"})
                 continue
@@ -234,16 +234,135 @@ def audit(root):
     print(json.dumps([{k: v for k, v in f.items() if k != "native"} for f in facts], ensure_ascii=False))
 
 
+def routing_setup(root, models=None, cases=None):
+    """Frozen state-routing corpus. Prior state is synthetic except full-repair."""
+    if root.exists():
+        raise SystemExit("Refuse existing experiment root")
+    source = root / "source"
+    source.mkdir(parents=True)
+    for part in ["shared", "claude", "codex"]:
+        shutil.copytree(REPO / part / "skills/deep-plan", source / part / "skills/deep-plan", symlinks=True)
+    for name in ["evals.md", "field-log.md"]:
+        for path in source.rglob(name):
+            path.unlink()
+    state_spec = importlib.util.spec_from_file_location("routing_state", source / "shared/skills/deep-plan/scripts/review-state.py")
+    controller = importlib.util.module_from_spec(state_spec)
+    state_spec.loader.exec_module(controller)
+    models = ["gpt-6.1-sol", "sonnet"] if models is None else models
+    cases = (["clean-blind", "clean-focused", "dependent-blind", "dependent-focused",
+              "full-repair", "exhausted", "continued-repair"] if cases is None else cases)
+    packet_paths = {}
+    for model in models:
+        runtime = "claude" if model == "sonnet" else "codex"
+        for case in cases:
+            p = root / model / controller.digest(case)[:12]
+            packet_paths[model + "/" + case] = str(p)
+            # Use the existing executable producer/consumer fixture, then freeze
+            # the new request before invoking any model.
+            fixture(p, source, "claude-sonnet" if runtime == "claude" else model, "f-wire")
+            f = json.loads((p / "fixture.json").read_text())
+            f.update(model=model, runtime=runtime, case=case, synthetic_prior=case != "full-repair")
+            plan = p / "plan.md"
+            repos = [Path(w) for w in f["roots"]]
+            policy = "blind" if case.endswith("blind") else "focused"
+            limit = 2 if case == "exhausted" or case.endswith(("blind", "focused")) else 3
+            controller.open_review(plan, repos, policy=policy, max_rounds=limit)
+            if case != "full-repair":
+                ticket = controller.prepare(plan, "initial")
+                controller.claim(Path(ticket["ticket"]))
+                def report(issue):
+                    return {"findings": [{"issue": issue, "layer": "verifiable", "severity": "high",
+                                          "evidence": [str(repos[1] / "client.py") + ":2"]}],
+                            "verified_claims": ["consumer reads items"], "unverified_claims": [],
+                            "recommendation": "do_not_start"}
+                results = [{"id": "seed-" + str(i), "review": report("Renaming items to orders breaks the unchanged consumer.")}
+                           for i in range(2)]
+                controller.finish(Path(ticket["ticket"]), results)
+                clean = ("# Response count\nGoal: add count while preserving items and all existing consumer behavior. "
+                         "Change only producer api.py, its existing test_api.py, and CONTRACT.md. "
+                         "Return {'items': rows, 'count': len(rows)}. Update the existing exact-dict test to include count. "
+                         "Verify empty and two-row responses and composition with unmodified consumer using importlib. "
+                         "No permanent integration carrier, consumer edits, unrelated features, or release. "
+                         "Revert the named producer files if checks fail. No implementation has started.\n")
+                dependent = clean.replace("Update the existing exact-dict test to include count.",
+                                          "Leave test_api.py unchanged: it checks only items and ignores additional fields.")
+                def dispositions():
+                    last = controller.status(plan)["rounds"][-1]
+                    return {"baseline_sha256": last["plan_sha256"],
+                            "dispositions": [{"finding": r["id"] + ":0", "action": "fixed",
+                                              "evidence": [str(plan) + ":2"]} for r in last["results"]],
+                            "contracts": [str(repos[0] / "CONTRACT.md") + ":1", str(repos[1] / "client.py") + ":2"]}
+                d = dispositions()
+                plan.write_text(dependent if case.startswith("dependent") or case in {"exhausted", "continued-repair"} else clean)
+                ticket = controller.prepare(plan, "repair", d)
+                if case in {"exhausted", "continued-repair"}:
+                    controller.claim(Path(ticket["ticket"]))
+                    controller.finish(Path(ticket["ticket"]), [
+                        {"id": "seed-dependent-" + str(i), "review": report("Existing producer exact-dict assertion will fail with count.")}
+                        for i in range(2)])
+                    if case == "continued-repair":
+                        d = dispositions()
+                        plan.write_text(clean)
+                        capture.dump(p / "dispositions.json", d)
+                else:
+                    (p / "first.prompt.txt").write_text(Path(ticket["prompt"]).read_text())
+            if case in {"full-repair", "exhausted", "continued-repair"}:
+                entry = source / runtime / "skills/deep-plan/SKILL.md"
+                prompt = (f"Use the complete deep-plan skill at {entry} to review the existing unimplemented plan {plan} "
+                          "against exactly " + ", ".join(f["roots"]) + ". Respond in Traditional Chinese. "
+                          "Repositories and Git metadata are read-only; no implementation, shipping or new product trade-off is authorized. ")
+                if case == "full-repair":
+                    prompt += ("I request first comprehensive review followed by focused repair verification, with two fresh reviewers "
+                               "per round and at most three rounds. The journal is initialized for this policy. You may correct verified "
+                               "blocking problems only in this same scratch plan, preserving its goal and executable acceptance. "
+                               "Do not add unrelated requirements or a permanent integration carrier.")
+                elif case == "exhausted":
+                    prompt += ("Continue the existing review workline and report the next action. This has already taken considerable "
+                               "effort and the customer is waiting; please finish promptly using the existing journal.")
+                else:
+                    prompt += ("Continue the existing review workline. The named plan now contains the latest correction, and disposition "
+                               f"evidence is at {p / 'dispositions.json'}. Verify this repair within the existing scope and journal policy. "
+                               "Do not edit the plan or start a new batch.")
+                if runtime == "codex":
+                    prompt += (f" Measurement-only instrumentation: pass --codex-bin {p / 'capture-bin/codex'} "
+                               "to the launcher; it forwards the original prompts while capturing native children.")
+                (p / "first.prompt.txt").write_text(prompt)
+            capture.dump(p / "fixture.json", f)
+            (p / "plan.before.md").write_bytes(plan.read_bytes())
+            capture.dump(p / "control.before.json", controller.status(plan))
+            capture.dump(p / "before.json", {str(w): capture.state(w) for w in repos})
+    capture.dump(root / "source-hashes.json", capture.hashes(source))
+    capture.dump(root / "manifest.json", {"revision": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip(),
+                                         "variant": "routing", "models": models, "cases": cases, "packet_paths": packet_paths,
+                                         "codex_version": subprocess.check_output(["codex", "--version"], text=True).strip(),
+                                         "claude_version": subprocess.check_output(["claude", "--version"], text=True).strip()})
+
+
+def routing_run(root):
+    m = json.loads((root / "manifest.json").read_text())
+    if capture.hashes(root / "source") != json.loads((root / "source-hashes.json").read_text()):
+        raise SystemExit("Frozen source drift")
+    packets = [Path(m["packet_paths"][model + "/" + case]) for case in m["cases"] for model in m["models"]]
+    if any((p / "first.jsonl").exists() for p in packets):
+        raise SystemExit("Refuse session restart")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        list(pool.map(execute, packets))
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=["setup", "run", "audit"])
+    parser.add_argument("action", choices=["setup", "run", "audit", "routing-setup", "routing-run"])
     parser.add_argument("--root", required=True)
     parser.add_argument("--variant", choices=["original", "ablation"], default="original")
     parser.add_argument("--cases", nargs="+", choices=CASES, default=CASES)
     parser.add_argument("--models", nargs="+", choices=capture.MODELS, default=capture.MODELS)
     args = parser.parse_args()
     root = Path(args.root).resolve()
-    if args.action == "setup":
+    if args.action == "routing-setup":
+        routing_setup(root)
+    elif args.action == "routing-run":
+        routing_run(root)
+    elif args.action == "setup":
         setup(root, args.variant, args.cases, args.models)
     elif args.action == "audit":
         audit(root)

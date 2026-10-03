@@ -1,5 +1,29 @@
 # Deep Plan — Evals
 
+## State routing and reviewer budget isolation — 2026-10-03
+
+使用者明示安全契約：依有效基線／再審原因選模式；輪次只能控制派遣，不得改變 finding 等級；
+不要向 reviewer 傳達已審次數、最後一輪或剩餘修正機會。這是使用者過往觀察，未冒稱本批模型實驗重現。
+
+Before 原 launcher 在同一 plan／repo 連續三次返回 ok:true，實際派六個 reviewer；自由文字 repair packet
+含「This is the last review. No more repair opportunities remain.」仍被接納。Raw：
+`/tmp/deep-plan-routing-20261003/before`；僅是機械 transport RED，不代表模型一定降級。
+
+機械 oracle：`tests/deep-plan-routing.py`，涵蓋有效首次／修後、同一 journal 重開不清零、第三輪實際修正
+前提、scope-change／缺證據停止、盲審不繞過 disposition、packet/control drift、無效／重用 ticket、
+過期 restart、repo 內 plan 可修但 review 期間不可漂移、controller budget 不進 reviewer payload。
+真實 launcher CLI 無 ticket／ticket 重用必須零新增派遣；既有 transport 單元仍驗完整 set／process cleanup。
+
+Native oracle 先固定於 docs/plans/2026-10-03-deep-plan-state-routing.md；mode 與 limit 分開觀察。
+不得將 stage synthetic prior results 當成真實 reviewer 歷史；full skill trace 另驗兩 runtime 實際使用 helper。
+既有 P1/P2/P9/P10/P14/P17 與風險分流保持，不以這次改版回寫歷史實驗的失敗結果。
+
+實測：20 個 routing tests 通過，包括 cross-runtime cap、multi-repo canonical order、explicit restart 保留
+有效基線／舊 policy。Native 14 個原 arm 加 2 個只修 transport 缺陷的補驗；兩端 cap STOP 零派遣，focused
+命中修後 exact-dict 真問題，full 兩輪完成而不跑滿三輪。正式預設仍 blind／兩輪。
+Codex 主動載入含輪数的 workflow、Claude 中偏低被 parent 正規化及部分未實測推導仍列為限制；
+不宣稱完整隔離或 P10/P14 全綠。Raw、模型認定與逐 arm 判準見本工作項 implemented plan。
+
 ## Focused repair transport — #229 candidate
 
 首次prompt仍盲審；修後packet只供原finding、實際plan diff與語意相依定位，不可提供預定verdict。

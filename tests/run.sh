@@ -3584,7 +3584,18 @@ print(json.dumps({
 }))
 PY
 chmod +x "$TMP/deep-plan-codex-stub"
-dps_launch_out="$(DEEP_PLAN_STUB_FORBID_CRITERIA=1 "$DPS_CODEX/scripts/launch-reviewers.py" \
+# Transport-only unit fixtures retain their original process/schema coverage.
+# Real CLI admission, exhausted/reused tickets and zero-dispatch failures run below.
+dps_transport="$TMP/deep-plan-transport"
+printf '#!/bin/bash\nexec python3 "%s/tests/deep-plan-routing.py" --transport "$@"\n' "$ROOT" > "$dps_transport"
+chmod +x "$dps_transport"
+if python3 -B "$ROOT/tests/deep-plan-routing.py" >"$TMP/deep-plan-routing.out" 2>&1; then
+    ok "deep-plan controller：模式／輪次／證據隔離與真實CLI拒絕派遣"
+else
+    cat "$TMP/deep-plan-routing.out"
+    bad "deep-plan controller behavior regression"
+fi
+dps_launch_out="$(DEEP_PLAN_STUB_FORBID_CRITERIA=1 "$dps_transport" \
     --plan "$dps_fixture/docs/plans/plan.md" \
     --repo "$dps_fixture" \
     --brief "$DPS_CODEX/references/planner-brief.md" \
@@ -3600,7 +3611,7 @@ if [ "$dps_launch_rc" -eq 0 ] \
     ok "deep-plan launcher 建立兩個 attributed reviewers 並保持 target repo 不變"
 else bad "deep-plan launcher normal fixture 未滿足 parallel／fresh／read-only oracle"; fi
 printf '%s\n' 'F1: verify the repair against source evidence.' > "$TMP/deep-plan-repair.md"
-dps_repair_out="$(DEEP_PLAN_STUB_REPAIR=1 "$DPS_CODEX/scripts/launch-reviewers.py" \
+dps_repair_out="$(DEEP_PLAN_STUB_REPAIR=1 "$dps_transport" \
     --plan "$dps_fixture/docs/plans/plan.md" --repo "$dps_fixture" \
     --brief "$DPS_CODEX/references/planner-brief.md" --schema "$DPS_CODEX/assets/reviewer-output.schema.json" \
     --repair-context "$TMP/deep-plan-repair.md" --codex-bin "$TMP/deep-plan-codex-stub" --timeout-seconds 5)"
@@ -3609,7 +3620,7 @@ if [ "$dps_repair_rc" -eq 0 ] && grep -q '"review_mode":"repair-verification"' <
     ok "deep-plan repair packet以immutable hash進入有效fresh manifest"
 else bad "deep-plan repair packet transport失敗"; fi
 dps_repair_drift_out="$(DEEP_PLAN_STUB_REPAIR=1 DEEP_PLAN_STUB_MUTATE_FILE="$TMP/deep-plan-repair.md" \
-    "$DPS_CODEX/scripts/launch-reviewers.py" --plan "$dps_fixture/docs/plans/plan.md" --repo "$dps_fixture" \
+    "$dps_transport" --plan "$dps_fixture/docs/plans/plan.md" --repo "$dps_fixture" \
     --brief "$DPS_CODEX/references/planner-brief.md" --schema "$DPS_CODEX/assets/reviewer-output.schema.json" \
     --repair-context "$TMP/deep-plan-repair.md" --codex-bin "$TMP/deep-plan-codex-stub" --timeout-seconds 5)"
 dps_repair_drift_rc=$?
@@ -3617,7 +3628,7 @@ if [ "$dps_repair_drift_rc" -ne 0 ] && grep -q '"ok":false' <<< "$dps_repair_dri
     ok "deep-plan repair packet被改寫時拒絕驗收"
 else bad "deep-plan repair packet drift被錯誤放行"; fi
 cp "$dps_fixture/docs/plans/plan.md" "$TMP/deep-plan-scratch.md"
-dps_criteria_out="$(DEEP_PLAN_STUB_REQUIRE_CRITERIA=1 "$DPS_CODEX/scripts/launch-reviewers.py" \
+dps_criteria_out="$(DEEP_PLAN_STUB_REQUIRE_CRITERIA=1 "$dps_transport" \
     --plan "$TMP/deep-plan-scratch.md" \
     --repo "$dps_fixture" \
     --brief "$DPS_CODEX/references/planner-brief.md" \
@@ -3631,7 +3642,7 @@ if [ "$dps_criteria_rc" -eq 0 ] \
     && grep -q '"criteria_impact_review":true' <<< "$dps_criteria_out"; then
     ok "deep-plan launcher 支援 repo 外 scratch plan 並保留判準類 impact-grid prompt"
 else bad "deep-plan launcher 遺失 scratch artifact 或判準類 reviewer contract"; fi
-dps_invalid_out="$(DEEP_PLAN_STUB_INVALID=1 "$DPS_CODEX/scripts/launch-reviewers.py" \
+dps_invalid_out="$(DEEP_PLAN_STUB_INVALID=1 "$dps_transport" \
     --plan "$dps_fixture/docs/plans/plan.md" \
     --repo "$dps_fixture" \
     --brief "$DPS_CODEX/references/planner-brief.md" \
@@ -3642,7 +3653,7 @@ dps_invalid_rc=$?
 if [ "$dps_invalid_rc" -eq 1 ] && grep -q '"ok":false' <<< "$dps_invalid_out"; then
     ok "deep-plan launcher 對 schema-invalid reviewer set fail closed"
 else bad "deep-plan launcher 接受 schema-invalid reviewer output"; fi
-dps_guard_out="$(DEEP_PLAN_REVIEWER_PROCESS=1 "$DPS_CODEX/scripts/launch-reviewers.py" \
+dps_guard_out="$(DEEP_PLAN_REVIEWER_PROCESS=1 "$dps_transport" \
     --plan "$dps_fixture/docs/plans/plan.md" \
     --repo "$dps_fixture" \
     --brief "$DPS_CODEX/references/planner-brief.md" \
@@ -3655,7 +3666,7 @@ else bad "deep-plan launcher recursion guard 失效"; fi
 bad_plan_target="$TMP/deep-plan"$'\n'"injected.md"
 cp "$dps_fixture/docs/plans/plan.md" "$bad_plan_target"
 ln -s "$bad_plan_target" "$TMP/deep-plan-safe-link.md"
-dps_control_out="$("$DPS_CODEX/scripts/launch-reviewers.py" \
+dps_control_out="$("$dps_transport" \
     --plan "$TMP/deep-plan-safe-link.md" \
     --repo "$dps_fixture" \
     --brief "$DPS_CODEX/references/planner-brief.md" \
@@ -3666,7 +3677,7 @@ if [ "$dps_control_rc" -eq 2 ] \
     && grep -q 'resolved plan path contains a forbidden control character' <<< "$dps_control_out"; then
     ok "deep-plan launcher 對 symlink 解析後的 control-character path fail closed"
 else bad "deep-plan launcher 接受 canonical path prompt injection"; fi
-dps_relative_out="$("$DPS_CODEX/scripts/launch-reviewers.py" \
+dps_relative_out="$("$dps_transport" \
     --plan docs/plans/plan.md \
     --repo "$dps_fixture" \
     --brief "$DPS_CODEX/references/planner-brief.md" \
@@ -3680,7 +3691,7 @@ echo "stable" > "$dps_fixture/evidence.txt"
 (cd "$dps_fixture" && "${GITC[@]}" add evidence.txt && "${GITC[@]}" commit -qm "test: add evidence")
 echo "before" > "$dps_fixture/evidence.txt"
 dps_mutation_out="$(DEEP_PLAN_STUB_MUTATE_FILE="$dps_fixture/evidence.txt" \
-    "$DPS_CODEX/scripts/launch-reviewers.py" \
+    "$dps_transport" \
     --plan "$dps_fixture/docs/plans/plan.md" \
     --repo "$dps_fixture" \
     --brief "$DPS_CODEX/references/planner-brief.md" \
@@ -3725,7 +3736,7 @@ if ! pid_is_live_non_zombie 999999; then
 else bad "deep-plan cleanup gate 對 PID 回收 race 產生 false live"; fi
 unset -f kill ps
 dps_timeout_out="$(DEEP_PLAN_DESCENDANT_PID_DIR="$TMP/deep-plan-descendant-pids" \
-    "$DPS_CODEX/scripts/launch-reviewers.py" \
+    "$dps_transport" \
     --plan "$dps_fixture/docs/plans/plan.md" \
     --repo "$dps_fixture" \
     --brief "$DPS_CODEX/references/planner-brief.md" \
@@ -3760,7 +3771,7 @@ fi
 mkdir -p "$TMP/deep-plan-cleanup-fault-pids"
 dps_cleanup_fault_out="$(PYTHONPATH="$ROOT/tests/fixtures/deep-plan-cleanup-fault" \
 DEEP_PLAN_DESCENDANT_PID_DIR="$TMP/deep-plan-cleanup-fault-pids" \
-    "$DPS_CODEX/scripts/launch-reviewers.py" \
+    "$dps_transport" \
     --plan "$dps_fixture/docs/plans/plan.md" \
     --repo "$dps_fixture" \
     --brief "$DPS_CODEX/references/planner-brief.md" \
@@ -3799,7 +3810,7 @@ else
 fi
 mkdir -p "$TMP/deep-plan-signal-pids"
 DEEP_PLAN_DESCENDANT_PID_DIR="$TMP/deep-plan-signal-pids" \
-    "$DPS_CODEX/scripts/launch-reviewers.py" \
+    "$dps_transport" \
     --plan "$dps_fixture/docs/plans/plan.md" \
     --repo "$dps_fixture" \
     --brief "$DPS_CODEX/references/planner-brief.md" \
@@ -3841,7 +3852,7 @@ fi
 mkdir -p "$TMP/deep-plan-single-cleanup-pids"
 PYTHONPATH="$ROOT/tests/fixtures/deep-plan-wait-guard" \
 DEEP_PLAN_DESCENDANT_PID_DIR="$TMP/deep-plan-single-cleanup-pids" \
-    "$DPS_CODEX/scripts/launch-reviewers.py" \
+    "$dps_transport" \
     --plan "$dps_fixture/docs/plans/plan.md" \
     --repo "$dps_fixture" \
     --brief "$DPS_CODEX/references/planner-brief.md" \

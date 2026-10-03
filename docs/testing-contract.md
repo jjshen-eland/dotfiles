@@ -409,6 +409,12 @@ Claude round 同樣 fail closed：必須恰有 N 份可歸因的完整 results�
 欄位缺漏都不得進 synthesis。Eval oracle 不得殘留 Codex 已退役的 `fork_turns`／spawn／wait backend。
 Shared workflow 判定為放行／攔下判準類計畫時，Codex adapter 必須用顯式 flag 讓 launcher 加入同一份
 impact-grid reviewer 要求；其他計畫不得誤加。Repo 外 scratch plan 仍是合法 artifact，不得被 launcher 拒絕。
+以上 in-memory 限制約束 raw reviewer transport；跨 session 的 bounded admission 另用 plan companion journal，
+由 shared `review-state.py` 保留一次性 ticket、版本與既有結果。Public launcher CLI 必須先 claim ticket，
+完成後才寫有效 result set；Claude adapter 使用同一 controller。兩層分別驗證，不能把 transport 測試當 admission
+已接線。`tests/deep-plan-routing.py` 守預設兩輪跨 runtime 不清零、focused 第三輪修正前提、scope／evidence
+STOP、fresh IDs、artifact drift、explicit restart 留歷史與有效基線、budget 不進受控 prompt／packet。
+Repo scope 驗證採集合但 prompt 順序採 ticket 的 canonical order，輸入順序不得使相同多 repo 範圍誤失敗。
 兩端 reviewer prompt 必須由同一份 `references/reviewer-prompt.txt` 產生；除 path 與 shared criteria prompt
 placeholder 外不得重組、縮短或加入 runtime/tool 指令，P14 oracle 也不得殘留退役的 Codex spawn/wait backend。
 
