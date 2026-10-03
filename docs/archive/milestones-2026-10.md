@@ -155,3 +155,11 @@
   - 放棄:同一 commit 抹掉唯一 assignment；以 no-active-items 取代 completion parent provenance；為 shipping 重跑無變更測試或追加 prose review；未取得 remote-visible evidence 就宣稱已 merge
   - 重議:completion／doc／required CI／merge gate 受阻時，保留 pending 事實，依本批 shipping contract 處理具體原因
   - 關聯:8844744dbf6eddb5175db6b7eb8134a6b8b17bb2;D-20261003-review-repair-controller-adoption;D-20261003-review-repair-controller-direction;B-20260924-workflow-review-residuals;docs/plans/2026-10-03-review-repair-controller.md
+
+- **M-20261004-project-test-evidence-reuse · 2026-10-04 Project 測試證據沿用工作線結案 candidate**：實作及 assignment 已在 a6ce6413de492951281ed9486273cced4c575c2c；共同 Log 使用唯讀 helper 比對成功結果與已聲明輸入，資料相同即沿用，失效才補受影響檢查，不建立永久快取。本 repo 為唯一 locked root，移除已完成 item 後無其他 active contract 指向 codex:project-test-evidence-reuse；PR／merge endpoint 在本筆寫入時仍 pending。
+  - 日期來源:direct
+  - 驗收:13 個 Git／filesystem checks 在 Python 3.14／3.9 通過，最後完整 parallel suite exit 0、1567／0；雙端六個 native cases 的額外測試數均為 unchanged=0、changed=1、unknown=1。此次 Log 核對原始工具結果、run log 與原內容 hashes，helper 回 REUSE；沒有重跑本機 suite／native 矩陣。結案文檔另跑 doc／xref audit，required CI 仍待目前 PR HEAD 驗證
+  - 邊界:結果真實性、完整相依範圍與未記錄環境仍需核對；保留條件式 clean clone 與 required CI。Skill 載入量只做盤點，未將長度推定為失誤根因或全面重寫 skills
+  - 放棄:因進入 merge 階段重測同一內容；以摘要冒充實際執行；同顆 commit 抹掉唯一 assignment；未達 remote endpoint 先宣稱已送出
+  - 重議:completion／doc／required CI 或 merge gate 受阻時，保留 pending 事實並依本批 shipping contract 處理
+  - 關聯:a6ce6413de492951281ed9486273cced4c575c2c;D-20261004-project-reuse-mechanical-adoption;D-20261004-project-reuse-mechanical-check;shared/skills/project/references/pressure-tests.md
