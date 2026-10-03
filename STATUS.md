@@ -12,7 +12,64 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-目前無進行中項目。
+### deep-plan-state-routing — 依審查狀態選模式與有界修後驗證
+
+- **Writer**：`codex:deep-plan-state-routing`
+- **Workspace**：`branch=feat/deep-plan-state-routing`
+- **Write Scope**：shared/skills/deep-plan, codex/skills/deep-plan, claude/skills/deep-plan, tests/deep-plan-routing.py, tests/deep-plan-repair-context.py, tests/deep-plan-model-eval.py, tests/run.sh, docs/testing-contract.md
+- **Dossier Steward**：`codex:deep-plan-state-routing`
+- **Context**：兩端現行皆先做風險分流；完整路徑每輪 N=2、最多兩輪，第二輪盲審，focused transport
+  尚未啟用。本次使用者要求把首次／再審原因／輪次納入模式選擇，並明示避免深井及 prose 審查、可機械化的
+  控制必須實際下沉；另提出兩輪只有一次審查間修正機會的取捨。既有評估未比較 focused／blind，不能直接背書改預設。
+- **Goal**：以同一 shared 規則支援全面盲審與 focused 修後驗證；根據有效審查基線、再審原因、實際變更及
+  本批輪次選擇或建議下一步，兩 runtime 具有相同產品語意。可確定的狀態／計數／完整性控制由可測 helper
+  承擔，agent 負責有證據的語意判斷；以完成品質決定 focused 及其輪次候選是否啟用。
+- **Acceptance Criteria**：
+  1. 保留 ordinary 的 READY-FOR-INCREMENT／NEEDS-DECISION 分流。需要獨立審查且沒有有效首次基線時
+     採全面盲審；有有效基線及可追溯的修正／處置時採 focused，覆蓋原 finding、實際修改、同類問題與語意相依。
+     新 finding 本身不觸發全審；Goal／核心判準／架構或範圍實質變更使基線失效時，先回決策再全面盲審。
+     明示再次盲審仍被尊重；首次無 finding／無修正不得偽造 repair packet，也不藉此默改既有輪數政策。
+  2. 分開記錄 reviewer 數 N、已開始輪次、有效完成輪次與修後驗證次數。N=2 不變；現行兩輪為基線，
+     候選是首次盲審加最多兩次 focused（總計最多三輪、兩次審查間修正），不是每案強制跑滿三輪。
+     第三輪須有實際修正可驗且仍屬原範圍；已通過即結束，缺事實先補事實，重訂方案先回決策。
+     上限仍 NO-GO 時不得再 dispatch，只輸出阻擋原因、所需修正／決策及下批建議模式；換模式、session、
+     runtime 或重呼叫不得清零。失敗／partial 不當有效審查，也不能藉重試無限增加派遣；重開批次需新的明示指示。
+  3. 實作共享機械判定入口，檢查 typed state、plan／repo scope 身分、基線及 packet 完整性、輪次與合法轉移，
+     輸出 dispatch 許可、模式、reason code、剩餘輪次或停止／補證據的結果。兩個 adapter 在 dispatch 前確實
+     呼叫並使用結果；用假的 dispatch 邊界驗證 STOP 時零派遣，不能只新增 helper 或 SKILL.md 文字而不接線。
+     控制器狀態與 reviewer 輸入分離，以固定允許欄位產生 prompt／repair packet；輪次、上限、剩餘機會、
+     「最後一次／沒機會再修」及預定 verdict 不進受控 reviewer 輸入，也不編入自動產生的路徑名稱。
+  4. Goal／架構是否改變及語意相依仍須 agent 以 repo／plan diff 證據判讀；helper 不靠關鍵字猜測、不將
+     hash 一致當成審查內容正確，也不自行推定使用者授權。缺少、陳舊或矛盾證據不得靜默進 focused／放行。
+     狀態沿用可攜的既有 review 產物並只補必要欄位，不另建 dossier／中央服務，也不依賴私人 session 記憶。
+     Reviewer 獨立分類，orchestrator 不因輪次或交付壓力降級。使用者回報 Claude reviewer 得知剩餘修正機會
+     時有降級傾向，列為隔離契約來源，不當本次重現證據；若目標文件／檢索結果自帶審查進度，記錄實際暴露與
+     review-validity 限制，不冒稱已隔離，也不為隱藏進度改寫 canonical plan 或只追加「不要受影響」提醒。
+  5. 先固定行為 oracle 與可重現反例，再改 source。機械案例至少涵蓋首次、有效修後、基線失效、明示盲審、
+     上限後停止、切換 runtime／重呼叫不清零、錯配／過期 packet 與無效輪次；測可觀察結果，不用字串存在代表行為。
+     用不同輪次／剩餘機會但相同審查資料的 controller inputs，驗證輸出的 reviewer payload 相同，並以夾帶
+     輪次／最後機會訊息的 packet 反例驗證攔截；native trace 核對實際傳遞，不能只驗 template 或自述隔離。
+     Native 案例核對真問題漏報、誤阻擋、修正引入問題、未列同類／跨檔相依與範圍擴張；repair packet 不是可信結論。
+  6. 分離模式與輪次兩個變因：先在相同有效首次基線／修訂／N／模型設定下比較第二輪 blind 與 focused；
+     再只以確有第二次修正需求的案例核對 focused 兩輪停止與條件式第三輪，不把放寬上限的效果歸因於模式。
+     開跑前固定有限案例與預期行為，雙端實際 trace／artifact 為證；不重跑已綠案例、不追加輪次追求零 finding，
+     失敗保留根因與限制。不得以字數、finding 數、CLI exit 或 agent 自述判品質，也不自行設定美元／token／總時限。
+  7. 兩端通過相同正常／安全 oracle 才啟用共同預設；若只有局部成功，保留正式預設並列出差異，
+     不冒稱全體完成。Validator、相關機械測試、完整 ./tests/run.sh 及文檔 audit 通過；沒有可歸因收益就不啟用候選。
+- **Constraints**：使用者於 Spec 完成後明示「開工」，授權本項實作與隔離驗證；未授權 push／PR／merge／部署。
+  後續動 skill 前完整讀 system skill-creator、Codex authoring guide 與 portability contract。保留 fresh reviewers、
+  findings 原分類／證據、disposition、唯讀與授權契約；不改 reviewer 模型／N，不重做 portable migration，
+  不擴成其他 review／shipping skill 改版。禁止用 deep-plan 自審本項目或全文 prose review 追求收斂；
+  規則新增須有 observed failure 或本項明確安全契約，驗收通過即停止，不因「可能更完整」擴張。
+- **進度**：2026-10-03 本機實作與固定驗收完成：共享 controller／雙 adapter 接線，20 個 routing tests、
+  2 個 repair-context tests、雙 validators、完整 suite exit 0（1565/0）。14 個 native 原 arm 與 2 個只修
+  transport 缺陷的補驗已核對；採機械控制及 opt-in focused，跨 runtime 預設均維持盲審／兩輪。Codex
+  workflow 暴露與 Claude 原始分類／查證限制列於 implemented plan，不聲稱完整隔離或模式品質全綠。
+- **下一步**：無進一步實作／評測；保留本機變更及 assignment，待使用者另行指定 lifecycle endpoint。
+  本次未 commit／push／merge／部署，後續封存须先將 assignment 保留在 completion parent。
+- **關聯**：D-20261003-deep-plan-state-routing-direction；D-20261003-deep-plan-retain-core；
+  D-20260924-review-repair-verification-choice；M-20260915-b06-deep-plan-reviewer-count-reassessed；
+  M-20260915-b07-deep-plan-eval-review-reassessed；B-20260924-workflow-review-residuals。
 
 ## 暫停中
 

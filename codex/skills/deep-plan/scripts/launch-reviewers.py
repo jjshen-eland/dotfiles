@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -26,6 +27,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--count", type=int, default=2)
     parser.add_argument("--criteria-impact-review", action="store_true")
     parser.add_argument("--repair-context", help="absolute path to untrusted repair navigation packet")
+    parser.add_argument("--ticket", help="reserved admission ticket from review-state.py")
     parser.add_argument("--timeout-seconds", type=int, default=900)
     parser.add_argument("--codex-bin", default="codex")
     return parser.parse_args()
@@ -209,8 +211,8 @@ def parse_event(raw_line: bytes) -> tuple[str | None, object | None]:
     return None, review if valid_review(review) else None
 
 
-def main() -> int:
-    args = parse_args()
+def launch(args):
+    """One transport round; CLI admission is enforced by main()."""
     guard_name = "DEEP_PLAN_REVIEWER_PROCESS"
     if os.environ.get(guard_name):
         raise RuntimeError("nested deep-plan reviewer launch is forbidden")
@@ -271,6 +273,8 @@ def main() -> int:
         repair_context,
     )
     prompt_bytes = prompt.encode("utf-8")
+    if getattr(args, "controlled_prompt", prompt) != prompt:
+        raise ValueError("controller and transport reviewer prompts differ")
     prompt_sha = sha256_bytes(prompt_bytes)
     plan_sha = sha256_bytes(plan.read_bytes())
     manifest: dict[str, object] = {
@@ -539,6 +543,45 @@ def main() -> int:
         for handled_signal, previous_handler in previous_handlers.items():
             signal.signal(handled_signal, previous_handler)
 
+    return manifest
+
+
+def main() -> int:
+    args = parse_args()
+    if os.environ.get("DEEP_PLAN_REVIEWER_PROCESS"):
+        raise RuntimeError("nested deep-plan reviewer launch is forbidden")
+    if not args.ticket:
+        raise ValueError("a reserved --ticket from review-state.py is required")
+    module_path = Path(__file__).resolve().parent / "review-state.py"
+    spec = importlib.util.spec_from_file_location("review_state", module_path)
+    controller = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(controller)
+    ticket_path = checked_path(args.ticket, "ticket", want_dir=False)
+    ticket, _ = controller.check_ticket(ticket_path, "reserved")
+    if (str(checked_path(args.plan, "plan", False)) != ticket["plan"]
+            or sorted(set(str(checked_path(p, "repo", True)) for p in args.repo)) != ticket["repos"]
+            or args.count != ticket["count"] or args.criteria_impact_review != ticket["criteria"]):
+        raise ValueError("launcher scope/count/criteria differs from ticket")
+    if args.repair_context and str(checked_path(args.repair_context, "repair context", False)) != ticket["packet"]:
+        raise ValueError("repair context differs from ticket")
+    args.repo = ticket["repos"]
+    args.repair_context = ticket["packet"]
+    args.controlled_prompt = Path(ticket["prompt"]).read_text()
+    controller.claim(ticket_path)
+    try:
+        manifest = launch(args)
+    except BaseException:
+        try:
+            controller.finish(ticket_path, [])
+        except Exception:
+            pass
+        raise
+    results = [{"id": r["thread_id"], "review": r["review"]} for r in manifest["reviewers"]] if manifest["ok"] else []
+    try:
+        manifest["admission"] = controller.finish(ticket_path, results)
+    except Exception as exc:
+        manifest["ok"] = False
+        manifest["admission_error"] = str(exc)
     print(json.dumps(manifest, ensure_ascii=False, separators=(",", ":")))
     return 0 if manifest["ok"] else 1
 
