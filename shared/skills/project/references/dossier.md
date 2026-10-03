@@ -54,7 +54,7 @@ steward，不代表任何 Claude／Codex session 自動取得該 actor。Runtime
 - Helper 已先 STOP 並揭露唯一 exact actor 時，使用者也可回答 Project 緊接提出、綁定 repo／actor／snapshot／
   action 的 recovery 選項；這是獨立的 prompt-bound decision，不是把自然語言補寫回 `as=`／`resume=`。確認後
   必須以 dedicated `prompt-bound-*` authority source 重跑 helper。僅本輪的確認只活在該 logical invocation；
-  明示整條工作線的當次 session 指派，依 workflow 的 authority 規則獨立重驗，不是沿用 shipping approval。
+  明示整條工作線的當次 session 指派，依 authority 的規則獨立重驗，不是沿用 shipping approval。
 - 普通自然語言「我是某人」、Git author、GitHub login、同 runtime 或名稱相似都不是 resume／delegation
   credential。Agent session 不得把自己重新標成 `human:*`／`owner:*`。
 
@@ -76,15 +76,15 @@ Worker 的 `Dossier delta` 固定回報：work item、actor、branch/workspace�
 tests、progress、decisions with reasons、dead ends、blockers、next step。這是 claim，不是 canonical state；
 steward 必須自行檢查 commit ancestry／diff／scope／tests，再決定是否 cherry-pick 與寫入 dossier。Review
 agent 維持 read-only。Ownership transfer 只接受使用者明示或 current steward 的 durable transfer direction；
-machine-local handoff artifact 不授予 repo mutation。使用者當次明確改派的同機順序工作，只有符合 workflow
-「同機順序 local reassignment」前提才可先更新 assignment、重驗後續作；不因多個具名repo或已明確交接的髒檔重問相同指派。其餘正式切換必須依 workflow 的 transfer state machine，
+machine-local handoff artifact 不授予 repo mutation。使用者當次明確改派的同機順序工作，只有符合 authority
+「同機順序 local reassignment」前提才可先更新 assignment、重驗後續作；不因多個具名repo或已明確交接的髒檔重問相同指派。其餘正式切換必須依 transfer-workflow 的 state machine，
 由 current steward 在同一 transfer commit 同步**所有 active items**的 steward／writer／workspace／next step；
 該 commit 到達 canonical handover endpoint 前，舊 steward 仍是唯一 shared-dossier authority。若 checkout 已含
 next actor 的 pending coordination fields，任何 authority check 都必須定位 conditional owner record 所在 commit、
 fetch endpoint 並驗 remote-visible ancestry；不得只按字面欄位授權，證據不可得即 STOP。
 
 Bounded human delegation 不是 ownership transfer：durable steward 不變，runtime 只是本輪受指示的 executor。
-它不能代理 `claude:*`／`codex:*` steward；agent workline 的接續須符合 workflow 的 same-runtime exact-match 規則。
+它不能代理 `claude:*`／`codex:*` steward；agent workline 的接續須符合 authority 的 same-runtime exact-match 規則。
 Worker commit 若含 `STATUS.md`、backlog、history shard、shared plan 或 transfer guide，delta 已越界；不得原樣
 ship 或當作合格 cherry-pick。先由 worker 交出不含 shared surfaces 的 semantic commit，或由合法 steward
 在受控整合中重建 commit 並重新驗 diff／tests。

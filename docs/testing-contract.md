@@ -765,9 +765,16 @@ tool surface，首個實際被截斷的 chunk 必須出現在 trace。沒有注�
 無效／未確認案例，不能當作恢復通過。必讀 EOF 與 mutation timing 分別核對；normalizer 的行覆蓋
 PASS 不代表 authority 或 mutation oracle 自動通過。原始 host trace 同時保存完整 output 與 sent output。
 
-Serial／integration gate 只跑六個 offline normalization／transport regressions，不自動使用模型。
+Serial／integration gate 只跑七個 offline normalization／transport／local-provider regressions，不自動使用模型。
 最小單獨驗證：`python3 tests/project-reference-metrics-test.py`。不得用固定文字 grep 或 byte 節省冒充
 新版模型的行為收益，也不以此重做 #240 provider E2E 或宣稱 #229 剩餘 backlog 已驗收。
+
+階段路由的 `noop`／`spec`／`transfer`／Log 各有固定 required reference 集合；normalizer 驗行覆蓋，
+mutation timing 與授權仍需查 raw command。`ship-pr`／`merge-query` 使用明示替代 gh 的本機 provider，
+只推 fixture 的 local bare origin；前者驗 PR 終點，後者固定 pending → watch transport error →
+final non-watch error，必須停止且無 merge。Provider call log 與 Git 實態為 oracle；provider 不模擬
+完整 GitHub 參數／權限檢查，Codex sandbox 可能拒絕本地 tracking metadata，不能宣稱真 provider E2E。
+分階段結果與原始失敗見 `docs/plans/2026-10-04-project-reference-routing.md`。
 
 同一 opt-in runner 的 `tested`／`test-changed`／`test-unknown` cases 驗 Log 的本機測試沿用：
 setup 先實跑固定 interpreter 的真測試，保存原 command／exit／output／tested commit，再分別

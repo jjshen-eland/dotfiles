@@ -16,5 +16,6 @@ description: "Manages a work item's repository-resident lifecycle in three expli
 3. 先用 `<skill-dir>/scripts/read-reference.py` 逐段讀取 `workflow.md`，每次 tool call 只呼叫 reader 取得一個 chunk，不合併其他命令或結果；看見該檔 `EOF` 前不得執行任何 repo mutation。
    呼叫形式：`python3 "<skill-dir>/scripts/read-reference.py" workflow.md --start 1`；reference 引數只傳 basename。
    若首段缺少 `NEXT`／`EOF`，從最後完整可見的 `Lnnnnnn` 下一行續讀；`RANGE` 不代表已收到全部內容。
+   不用 `head`／`tail`／filter 裁切 reader output；缺 footer 仍按最後完整行續讀，不從第 1 行重試。
    依每段 `NEXT` 接續，完整讀取 [references/workflow.md](references/workflow.md) 後再由它分派模式並執行。
    核心 lifecycle、授權、STOP 與 mutation contract 只在 shared references/scripts；本入口不得另建一套。

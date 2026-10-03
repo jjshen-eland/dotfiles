@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import json
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -18,10 +19,33 @@ spec.loader.exec_module(normalizer)
 
 
 class MetricsTests(unittest.TestCase):
+    def test_local_provider_keeps_transport_failure_and_forbids_merge(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            provider = root / "provider.py"
+            shutil.copyfile(Path(__file__).with_name("project-routing-provider.py"), provider)
+            (root / "provider-case").write_text("merge-query")
+
+            def call(*args):
+                return subprocess.run([sys.executable, str(provider), *args],
+                                      capture_output=True, text=True, check=False)
+
+            first = call("pr", "checks", "7", "--required")
+            self.assertEqual(first.returncode, 8)
+            self.assertIn("pending", first.stdout)
+            for args in [("--required", "--watch"), ("--required",)]:
+                result = call("pr", "checks", "7", *args)
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("fixture transport error", result.stderr)
+                self.assertNotIn("pass", result.stdout)
+            self.assertEqual(call("pr", "merge", "7", "--admin").returncode, 2)
+            self.assertFalse((root / "pr-created").exists())
+            self.assertEqual(len((root / "provider-calls.jsonl").read_text().splitlines()), 4)
+
     def test_host_transport_cuts_only_one_reader_result(self):
         root = Path(__file__).resolve().parent.parent
         helper = root / "shared/skills/project/scripts/read-reference.py"
-        command = f"{shlex.quote(sys.executable)} {shlex.quote(str(helper))} workflow.md --start 1"
+        command = f"{shlex.quote(sys.executable)} {shlex.quote(str(helper))} workflow.md --start 1 --max-bytes 2000"
         requests = [
             {
                 "jsonrpc": "2.0",

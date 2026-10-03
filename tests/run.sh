@@ -833,8 +833,8 @@ else
     bad "skill-authoring scope 搬遷時漏掉 references/"
 fi
 # shellcheck disable=SC2016 # 比對 Markdown backtick 字面，不做 command substitution
-if grep -q 'doc-governance.*verdict: STOP' "$ROOT/claude/skills/project/references/log-workflow.md" \
-    && ! grep -q 'legacy `dossier: NONE` / doc finding' "$ROOT/claude/skills/project/references/log-workflow.md"; then
+if grep -q 'doc-governance.*verdict: STOP' "$ROOT/claude/skills/project/references/log-prepare.md" \
+    && ! grep -q 'legacy `dossier: NONE` / doc finding' "$ROOT/claude/skills/project/references/log-prepare.md"; then
     ok "log workflow 把 doc finding 當 STOP，不當未處理附註"
 else
     bad "log workflow 對 doc finding 的摘要表與 STOP 清單互相矛盾"
@@ -845,7 +845,7 @@ if [ -n "$scenario7" ] && ! grep -q 'STATUS.md.*關鍵決策.*死路' <<< "$scen
 else
     bad "pressure Scenario 7 缺少正向 anchor，或仍要求新 schema 禁止的 STATUS 歷史節"
 fi
-if grep -q 'STATUS-legacy-template.md' "$ROOT/claude/skills/project/references/workflow.md" \
+if grep -q 'STATUS-legacy-template.md' "$ROOT/claude/skills/project/references/spec-workflow.md" \
     && [ -f "$ROOT/shared/skills/project/templates/STATUS-legacy-template.md" ]; then
     ok "project spec 對 legacy repo 使用 legacy template"
 else
@@ -1576,7 +1576,7 @@ if echo "$out" | grep -q "files-vs-default: 1 檔"; then ok "三點 diff 列出 
 if echo "$out" | grep -q "branch-first: 已在 feature branch"; then ok "feature branch → 免 branch-first"; else bad "feature branch 誤判 branch-first"; fi
 
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ss-work")"
-# 無保護仍預設 PR（`claude/skills/project/references/log-workflow.md`「Step 1：逐 repo 狀態 + 流程偵測（先於任何 commit）」）——腳本 verdict 是 model 照抄的東西，
+# 無保護仍預設 PR（`claude/skills/project/references/log-prepare.md`「Step 1：逐 repo 狀態 + 流程偵測（先於任何 commit）」）——腳本 verdict 是 model 照抄的東西，
 # 印 DIRECT-PUSH 會與規則牴觸，等於誘導 agent 略過 PR（u3 eval 的 RED 即此形狀）
 if echo "$out" | grep -q "protection: OPEN" && echo "$out" | grep -q "ship-path: PR" \
     && ! echo "$out" | grep -q "ship-path: DIRECT-PUSH"; then
@@ -4060,28 +4060,28 @@ if ! rg -q "${runtime_tilde}/\\.dotfiles|${runtime_tilde}/.+(claude|codex)/skill
     "$PJS_CLAUDE/scripts"; then
     ok "project runtime core 無私人安裝路徑或產品 attribution 偶合"
 else bad "project runtime core 仍含私人／harness-specific path 或 attribution"; fi
-if grep -q 'repo contract.*優先' "$PJS_CLAUDE/references/log-workflow.md" \
-    && grep -q '沒有.*Conventional Commits.*fallback' "$PJS_CLAUDE/references/log-workflow.md" \
+if grep -q 'repo contract.*優先' "$PJS_CLAUDE/references/log-prepare.md" \
+    && grep -q '沒有.*Conventional Commits.*fallback' "$PJS_CLAUDE/references/log-prepare.md" \
     && grep -q 'repo contract.*PR title' "$PJS_CLAUDE/references/ship-paths.md" \
     && ! rg -q 'Step 3 只會產生 `docs:`|<type>/<slug>|type 取自.*feat/fix|commit -m "<type>:|^<type>: <精簡描述>' \
-        "$PJS_CLAUDE/references/log-workflow.md" "$PJS_CLAUDE/references/ship-paths.md" \
+        "$PJS_CLAUDE/references/log-prepare.md" "$PJS_CLAUDE/references/ship-paths.md" \
         "$PJS_CLAUDE/scripts/branch-first.sh" "$PJS_CLAUDE/scripts/ship-state.sh"; then
     ok "project commit／PR title 以 target repo convention 優先"
 else bad "project commit／PR title 未明定 repo convention 優先與 fallback"; fi
 if grep -q '## 平行協作與 stewardship' "$PJS_CLAUDE/references/dossier.md" \
     && grep -q 'Dossier delta' "$PJS_CLAUDE/references/dossier.md" \
-    && grep -q 'authority actor 必須等於所有 active items' "$PJS_CLAUDE/references/log-workflow.md" \
-    && grep -q 'Worker 呼叫 Log 時立即 STOP' "$PJS_CLAUDE/references/log-workflow.md" \
-    && grep -q 'active_item_contract' "$PJS_CLAUDE/references/workflow.md"; then
+    && grep -q 'authority actor 必須等於所有 active items' "$PJS_CLAUDE/references/log-prepare.md" \
+    && grep -q 'Worker 呼叫 Log 時立即 STOP' "$PJS_CLAUDE/references/log-prepare.md" \
+    && grep -q 'active_item_contract' "$PJS_CLAUDE/references/spec-workflow.md"; then
     ok "project shared workflow 區分 dossier steward 與 isolated worker"
 else bad "project shared workflow 缺 stewardship／worker STOP 契約"; fi
 if grep -q 'Scenario 24 — 身分宣稱不得冒充 steward actor' "$PJS_CLAUDE/references/pressure-tests.md" \
-    && grep -q 'ordinary identity claim.*not.*delegation' "$PJS_CLAUDE/references/log-workflow.md" \
-    && grep -q 'explicit-bounded-human-delegation' "$PJS_CLAUDE/references/log-workflow.md" \
-    && grep -q 'executor actor.*durable steward.*authority source' "$PJS_CLAUDE/references/log-workflow.md" \
-    && grep -q 'resume=.*same runtime' "$PJS_CLAUDE/references/log-workflow.md" \
-    && grep -q 'candidate-shared-surface' "$PJS_CLAUDE/references/log-workflow.md" \
-    && grep -q '本輪稍後由合法 steward 新建' "$PJS_CLAUDE/references/log-workflow.md"; then
+    && grep -q 'ordinary identity claim.*not.*delegation' "$PJS_CLAUDE/references/log-prepare.md" \
+    && grep -q 'explicit-bounded-human-delegation' "$PJS_CLAUDE/references/log-prepare.md" \
+    && grep -q 'executor actor.*durable steward.*authority source' "$PJS_CLAUDE/references/log-prepare.md" \
+    && grep -q 'resume=.*same runtime' "$PJS_CLAUDE/references/log-prepare.md" \
+    && grep -q 'candidate-shared-surface' "$PJS_CLAUDE/references/log-prepare.md" \
+    && grep -q '本輪稍後由合法 steward 新建' "$PJS_CLAUDE/references/log-prepare.md"; then
     ok "project stewardship gate 區分自然語言身分、workline resume 與 bounded human delegation"
 else bad "project stewardship gate 仍可能把『我是 owner』誤當 actor authority"; fi
 
@@ -4099,7 +4099,7 @@ else
     bad "project session binding regression"
 fi
 project_step2_and_3="$(sed -n '/^## Step 2：/,/^## Step 4：/p' \
-    "$PJS_CLAUDE/references/log-workflow.md")"
+    "$PJS_CLAUDE/references/log-prepare.md")"
 if grep -q 'Scenario 36 — Spec 後的 multi-repo' "$PJS_CLAUDE/references/pressure-tests.md" \
     && grep -q 'shared dossier.*candidate 前.*authority' <<< "$project_step2_and_3" \
     && grep -q -- '--candidate-parent' <<< "$project_step2_and_3" \
@@ -4119,7 +4119,7 @@ if grep -q -- '--completion-parent' <<< "$project_step2_and_3" \
     ok "project completion candidate 以 parent authority 驗證且不提前宣稱 shipped"
 else bad "project completion candidate 可在移除 active item 後洗掉 authority 或提前宣稱 shipped"; fi
 project_step4="$(sed -n '/^## Step 4：/,/^## Step 5：/p' \
-    "$PJS_CLAUDE/references/log-workflow.md")"
+    "$PJS_CLAUDE/references/log-prepare.md")"
 if grep -q 'summary-emitted: yes' <<< "$project_step4" \
     && grep -q '當前 invocation.*user-visible' <<< "$project_step4" \
     && grep -q 'post-push.*不算' <<< "$project_step4" \
@@ -4127,7 +4127,7 @@ if grep -q 'summary-emitted: yes' <<< "$project_step4" \
     ok "project Step 4 摘要必須在當前 invocation 的第一個 outward action 前可見"
 else bad "project Step 4 摘要仍可能延後到 push 之後"; fi
 project_step5="$(sed -n '/^## Step 5：/,$p' \
-    "$PJS_CLAUDE/references/log-workflow.md")"
+    "$PJS_CLAUDE/references/log-prepare.md")"
 if grep -q '進入條件' <<< "$project_step5" \
     && grep -q 'immediately preceding assistant content' <<< "$project_step5" \
     && grep -q '必須以.*Ship 摘要：.*開頭' <<< "$project_step5" \
@@ -4265,7 +4265,7 @@ if grep -q '^authority-source: prompt-bound-new-workline-confirmation$' <<< "$ps
     ok "steward gate 新 workline confirmation 只在 durable contract 落地後放行"
 else bad "steward gate new-workline confirmation 未重驗 durable contract"; fi
 
-project_authority_recovery="$(sed -n '/^## Prompt-bound authority recovery/,/^## /p' "$PJS_CLAUDE/references/log-workflow.md")"
+project_authority_recovery="$(sed -n '/^## Prompt-bound authority recovery/,/^## /p' "$PJS_CLAUDE/references/log-prepare.md")"
 if grep -q 'Scenario 26 — 可安全修復的 authority STOP 改用綁定式確認續行' "$PJS_CLAUDE/references/pressure-tests.md" \
     && grep -q 'normalized invocation arguments' <<< "$project_authority_recovery" \
     && grep -q '同一個 logical Project invocation' <<< "$project_authority_recovery" \
@@ -4284,7 +4284,7 @@ if grep -q 'Scenario 35 — 文字 fallback 保留完整編號選項' "$PJS_CLAU
     ok "project 文字 fallback 保留完整編號選項且不增加正常路徑成本"
 else bad "project 文字 fallback 仍可退化成確認／停止關鍵字或擴張預檢"; fi
 
-project_spec_completion="$(sed -n '/^### Spec 成功後的 Log invocation 提示/,/^## /p' "$PJS_CLAUDE/references/workflow.md")"
+project_spec_completion="$(sed -n '/^### Spec 成功後的 Log invocation 提示/,/^## /p' "$PJS_CLAUDE/references/spec-workflow.md")"
 if grep -q 'Scenario 27 — Spec 收尾同時提示短版與 exact resume 明確版' "$PJS_CLAUDE/references/pressure-tests.md" \
     && grep -q '不帶任何' <<< "$project_spec_completion" \
     && grep -q 'resume=.*as=' <<< "$project_spec_completion" \
@@ -4298,7 +4298,7 @@ if grep -q 'Scenario 27 — Spec 收尾同時提示短版與 exact resume 明確
     ok "project Spec 收尾只在 helper 精確證明時同列短版與 resume 明確版"
 else bad "project Spec 收尾未安全區分短版 invocation、workline binding 與新 endpoint 授權"; fi
 project_log_authority="$(sed -n '/^## Step 2：/,/^### Runtime steward retirement gate/p' \
-    "$PJS_CLAUDE/references/log-workflow.md")"
+    "$PJS_CLAUDE/references/log-prepare.md")"
 if grep -q 'Scenario 36 — Spec 後的 multi-repo' "$PJS_CLAUDE/references/pressure-tests.md" \
     && grep -q 'current-session binding packet' <<< "$project_spec_completion" \
     && grep -q 'Spec.*新建.*active contract.*current-session workline assignment' <<< "$project_spec_completion" \
@@ -4337,7 +4337,7 @@ if grep -q '^durable-steward: codex:integration$' <<< "$psg_parent_out" \
     && grep -q '^verdict: PASS$' <<< "$psg_parent_out"; then
     ok "steward gate 保留 completed-item 跨 session shipping liveness"
 else bad "steward gate 無法從 candidate parent 恢復 completed-item steward"; fi
-project_retired_steward_gate="$(sed -n '/^### Runtime steward retirement gate/,/^## /p' "$PJS_CLAUDE/references/log-workflow.md")"
+project_retired_steward_gate="$(sed -n '/^### Runtime steward retirement gate/,/^## /p' "$PJS_CLAUDE/references/log-prepare.md")"
 if grep -q 'Scenario 28 — runtime steward workline 結案不得留下 active dead reference' "$PJS_CLAUDE/references/pressure-tests.md" \
     && grep -q 'Step 0.*完整.*repo' <<< "$project_retired_steward_gate" \
     && grep -q 'completion milestone.*移除' <<< "$project_retired_steward_gate" \
@@ -4350,7 +4350,7 @@ if grep -q 'Scenario 28 — runtime steward workline 結案不得留下 active d
     && grep -q '不得宣告.*完成' <<< "$project_retired_steward_gate"; then
     ok "project Log 在 runtime steward workline 結案前消除跨 repo dead references"
 else bad "project Log 仍可能讓已結案 runtime actor 留在 active steward contract"; fi
-project_check_routing="$(sed -n '/^### merge 受阻時的分流/,/^## PR title/p' "$PJS_CLAUDE/references/ship-paths.md")"
+project_check_routing="$(sed -n '/^### merge 受阻時的分流/,/^## PR title/p' "$PJS_CLAUDE/references/merge-workflow.md")"
 project_no_checks_scenario="$(sed -n '/^## Scenario 29 /,/^## Scenario 30 /p' "$PJS_CLAUDE/references/pressure-tests.md")"
 project_eval_root="$TMP/project-no-checks-eval"
 "$ROOT/claude/evals/setup-sandboxes.sh" "$project_eval_root" gate u4 >/dev/null
@@ -4655,8 +4655,8 @@ else
     bad "project transfer credential metadata helper 尚未實作（RED）"
 fi
 
-if grep -q 'verify-transfer-credential.sh' "$PJS_CLAUDE/references/workflow.md" \
-    && grep -q 'private mode' "$PJS_CLAUDE/references/workflow.md" \
+if grep -q 'verify-transfer-credential.sh' "$PJS_CLAUDE/references/transfer-workflow.md" \
+    && grep -q 'private mode' "$PJS_CLAUDE/references/transfer-workflow.md" \
     && grep -q 'private mode' "$PJS_CLAUDE/templates/transfer-guide-template.md"; then
     ok "project transfer workflow 與模板接上 credential metadata gate"
 else bad "project transfer credential metadata gate 尚未接上 workflow／模板（RED）"; fi
@@ -4686,7 +4686,7 @@ if grep -q 'Scenario 29 — checks watch 的 transport failure 不得冒充 chec
     && grep -q '\-\-watch.*poller' <<< "$project_check_routing"; then
     ok "project checks watch 將 transport failure 分流為不確定並用 non-watch recheck 定案"
 else bad "project checks watch 仍可能把 transport failure 誤當 required-check verdict"; fi
-project_bootstrap_contract="$(sed -n '/^## Bootstrap：/,/^## Branch protection/p' "$PJS_CLAUDE/references/ship-paths.md")"
+project_bootstrap_contract="$(sed -n '/^## Bootstrap：/,/^## Branch protection/p' "$PJS_CLAUDE/references/ship-exceptions.md")"
 if grep -q 'Scenario 30 — 空 repo 首次 merge 不得把 feature branch 升成 default' "$PJS_CLAUDE/references/pressure-tests.md" \
     && grep -q 'bootstrap-baseline.sh' <<< "$project_bootstrap_contract" \
     && grep -q 'ship-state.sh --bootstrap-default' <<< "$project_bootstrap_contract" \
@@ -4696,17 +4696,17 @@ if grep -q 'Scenario 30 — 空 repo 首次 merge 不得把 feature branch 升�
     && grep -q 'required-policy: REQUIRED' <<< "$project_check_routing" \
     && grep -q 'UNOBSERVED' <<< "$project_check_routing" \
     && grep -q 'wait-required-enrollment.sh' <<< "$project_check_routing" \
-    && grep -q '重新取得.*required-policy' "$PJS_CLAUDE/references/log-workflow.md"; then
+    && grep -q '重新取得.*required-policy' "$PJS_CLAUDE/references/log-prepare.md"; then
     ok "project 空 repo bootstrap 採確認型 baseline UX、effective policy 與 post-push re-detection"
 else bad "project 空 repo bootstrap contract 未完整接上 #153 state machine"; fi
-if grep -q 'BLOCKED.*PREPARED.*TRANSFERRED' "$PJS_CLAUDE/references/workflow.md" \
-    && grep -q 'portable-knowledge' "$PJS_CLAUDE/references/workflow.md" \
-    && grep -q 'canonical handover endpoint' "$PJS_CLAUDE/references/workflow.md" \
-    && grep -q '所有 active items' "$PJS_CLAUDE/references/workflow.md" \
-    && grep -q 'in-flight.*未整合' "$PJS_CLAUDE/references/workflow.md" \
-    && grep -q 'conditional pending values' "$PJS_CLAUDE/references/workflow.md" \
-    && grep -q 'remote-visible ancestry' "$PJS_CLAUDE/references/log-workflow.md" \
-    && grep -q 'authorization.*不.*移交' "$PJS_CLAUDE/references/workflow.md" \
+if grep -q 'BLOCKED.*PREPARED.*TRANSFERRED' "$PJS_CLAUDE/references/transfer-workflow.md" \
+    && grep -q 'portable-knowledge' "$PJS_CLAUDE/references/transfer-workflow.md" \
+    && grep -q 'canonical handover endpoint' "$PJS_CLAUDE/references/transfer-workflow.md" \
+    && grep -q '所有 active items' "$PJS_CLAUDE/references/transfer-workflow.md" \
+    && grep -q 'in-flight.*未整合' "$PJS_CLAUDE/references/transfer-workflow.md" \
+    && grep -q 'conditional pending values' "$PJS_CLAUDE/references/transfer-workflow.md" \
+    && grep -q 'remote-visible ancestry' "$PJS_CLAUDE/references/log-prepare.md" \
+    && grep -q 'authorization.*不.*移交' "$PJS_CLAUDE/references/transfer-workflow.md" \
     && grep -q 'Scenario 23' "$PJS_CLAUDE/references/pressure-tests.md"; then
     ok "project transfer 有 portable-knowledge hard gate 與原子 stewardship 狀態機"
 else bad "project transfer 缺 BLOCKED/PREPARED/TRANSFERRED、可攜知識或原子切換契約"; fi

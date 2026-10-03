@@ -6,7 +6,7 @@ dossier 的量體訊號為什麼從 STATUS 總量擴到 always-on？	docs/archiv
 全域禁止整批 stage，審查流程原本需要先存 WIP，這個衝突最後怎麼處理？	docs/archive/decisions-2026-08.md	deep-review WIP snapshot	file-preamble	decision
 狀態盤點表裡的完成符號為何不該阻擋 ship？這個誤報最後如何收窄？	docs/archive/decisions-2026-08.md	進行中含 ✅	已結案技術債（2026-08-10 歸檔）	archive
 scope-priority 2 git diff --no-index untracked	claude/skills/deep-review/references/modes-and-scope.md	1. 確定審查範圍	1. 確定審查範圍	reference
-review-terminal 說法覆蓋不了 STOP AskUserQuestion	shared/skills/project/references/log-workflow.md	Step 4：Ship 摘要	Step 4：Ship 摘要	reference
+review-terminal 說法覆蓋不了 STOP AskUserQuestion	shared/skills/project/references/log-prepare.md	Step 4：Ship 摘要	Step 4：Ship 摘要	reference
 WIP snapshot review-anchor squash-cmd tests-baseline	claude/skills/deep-review/references/modes-and-scope.md	Autofix 模式	Autofix 模式	reference
 為什麼不把已知缺口定義收窄成我方可解？	docs/archive/dead-ends-2026-08.md	X-20260820-narrow-known-gap	事件記錄（event-time）	dead-end
 文件治理 pilot 完成了哪些能力與驗收？	docs/archive/milestones-2026-08.md	M-20260820-doc-governance-pilot	事件記錄（event-time）	milestone
