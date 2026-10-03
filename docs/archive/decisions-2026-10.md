@@ -69,3 +69,30 @@
   - 放棄:用少 finding／PASS／速度改預設；因到頂推論架構必錯；修復失敗退票、换 runtime 清零、借第二意見額度；以增加 prose 或自然語言評分器掩飾 transport／語意證據缺口
   - 重議:新的實際工作線證明預設妨礙完成品質，或發現具體機械旁路／packet 暴露／同根因漏修時，只固定該原因做對照；不自動追加審查輪或擴大模型矩陣
   - 關聯:D-20261003-review-repair-controller-direction;docs/plans/2026-10-03-review-repair-controller.md;shared/skills/deep-review/references/control.md;D-20260916-deep-review-self-report-accepted-limit;B-20260924-workflow-review-residuals
+
+
+- **D-20261003-project-test-evidence-reuse · 2026-10-03 Project 收尾先沿用測試證據，再按變更補驗**：使用者要求修正實作全綠後、相同程式與測試仍被 Log 重跑的浪費。ROOT CAUSE CONFIRMED 的範圍是本次 #259 前的 agent 計畫：把 kernel「混檔拆分後 clean clone」泛化為一般收尾；current shared Log 沒有明確的 evidence-first 步驟。使用者插問是取消重複計畫的 intervention，不能靠此維持未來正確性。兩端已 portable、共同 core 在 shared/skills/project，不改 topology；採最小共同 Log 修正，現有 Git diff／檔案 hash 足以核對，不另建 cache／receipt framework。
+  - 日期來源:direct
+  - 證據邊界:本批 production trace 是錯誤安排而非已重跑的 suite；其他歷史重跑不逐一推論。D-20261003-deep-plan-runner-python-compat 曾因 interpreter 3.14 → 3.9 發現真缺陷，是「相關環境改變需補驗」的有效反例，不可用此次節省取消該類檢查
+  - 放棄:每個 Log 一律重跑 full suite／native eval；用 commit SHA 作唯一失效條件；只看程式檔未變就忽略測試／依賴／fixture／環境；強迫補新格式 proof 才承認既有真實結果；把本機綠代替 required CI
+  - 重議:固定正常／stale／unknown native controls 若顯示新流程仍浪費或錯用證據，只修該具體原因；本次不改 provider／安全契約或引進全域测试快取
+  - 關聯:project-test-evidence-reuse;D-20260822-portable-project-skill;D-20261003-deep-plan-runner-python-compat;shared/skills/project/references/pressure-tests.md
+
+- **D-20261003-project-reuse-evidence-boundary · 2026-10-03 停止對測試證據判斷追加 prose patch**：固定十二次 native parent traces 顯示，正常沿用與 changed-input 分支可通過，但 Sonnet 在原 unknown case 與有界修正後仍錯把作者「All tests passed」摘要當可用證據。後次完整讀到四份 required reference，排除單纯漏讀為充分根因；既有成功是 model inference，不是可靠的 evidence gate。停止再疊文字與同 packet 抽樣，保留 draft candidate，未宣稱安全驗收／發佈完成。
+  - 日期來源:direct
+  - 放棄:再加禁止句洗綠；以 Codex 成功代替雙端完成；把 failed safety control 改成 non-blocking oracle；為已綠且無關的 checks 再跑全套
+  - 重議:使用者決定證據判斷的實作邊界後，再以已固定 unknown fixture 驗窄幅機械判定，或明確收窄本批目標並保留缺口；沒有決定前不自動引進 proof/cache framework
+  - 關聯:project-test-evidence-reuse;D-20261003-project-test-evidence-reuse;shared/skills/project/references/pressure-tests.md
+
+- **D-20261004-project-reuse-mechanical-check · 2026-10-04 採小型唯讀測試證據判定器**：使用者選定選項 1，解除前次停止追加 prose 的決策點。將結果欄位與精確輸入比對下沉腳本，輸出沿用／補驗／錯誤；既有 artifact 可直接讀，原 tool trace 可暫時正規化，不要求永久 receipt 或 cache。摘要不能補造命令、exit 或受測內容。Helper 不執行測試，不證明 artifact 真實性，也不自行推測完整相依與環境；這些依 target repo 與原執行證據核對。
+  - 日期來源:direct
+  - 驗收:先固定 summary-only、unchanged、changed 與 dirty/untracked 反例，再跑原 native 三案例；保留 required CI、條件式 clean clone 與 fresh shipping gates，不重跑無關矩陣
+  - 放棄:繼續增加禁止句、為每次收尾強制新快取制度、以相同 HEAD 保證所有輸入相同
+  - 關聯:project-test-evidence-reuse;D-20261003-project-reuse-evidence-boundary
+
+- **D-20261004-project-reuse-mechanical-adoption · 2026-10-04 Project 測試沿用完成機械與雙端行為驗收**：小型唯讀 helper 接到共同 Log，既有 JSON 直接檢查、原工具結果可暫時正規化，無永久 store。13 個真 Git／filesystem tests 在 Python 3.14／3.9 通過；新六次 native 均呼叫 helper，正常案例不重跑，changed／summary-only 各補一次，四份 reference EOF 與 Git／origin 不變均查證。保留先前十二次 prose 候選 trace，不能歸因為單純漏讀或直接推論 skill 長度造成失敗。
+  - 日期來源:direct
+  - 驗證:最後完整 parallel suite exit 0、1567／0，Codex validator、portable linkage、doc audit 通過。合併 output 相容性曾有 deterministic RED，修後補機械 checks 與 repo 必要全套，未重跑 schema／判定未受影響的六次 native。原始結果與範圍見 Scenario 38
+  - 邊界:helper 比對已聲明輸入，不能認證作者提交結果的真實性、自行推導完整相依或證明未記錄環境；symlink／submodule 不能只靠 Git anchor。Native 僅驗送出確認前 Log，不覆蓋 provider CI／merge；本批未 commit／push／部署
+  - 重議:有新真實 trace 顯示錯用／重跑時固定該原因，優先補機械 oracle；skill 載入量另以按模式實測與行為對照評估，不以固定行數刪規則
+  - 關聯:project-test-evidence-reuse;D-20261004-project-reuse-mechanical-check;shared/skills/project/references/pressure-tests.md

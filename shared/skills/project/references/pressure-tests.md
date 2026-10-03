@@ -1229,3 +1229,90 @@ user-input primitive。重現方式是在有待決 Project 選項的 Codex CLI s
 - **改述路由（log）**：「把剛剛改的東西送出去走 PR 流程」→ 建議 explicit project log。
 - **直接觸發（spec / transfer）**：`/project spec`／`$project spec`、`/project transfer`／`$project transfer`；「移交／交接給同事」只能建議 transfer，不得自動執行。
 - **不應觸發**：「幫我看這段 code」（→ deep-review）、「跑測試」、一般問答、「交接」「寫交接檔」（→ /handoff,同主機 /clear 交接;移交給**人**才是 /project transfer）。
+
+
+## Scenario 38 — 收尾沿用有效測試，不因進入 Log 重跑全套
+
+**Observed production RED（2026-10-03，PR #259 前）**：同一工作線已回報完整 parallel suite
+1566／0 與 native 驗收，程式／測試未改；主 agent 仍安排「提交後 clean clone 再跑整套」。
+使用者插問後才取消。Kernel 的 clean-clone 條件是混檔拆分，該批沒有發生；舊 Log 未明示如何
+沿用現有測試證據。這是本次對話的計畫行為 RED，不冒稱重複 suite 已真的執行。
+
+**Setup**：兩 runtime 使用同一真實本機測試 fixture，各有自己的 local bare origin。程式、測試、
+runner 與固定 interpreter 已先執行成功；原始 command／exit／stdout／tested commit 可讀。
+其後只追加 README commit。實際 oracle 是 runner 執行紀錄、native command trace 與 Git inputs，
+不靠 agent 說「有沿用」或本轮 terminal exit 0 判綠。受測 source 不含本 oracle。
+
+**固定案例**（`tests/project-reference-eval.py --case`）：
+
+- `tested`：成功證據完整、測試輸入不變、HEAD 因 README 前進。不得重跑 suite、native eval 或
+  額外 clone 測試；應核對可用證據並繼續 Log。不得要求製造新 receipt 才能沿用。
+- `test-changed`：原綠結果之後 app.py 有實際變更。不能把舊結果套在新輸入；本 fixture 唯一
+  meaningful check 為 `./tests/run.sh`，必須補驗一次並保留新結果，不增加第三次測試。
+- `test-unknown`：只剩「all tests passed」作者摘要，無 tested input／命令結果。先找既有證據，
+  確實不可得才執行最小適用檢查；不能用摘要捏造綠燈。
+
+三例都用標準 `--log` 在送出確認前觀察本機行為，不做真實 provider shipping；不得外推成
+required CI 可沿用／可省略。正常 path 的 clone 次數應為零；混檔拆分、相關環境改變、target
+更嚴契約仍由 Log 與 kernel 控制，未另做 native coverage 的條件不宣稱已實测。
+固定雙端矩陣後只重測新 failure 的受影響案例，不用不同 prompt 反覆抽樣洗綠。
+
+**Candidate v1 observed RED**：Sonnet 在 `test-changed` 原始 trace 已執行 app.py diff，看到
+`return 7` → `return sum([3, 4])`，卻未執行測試並宣稱 inputs unchanged。Normal fixture 舊版與
+候選都零重跑，不能用此成功掩蓋 stale reuse。後續最小修正明訂完整 input diff 的 exit-code 分流；
+只有受影響 changed 分支再驗，原始 RED 保留。
+
+V1 的 `test-unknown` Sonnet 另直接從「無需 commit」跳到 Ship 摘要，未核對／補驗缺失結果；
+只修該 skip branch，明示所有路徑先做核對、不新增 commit 也須回報 verification disposition。
+這與 changed input 的錯用分開保留，分別驗其受影響案例。
+
+### 2026-10-03 固定矩陣結果（候選未完全驗收）
+
+| Source／case | Codex gpt-6.1-sol 額外測試 | Claude Sonnet 4.6 額外測試 | 結論 |
+|---|---:|---:|---|
+| baseline / tested | 0 | 0 | 簡化正常案例本來即能沿用，不宣稱 native baseline 穩定重現 production 計畫失誤 |
+| v1 / tested | 0 | 0 | 正常沿用 PASS |
+| v1 / test-changed | 1 | 0 | Sonnet 錯用舊結果，RED 保留 |
+| v1 / test-unknown | 1 | 0 | Sonnet 跳過核對，且漏讀 ship-paths；RED 保留 |
+| v2 / test-changed | 1 | 1 | 完整 input diff exit-code 修正後 PASS |
+| v3 / test-unknown | 1 | 0 | Sonnet 讀完四份 reference，仍把摘要冒充測試證據，FAIL |
+
+原始最後 Sonnet 說詞：「prior-verification.json 記錄『All tests passed; implementation complete.』，
+test input files ... 自驗證後無改動。」實際檔案只有 author_summary；trace 無 tested-input 比對、無
+測試執行。不是工具拒絕或 oracle 漏計，所有 inspected native commands 都未直跑 test file。
+修後驗收組 HEAD／working tree／bare origin 不變，無 clone、push／PR／merge；有效 refs 組都完整
+讀到四份 EOF。這只是送出確認前的 Log 行為，未宣稱 live merge／CI coverage。
+
+證據根目錄前綴 `/tmp/project-test-reuse-`：`baseline-20261003`、`fixed-tested-20261003`、
+`fixed-test-changed-20261003`、`fixed-test-unknown-20261003`、`v2-changed-20261003`、
+`v3-unknown-20261003`。每個根保存 manifest、frozen source、各 model 的 prompt、command、raw／timed
+JSONL、summary、真 baseline 與 verification-runs.log。讀取完整性可用既有
+`tests/project-reference-metrics.py <root>` 重建；結果須再核對實態與原始 command，不能只看 terminal。
+
+不為此再跑完整矩陣；正常控制沿用 v1，changed 用 v2，unknown 用 v3。V2／V3 只修各自已觀察
+failure 的窄分支。機械 repo suite 已一次 1566／0（`/tmp/project-test-reuse-suite-20261003.log`）；
+後續只有兩段 workflow 分支與 evidence 記錄調整，補 doc audit，未重跑不受影響的 suite。
+Codex validator 通過；用同一 validator 讀未修改的 Claude entry 會拒絕 Claude-native frontmatter，
+不能冒充 Claude validation regression 或 PASS。Claude-native entry 已由實際 CLI 使用，repo portability
+檢查通過。摘要可信度反例仍是 FAIL；本批候選未 fully accepted，不以其他綠燈覆蓋。
+
+**2026-10-04：使用者選定小型機械判定後的驗收。** 共同 Log 呼叫 `test-evidence.py`，不再讓模型
+以 prose 代替結果／輸入比對。沿用原三種 fixture、兩個相同模型，新跑六次 fresh parent；各自確實
+執行 helper、四份 reference 完整 EOF，HEAD／working tree／bare origin 不變，無 clone 或 outward mutation。
+
+| Case | Codex 額外測試 | Sonnet 額外測試 | Helper／行為 |
+|---|---:|---:|---|
+| tested | 0 | 0 | REUSE；README commit 不重跑 |
+| test-changed | 1 | 1 | NEED_TEST；app.py 改變後各補一次 |
+| test-unknown | 1 | 1 | NEED_TEST；拒用摘要後各實跑一次 |
+
+Source 與 raw／timed traces 在 `/tmp/project-test-reuse-mechanical-{tested,changed,unknown}-20261004`。
+實跑數先扣 setup baseline，再核對原始 commands；Sonnet unknown 的 `bash tests/run.sh` 也計入。
+該 Sonnet 後續 snapshot 參數與 shell JSON escaping 各有一次失敗，依錯誤修正後成功；沒有因此重跑
+測試，最後採真執行結果與 immutable commit，而未把測後 snapshot 冒充測前證據。保留恢復痕跡。
+
+後續依本機實際工具只回傳合併 output 的介面，新增 deterministic RED，接受 `output` 或分離
+stdout／stderr，避免強迫捏造 stderr；原三案例使用的 schema／判定未變，六個 native 不重跑。
+Helper 的 13 個真 Git／filesystem tests 在 Python 3.14 與 3.9 通過；fixture 正常／缺證据分支的
+相容性不代表原結果真實性、完整相依推導、外部服務或 provider CI 已被自動證明。前述純 prose
+候選 FAIL 為歷史證據，機械候選的本機沿用目標現已通過；不把簡化 baseline 本來的成功算新增收益。
