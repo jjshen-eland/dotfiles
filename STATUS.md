@@ -12,19 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### Project reference 按執行階段載入
-
-- **Writer**：codex:project-reference-routing
-- **Workspace**：branch=refactor/project-reference-routing
-- **Write Scope**：shared/skills/project/, codex/skills/project/, claude/skills/project/, tests/, docs/project-spec.md, docs/testing-contract.md
-- **Dossier Steward**：codex:project-reference-routing
-- **Context**：使用者要求處理先前的 skill 長度分析；現行 Log 必讀四份 reference，連 noop 都載入其他模式與 provider 故障分支。#246 單純 mode split 曾無雙端收益，不重做同一候選。
-- **Goal**：依模式與實際執行階段降低無關必讀內容，保留 domain／authority／shipping 契約及 bounded reader。
-- **Acceptance Criteria**：雙端 fresh native trace 證明 noop／正常 Log 少讀無關內容、各階段 mutation 前已完整讀必要契約；Spec／Transfer／未授權 shipping／截斷恢復不退步；機械判定以腳本與真 fixture 驗證；適用 validators、repo suite、doc audit 通過。
-- **Constraints**：沿用 neutral shared core 與雙薄入口；不靠任意字數上限或刪安全規則；不做反覆 prose 審查；不新增持久 receipt／authority store；本輪只本機實作驗證，不 push／PR／merge／dotsync。
-- **進度**：共同 reference 已按盤點／結案／送出與条件例外拆分；雙端 noop 15→3 reader calls、約少 87% bytes。正常 Log 保留測試沿用，截斷修正版、Transfer 壓力與本機 provider 終點／CI 查詢失敗停止已驗；原始 RED 與限制保留在 plan。
-- **下一步**：本機結果待 shipping；使用者明示當批 endpoint 後核對既有證據與輸入差異，沿用適用結果，不因進入 Log 重跑全套。
-- **關聯**：D-20260822-portable-project-skill;D-20261002-project-model-bootstrap;X-20261002-project-loading-candidates;D-20261004-project-reuse-mechanical-adoption;D-20261004-project-stage-routing;docs/plans/2026-10-04-project-reference-routing.md
+目前無進行中項目。
 
 ## 暫停中
 
