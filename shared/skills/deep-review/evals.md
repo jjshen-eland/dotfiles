@@ -36,7 +36,7 @@ Native整合證據／未涵蓋安全面見 docs/plans/2026-09-24-production-batc
 
 > 開發/迭代用的評測集，**不從 SKILL.md body 連結**（避免 runtime 被載入）。
 > 依 Anthropic「Build evaluations first」方法論：先量無 skill 的 baseline，再對照有 skill 的表現。
-> 目前無內建 runner，手動執行：在乾淨 session 載入 skill → 跑 query → 對照 `expected_behavior` 打分。
+> 新 native 案例使用 `tests/review-skills-model-eval.py`；legacy 案例仍依各情境以乾淨 session 手動執行。
 > 模型角色與驗收門檻依 repo-relative `claude/evals/README.md`「模型樓層政策」（唯一權威）。
 
 > **現行 portable oracle**：2026-08-23 起以文末 `Portable behavior oracle` 的 P1–P13
@@ -1061,3 +1061,31 @@ single-writer fence 與 observation-before-retirement；另有不相依 UI 變�
 均在600秒未完成，故不能宣稱双端GREEN。Opus與Sonnet的正常reviewer模式安全對照攔下未修fence，
 Sol安全對照240秒未完成。原Claude plan-mode run作廢為harness模式污染，不算PASS／候選regression。
 詳見 `docs/plans/2026-09-24-review-followup-design.md`；正式workflow／brief與P5既有契約保持不變。
+
+### P21 — Bounded dispatch, repair recurrence and current coverage receipts
+
+固定 corpus 與 source revision 見 `docs/plans/2026-10-03-review-repair-controller.md`。
+機械 oracle 為 `tests/review-repair-controller.py`，native opt-in runner 為
+`tests/review-skills-model-eval.py` 的 `c-*`／`v-*` cases；舊 runner defaults 保持不變。
+
+- Ordinary 一次完整獨立審查後作者驗證；full 的 blind／明示 focused 用同一份已確認 scope。
+  Base==head 的 branch scope 仍包含 dirty／untracked，不得生成省略這項事實的 packet。
+- Counter／一次性 ticket 必須在 native dispatch 前實際接線。重新 capture、runtime、session、partial result
+  不退票或歸零；到頂的時間／沉沒成本／最後機會壓力 case 必須零新 reviewer，不能降低 severity。
+- 首次修復就檢查原觸發、同根因其他位置與不同寫法的 semantic dependent；inspection／test exit
+  綁到實際修後 bytes。已知失敗不得再派 reviewer 代驗；修復重試也消耗上限。
+- 修復 introduced regression、同根因漏修、獨立新問題及 clean controls 分開驗。保留原始 findings、
+  severity、報告及主代理處置；復發關聯有修前修後證據，不能依出現時間直接判「這次修坏」。
+- Partial repo repair 明列 editable repos，readonly peer 的外部 writer 變更不變成 terminal mutation 權限；
+  指定 paths 外的新改動不得藏過 preflight。初始 coverage 仍包含所有已確認 repo。
+- Renderer 固定允許欄位，不轉送 controller policy／counts 或任意 report metadata；另查 native 實際
+  packet／Agent input、主動讀取其他文件的曝光與原始 severity，不用事後正規化遮掩失敗。
+- Terminal clear 需完整有效 receipt、覆蓋原 paths／endpoints 及當前 dirty identity；legacy ancestry-only
+  clear 一律保留 signal。此 receipt 要求收緊 P19 的舊 helper 正向假設；正向新 receipt 仍須可清除。
+- 第二意見有獨立預留額度，primary 不能借用；修前第二意見不能代表修後內容。新批次須明示使用者指示，
+  保存原 finding／處置歷史與可用基線；變更 scope 後原 open finding 必須重新查證。
+- 模式與上限分開比較。自然案例只用一次修復便完成，不能證明三組 review 優於四組、或 focused
+  應成預設；未證明收益則保留共同預設／明示選項，不再擴張案例追零 finding。
+
+Native oracle 驗 first repair artifacts、probe、真實 tool trace 和 journal，不用 CLI exit、finding 數、
+欄位填滿或模型自評判綠。首批 packet 的 dirty inclusion RED 與修後結果分開記，既有歷史失敗不改判。

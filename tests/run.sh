@@ -3902,6 +3902,8 @@ if [ ! -e "$ROOT/codex/skills/deep-review" ] \
     && [ "$RRS_CODEX/references/workflow.md" -ef "$DRS_CLAUDE/references/workflow.md" ] \
     && [ "$RRS_CODEX/references/portable-reviewer-brief.md" -ef "$DRS_CLAUDE/references/portable-reviewer-brief.md" ] \
     && [ "$RRS_CODEX/scripts/review-scope.sh" -ef "$DRS_CLAUDE/scripts/review-scope.sh" ] \
+    && [ "$RRS_CODEX/scripts/review-control.py" -ef "$DRS_CLAUDE/scripts/review-control.py" ] \
+    && [ "$RRS_CODEX/references/control.md" -ef "$DRS_CLAUDE/references/control.md" ] \
     && [ "$RRS_CODEX/scripts/review-terminal.sh" -ef "$DRS_CLAUDE/scripts/review-terminal.sh" ]; then
     ok "Claude deep-review 與 Codex repo-review 薄殼共用 portable core"
 else bad "repo-review 薄殼未完整共用 deep-review canonical core 或仍有重複入口"; fi
@@ -3977,12 +3979,18 @@ assert_eq "deep-review show 不改 anchor" "$drs_before_show" "$(cat "$drs_ancho
 assert_rc "deep-review PASS scope 未涵蓋舊 terminal → 保留 signal" 5 $?
 "$DRS_CLAUDE"/scripts/review-terminal.sh clear --repo "$drs_tmp/repo" \
     --base "$drs_base" --head "$drs_head" >/dev/null
-assert_rc "deep-review PASS scope 涵蓋 terminal → 清除 signal" 0 $?
-if grep -qx 'base=legacy-compatible' "$drs_anchor" && ! grep -q '^terminal_' "$drs_anchor"; then
-    ok "deep-review terminal helper 保留 legacy anchor 非 terminal 欄位"
-else bad "deep-review terminal helper 破壞 legacy anchor 或殘留 terminal signal"; fi
+assert_rc "deep-review ancestry 涵蓋但缺 receipt → 保留 legacy signal" 5 $?
+if grep -qx 'base=legacy-compatible' "$drs_anchor" && grep -q '^terminal_reason=' "$drs_anchor"; then
+    ok "deep-review 缺 coverage receipt 時同時保留 legacy 與 terminal 欄位"
+else bad "deep-review terminal helper 破壞 legacy anchor 或清掉未知 coverage"; fi
 drs_show="$("$DRS_CLAUDE"/scripts/review-terminal.sh show --repo "$drs_tmp/repo")"
-assert_eq "deep-review clear 後 show 不把 legacy 當 terminal" "" "$drs_show"
+assert_eq "deep-review 拒絕 ancestry-only clear 後 signal 保持原樣" "$drs_before_show" "$(cat "$drs_anchor")"
+if python3 "$ROOT/tests/review-repair-controller.py" "$ROOT" >"$TMP/review-repair-controller.out" 2>&1; then
+    ok "review controller：有界派遣、修復驗證、有效 coverage receipt 與唯讀保護"
+else
+    cat "$TMP/review-repair-controller.out"
+    bad "review controller behavior regression"
+fi
 
 echo "▶ 12c. project skill 跨 Claude Code／Codex 共用核心"
 python3 "$ROOT/tests/project-reference-metrics-test.py" >"$TMP/project-reference-metrics-test.out" 2>&1

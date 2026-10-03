@@ -105,6 +105,12 @@ merge base as a new scope and wait for confirmation.
 
 ## 3. Partition and start isolated reviewers
 
+Read [control.md](control.md) completely. Open/resume the shared controller with
+all confirmed manifests and the selected route/authorization. Review form is
+blind or focused; ordinary/full is the risk route, and missing facts, decisions
+and exhaustion are control states. Keep the default blind/three-repair policy;
+only explicit `--focused` or `--repair-limit` choices select alternatives.
+
 Choose non-overlapping primary assignments before delegation. Respect an explicit
 reviewer limit and the runtime's actual concurrency cap:
 
@@ -127,6 +133,9 @@ Do not give the complete broad scope to every reviewer. If capacity cannot cover
 the confirmed scope, narrow assignments honestly and report the unreviewed
 portion as `BLOCKED`; never imply full coverage.
 
+Submit the assignments to `admit`, then consume its ticket with `dispatch` before
+starting any reviewer. A nonzero gate means no dispatch. Give each reviewer the
+generated packet only; never pass the journal or this orchestration protocol.
 Use a new reviewer with no parent conversation history for every assignment:
 
 - **Claude Code:** create a new independent Agent. Do not resume or reuse an
@@ -183,9 +192,14 @@ contradiction, stale command, or broken reference in an instruction artifact is
 blocking only when following it can cause wrong behavior. “Could say more” is
 not a blocking defect.
 
-After all assignments return, compare the planned partition with the returned
-reports. Deduplicate overlapping findings and state any missing assignment or
-cross-repository pass; an absent result is incomplete coverage, not a clean pass.
+After all assignments return, preserve their native IDs and original reports,
+submit `finish`, then independently verified `assess` dispositions. Compare the
+planned partition with returned reports. Deduplicate overlapping findings and
+state any missing assignment or cross-repository pass; an absent result is
+incomplete coverage, not a clean pass. Keep raw severity separate from disposition.
+Use source evidence to distinguish unresolved original roots, repair-introduced
+or exposed defects, independent findings and unknowns. A recurring root requires
+diagnosis of the repair method and dependency coverage before another patch.
 
 Run the target repository's authoritative relevant checks. Preserve their exit
 codes. If no meaningful check exists, report `UNVERIFIED`; do not invent a
@@ -226,8 +240,9 @@ Before the first edit:
   A conflict in one repository does not transfer its ownership or prohibit
   independent authorized work elsewhere. Keep the conflicting repository wholly
   read-only, including Git metadata and terminal signals.
-- Set a finite repair limit before starting: default three repair cycles, never
-  more than five. Never raise or reset it after the first reviewer starts.
+- Use the controller's frozen repair limit and `repair-start` before each attempt.
+  Default three repair cycles, never more than five; never raise or reset it after
+  the first reviewer starts. A failed preflight consumes an attempt too.
 
 Fix only independently verified blocking findings. Before editing, search for
 all same-class occurrences and semantic dependents: callers and callees,
@@ -239,24 +254,28 @@ values.
 After each repair batch:
 
 1. Inspect the actual diff and confirm it contains only authorized, owned work.
-2. Run the relevant authoritative checks. A failure caused by this repair remains
+2. Run the relevant authoritative checks through controller `check`. A failure caused by this repair remains
    in the bounded repair loop; do not ask for the same repair authorization again.
    Missing checks or unrelated environment faults block acceptance, not independent
    authorized work. Do not expand scope to repair that environment.
-3. Capture a new manifest for the repaired subject.
+3. Submit `repair-finish` with original-trigger, same-class, input-invariant and
+   semantic-dependent evidence. It binds executed checks and actual deltas to new
+   manifests; a known failure, stale snapshot or incomplete proof blocks another
+   reviewer. Diagnose failed attempts before spending another repair slot. The
+   helper validates evidence structure and execution, not semantic truth.
 4. For ordinary review, the author verifies each original finding against the
    actual repair, same-class occurrences, affected contracts and relevant tests.
    Record the finding disposition and evidence. Do not dispatch another reviewer
    unless new concrete high-risk evidence triggers the full path or the user
    explicitly requested another independent review. This is author verification,
    not a second independent opinion. For the full path, start a new fresh-context
-   reviewer set with the same isolation contract.
-   For `repair_followup=focused` supplied by the runtime entry, provide the original
+   reviewer set with the same isolation contract, after controller admission.
+   For explicitly selected focused follow-up, the generated packet provides original
    findings and evidence locations, actual repair diff/endpoints, and semantic
    dependents as a navigation packet, never an expected verdict or author defense.
    Verify the repair, all same-class occurrences and affected contracts; expand
    only for new concrete risk evidence. Do not rediscover unrelated unchanged scope.
-   When the entry omits this setting, retain the prior full-partition blind review
+   Without that selection, retain the prior full-partition blind review
    without earlier findings or repair summaries. Neither route receives pass numbers
    or remaining budget; both require complete independently verified results.
 5. When a new reviewer was required, independently verify its findings again.
@@ -285,14 +304,15 @@ edited. This writes Git metadata; never call record or clear for a read-only or
 ownership-conflicted repository. Report its blocker without writing there:
 
 ```text
-<skill-root>/scripts/review-terminal.sh record --repo <repo> --reason <blocking-findings|blocked-review> --head <current-head>
+python3 <skill-root>/scripts/review-control.py terminal-record --state <state> --repo <repo> --reason <blocking-findings|blocked-review>
 ```
 
-After an autofix `PASS`, clear an older compatible signal only when the reviewed
-base/head prove that this review covered it:
+After an autofix `PASS`, clear an older compatible signal only with a valid receipt
+covering its paths, endpoints and current dirty content. Preserve legacy signals
+without sufficient coverage evidence:
 
 ```text
-<skill-root>/scripts/review-terminal.sh clear --repo <repo> --base <review-base> --head <review-head>
+python3 <skill-root>/scripts/review-control.py terminal-clear --state <state> --repo <repo>
 ```
 
 Autofix authorization alone does not authorize commit, push, PR creation, merge,
@@ -310,6 +330,11 @@ be built, stop autofix and report the blocking claim as unresolved.
 Run a second independent reviewer only when the user requested it. Start it from
 fresh context with the same raw scope and brief, not the primary verdict or
 findings. Independently verify its output and report it as a separate component.
+It uses the same controller and its reserved second-opinion slot, never a new
+batch. Exhaustion stops dispatch; only a new explicit user instruction permits
+`new-batch`, preserving evidence. Recommend focused for an already verified local
+repair with a valid baseline, blind for a newly confirmed changed/invalid scope;
+do not infer the mode solely from the count or a failed verdict.
 
 If the primary review passed but the requested second reviewer produced no valid
 result, retain `Primary: PASS`, mark `Second review: BLOCKED`, and use top-level

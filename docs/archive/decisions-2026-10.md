@@ -54,3 +54,18 @@
   - 放棄:因 NO-GO 自動升到盲審／第三輪；用新批次丟棄既有證據；根據少 finding、GO、exit 0、單次速度或合成歷史直接改預設；為補 prose 繼續追加 review
   - 重議:新的自然工作線實際證明預設模式／上限妨礙完成品質，或出現具體 cap bypass／budget 暴露／漏掉相依真 blocker 的 trace 時，再固定單一受影響案例；不自動展開下一輪研究
   - 關聯:D-20261003-deep-plan-state-routing-direction;docs/plans/2026-10-03-deep-plan-state-routing.md;B-20260924-workflow-review-residuals
+
+- **D-20261003-review-repair-controller-direction · 2026-10-03 Code review 以修復復發證據與有界派遣建立 spec**：使用者明示 `$project spec`，將 deep-review／repo-review 的同根因漏修、修復引入問題、模式分流與上限收斂成 STATUS.md 的 review-repair-controller active contract。方向是保留 ordinary 一次審查，對需要獨立複審的工作落實 code-review 專用 controller、scope／repair lineage、派遣前驗證及有效 receipt 才能清除 terminal signal；不直接複製 deep-plan 的 plan carrier 或固定 reviewer 數。先驗修復完整性，再消耗 reviewer；復發須診斷修法與相依覆蓋，不能只升輪次或推論架構錯誤。模式與預算獨立比較，「首次盲審＋最多兩次 focused」仍是候選，未改正式預設。本次僅建立 spec，尚未實作或啟動新 native eval。
+  - 日期來源:direct
+  - 證據邊界:基線 a94a8efa8ee64e1054831e55c6c5fb87627360ec 的 portable workflow 已有同類掃描與修後驗證；legacy 修復軌跡模板不代表當前入口已接線。合成 helper probe 重現反覆 capture／autofix-check 及僅 ancestry 即可 clear terminal 的介面缺口，不宣稱已觀察 native reviewer 違約。使用者的兩種修復浪費與輪次壓力回報作驗收案例來源，語意根因判定仍受既有不可機檢限制約束。
+  - 放棄:重做無收益的 prose／checklist ablation；只提高上限或靠提示自律；沒有有效基線就 focused；把首次晚發現等同修復引入；藉漏修／partial result 退票或重開批次；復活 legacy commit-count loop；以填表完整度或自然語言評分器保證同根因全修
+  - 重議:固定案例顯示 controller 阻擋正常可完成工作、focused 漏掉真相依問題、候選上限無品質收益，或真實工作線提供新的 scope／cap／terminal／severity failure 時，保留原始證據並只重測受影響原因
+  - 關聯:review-repair-controller;D-20261003-review-skills-retain-core;D-20261003-deep-plan-controller-adoption;D-20260924-review-repair-verification-choice;D-20260916-deep-review-self-report-accepted-limit;B-20260924-workflow-review-residuals;shared/skills/deep-review/references/workflow.md
+
+- **D-20261003-review-repair-controller-adoption · 2026-10-03 Code review 落實有界派遣與修復證據，保留共同盲審／三次修復預設**：兩入口接到同一 controller，先消耗一次性派遣與修復額度、驗完整結果與 fresh identities，再接獨立處置。修復驗證執行真實檢查並綁 snapshot，保留同根因／引入／揭露／獨立新 finding 的來源；已知失敗不得再花 reviewer。Terminal clear 改需當前完整 PASS receipt，legacy ancestry-only signal 保留。Ordinary 仍一次 reviewer 加作者驗證；full 預設盲審、三次修復（可明選一至五次），focused 明示 opt-in。達上限為 FAIL／BLOCKED 控制狀態，只有新使用者指示才能開新批次，保留證據；有效基線加局部修正可建議 focused，scope／契約改變先重新確認盲審範圍。這是本機實作決策，未 commit／發佈。
+  - 日期來源:direct
+  - 理由:baseline 與修正後候選在同一自然 fixture 都一次修好同根因兩處與 consumer；blind／focused 均兩組 reviewer 後實際 probe 通過，不能聲稱 controller 新增了模型的修復能力，也不能以此支持縮到兩次修復、提高上限或更改模式預設。機械收益是實測的 cap／ticket／scope／check／receipt 缺口被攔下；兩種 reviewer-stage 回歸與獨立 finding 均能發現，clean 不製造 blocker
+  - 限制:Codex native task payload 加密，不能逐字證明 isolation；Sonnet 改寫 packet、用 path 代替內容，Sonnet 與 Opus 均有摘要替代原報告，transport／receipt 未通過，保留原始 RED。Controller 可保留提交的原 severity，但不能證明提交內容忠於 native report 或 free-text 根因證據完整；不宣稱全域隔離或 B-20260924-workflow-review-residuals 整筆結案。Dirty packet 與 content-hash 的 observed failures 各只重測受影響案例，結果留 plan
+  - 放棄:用少 finding／PASS／速度改預設；因到頂推論架構必錯；修復失敗退票、换 runtime 清零、借第二意見額度；以增加 prose 或自然語言評分器掩飾 transport／語意證據缺口
+  - 重議:新的實際工作線證明預設妨礙完成品質，或發現具體機械旁路／packet 暴露／同根因漏修時，只固定該原因做對照；不自動追加審查輪或擴大模型矩陣
+  - 關聯:D-20261003-review-repair-controller-direction;docs/plans/2026-10-03-review-repair-controller.md;shared/skills/deep-review/references/control.md;D-20260916-deep-review-self-report-accepted-limit;B-20260924-workflow-review-residuals

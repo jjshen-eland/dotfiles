@@ -6,7 +6,7 @@ usage() {
     cat >&2 <<'EOF'
 usage:
   review-terminal.sh record --repo <path> --reason <token> --head <commit>
-  review-terminal.sh clear --repo <path> --base <commit> --head <commit>
+  review-terminal.sh clear --repo <path> --state <controller-state>
   review-terminal.sh show --repo <path>
 EOF
     exit 2
@@ -25,7 +25,7 @@ rewrite_without_terminal() {
     local anchor="$1" tmp
     tmp="${anchor}.tmp.$$"
     if [ -f "$anchor" ]; then
-        awk '!/^terminal_(reason|head|at)=/' "$anchor" > "$tmp"
+        awk '!/^terminal_/' "$anchor" > "$tmp"
     else
         : > "$tmp"
     fi
@@ -54,34 +54,11 @@ record_terminal() {
 }
 
 clear_terminal() {
-    local repo="$1" base="$2" head="$3" anchor terminal_head tmp
-    base="$(git -C "$repo" rev-parse --verify "$base^{commit}" 2>/dev/null)" || {
-        echo "error: invalid --base commit" >&2
-        return 4
-    }
-    head="$(git -C "$repo" rev-parse --verify "$head^{commit}" 2>/dev/null)" || {
-        echo "error: invalid --head commit" >&2
-        return 4
-    }
-    anchor="$(anchor_path "$repo")" || return $?
-    [ -f "$anchor" ] || { echo "terminal: NONE"; return 0; }
-    terminal_head="$(sed -n 's/^terminal_head=//p' "$anchor" | head -1)"
-    [ -n "$terminal_head" ] || { echo "terminal: NONE"; return 0; }
-    if ! git -C "$repo" cat-file -e "$terminal_head^{commit}" 2>/dev/null \
-        || ! git -C "$repo" merge-base --is-ancestor "$base" "$terminal_head" 2>/dev/null \
-        || ! git -C "$repo" merge-base --is-ancestor "$terminal_head" "$head" 2>/dev/null; then
-        echo "terminal: PRESERVED"
-        echo "reason: reviewed endpoints do not prove coverage of $terminal_head"
-        return 5
-    fi
-    tmp="$(rewrite_without_terminal "$anchor")"
-    if [ -s "$tmp" ]; then
-        mv "$tmp" "$anchor"
-    else
-        rm -f "$tmp" "$anchor"
-        rmdir "$(dirname "$anchor")" 2>/dev/null || true
-    fi
-    echo "terminal: CLEARED"
+    # Legacy endpoint-only callers cannot prove paths, dirty content or a valid
+    # reviewer result. Keep their signal; the controller owns receipt validation.
+    echo 'terminal: PRESERVED'
+    echo 'reason: a current controller PASS receipt is required; ancestry alone is insufficient'
+    return 5
 }
 
 show_terminal() {
@@ -97,17 +74,27 @@ show_terminal() {
 [ "$#" -gt 0 ] || usage
 command="$1"
 shift
-repo="" reason="" head="" base=""
+repo="" reason="" head="" base="" state=""
 while [ "$#" -gt 0 ]; do
     case "$1" in
         --repo) [ "$#" -ge 2 ] || usage; repo="$2"; shift 2 ;;
         --reason) [ "$#" -ge 2 ] || usage; reason="$2"; shift 2 ;;
         --head) [ "$#" -ge 2 ] || usage; head="$2"; shift 2 ;;
         --base) [ "$#" -ge 2 ] || usage; base="$2"; shift 2 ;;
+        --state) [ "$#" -ge 2 ] || usage; state="$2"; shift 2 ;;
         *) usage ;;
     esac
 done
 [ -n "$repo" ] || usage
+
+if [ -n "$state" ]; then
+    script_dir="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)"
+    case "$command" in
+        clear) exec python3 "$script_dir/review-control.py" terminal-clear --state "$state" --repo "$repo" ;;
+        record) exec python3 "$script_dir/review-control.py" terminal-record --state "$state" --repo "$repo" --reason "$reason" ;;
+        *) usage ;;
+    esac
+fi
 
 case "$command" in
     record) [ -n "$reason" ] && [ -n "$head" ] && [ -z "$base" ] || usage; record_terminal "$repo" "$reason" "$head" ;;

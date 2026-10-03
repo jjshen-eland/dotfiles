@@ -7,6 +7,8 @@ description: Deeply reviews local repository changes with independent fresh-cont
 
 Runtime strategy: `review_strategy=single-pass-v1`. Accept `--full` as the
 shared workflow's explicit full-review selector; it does not authorize autofix.
+Accept explicit `--focused` and `--repair-limit <1..5>` selections through the
+shared [controller protocol](references/control.md); defaults remain unchanged.
 
 Review a precisely bounded local change set without inheriting the author's
 conclusions. Default to read-only reporting; modify files only when the user
@@ -17,6 +19,8 @@ Resolve `<skill-root>` as the directory containing this `SKILL.md`. Read
 starting any reviewer, require that reviewer to read
 [references/portable-reviewer-brief.md](references/portable-reviewer-brief.md)
 completely before inspecting the target.
+Before any reviewer dispatch or repair, use
+[scripts/review-control.py](scripts/review-control.py) as specified by that protocol.
 
 Use [scripts/review-scope.sh](scripts/review-scope.sh) to capture and re-verify
 each repository's review subject. Treat a failed scope check as `BLOCKED`; never
