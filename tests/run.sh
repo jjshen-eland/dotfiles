@@ -3993,6 +3993,12 @@ else
 fi
 
 echo "▶ 12c. project skill 跨 Claude Code／Codex 共用核心"
+if python3 "$ROOT/tests/project-test-evidence-test.py" >"$TMP/project-test-evidence-test.out" 2>&1; then
+    ok "project test evidence：摘要拒用、相同輸入沿用、變更補驗與 dirty 快照"
+else
+    cat "$TMP/project-test-evidence-test.out"
+    bad "project test evidence regression"
+fi
 python3 "$ROOT/tests/project-reference-metrics-test.py" >"$TMP/project-reference-metrics-test.out" 2>&1
 project_metrics_rc=$?
 assert_rc "project native trace normalizer：完整末行／partial／重讀／截斷有效性／cache 計費" 0 "$project_metrics_rc"
@@ -4002,7 +4008,7 @@ assert_rc "session skill eval transport：私人路徑 probe 不執行／fixture
 PJS_CLAUDE="$ROOT/claude/skills/project"
 PJS_CODEX="$ROOT/codex/skills/project"
 project_scripts_shared=1
-for script_name in bootstrap-baseline.sh branch-first.sh cleanup-stale-branch.sh doc-governance.py read-reference.py ship-state.sh steward-authority.py wait-required-enrollment.sh; do
+for script_name in bootstrap-baseline.sh branch-first.sh cleanup-stale-branch.sh doc-governance.py read-reference.py ship-state.sh steward-authority.py test-evidence.py wait-required-enrollment.sh; do
     [ "$PJS_CLAUDE/scripts/$script_name" -ef "$ROOT/shared/skills/project/scripts/$script_name" ] \
         && [ "$PJS_CODEX/scripts/$script_name" -ef "$ROOT/shared/skills/project/scripts/$script_name" ] \
         || project_scripts_shared=0

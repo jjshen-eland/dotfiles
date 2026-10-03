@@ -769,6 +769,20 @@ Serial／integration gate 只跑六個 offline normalization／transport regress
 最小單獨驗證：`python3 tests/project-reference-metrics-test.py`。不得用固定文字 grep 或 byte 節省冒充
 新版模型的行為收益，也不以此重做 #240 provider E2E 或宣稱 #229 剩餘 backlog 已驗收。
 
+同一 opt-in runner 的 `tested`／`test-changed`／`test-unknown` cases 驗 Log 的本機測試沿用：
+setup 先實跑固定 interpreter 的真測試，保存原 command／exit／output／tested commit，再分別
+只改 README、改程式、或只留下不可查證摘要。`verification-runs.log` 的第一筆是 setup baseline；
+模型階段新增執行次數須與原始 tool trace 交叉核對（直接執行 test file 也算，不可漏計）。
+這些 case 用 `--once`，受測 frozen source 排除 pressure oracle；僅做到標準 Log 的送出確認，
+不宣稱驗過 provider CI 或 merge。完整行為判準見 Project `pressure-tests.md` Scenario 38。
+
+`tests/project-test-evidence-test.py` 對真 Git fixture 驗唯讀判定器：summary-only／失敗或缺欄位拒用，
+接受原工具的合併 output 或分離 stdout／stderr，不捏造缺失 stream；
+README commit 不使程式測試失效，tracked／dirty／mode／ignored／untracked 變更需補驗；原內容快照
+涵蓋 dirty／untracked 與 symlink target，environment map 有提供時精確比對。Git anchor 不能單獨證明
+symlink target／submodule 的受測內容。此 helper 不證明原紀錄真實性、相依範圍完整或未記錄的環境穩定，
+也不執行測試、不建立 cache；native oracle 另驗模型真的呼叫 helper 並按 verdict 行動。
+
 ## Session skills native eval（2026-10-02）
 
 `tests/session-skills-model-eval.py` 是 opt-in handoff／ready4quit CLI runner；重用 project native capture，

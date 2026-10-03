@@ -366,12 +366,32 @@ Prompt-bound decision 與 normalized invocation arguments 分開，不寫入 mem
 
 ## Step 3：Adaptive 提交
 
+**先沿用可用的測試證據，再補驗**：所有 Log 路徑（含無需新增 commit）都核對既有結果。
+**Run `python3 <skill-dir>/scripts/test-evidence.py check --root <repo> --evidence <record.json>`
+for each result considered for reuse. Do not replace the helper with a prose verdict.**
+既有 JSON 直接交給 helper；實際 tool trace／log／CI 的結果可暫時正規化後用 `--evidence -` 傳 stdin，
+不要求永久 receipt／cache。欄位為 `command`、整數 `exit`、`output`（或 `stdout`＋`stderr`）、完整 `inputs` 路徑清單，
+以及真正受測的 `tested_commit` full OID 或原 `input_snapshot`。只有作者摘要時仍交 helper；
+NEVER invent missing execution fields or label a current snapshot as a past test's inputs.
+
+Helper exit 0／`REUSE` 表示成功結果與所列輸入相符；核對原證據來源、範圍與環境仍適用後沿用。
+exit 1／`NEED_TEST` 先找缺失的原證據，否則只補受影響檢查；exit 2／`ERROR` 先釐清檢查錯誤。
+Git anchor 比對包含 tracked dirty、untracked／ignored 檔；dirty 測試或 symlink targets 可用原內容快照。
+需要新測試時可於前後執行 `snapshot --root <repo> --input <path> ...`，兩次一致才綁定該結果。
+Helper 不執行測試，也不推測相依範圍：核對程式、測試、runner／設定、依賴／lockfile、fixture、
+受驗 skill instructions 及相關工具鏈／服務／資料；有原 `environment` map 時傳 `--environment '<current JSON>'` 比對。
+
+有效結果不因 commit／branch／stage／session 改變而失效，不重跑同一 suite／native eval。
+純結案文件只補相關 doc／xref checks；未知相依範圍或 repo 明訂時才擴至全套。
+保留 target repo 更嚴要求、kernel「混檔拆分後 clean clone」、本輪 doc／authority／shipping gates
+及當前 PR HEAD 的 required CI（依 `ship-paths.md`）；不把條件式 clean clone 擴成每次 Log 通則。
+
 依 reviewed code 的狀態決定文檔如何「一起提交」。**前提：送出前所有 reviewed code 都必須已 commit**——working tree 不留未 commit 的 code，否則 Step 5 會送出不完整變更集。
 
 - **code 未 commit**（review 在 working tree）：`git add` 程式 + 文檔 → 一個或多個符合 target repo convention 的語意 commit，code 與其文檔**同 commit**。
 - **code 已 commit**（例如 review 前本來就在 feature branch commits）：文檔另起符合 target repo convention 的 docs commit（沒有規定時用 `docs: …`），**同 branch**（同 PR 一起出）。**不 amend、不重寫已 review 的 commit。**
 - **mixed state**（部分 code 已 commit、部分仍在 working tree——如 Step 1 情況 B 搬移後又改了東西）：**先**把 working-tree 的 code 補成語意 commit（與已 commit 的同 branch），**不可只補文檔 commit 就送出、把未 commit 的 code 留在 working tree**；code 全部 commit 後再依「code 已 commit」處理文檔。
-- 無文檔需更新且 code 已 commit → 本步不產生 commit。
+- 無文檔需更新且 code 已 commit → 核對／補驗完成後，本步不產生 commit；摘要仍交代沿用或補驗的結果與未驗部分。
 
 > **與 Step 4 squash 選項的交互**：使用者若在 Step 4 選了「先 squash 再送出」，本步產生的 commit 會被收進那顆 squash commit（reset 目標是 Step 1 記下的邊界，位於本步之下）。這**不違反**上面「不 amend、不重寫已 review 的 commit」——那條護的是**已經過 review 的 code commit**，而本步的 docs/code commit 是本輪剛產生的新物。squash commit 的 message 因此要同時涵蓋「這批 review 修復」與「本輪文檔同步」。
 
