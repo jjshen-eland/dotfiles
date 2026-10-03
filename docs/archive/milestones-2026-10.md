@@ -141,3 +141,9 @@
   - 放棄:同一 commit 抹掉唯一 assignment；以 no-active-items 洗掉 completion parent provenance；未取得 remote-visible evidence 就宣稱已 merge
   - 重議:completion gate、clean clone、required checks 或 merge 受阻時，保留 pending 事實並依本批 shipping contract 處理
   - 關聯:49ac6061e36299187b2773abd9040355e4f9424b;M-20261003-deep-plan-state-routing-local;D-20261003-deep-plan-controller-adoption;docs/plans/2026-10-03-deep-plan-state-routing.md
+
+- **M-20261003-deep-plan-ci-repair-candidate · 2026-10-03 PR #258 的 manifest 修復候選，endpoint pending**：`84dd13e6fa165ecf34792c2c483b04f705cb133c` 將 integration assertion manifest 更新為 1155，並保留同一工作線的 active assignment。原始 CI summaries 重播已由 mismatch／exit 1 轉為 aggregate 1565／0、exit 0；首輪兩平台 failure 保留為失敗證據。單 repo post-completion view 無其他 active item 指向本 actor，paused gaps 原樣保留；此候選移除修復完成的 active item，以修復 parent 重驗 completion authority。修復與配套結案共兩顆追加 commit，不重寫歷史，frozen plan 不變；新 clean-clone parallel suite 及新 HEAD required CI 仍待驗證，尚未 merge。
+  - 日期來源:direct
+  - 放棄:放寬聚合器；以 serial suite 代替平行聚合驗證；把舊 HEAD 結果套在新 HEAD；以候選完成冒充 endpoint
+  - 重議:parallel suite、authority 或 required CI 未通過時，保留 failure 並依本批額度處理
+  - 關聯:84dd13e6fa165ecf34792c2c483b04f705cb133c;X-20261003-deep-plan-ci-shard-manifest;PR#258;tests/shard-manifest.tsv
