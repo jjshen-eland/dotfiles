@@ -62,3 +62,10 @@
   - 放棄:新版模型本身會查證就刪通用列表；把未授權實作的前提 gate 直接當內容缺陷；以 token 減量、輸出短或 finding 數為改善
   - 重議:有可重現實際漏報、誤阻擋或 scope 擴張，且單一內容變因證明可歸因完成品質收益時
   - 關聯:D-20260925-instruction-quality-scope;docs/plans/2026-10-03-deep-plan-model-behavior.md;tests/deep-plan-model-eval.py
+
+- **X-20261003-deep-plan-ci-shard-manifest · 2026-10-03 Controller assertion 漏同步 parallel manifest**：PR #258 首輪 required run `37117107801` 的 macOS 15／Ubuntu 24.04 都是 core 171、ship_state 239、integration 1155 PASS 且零失敗，聚合器因 manifest 仍宣告 integration 1154 而 exit 1。本批 tests/run.sh 新增唯一 controller assertion 是計數差異來源；clean-clone serial suite 1565/0 不涵蓋平行聚合器。抽取真實 Ubuntu SHARD_RESULT 重現相同 exit 1，僅將 manifest 更新為 1155 後，原資料得到 SHARD_AGGREGATE pass=1565 fail=0 shards=3／exit 0。恢復同一 actor 的 active contract，Write Scope 僅補此 assertion 的配套 manifest；不改 frozen plan、不重寫已 push commits，後續以 parallel suite 與新 HEAD required CI 驗證。
+  - 日期來源:direct
+  - 證據:run `37117107801`；`/tmp/deep-plan-ci-37117107801.log`；真實 summaries 的本機聚合器 RED→GREEN
+  - 放棄:只重跑 serial suite；放寬 count equality；刪除新增 assertion；以 shard 零失敗冒充 CI 成功
+  - 重議:新增或移除 assertion 時同步 manifest，並以 CI 的 parallel runner 驗證
+  - 關聯:PR#258;X-20261003-session-skills-ci-shard-manifest;tests/shard-manifest.tsv;tests/run.sh
