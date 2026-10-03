@@ -134,3 +134,10 @@
   - 限制:Native 內容與來源暴露不是全綠，見 adoption decision；保留兩輪與盲審預設，不以合成第三輪推導自然收斂率，既有 review residual backlog 未結案
   - 範圍:本機 branch=feat/deep-plan-state-routing；未 commit／push／merge／部署。無 commit endpoint 授權，依 project workflow 保留 active assignment 與完成證據，避免後續 completion parent 失去 provenance
   - 關聯:D-20261003-deep-plan-controller-adoption;D-20261003-deep-plan-state-routing-direction
+
+- **M-20261003-deep-plan-routing-completion · 2026-10-03 Deep-plan 狀態控制工作線結案 candidate**：依本次 `$project --merge` 授權，先以 49ac6061e36299187b2773abd9040355e4f9424b 提交實作、測試、implemented plan 與完整 assignment，再從 STATUS 移除已驗收的 deep-plan-state-routing。唯一 locked root 為 dotfiles，post-completion 沒有 active contract 指向 retiring codex:deep-plan-state-routing，其他 paused items 不變；本工作項結案，PR／merge endpoint 仍 pending。
+  - 日期來源:direct
+  - 驗收:本機完整 suite exit 0、1565/0；20 routing＋2 transport tests、雙 validators、native 實態及限制見 M-20261003-deep-plan-state-routing-local。Candidate 仍須 parent authority、doc audit、乾淨 clone 與 required checks 通過後才可 merge
+  - 放棄:同一 commit 抹掉唯一 assignment；以 no-active-items 洗掉 completion parent provenance；未取得 remote-visible evidence 就宣稱已 merge
+  - 重議:completion gate、clean clone、required checks 或 merge 受阻時，保留 pending 事實並依本批 shipping contract 處理
+  - 關聯:49ac6061e36299187b2773abd9040355e4f9424b;M-20261003-deep-plan-state-routing-local;D-20261003-deep-plan-controller-adoption;docs/plans/2026-10-03-deep-plan-state-routing.md
