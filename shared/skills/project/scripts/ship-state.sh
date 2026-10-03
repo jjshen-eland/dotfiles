@@ -940,7 +940,7 @@ detect_branch_diverged() {
 # 殘留 branch 衛生：已**完全併入** default 的 local / remote branch。
 # 動機：merge 最後一哩只清它自己 merge 的那支——規則生效前的老 branch、或走別條路
 # 合併的 branch 會無聲累積（實證：dotfiles 累到 2 支，是偶然跑 branch --list 才發現，
-# 流程從未告知）。與 dossier 衛生同性質：只印訊號，處置見 `../references/log-workflow.md`「Step 4：Ship 摘要 → 確認（critical-op gate）」。
+# 流程從未告知）。與 dossier 衛生同性質：只印訊號，處置見 `../references/log-prepare.md`「Step 4：Ship 摘要 → 確認（critical-op gate）」。
 #
 # 判定用本地 ref、不碰網路——代價是 remote-tracking 可能含**已在遠端刪除但本地未
 # prune 的殘影**，故 cleanup-cmd 前置 `fetch --prune`（先對齊再刪，殘影會自己消失）。
@@ -1337,7 +1337,7 @@ check_repo() {
     echo "$prot"
     detect_required_policy "$repo" "$remote" "$default"
     case "$prot" in
-        # 無保護**仍預設 PR**（見 `../references/log-workflow.md`「Step 1：逐 repo 狀態 + 流程偵測（先於任何 commit）」）。
+        # 無保護**仍預設 PR**（見 `../references/log-prepare.md`「Step 1：逐 repo 狀態 + 流程偵測（先於任何 commit）」）。
         # 直推 feature branch 是 escape hatch，需使用者明說不用 PR——故此處印 PR，
         # 不印 DIRECT-PUSH：verdict 是 model 照抄的東西，兩邊不一致等於留一個誘導錯誤的破口
         *OPEN*) echo "ship-path: PR（${default} 無保護，但預設仍開 PR；使用者明說「不用 PR」才退為直推 feature branch，絕不直推 ${default}）" ;;

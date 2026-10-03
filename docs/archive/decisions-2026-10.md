@@ -96,3 +96,10 @@
   - 邊界:helper 比對已聲明輸入，不能認證作者提交結果的真實性、自行推導完整相依或證明未記錄環境；symlink／submodule 不能只靠 Git anchor。Native 僅驗送出確認前 Log，不覆蓋 provider CI／merge；本批未 commit／push／部署
   - 重議:有新真實 trace 顯示錯用／重跑時固定該原因，優先補機械 oracle；skill 載入量另以按模式實測與行為對照評估，不以固定行數刪規則
   - 關聯:project-test-evidence-reuse;D-20261004-project-reuse-mechanical-check;shared/skills/project/references/pressure-tests.md
+
+- **D-20261004-project-stage-routing · 2026-10-04 Project 改為按執行階段載入必要契約**：使用者要求處理 skill 長度分析；保留 shared core、雙薄入口與完整 domain／authority／shipping 契約，改以唯讀盤點、結案、送出／merge、條件例外逐階段載入。沿用既有 helpers，不新增模型判斷的機械替代品或持久 store。固定雙端 noop packet 從 15 次 reader、約 147 KB 降至 3 次、約 19.6 KB，Git 不變；正常 Log 仍呼叫 test-evidence 並零重跑。Spec 首次 Sonnet 自加 head 後重讀為 RED，入口最小修正後雙端 fresh footer-loss 從 L11 續讀、全部 EOF 後才寫入。Transfer 壓力拒 secret／commit；local provider PR 停在 PR，merge-query 在最後 non-watch query failure 後 STOP，無 merge。
+  - 日期來源:direct
+  - 邊界:載入收益不是注意力或整體品質的保證；provider stub、Codex 本地 tracking sandbox、兩個缺 governance 文件的 forward fixtures 均有實測限制，未宣稱真 GitHub E2E 或全部輸出品質已驗。保留原始 RED 與未通過的 fixture；不重跑同材料洗綠
+  - 放棄:再做 #246 純 mode split；只縮薄入口或按固定字數刪安全契約；將 normalizer／terminal success 視為 authority 或 mutation oracle；另建無必要的 controller／receipt
+  - 重議:實際新 trace 顯示 stage 漏讀、越權、false noop、輸出品質回歸或收益不成立時，固定該原因只驗受影響路徑；不追加全面 prose 審查
+  - 關聯:project-reference-routing;X-20261002-project-loading-candidates;D-20261004-project-reuse-mechanical-adoption;docs/plans/2026-10-04-project-reference-routing.md;shared/skills/project/references/pressure-tests.md

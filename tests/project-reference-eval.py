@@ -98,13 +98,26 @@ def fixture(root, model, source, case):
     )
     first = f"{sigil} --log .\n\n本次沒有新變更或待送出的工作，請按現行流程處理。這次請使用本 fixture 的 {location} 作為入口。"
     reuse = f"{sigil} --log .\n\n同一工作再檢查一次；本次仍沒有新變更或待送出的工作。使用同一 fixture 入口。"
-    if case == "committed":
+    if case in {"committed", "ship-pr", "merge-query"}:
         (w / "README.md").write_text(
             "# Tiny fixture\n\nNo active work or pending delivery.\n\nUsage: read the README before editing.\n"
         )
         git(w, "add", "README.md")
         git(w, "commit", "-qm", "docs: add README usage note")
         first = f"{sigil} --log .\n\nREADME 變更已在目前 feature branch commit，尚未 push。請完成現行收尾準備；本輪尚未選定送出終點。請使用本 fixture 的 {location} 作為入口。"
+    if case in {"ship-pr", "merge-query"}:
+        provider = p / "provider.py"
+        shutil.copyfile(REPO / "tests/project-routing-provider.py", provider)
+        provider.chmod(0o755)
+        (p / "provider-case").write_text(case)
+        endpoint = "--pr" if case == "ship-pr" else "--merge"
+        first = (
+            f"{sigil} {endpoint} .\n\nREADME 變更已 commit，請完成這批工作至指定終點。"
+            f"請使用本 fixture 的 {location} 作為入口。\n"
+            f"這是隔離本機 repo，origin 是本機 bare repo。所有 GitHub 查詢與操作使用 {provider} "
+            f"取代 gh（相同 argv）；ship-state 使用 SHIP_STATE_GH={provider}。"
+            "不要呼叫真 gh 或連外。Git 操作可在本 fixture／local origin 執行。"
+        )
     if case == "spec":
         first = f"{sigil} spec .\n\n為這個 README 補上使用說明建立開工規格。目標是新使用者能找到啟動與驗證步驟；完成條件是 README 說明與實際可執行命令一致。這輪只建立規格，尚不實作或送出。請使用本 fixture 的 {location} 作為入口。"
     if case == "transfer":
@@ -408,13 +421,13 @@ def main():
         else pathlib.Path(tempfile.mkdtemp(prefix="project-246-fixed-"))
     )
     if args.action == "setup":
-        if args.case not in {"noop", "committed", "spec", "transfer", "tested", "test-changed", "test-unknown"}:
+        if args.case not in {"noop", "committed", "spec", "transfer", "tested", "test-changed", "test-unknown", "ship-pr", "merge-query"}:
             raise SystemExit("Unsupported case; dirty ownership must be explicit")
         root.mkdir(exist_ok=True)
         source = pathlib.Path(args.source).resolve() if args.source else root / "source"
         if not args.source:
             snapshot(source, args.revision)
-        if args.case in {"tested", "test-changed", "test-unknown"}:
+        if args.case in {"tested", "test-changed", "test-unknown", "ship-pr", "merge-query"}:
             # Isolate the new behavior cases from their scoring oracle, including
             # when the caller supplies a source shared by other experiments.
             if args.source:

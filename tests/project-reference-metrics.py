@@ -190,6 +190,27 @@ def metrics(p, tag, source):
     return summary
 
 
+def required_references(case, source):
+    """Expected route, independent of the agent's claimed reads or final verdict."""
+    refs = source / "shared/skills/project/references"
+    if (refs / "log-prepare.md").exists():
+        if case == "noop":
+            return {"workflow.md", "log-workflow.md", "ship-policy.md"}
+        if case in {"spec", "transfer"}:
+            return {"workflow.md", "authority.md", "dossier.md", case + "-workflow.md"}
+        expected = {"workflow.md", "log-workflow.md", "ship-policy.md",
+                    "authority.md", "dossier.md", "log-prepare.md", "ship-paths.md"}
+        if case.startswith("merge"):
+            expected.add("merge-workflow.md")
+        return expected
+    expected = {"workflow.md", "dossier.md"}
+    if case not in {"spec", "transfer"}:
+        expected |= {"log-workflow.md", "ship-paths.md"}
+    elif (refs / (case + "-workflow.md")).exists():
+        expected.add(case + "-workflow.md")
+    return expected
+
+
 def main():
     for arg in sys.argv[1:]:
         root = pathlib.Path(arg)
@@ -201,24 +222,7 @@ def main():
                 if not (p / (tag + ".summary.json")).exists():
                     continue
                 m = metrics(p, tag, source)
-                required = {"workflow.md", "dossier.md"}
-                case = manifest["case"]
-                if case in {"noop", "prepare", "committed"}:
-                    required |= {"log-workflow.md", "ship-paths.md"}
-                if (
-                    case == "spec"
-                    and (
-                        source / "shared/skills/project/references/spec-workflow.md"
-                    ).exists()
-                ):
-                    required.add("spec-workflow.md")
-                if (
-                    case == "transfer"
-                    and (
-                        source / "shared/skills/project/references/transfer-workflow.md"
-                    ).exists()
-                ):
-                    required.add("transfer-workflow.md")
+                required = required_references(manifest["case"], source)
                 if tag == "first":
                     missing = required - set(m["references"])
                     m["reader_protocol_errors"] += [

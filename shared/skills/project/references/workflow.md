@@ -1,24 +1,19 @@
-# Project shared workflow — 跨 runtime／harness 收尾與 Critical Step 0–5
+# Project shared workflow — 模式與階段路由
 
-本檔是 Claude Code `/project` 與 Codex `$project` 的共同核心。入口會提供 **normalized invocation
+本檔是 Claude Code `/project` 與 Codex `$project` 的跨 harness 收尾載入路由；Log 的 Critical／Step 0–5 依下表分階段載入。入口會提供 **normalized invocation
 arguments** 與它自己的 skill directory；先把該目錄下的 `scripts/`、`templates/` 解析成絕對路徑
 `<project-scripts>`、`<project-templates>`。任一資源不存在就 STOP；NEVER 假設私人 checkout 或 runtime
 安裝路徑。
 
-涵蓋工作項三個時點：開工（spec）、收尾送出（log）、移交（transfer）。每次執行先完整讀取
-[dossier.md](dossier.md)；它定義 adopted repo 的 active／backlog／history 生命週期與 legacy fallback。
-跨 runtime／harness 的 project 收尾前，由本檔分派 Log 模式並完整載入 `log-workflow.md` 的 Critical
-與 Step 0–5；薄入口不得用摘要或自身記憶替代。
-
 ## 必讀 reference 的有界讀取協定
 
-薄入口已先用 `<project-scripts>/read-reference.py` 讀取本檔；本節也 governs 後續所有必讀 reference。
+薄入口已先用 `<project-scripts>/read-reference.py` 讀取本檔；本節也 governs 下表各階段的必讀 reference。
 每次 tool call 只讀一個檔案的一個 chunk，不得把多檔、多段或其他命令合併／平行塞進同一份回傳。
 從 `--start 1` 開始，逐段核對 `REFERENCE`、固定不變的 `SHA256`、連續且不重複的 `Lnnnnnn` 行號，並依
 `NEXT` 接續；只有看見該檔的 `EOF` 才算完整讀取。若同一檔的 SHA 改變，從 line 1 重新讀取。
 
-每個必要reference首次使用須完整讀取：`dossier.md`；Log另讀`log-workflow.md`與`ship-paths.md`。
-Spec／Transfer只在workflow／dossier導向時載入其他reference。同session已完整收到EOF、內容仍在
+每個階段只讀下表所列 prerequisite；條件分支只在觸發時讀取。
+同session已完整收到EOF、內容仍在
 可用context且實際檔案SHA256未變時沿用，不因內部stage切換、插問或重驗從頭再讀。
 新session、只剩摘要／memory、內容遺失或SHA改變才重讀；搜尋命中不算完整讀取。
 典型呼叫如下，`NEXT` 的值成為下一次 `--start`：
@@ -29,7 +24,7 @@ python3 "<project-scripts>/read-reference.py" dossier.md --start 1
 
 若 host 在 `NEXT`／`EOF` 前截斷輸出，該 chunk 不完整：從最後一個**完整收到**的 `Lnnnnnn` 下一行恢復；
 半行不算。若連一個完整編號行都沒有，降低 `--max-bytes` 並以同一 cursor 重試。正常分段不需向使用者報告；
-只有實際發生 host 截斷才簡短說明恢復。所有當輪必讀檔案都出現 `EOF` 前，不得修改 repo、commit、push、
+只有實際發生 host 截斷才簡短說明恢復。目前階段的全部 prerequisite 都出現 `EOF` 前，不得執行該階段的修改 repo、commit、push、
 開 PR、merge 或 cleanup；read-only 盤點可以繼續。這個 transport 協定不放寬任何 mode、授權、STOP 或
 shipping 規則。
 
@@ -43,258 +38,24 @@ normalized invocation arguments 的第一個 token 分派模式，其餘 token �
 - 其他或無模式引數 → 預設 Log；與舊 `/uap` 相容。
 - mode flag 可出現在任意位置；spec／transfer 的 repo token 沿用 Log Step 0 的 path resolver。
 
-## Runtime actor 與 stewardship authority
+模式確定後依下表載入。**No mutation before its stage prerequisites reach EOF.**
+Log 的盤點是唯讀；即使引數是 `--merge`，也先盤點，不預載未進入的阶段。
+各 reference 只有一份 canonical source；路由不授權任何原本未授權的動作。
 
-入口固定提供 runtime actor prefix（Claude Code=`claude`；Codex=`codex`）。任何 agent session 都不得因
-Git author、GitHub login、同 runtime、private memory 或使用者普通自然語言身分宣稱而改成另一 actor。
-一般路徑只有 normalized invocation arguments 裡的兩個結構化 control token 能改 authority resolution：
+| 階段／觸發 | 先完整讀取 | 接著做 |
+|---|---|---|
+| Log 盤點 | [log-workflow.md](log-workflow.md)、[ship-policy.md](ship-policy.md) | Step 0/1 唯讀偵測；真的無工作就結束 |
+| Log 有變更或 docs-only 工作 | [authority.md](authority.md)、[dossier.md](dossier.md)、[log-prepare.md](log-prepare.md) | branch-first、authority、文件、測試證據、commit、摘要準備 |
+| Log 準備送出摘要 | [ship-paths.md](ship-paths.md) | 讀完再印 Step 4 Ship 摘要，依授權終點執行 Step 5 |
+| Log 的終點含 merge | 另讀 [merge-workflow.md](merge-workflow.md) | CI、merge、自己分支 cleanup；在第一個 outward call 前讀完 |
+| Spec／Log 的合法 Spec subflow | [authority.md](authority.md)、[dossier.md](dossier.md)、[spec-workflow.md](spec-workflow.md) | 只寫 active contract，不 commit |
+| Transfer／任何模式發現 pending transfer 或 conditional owner | [authority.md](authority.md)、[dossier.md](dossier.md)、[transfer-workflow.md](transfer-workflow.md) | 先判 effective steward，再做合法操作 |
+| bootstrap、fork／身分分離、branch rescue fallback、review squash、push failure | [ship-exceptions.md](ship-exceptions.md) | 在對應處置之前讀取；STOP 不授權 workaround |
 
-- `resume=<runtime:workline>`：恢復 exact durable workline；值必須是入口提供的 same runtime prefix。
-- `as=<human-or-owner>`：只接受 `human:*`／legacy `owner:*`，代表本輪 explicit bounded human delegation；
-  不改 durable steward、不 carry 到下一輪、不能代理 `claude:*`／`codex:*`。
-
-「我是 repo owner」「我就是 maintainer」等 ordinary identity claim is not delegation，也不是 resume／transfer；
-不要從普通對話自行補 token。另有下述當次 session 工作線指派；它不改 normalized invocation arguments。
-首次尚無指派時，不需重建 invocation 的 recovery，是 helper 本輪先以 STOP 揭露唯一 exact
-actor 與 snapshot，Project 隨即提出綁定該 repo／actor／action 的確認題，使用者直接選擇後以
-`prompt-bound-*` provenance 重驗。這個 recovery decision 與 normalized invocation arguments 分開，不改 durable
-owner、不 carry 到下一輪或 session，也不授予 invocation 原本沒有的 shipping endpoint。
-
-**當次 session 工作線指派**：使用者在本段仍有效的對話明確要求由你接續整個、可唯一識別的同-runtime
-work item，且當時已核對 canonical repo、exact actor、所有 active items 的 Writer／Workspace／Write Scope／
-Steward 與 item identity，則這份指派不因下一個 Project invocation 自動失效。首次 recovery 選項也可明示
-「本 session 接續這條工作線；每批外向動作仍另行授權」。僅同意前一顆 commit／本輪 invocation 的舊回答
-不得擴成此指派。保持原 assignment snapshot／helper 輸出的 fingerprint 在當前對話，不寫 memory、checkpoint
-或 authority store；fingerprint 只是新鮮度證據，不是授權憑證。
-
-後續同工作項先重查 repo／scope／writer 衝突及 transfer 狀態，再以 `--session-resume-actor <exact-actor>`、
-`--expected-assignment <指派當時的fingerprint>` 與**本輪新查證**的 `--expected-head <full-oid>` 重跑 helper。
-必須回 `current-session-workline-binding`／PASS 才續作，不重問相同接續問題。不得拿目前 fingerprint 取代舊值
-消除 mismatch；既有完整 assignment snapshot 可依 helper 同一演算法求舊 fingerprint，缺舊證據就走一般 recovery。
-常規 progress／HEAD 前進不撤销指派；branch 名稱不等於 actor，但當前 diff 仍須屬原 work item 與 write scope。
-assignment 改變、work item 已移除、撤回／改派、PREPARED transfer、human delegation、跨 runtime 或新 session
-皆不可沿用；仍用既有 gate 處理。任何外向 endpoint 必須另有當次授權，此指派不授予 push／PR／merge。
-
-除下節「同機順序 local reassignment」的欄位更新外，在任何 adopted active-state mutation、commit 或 shipping 前執行：
-
-```sh
-python3 "<project-scripts>/steward-authority.py" --root "$repo" --runtime <runtime> \
-  [--resume-actor <resume-value> | --as-human <as-value> | \
-   --session-resume-actor <actor> --expected-assignment <fingerprint> | \
-   --confirmed-resume-actor <actor> | --confirmed-human <actor> | --confirmed-new-steward <actor>] \
-  [--commit <worker-commit>] [--expected-head <full-oid>]
-```
-
-exit 0 且 `verdict: PASS`／`NOT_APPLICABLE` 才能繼續；exit 1 是 policy STOP；exit 2 是 helper／repo BROKEN。
-若存在 PREPARED transfer／conditional owner evidence，先依 Transfer state machine 解出 effective durable steward，
-不可讓本 helper 取代 remote-visible ancestry gate。每次報告保留 helper 的 executor actor、durable steward、
-authority actor、authority source 四行；`--merge` 等 endpoint 說法不參與 authority 計算。Initial STOP 若含
-`recovery-kind`，只是一個可詢問的 deterministic classification，不是放行；confirmed flag 只能在 Project 已
-提出 exact prompt 且收到其緊接回答後使用。Log 的完整 prompt／revalidation 契約見
-`log-workflow.md`「Prompt-bound authority recovery」。
-
-## 同機順序 local reassignment
-
-適用於使用者當次明確把已識別的工作與其文件維護交給本agent，並確認前任已停、沒有並行writer。
-同runtime或跨runtime皆可；「我是owner」、舊artifact、process不存在或單獨說前任退出不是指派。
-此路徑適用Spec與Log，不要求為相同指派另開Spec invocation或再問是否換steward。
-
-先核對各具名repo的adoption／trusted-core、active items、worktree與dirty paths。多repo要一起核對，
-不能把其中一個repo的同意擴成其他repo的指派；所有active items必須屬於此次具名工作與同一前任，
-不能轉走未被指派的其他工作。必要private-only事實、活躍writer、未整合且影響不明的workspace、
-formal transfer／conditional owner尚未釐清時先解決該具體缺項，不自行接管。
-
-每個repo先執行普通helper取得HEAD／assignment fingerprint，再帶入當次指派的exact evidence：
-
-```sh
-python3 "<project-scripts>/steward-authority.py" --root "$repo" --runtime <runtime> \
-  --reassign-from <previous-runtime:workline> --prior-writer-stopped \
-  --assigned-item <exact-active-heading> --expected-head <full-oid> \
-  --expected-assignment <fingerprint> [--assigned-item <another-heading>] \
-  [--owned-path <exact-handed-over-dirty-file>]
-```
-
-這些flags是agent從當次明示指派整理的證據，不讓使用者重建指令。`--owned-path`僅列已明確交接、
-核對內容與scope的髒檔，不能用全部status輸出當成已知ownership。Helper本身唯讀，
-`READY_FOR_REASSIGNMENT`不是mutation／shipping的PASS；同一不可分割切換群組的前置皆就緒後，
-只更新各active item的Writer／Dossier Steward為輸出的target，保留scope／workspace與其他欄位。
-寫入前重驗同一HEAD／fingerprint，更新後普通authority helper必須PASS，才接續原工作與event-time紀錄。
-不重問同一指派；新衝突才問實質差異。改派不繼承前任的外向授權，新session亦不沿用舊授權。
-
-保留新assignment到後續completion commit的parent：若HEAD還記舊actor或沒有active contract，
-在已獲commit授權的既定提交階段，先提交可查證的新assignment，再做移除active item的結案提交。
-可與同scope實作合併成語意commit，不必另設使用者停點；沒有commit授權就保留active狀態與完成證據，
-不先刪掉自己後續gate需要的authority，也不新增commit權限。不要等shipping失敗才回頭重寫history。
-
-具名但未改派／仍有活躍writer的repo保持唯讀，不納入改派群組。只有在不依賴該repo的未完成變更、
-且不破壞現有跨repo契約時，其他已指派repo可獨立接手與交付；不把局部成功說成整體完成。
-
-## Spec 模式
-
-開工儀式：把願望變成可驗證的 active contract。本模式只寫文檔，不改 code、不 commit。
-
-1. 判斷 adoption：`.doc-governance.json` 與 `scripts/doc-governance.py` 兩者皆有＝adopted；兩者皆無＝legacy；
-   只存在一個＝BROKEN，停止且不要回退 legacy。
-2. Adopted repo 先確認 target 的 config/core adoption 完整且 core 通過 trusted-core 比對，再執行
-   `python3 "<project-scripts>/doc-governance.py" --root "$repo" find '<工作問題>'`
-   查相關 decision／dead end；命中的 stable IDs 稍後寫入 active item 的 `關聯`。不得先整批讀 archive。
-3. 無 `STATUS.md` 時，adopted repo 從 `<project-templates>/STATUS-template.md` 建立；legacy repo
-   從 `<project-templates>/STATUS-legacy-template.md` 建立。建立後確認專案定位；撞名的領域產物不得覆寫。
-4. 在 `進行中` 寫 Context／Goal／Acceptance Criteria／Constraints／進度／下一步／關聯 IDs。若 target
-   config 啟用 `status_schema.active_item_contract`，另依 dossier 的「平行協作與 stewardship」填四個
-   coordination fields。符合上述local reassignment時先做兩欄更新並重驗；其他寫入前先跑上節 helper：沒有 active items 時新 work item 以
-   `<runtime>:<workline>` 作 actor／steward；已有 steward 時必須 exact same-runtime resume，或由 exact human
-   steward 以本輪 `as=` bounded delegation 建立 item（durable steward 保持 human actor）。尚未建立 feature
-   branch 時 `Workspace` 先填 `unassigned`。普通身分宣稱、`--merge` 或「原 session 已退出」都不放行。
-5. 模糊處直接問，不猜。暫停則移到 `暫停中` 並寫可觀察的恢復條件。
-6. Legacy repo 依自己的 STATUS schema 寫 spec，不強迫建立 history/backlog family。
-
-### Spec 成功後的 Log invocation 提示
-
-Spec 寫入與必要驗證成功後，本輪未要求下一步 Log 時，直接回報結果，不做本節額外 probe 或出題。
-若使用者在本次明確要求Spec後接續Log及其endpoint，完成Spec後直接進入同一logical workflow的Log，
-載入所需references並重驗authority，不再要求重輸invocation。上一個已結束invocation或session的
-endpoint authorization 不 carry；提示命令本身也不是授權。尚未要求Log時，只提供以下可選用的命令。
-Endpoint flag 取自使用者為下一步明確選定的終點，依
-`ship-paths.md` 說法表正規化；未選定就不得自行預填。下例以使用者已選定 merge 為例。
-
-**Spec 本輪新建 active contract 時，同時建立 current-session workline assignment**：這只適用於
-原本沒有 active item、使用者以本次明確工作要求授權 Spec 建立 exact same-runtime Writer／Steward，
-或上節 local reassignment 已完整通過的情況。以剛寫入的 coordination fields 作最初 assignment snapshot，
-取得其 fingerprint 與本輪 full HEAD，立即用
-`--session-resume-actor <new-exact-actor> --expected-assignment <new-original-fingerprint> --expected-head <full-oid>`
-重驗；不得先用 branch-derived ordinary gate 再改跑 `--resume-actor`，也不要求使用者補 `resume=`。Workspace
-此時仍為 `unassigned`、其後依 branch-first 正常前進，都不撤銷這份指派；fingerprint 只有在 coordination／
-item identity 實際改變時才失配。若原本已有 active item 且不符合既有 assignment／reassignment authority，
-本段不會把 Spec invocation 自己變成接管授權，仍走原 gate。
-
-對 same-runtime durable workline，在寫入 active contract 後重新執行一次上節 helper：當次 session 工作線指派
-仍有效時用其專用 flags／原 fingerprint／本輪 HEAD；否則刻意**不帶任何 `resume=`、`as=` 或 confirmed flag**。
-只有 exit 0、`verdict: PASS`、executor actor 與 durable steward exact match，且 authority-source 為
-`active-writer-workspace-match` 或 `current-session-workline-binding`，才可為每個 repo 封存一份
-**current-session binding packet**：`canonical repo root`、`exact actor`、helper 輸出的原始
-`assignment fingerprint`、active item identities 與其 Writer／Workspace／Write Scope／Steward snapshot，
-以及本輪查證的 full HEAD。若來源是既有 `current-session-workline-binding`，沿用該 packet 的原始
-fingerprint，不拿目前值替換。Packet 只活在同一段未壓縮對話與同一 logical workline；不得寫入
-memory／checkpoint／repo authority store，也不得授予或 carry shipping endpoint。完成這個封存後才同時
-顯示短版與明確版：
-
-```text
-下一步請擇一輸入：
-
-短版：
-$project --merge
-
-明確版：
-$project --merge resume=<exact-actor>
-```
-
-Claude Code adapter 將上述兩行的 `$project` 換成 `/project`，所以對應為 `/project --merge` 與
-`/project --merge resume=<exact-actor>`；actor 的 runtime prefix 也必須與入口一致。若使用 runtime UI 選項，
-每個 option value 必須送出完整的 `$project ...`／`/project ...` invocation；只回傳編號或顯示標籤不算新的
-explicit invocation。
-
-提示旁清楚說明：endpoint flag（本例 `--merge`）授權**這次新 Log invocation**的 endpoint；
-`resume=<exact-actor>` 只精確綁定 durable workline，不新增、繼承或擴大 shipping authority。短版只適用於
-仍在 helper 已驗證的 branch／workspace，或上述已重驗的當次 session 指派；明確版適合新session或需要消除actor歧義時。
-
-若 post-Spec helper 未達上述 exact PASS，絕不顯示短版。只有再以 exact same-runtime
-durable actor 執行 `--resume-actor <exact-actor>` 得到 PASS 時，才可單獨顯示含 `resume=<exact-actor>` 的明確版；
-否則沿用既有 recovery／STOP。Repository authority `BROKEN`、`recovery-kind: none`、scope mismatch、stale
-snapshot、cross-runtime 或 conflicting stewards 都不得因本提示新增確認或繞過選項。
-
-## Log 模式
-
-**執行前必須完整讀取 [log-workflow.md](log-workflow.md)，並逐步照做。** 該檔包含 checklist、
-Critical guardrails、Step 0–5、授權表路由與所有 STOP 條件；它是 Log 程序本體，不可靠摘要或記憶重建。
-
-Adopted repo 的文檔差異只有一個入口：Step 2 依 [dossier.md](dossier.md) 寫 event-time records、移除
-完成的 active/backlog item，再以 `python3 "<project-scripts>/doc-governance.py" --root "$repo" audit --ship`
-的 exit code 作唯一 doc verdict。Legacy repo 才沿用既有 detector。Push／merge authority 仍只由 kernel 與
-[ship-paths.md](ship-paths.md) 的說法表決定；doc adoption 不改寫任何授權規則。
-
-## Transfer 模式
-
-本模式建立可由另一 runtime／host／owner 獨立驗證的 durable transfer，**不 commit、不 push、不 merge、
-不改 repo 權限**。產物留在 working tree，只有後續由 current steward 明確叫用 Log 才能組成 transfer
-commit；credentials 永遠不進 git。Memory on/off 只影響 optional cache，不能改變 transfer readiness。
-
-使用者若把合法 transfer 與「把 credentials 寫進 tracked 文件」或「現在 commit」綁在同一個要求，
-**只拒絕這些越界子要求，當輪繼續安全的 Transfer 流程**：盤點 `.env.example` 的 key 名稱、
-產生不含值的 draft guide，並把缺 recipient／安全交付管道列為 `BLOCKED`。不得因拒絕 secret
-要求就整體停下或反問「要不要開始」；也不得因使用者明說 commit 就改寫本模式的 no-commit 邊界。
-
-### 狀態機與 hard gate
-
-Transfer state 是 `BLOCKED → PREPARED → TRANSFERRED`：
-
-- `BLOCKED`：recipient 未指名、current steward authority 不成立、存在 known private-only project residue、
-  repo authority／測試／secret separation 不完整，或無法證明 repo self-contained。可建立 draft guide 與列
-  blockers，但不得切換 steward、不得寫 completed owner record。
-- `PREPARED`：recipient、portable-knowledge audit、repo authority、credential plan、active-item mapping 與
-  effective condition 齊全；working tree 可含 pending guide／promotion records，但 active items 尚未換 owner。
-- `TRANSFERRED`：**包含完整原子切換的 transfer commit 已到達 canonical handover endpoint**。Repo contract
-  若未指定 handover branch，endpoint 就是 canonical remote 的 default branch，且該 commit 必須已 merged；
-  local commit、feature branch push 或 open PR 都仍是 PREPARED。
-
-### Portable-knowledge audit
-
-1. 先確認 invocation 指名 recipient actor（如 `to=codex:beta` 或使用者同輪明說的唯一接手者）；沒有就只做
-   draft、狀態 `BLOCKED`，不得猜 actor。
-2. 驗證呼叫者是所有 active items 的 current `Dossier Steward`，或有使用者明示／current steward 的 durable
-   transfer direction。Machine-local handoff、private memory 或「新 owner 已開始工作」都不是 mutation authority。
-3. 讀 root／nearest contract，以 repo router 定位 active、paused、decision、dead end、milestone、backlog、plan、
-   runbook 與現有 transfer authority。檢查 active／paused 反映現況、paused 有恢復條件、stable IDs 可定位，
-   adopted repo 跑 `audit --ship`；legacy repo 依 [dossier.md](dossier.md) fallback。
-4. 將本 session／current steward 已知、只存在 private memory 或對話的 **project-specific** decision、dead end、
-   progress、blocker 與 next step promotion 到 repo 已採用 authority；explicit transfer invocation 授權這些
-   additive repo writes。不得掃描、讀取或依賴另一 runtime 的 private memory path，也不得聲稱已枚舉未知
-   private stores。無合法 sink、actor 無權寫或 promotion 未完成就是 known private-only residue → `BLOCKED`。
-5. Safety/Git/shared behavior 與 user/global preference 不屬 project transfer：列 instruction promotion candidate，
-   不寫 project dossier；runtime-only noncritical convenience 可 skip。任何 push／PR／merge／deploy／message
-   authorization 都排除在移交內容外，**authorization 不隨 session、runtime 或 owner 移交**。
-6. 盤點 `.env.example` 或等價設定範本、掃描硬編碼 secrets；秘密走 gitignored 檔與安全通道。Credential
-   plan 若選 repo-local artifact，只把 repo 與相對 path 傳給
-   `<project-scripts>/verify-transfer-credential.sh <repo> <repo-relative-artifact>`：helper 只驗
-   tracked／ignore／symlink／mode metadata，不讀或輸出內容。exit 0 且 `verdict: PASS`（group／other 無任何權限，
-   即 private mode）才可通過；exit 1 維持 `BLOCKED`，exit 2 是 BROKEN。Transfer mode 不自行 `chmod` 或改權限；
-   改走密碼管理器且沒有 local artifact 時不建立檔案或臆造 mode gate。以 fresh clone 可取得的 contract、docs、
-   commands 與非秘密 fixture 驗證接手者能 setup、跑 QA、定位 active state 與歷史；不把「兩邊 memory 都開著」
-   當 self-contained evidence。
-7. 每個 active writer 的 in-flight／未整合工作都必須在 `PREPARED` 前二選一：已由 current steward 驗證
-   semantic commit／Dossier delta 並透過另一次明確的 integration／Project Log 工作 cherry-pick 納入 transfer
-   line，或由使用者／current steward 以 durable decision 明確放棄並記理由。Transfer mode 自己不 cherry-pick、
-   不建立 prerequisite commit；尚未整合時列 blocker，完成外部整合後重跑 transfer。只把 commit 留在可達
-   feature branch、只提工作尚在某 workspace，或期待 next steward 自行撿回，都不算 portable，維持
-   `BLOCKED`。
-
-### PREPARED 產物與 atomic switch
-
-1. 從 `<project-templates>/transfer-guide-template.md` 建／更新 `<repo>/docs/transfer.md`，記 current steward、
-   next steward、state、canonical handover endpoint、effective condition、portable-knowledge audit、known residue、
-   credentials separation 與逐 active-item mapping。每個原已分派項目都必須指定 next steward 的獨立
-   `branch=<feature-branch>` workspace；不得沿用舊 writer 的 workspace 或臨時 transfer branch。尚未決定可用
-   workspace 時維持 `BLOCKED`。沒有 recipient 時只保留 draft，不能建立 pending switch。
-2. PREPARED 時 active state 的 current steward／Writer／Workspace **保持不變**。Guide 的 pending transfer 明寫：
-   在「包含本記錄的 transfer commit 到達 endpoint」之前舊 steward 仍是唯一 shared-dossier authority，新
-   steward 不得先寫；checkpoint／guide 是 evidence，不是 lock。
-3. Current steward 後續叫用 `$project log`／`/project log` 時，由 Log Step 2 在**同一顆 transfer commit**
-   原子更新所有 active items：`Dossier Steward` → next steward；已有 assigned Writer → next steward 並套用
-   guide 中已驗證的 next workspace；原本 unassigned → `Writer=unassigned:<slug>` 且
-   `Workspace=unassigned`；保留各自 `Write Scope`，並把第一個
-   `Next step` 改成接手者可直接執行的動作。同 commit 追加 conditional owner `D-*` record，effective
-   condition 是該 commit 抵達 endpoint。
-4. Log／shipping 的既有 authorization gate 完整適用。Transfer mode 不自行建立 commit；Log 若只 commit、
-   push feature branch 或開 PR，回報 `PREPARED` 且舊 steward仍有效。只有 merge／endpoint update 有本輪
-   明確授權並經 remote-visible ancestry 驗證，才回報 `TRANSFERRED`；否則不得宣稱正式切換。Guide 內的
-   `Recorded preparation state` 是建立 transfer commit 時的事件記錄，不在 merge 後改寫；當前有效 state
-   一律由 endpoint ancestry 是否滿足 `Effective condition` 推導，因此抵達後不把該欄誤判成 stale
-   `PREPARED`。
-5. transfer commit 進入 canonical endpoint 前，checkout 內已改成 next actor 的 coordination fields 只是
-   **conditional pending values**。任何 writer／steward gate 都必須先定位 conditional owner `D-*` record 所在
-   commit、fetch canonical endpoint，再用 remote-visible ancestry 判 effective authority；未到達時照 guide 的
-   `Current steward` 與 transfer 前 mapping 判，無法定位／fetch／證明時 STOP。NEVER 只讀 `STATUS.md` 字面值就讓
-   next actor 提前取得 authority。
+Spec／Transfer 的 repo token 交 `<project-scripts>/ship-state.sh resolve <token>`；REPO 鎖定、MODULE 是
+path scope、UNKNOWN 只可匹配已知 repo basename，仍有歧義就問，不靜默忽略或當成 module。
+Read-only diagnosis 才按需讀 [ship-diagnostics.md](ship-diagnostics.md)；正常流程用既有 helpers，
+不重組它們已負責的 Git／provider 偵測。
 
 ## Runtime adapter
 
@@ -309,12 +70,3 @@ Transfer state 是 `BLOCKED → PREPARED → TRANSFERRED`：
   與本輪使用者明說的 endpoint，不把 runtime 的 skill sigil 當授權。
 - Shell、git 與 gh 行為完全相同。可照抄 helper command 必須由 scripts 自己輸出其實際絕對路徑。
 - Commit trailer 與 PR attribution 只遵循目前 runtime／repo 已載入的規則；沒有規則就不自行加產品標記。
-
-## References
-
-- [log-workflow.md](log-workflow.md)：Log 的完整 checklist／Critical／Step 0–5（Log 模式必讀）。
-- [dossier.md](dossier.md)：active、backlog、history、record schema、adopted/legacy 分流。
-- [ship-paths.md](ship-paths.md)：授權說法表、git/gh 指令與 merge 最後一哩。
-
-典型流程：project spec →（可選 plan review）→ 實作 → code review → project log → handoff／transfer →
-結束前檢查。各 runtime 使用自己的顯式 skill 形式。
