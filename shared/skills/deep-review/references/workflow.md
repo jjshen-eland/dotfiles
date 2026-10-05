@@ -309,7 +309,9 @@ python3 <skill-root>/scripts/review-control.py terminal-record --state <state> -
 
 After an autofix `PASS`, clear an older compatible signal only with a valid receipt
 covering its paths, endpoints and current dirty content. Preserve legacy signals
-without sufficient coverage evidence:
+without sufficient coverage evidence; their separate user-directed disposition
+is defined in [the controller protocol](control.md#explicit-legacy-terminal-disposition)
+and is never implied by this review:
 
 ```text
 python3 <skill-root>/scripts/review-control.py terminal-clear --state <state> --repo <repo>

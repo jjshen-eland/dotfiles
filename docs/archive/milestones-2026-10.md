@@ -251,3 +251,14 @@
   - 放棄:同一 commit 建立又移除唯一 assignment；以當前 snapshot 冒充過去測試；把 native 機械成功外推 reviewer 品質；endpoint 未達成先記已 merge
   - 重議:completion candidate authority、doc audit 或 required CI 失敗；#264 同樣文件 checkpoint 或 drift 拒絕契約再現回歸
   - 關聯:#264;deep-plan-document-repair;46bb471bae77024f2cbbdc6c4e688308908c6061;D-20261005-deep-plan-document-repair-baseline;M-20261005-deep-plan-document-repair-local
+
+- **M-20261005-legacy-terminal-disposition-local · 2026-10-05 #267 legacy review-terminal 有界結案本機驗收完成**：先以隔離跨工具 fixture 證明祖先進 default 後，fresh 唯讀 PASS 仍被同一舊訊號攔截，terminal-clear 無 mutation authority。Shared controller 新增 exact legacy disposition 與 archive 重驗；Project 辨識同一原訊號已明示結案，Log 不再承諾單純重跑可清除。舊歷史／receipt／controller／額度保留；新訊號、stale／partial／historical review、綁定不符或不可驗 archive 維持拒絕，處置不授予新批 review PASS 或 shipping。
+  - 日期來源:direct
+  - 驗收:controller 23 tests；`./tests/run.sh` exit 0、1568 PASS／0 FAIL、297 秒，log `/var/folders/t5/4b3mtjj52fvdplz5f15mf_ym0000gp/T/issue-267-full-tests-4e1laf_7.log`；shellcheck、diff check、文件治理通過。Codex project／repo-review 與 Claude deep-review 適用 quick_validate 通過；Codex validator 不接受 Claude project 既有原生 frontmatter，未修改正確 adapter metadata。全套後追加本輪驗收文件／STATUS，另驗 doc／xref；terminal fixture 補保存操作前 controller snapshot，另驗 setup，不回填既有 packet 或偽造未捕捉的 suite input receipt
+  - Native:Codex gpt-6.1-sol／high／default（CLI 0.160.0）與 Claude claude-opus-5-5[1m]／high／Standard（CLI 2.1.289）的 t-request／t-dispose／t-closed 六個有效 outcomes 通過。原版 `/tmp/issue-267-native-before`、修後 `/tmp/issue-267-native-after`、Codex 權限修正後 fresh `/tmp/issue-267-native-metadata` 保留 source／prompt／trace／actual artifacts。首批 Codex t-dispose 318.9 秒 permission BLOCKED 保留，沒有改判；runner 只開放該 fixture 的 .git/deep-review leaf，fresh 227.1 秒補驗成功。受測五個 shared files 與採用 source byte-identical
+  - Forward:blind fresh-context `/tmp/issue-267-forward` 完成，parent 核對只新增指定 archive／anchor pointer／journal event；HEAD／index／branch／origin refs、原 PASS／findings／history／receipt／attempts／repairs 保留。未重跑 review 或作外向操作
+  - 限制:controller PASS 為 supplied replay evidence；native 驗 disposition／authorization 接線，不冒充完整 review、finding 品質、live consumer 或 GitHub shipping E2E。沒有全面 prose ablation；pure final evidence 不重跑有效 captures
+  - 範圍:branch=fix/issue-267-legacy-review-terminal；本機 implementation complete，active assignment 保留；未 commit／push／PR／merge／部署，未改 live consumer metadata
+  - 放棄:刪整份 marker／重設 budget；以舊照送或普通 merge 自動結案；以無關 autofix 取得清除權；將 CLI exit 0 或 parent 手動操作當 native 成功；移除 sandbox 繞過 denial
+  - 重議:合法處置後同一訊號再攔截無關批次、新 marker 可借舊 receipt 放行，或當次結案／shipping 授權被混用
+  - 關聯:Issue#267;D-20261005-legacy-terminal-disposition;X-20261005-legacy-disposition-native-sandbox;shared/skills/deep-review/evals.md;shared/skills/project/references/pressure-tests.md;tests/review-repair-controller.py

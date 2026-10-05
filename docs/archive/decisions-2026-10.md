@@ -122,3 +122,9 @@
   - 放棄:全 Markdown／STATUS 排除；只更新 repo baseline hash；忽略 index／HEAD；restart 自動採用當前狀態；重建 journal 或改 blind 迴避 drift；以 checkpoint 最終 tree 相同放過中途程式提交
   - 重議:固定 fixture 證明合法文件狀態仍被阻擋、未宣告變動可取得 ticket，或既有 journal 無損續審存在可證明但未支援的基線
   - 關聯:#264;deep-plan-document-repair;D-20261003-deep-plan-controller-adoption;tests/deep-plan-routing.py
+
+- **D-20261005-legacy-terminal-disposition · 2026-10-05 #267 legacy review-terminal 採 exact signal 的明示結案**：隔離跨工具 fixture 已證實 default branch 承接舊 terminal commit 後，下一批 controller 唯讀 PASS 仍被 ship-state ancestry 攔截，terminal-clear 拒絕且原 metadata 不變；新結案 oracle 在現行 controller 缺少介面時 RED。採既有 shared controller 的獨立 explicit disposition：要求當前完整、fresh、非 historical-range PASS 與當次具名 legacy 處置，綁定 repo／原訊號 hash／HEAD／scope／endpoint。原 coverage 不足不推論已覆核，須由使用者明示結案該原訊號；receipt 保存在既有 .git/deep-review operational evidence，原 anchor、controller、findings、已用額度與歷史保留。Shipping 只辨識同一舊訊號已結案，不把 receipt 當新批 review PASS 或外向授權；新的 marker 與無法驗證的 receipt 仍 STOP。
+  - 日期來源:direct
+  - 放棄:因 terminal commit 已進 default 即靜默忽略；沿用舊批照送或普通 merge 當結案；刪整份 anchor／重設 controller；以無關 autofix 取得 mutation 資格；讓唯讀 review 自動寫 Git metadata
+  - 重議:隔離案例顯示合法 exact disposition 仍攔截無關新批、新訊號能借舊 receipt 放行，或未授權 disposition／shipping 被執行
+  - 關聯:Issue#267;D-20260823-portable-deep-review;D-20261003-review-repair-controller-adoption;M-20260923-review-terminal-display-local;tests/review-repair-controller.py

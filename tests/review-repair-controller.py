@@ -102,6 +102,163 @@ class Controller(unittest.TestCase):
         self.assertNotEqual(r.returncode, 0, 'ancestry alone cleared an unreviewed dirty finding')
         self.assertIn('terminal_reason=', (self.repo / '.git/deep-review/anchor').read_text())
 
+    def legacy_signal(self):
+        self.run_cmd(['git', 'init', '--bare', '-q', str(self.root / 'origin.git')])
+        self.git('remote', 'add', 'origin', str(self.root / 'origin.git'))
+        self.git('update-ref', 'refs/remotes/origin/main', self.head)
+        self.git('symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main')
+        gh_stub = self.root / 'gh-stub'
+        gh_stub.write_text('#!/bin/sh\nexit 1\n')
+        gh_stub.chmod(0o755)
+        self.env['SHIP_STATE_GH'] = str(gh_stub)
+        self.run_cmd(['bash', str(SCRIPTS / 'review-terminal.sh'), 'record', '--repo',
+                      str(self.repo), '--reason', 'blocked-review', '--head', self.head])
+        anchor = self.repo / '.git/deep-review/anchor'
+        anchor.write_text('cycle=5\nbase=' + self.head + '\n' + anchor.read_text())
+        return anchor
+
+    def ship(self):
+        return self.run_cmd(['bash', str(ROOT / 'shared/skills/project/scripts/ship-state.sh'),
+                             str(self.repo)]).stdout
+
+    def disposition(self, state, **overrides):
+        info = self.ctl('terminal-status', '--repo', self.repo)
+        request = {'action': 'close-legacy-review-terminal', 'repo': info['repo'],
+                   'signal': info['signal'], 'head': self.git('rev-parse', 'HEAD').strip(),
+                   'scope': json.loads(Path(state).read_text()).get('receipt', {}).get('scope', ''),
+                   'endpoint': 'merge',
+                   'user_instruction': 'Close this original legacy signal despite unknown coverage; '
+                                       'no shipping authorization is granted.'}
+        request.update(overrides)
+        return self.data('disposition.json', request)
+
+    def test_disposed_legacy_ancestor_stops_reblocking_later_batches(self):
+        anchor = self.legacy_signal()
+        original = anchor.read_text()
+        self.git('branch', 'main')
+        (self.repo / 'a.py').write_text('value = 2\n')
+        self.git('add', 'a.py')
+        self.git('commit', '-qm', 'test: first batch explicitly shipped')
+        self.git('switch', '-q', 'main')
+        self.git('merge', '--ff-only', 'feature/test')
+        self.git('switch', '-qc', 'feature/next')
+        (self.repo / 'b.py').write_text('value = 2\n')
+        self.git('add', 'b.py')
+        self.git('commit', '-qm', 'test: independently reviewed next batch')
+        state = self.open()
+        self.review(state)
+        before = Path(state).read_bytes()
+        self.assertIn('review-terminal: blocked-review', self.ship())
+        self.assertNotEqual(self.ctl('terminal-clear', '--state', state, '--repo', self.repo,
+                                     ok=False).returncode, 0)
+        self.assertEqual(anchor.read_text(), original, 'read-only PASS mutated legacy metadata')
+        request = self.disposition(state)
+        result = self.ctl('terminal-dispose', '--state', state, '--repo', self.repo, '--input', request)
+        self.assertEqual(result['terminal'], 'DISPOSED')
+        self.assertFalse(result['shipping_authorized'])
+        receipt = json.loads(Path(result['receipt']).read_text())
+        self.assertEqual(receipt['original'], original)
+        self.assertEqual(receipt['endpoint'], 'merge')
+        self.assertIn('cycle=5\nbase=' + self.head, anchor.read_text())
+        self.assertIn('terminal_reason=blocked-review', anchor.read_text())
+        after = json.loads(Path(state).read_text())
+        prior = json.loads(before)
+        for key in ('attempts', 'repairs', 'reviewer_count', 'findings', 'history', 'receipt', 'verdict'):
+            self.assertEqual(after[key], prior[key], 'disposition changed review authority or budget')
+        self.assertNotIn('\nreview-terminal:', '\n' + self.ship())
+        self.git('switch', '-qc', 'feature/unrelated')
+        (self.repo / 'a.py').write_text('value = 3\n')
+        self.git('add', 'a.py')
+        self.git('commit', '-qm', 'test: later unrelated change')
+        self.assertNotIn('\nreview-terminal:', '\n' + self.ship())
+        self.assertFalse(self.ctl('terminal-status', '--repo', self.repo)['shipping_authorized'])
+        self.assertNotEqual(self.ctl('terminal-dispose', '--state', state, '--repo', self.repo,
+                                     '--input', request, ok=False).returncode, 0, 'old approval was reusable')
+        self.run_cmd(['bash', str(SCRIPTS / 'review-terminal.sh'), 'record', '--repo', self.repo,
+                      '--reason', 'blocking-findings', '--head', 'HEAD'])
+        self.assertIn('review-terminal: blocking-findings', self.ship())
+        self.assertTrue(Path(result['receipt']).exists(), 'new signal deleted original history')
+
+    def test_legacy_disposition_requires_exact_current_instruction(self):
+        anchor = self.legacy_signal()
+        state = self.open()
+        self.review(state)
+        original = anchor.read_bytes()
+        for overrides in ({'action': 'merge'}, {'signal': '0' * 64}, {'repo': str(self.root)},
+                          {'head': '0' * 40}, {'scope': '0' * 64}, {'endpoint': 'production'},
+                          {'user_instruction': ''}):
+            request = self.disposition(state, **overrides)
+            self.assertNotEqual(self.ctl('terminal-dispose', '--state', state, '--repo', self.repo,
+                                         '--input', request, ok=False).returncode, 0)
+            self.assertEqual(anchor.read_bytes(), original)
+            self.assertIn('review-terminal: blocked-review', self.ship())
+
+    def test_legacy_disposition_rejects_incomplete_partial_and_stale_pass(self):
+        anchor = self.legacy_signal()
+        state = self.open()
+        request = self.disposition(state)
+        self.assertNotEqual(self.ctl('terminal-dispose', '--state', state, '--repo', self.repo,
+                                     '--input', request, ok=False).returncode, 0)
+        self.review(state)
+        request = self.disposition(state)
+        original = anchor.read_bytes()
+        (self.repo / 'a.py').write_text('value = 0\n')
+        self.assertNotEqual(self.ctl('terminal-dispose', '--state', state, '--repo', self.repo,
+                                     '--input', request, ok=False).returncode, 0)
+        self.assertEqual(anchor.read_bytes(), original)
+        (self.repo / 'a.py').write_text('value = 1\n')
+        # A different evidence root is an isolated control, never a live-budget reset.
+        self.env['DEEP_REVIEW_STATE_DIR'] = str(self.root / 'partial-evidence')
+        partial = self.ctl('open', '--manifest', self.capture('--path', 'b.py'))['state']
+        self.review(partial)
+        self.assertNotEqual(self.ctl('terminal-dispose', '--state', partial, '--repo', self.repo,
+                                     '--input', self.disposition(partial), ok=False).returncode, 0)
+        self.assertEqual(anchor.read_bytes(), original)
+
+        self.env['DEEP_REVIEW_STATE_DIR'] = str(self.root / 'range-evidence')
+        captured = self.run_cmd(['bash', str(SCRIPTS / 'review-scope.sh'), 'capture', '--repo',
+                                 self.repo, '--mode', 'range', '--range', self.head + '..' + self.head])
+        manifest = next(x[10:] for x in captured.stdout.splitlines() if x.startswith('manifest: '))
+        historical = self.ctl('open', '--manifest', manifest)['state']
+        self.review(historical)
+        self.assertNotEqual(self.ctl('terminal-dispose', '--state', historical, '--repo', self.repo,
+                                     '--input', self.disposition(historical), ok=False).returncode, 0)
+        self.assertEqual(anchor.read_bytes(), original)
+
+    def test_legacy_disposition_cannot_clear_scoped_or_changed_signal(self):
+        anchor = self.legacy_signal()
+        state = self.open()
+        self.review(state)
+        request = self.disposition(state)
+        anchor.write_text(anchor.read_text().replace('terminal_at=', 'terminal_at=9'))
+        original = anchor.read_bytes()
+        self.assertNotEqual(self.ctl('terminal-dispose', '--state', state, '--repo', self.repo,
+                                     '--input', request, ok=False).returncode, 0)
+        self.assertEqual(anchor.read_bytes(), original)
+        anchor.write_text(anchor.read_text() + 'terminal_scope={"repo":' + json.dumps(str(self.repo)) + '}\n')
+        original = anchor.read_bytes()
+        request = self.disposition(state)
+        self.assertNotEqual(self.ctl('terminal-dispose', '--state', state, '--repo', self.repo,
+                                     '--input', request, ok=False).returncode, 0)
+        self.assertEqual(anchor.read_bytes(), original)
+
+    def test_bad_disposition_receipt_fails_closed_and_status_is_readonly(self):
+        anchor = self.legacy_signal()
+        before = {str(p): p.read_bytes() for p in self.repo.rglob('*') if p.is_file()}
+        self.assertEqual(self.ctl('terminal-status', '--repo', self.repo)['terminal'], 'ACTIVE')
+        self.assertEqual(before, {str(p): p.read_bytes() for p in self.repo.rglob('*') if p.is_file()})
+        anchor.write_text(anchor.read_text() + 'terminal_disposition=missing.json\n')
+        self.assertIn('review-terminal: blocked-review', self.ship())
+        self.assertNotEqual(self.ctl('terminal-status', '--repo', self.repo, ok=False).returncode, 0)
+        anchor.write_bytes(before[str(anchor)])
+        state = self.open()
+        self.review(state)
+        closed = self.ctl('terminal-dispose', '--state', state, '--repo', self.repo,
+                           '--input', self.disposition(state))
+        Path(closed['receipt']).unlink()  # Deliberately corrupt only this test's isolated archive.
+        self.assertIn('review-terminal: blocked-review', self.ship())
+        self.assertNotEqual(self.ctl('terminal-status', '--repo', self.repo, ok=False).returncode, 0)
+
     def test_recapture_and_cross_runtime_keep_consumed_ticket(self):
         state = self.open('--route', 'ordinary')
         admit = self.ctl('admit', '--state', state, '--assignments', self.assignments())
