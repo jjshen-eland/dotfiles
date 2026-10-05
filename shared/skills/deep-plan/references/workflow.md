@@ -74,6 +74,9 @@ template 產生 prompt 與一次性 ticket。只有有效 ticket 才依 runtime 
 
 `noted`、沉默、條件式 approval 都不算處置。以「既有 X 也如此」駁回，或要新增測試固定被質疑的行為時，重新查 X 的理由是否適用於新情境。沒有完整處置就停止；未獲授權時不得代作者改 plan 或選 trade-off。
 
+Finding 要求同步修正規格／STATUS 等文件時，編輯前依 controller 的「文件修正與 checkpoint 邊界」
+核對宣告集合與可核對基線；同範圍合法文件修正用原 journal 續審，不因 stage／commit 自動要求 restart。
+
 ## 5. Fresh second round and gate
 
 處置完成後，依 controller 以同一 artifact 的實際差異與處置證據 prepare 下一輪；保持相同 N 與新的

@@ -116,3 +116,9 @@
   - 放棄:複製規則到兩份薄入口；對 opaque 指令新增 hook allow exception；只移除 `-C` 而未綁定 repo；加入會執行 push 的 shell wrapper 使 policy 再次看不到 direct argv
   - 重議:執行工具無法可靠綁定 repo；或 Codex gate／rules 語意改變時，以 fresh trace 重新驗收
   - 關聯:project-canonical-push;X-20261005-project-opaque-push;D-20260912-cross-runtime-outward-gate;D-20261005-claude-target-model-roles;shared/skills/project/references/ship-paths.md
+
+- **D-20261005-deep-plan-document-repair-baseline · 2026-10-05 Deep-plan 以宣告文件集合與三層實際基線續審**：#264 的舊 controller 已以 canonical plan staged fixture 重現 `repo-baseline-drift`，11 個新增行為案例 exit 1，raw `/tmp/issue-264-red-xubq8191.log`；相依文件案例另暴露尚無宣告 API。修復採同一 shared controller：先宣告固定 Markdown 相依文件集合，保存 worktree／index／HEAD 文件基線；只允許該集合及 canonical plan 的內容修正，未允許範圍維持完整 fingerprint，HEAD checkpoint 逐顆核對單親 ancestry 與實際改動。盲審只公開實際文件 delta，focused 另保留原 finding 處置；不靠 contracts 名稱、檔案副檔名或重開批次豁免漂移。舊 journal 不丟棄：只有以原 HEAD 文件重建出的完整 index／worktree hash 精確吻合既存受審 snapshot，才可附加可驗證文件基線；無法證明則停止，不猜原 dirty 文件內容。
+  - 日期來源:direct
+  - 放棄:全 Markdown／STATUS 排除；只更新 repo baseline hash；忽略 index／HEAD；restart 自動採用當前狀態；重建 journal 或改 blind 迴避 drift；以 checkpoint 最終 tree 相同放過中途程式提交
+  - 重議:固定 fixture 證明合法文件狀態仍被阻擋、未宣告變動可取得 ticket，或既有 journal 無損續審存在可證明但未支援的基線
+  - 關聯:#264;deep-plan-document-repair;D-20261003-deep-plan-controller-adoption;tests/deep-plan-routing.py

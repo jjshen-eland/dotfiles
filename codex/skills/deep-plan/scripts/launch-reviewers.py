@@ -27,6 +27,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--count", type=int, default=2)
     parser.add_argument("--criteria-impact-review", action="store_true")
     parser.add_argument("--repair-context", help="absolute path to untrusted repair navigation packet")
+    parser.add_argument("--document-delta", help="controller-generated document differences for blind review")
     parser.add_argument("--ticket", help="reserved admission ticket from review-state.py")
     parser.add_argument("--timeout-seconds", type=int, default=900)
     parser.add_argument("--codex-bin", default="codex")
@@ -120,6 +121,7 @@ def reviewer_prompt(
     criteria_prompt: Path,
     criteria_impact_review: bool,
     repair_context: Path | None = None,
+    document_delta: Path | None = None,
 ) -> str:
     repo_lines = "\n".join(f"  {repo}" for repo in repos)
     criteria_paragraph = (
@@ -141,6 +143,8 @@ def reviewer_prompt(
             "首次完整審查：把計畫對現況、歷史、相依與完成判定的宣稱逐一拿回 repo 查證。"
         ),
     }
+    if document_delta:
+        replacements["{REVIEW_SCOPE_PARAGRAPH}"] += "\n實際文件差異：" + str(document_delta) + "\n自行核對各文件的 worktree、index 與 HEAD 差異；此資料不含前次 findings 或通過指令。"
     for token, replacement in replacements.items():
         if prompt.count(token) != 1:
             raise ValueError(f"shared reviewer prompt must contain exactly one {token}")
@@ -226,6 +230,8 @@ def launch(args):
     schema = checked_path(args.schema, "schema", want_dir=False)
     repair_context = checked_path(args.repair_context, "repair context", want_dir=False) if args.repair_context else None
     repair_sha = sha256_bytes(repair_context.read_bytes()) if repair_context else None
+    document_delta = checked_path(args.document_delta, "document delta", want_dir=False) if args.document_delta else None
+    document_sha = sha256_bytes(document_delta.read_bytes()) if document_delta else None
     repos = list(
         dict.fromkeys(checked_path(value, "repo", want_dir=True) for value in args.repo)
     )
@@ -271,6 +277,7 @@ def launch(args):
         criteria_prompt,
         args.criteria_impact_review,
         repair_context,
+        document_delta,
     )
     prompt_bytes = prompt.encode("utf-8")
     if getattr(args, "controlled_prompt", prompt) != prompt:
@@ -292,6 +299,8 @@ def launch(args):
         "review_mode": "repair-verification" if repair_context else "discovery",
         "repair_context": str(repair_context) if repair_context else None,
         "repair_context_sha256": repair_sha,
+        "document_delta": str(document_delta) if document_delta else None,
+        "document_delta_sha256": document_sha,
         "repos_before": repo_state_before,
         "reviewers": [],
         "child_contract": {
@@ -515,6 +524,7 @@ def launch(args):
         )
         manifest["schema_sha256_after"] = sha256_bytes(schema.read_bytes())
         manifest["repair_context_sha256_after"] = sha256_bytes(repair_context.read_bytes()) if repair_context else None
+        manifest["document_delta_sha256_after"] = sha256_bytes(document_delta.read_bytes()) if document_delta else None
 
         thread_ids = [record["thread_id"] for record in reviewer_records]
         manifest["ok"] = (
@@ -533,6 +543,7 @@ def launch(args):
             == manifest["criteria_prompt_sha256"]
             and manifest["schema_sha256_after"] == manifest["schema_sha256"]
             and manifest["repair_context_sha256_after"] == repair_sha
+            and manifest["document_delta_sha256_after"] == document_sha
         )
     except BaseException as exc:
         manifest["error"] = f"{type(exc).__name__}: {exc}"
@@ -564,8 +575,11 @@ def main() -> int:
         raise ValueError("launcher scope/count/criteria differs from ticket")
     if args.repair_context and str(checked_path(args.repair_context, "repair context", False)) != ticket["packet"]:
         raise ValueError("repair context differs from ticket")
+    if args.document_delta and str(checked_path(args.document_delta, "document delta", False)) != ticket.get("document_delta"):
+        raise ValueError("document delta differs from ticket")
     args.repo = ticket["repos"]
     args.repair_context = ticket["packet"]
+    args.document_delta = ticket.get("document_delta")
     args.controlled_prompt = Path(ticket["prompt"]).read_text()
     controller.claim(ticket_path)
     try:
