@@ -103,3 +103,24 @@
   - 放棄:用 no-active-items 洗掉 completion parent authority；改 expected fingerprint 繞過失配；只補 STATUS 後原樣 push 舊 candidate；用現在快照冒充過去受測輸入
   - 重議:同批以保存於 ancestry 的 active contract 通過 completion candidate gate，純結案文件以最新 doc／xref checks 覆蓋；相同 authority regression 再現時保留 exact parent、candidate 與 helper output
   - 關聯:root-cause-first-model-behavior;942034f;d85812b;X-20260930-mobile-questions-steward-candidate;M-20261005-root-cause-first-workline-complete
+
+- **X-20261005-project-opaque-push · 2026-10-05 Project 自帶的 push 範例與 Codex gate 衝突，成功重試掩蓋首次失敗**：`e84aa11` 的正常路徑、bootstrap 與 force-with-lease 使用 `git -C … push`；unchanged classifier 將其判為 opaque，實際 execpolicy 對該 argv 無 matching push rule，直接 `git push` 則匹配 prompt。先新增組合 regression，五個發布範例均 RED；fresh Opus 與 Codex 的 Step 5 隔離 native trace 也各自先送 opaque 指令、被拒後改 direct command 才推到本機 bare remote。Opus 先用 compound loop、再單獨 `-C`，因此多浪費兩次；CLI success 與最終 remote SHA 正確都不能把首次指令的錯誤判綠。
+  - 日期來源:direct
+  - 證據:`/tmp/project-canonical-push-red-20261005` 的 frozen source／prompt hashes、native JSONL、host-transport、remote refs 與 audit；Opus alias `opus[1m]` resolved `claude-opus-5-5[1m]`、high、Standard；Codex `gpt-6.1-sol`、high、default；兩端 terminal success，behavior audit exit 1
+  - 放棄:只美化 blocked 文案；以 retry 成功宣稱問題不存在；把 `git -C` 放寬為 canonical 或移除 hook／prompt 規則
+  - 重議:Project 首次 push 使用工具工作目錄與 direct command 並通過雙端同 oracle；或 gate／execpolicy 正式支援其他 command 形狀時重新取證
+  - 關聯:project-canonical-push;D-20260912-cross-runtime-outward-gate;D-20260913-project-merge-authorization-ci
+
+- **X-20261005-project-bootstrap-fixture · 2026-10-05 Bootstrap native fixture 的前段宣告沒有可重跑的 metadata adapter**：第一版 Step 5 fixture 只在 prompt 宣告前段 BOOTSTRAP／creation policy CLEAR，卻未提供本機 provider adapter。Opus 實跑 helper 得 UNKNOWN／STOP 並正確不推；Codex 依前段宣告送出 direct baseline push。兩者均不能作為有效 bootstrap acceptance：fixture 本身不能重現宣告的前置 gate，不能將 Opus 的 STOP 誤判為 command-form regression，也不能用 Codex 的正確 remote SHA 略過前提缺失。補驗需用新 packet 提供實際 adapter 與可重跑的 helper evidence，保留原始 packet。
+  - 日期來源:direct
+  - 證據:`/tmp/project-canonical-push-green-20261005` 兩端 bootstrap 的 raw prompt、native final 與 host-transport；Opus helper 的 provider identity UNKNOWN 與 STOP
+  - 放棄:改 production bootstrap gate 以接受測試的口頭宣告；把正確 STOP 洗成 GREEN；在舊 packet 補 provider 後重跑同一 session
+  - 重議:新 fixture 預跑現行 helper 得真實 BOOTSTRAP，native agent 可在同一環境重新驗證 intended default／policy／baseline 後送出
+  - 關聯:project-canonical-push;X-20261005-project-opaque-push;shared/skills/project/references/pressure-tests.md
+
+- **X-20261005-project-push-upstream-coverage · 2026-10-05 送出前載入上游流程揭露三個漏修的 opaque push 範例**：首次本機修正版只修 ship-paths／ship-exceptions 與 bootstrap helper；Step 5 focused native eval 也只要求直接讀該 path reference。Project Log 真正必讀的 log-prepare Step 5 仍有 normal／direct／lease 三個 `git -C … push`，與新的執行形式衝突。把 log-prepare 納入原組合 regression 後，4 tests 中三個發布範例 subtests 立即 RED；先前 10／10 只證明原 focused scope，不足以宣稱整條載入路徑已消除衝突。尚未 commit／push，於同批受控準備補修。
+  - 日期來源:direct
+  - 放棄:忽略較早載入的相反範例，僅依最後 reference 選擇正確指令；擴大既有 10／10 結論；重寫原驗收 packet 或放寬 gate
+  - 重議:上游 Step 5 指向單一 command authority、機械回歸涵蓋該檔，fresh 雙端 normal／lease 在先完整讀 log-prepare 與相關 path references 後仍首次送出 canonical command
+  - 關聯:project-canonical-push;M-20261005-project-canonical-push-local;D-20261005-project-canonical-push;tests/project-push-command-test.py
+  - 補驗觀察:上游 packet 的 Opus lease 首次 push 正確，但以 compound／head probe 讀 reference，ship-paths 與另一 chunk 合併，原 oracle 判 reader FAIL；新 packet 補齊本階段應有的 workflow 讀取契約後通過，正式 reader 規則未擴寫。Codex normal 在模型執行前以 capacity error 結束、零工具呼叫，另以同模型 fresh packet 補驗；原失敗保留。Codex lease 使用 `refs/heads/feat/change:<exact SHA>`，原 grader 只接受短 ref 名而誤判；實際 Git 更新與 main control 正確，改為接受兩種等價 ref 名，仍拒絕 bare lease、wrong SHA 與 wrong branch，不重跑有效 capture

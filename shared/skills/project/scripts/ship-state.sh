@@ -289,7 +289,8 @@ detect_bootstrap() {
     echo "verdict: BOOTSTRAP（全新空 repo 的第一次 ship：遠端尚無 default branch，故無 default 可保護、branch-first 在此不適用）"
     echo "bootstrap-note: 首推的 branch 將成為遠端 default branch —— 只推已驗證的 intended default '${intended}'，不推目前 feature HEAD 名；Step 4 摘要須標明 baseline SHA"
     echo "bootstrap-scope: 豁免僅涵蓋下面這一次 push（建立 baseline）。baseline 一存在，本 verdict 即不再出現、branch-first 與 never-push-default 全數恢復——後續 commit 一律走 feature branch"
-    echo "bootstrap-cmd: git -C $(shq "$toplevel") push -u $(shq "$remote") $(shq "$intended")"
+    echo "bootstrap-workdir: ${toplevel}"
+    echo "bootstrap-cmd: git push -u $(shq "$remote") $(shq "$intended")"
 }
 
 # protection 判定（classic + ruleset；判定順序見 ship-paths.md）

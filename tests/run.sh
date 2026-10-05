@@ -9209,6 +9209,11 @@ echo "▶ 26. outward-action gate（push／merge only）"
 OUTWARD_GATE="$ROOT/scripts/outward-action-gate.py"
 gate_classify() { python3 "$OUTWARD_GATE" --classify "$1" 2>/dev/null; }
 
+python3 -B "$ROOT/tests/project-push-command-test.py" >"$TMP/project-push-command-test.out" 2>&1
+project_push_rc=$?
+assert_rc "Project published push 與 outward gate 組合／repo binding／lease controls" 0 "$project_push_rc"
+if [ "$project_push_rc" -ne 0 ]; then cat "$TMP/project-push-command-test.out"; fi
+
 assert_eq "direct git push → canonical push" "push canonical" "$(gate_classify 'git push origin feat/x')"
 assert_eq "direct git send-pack → canonical push" "push canonical" "$(gate_classify 'git send-pack origin refs/heads/x')"
 assert_eq "direct gh pr merge → canonical merge" "merge canonical" "$(gate_classify 'gh pr merge 176 --squash')"

@@ -2,6 +2,7 @@
 
 只有 workflow 列出的條件成立才先完整讀本檔；不是一般 Log prerequisite。
 授權仍以 [ship-policy.md](ship-policy.md) 為準，正常送出見 [ship-paths.md](ship-paths.md)。
+本檔的實際 push 同樣遵循 `ship-paths.md`「Push 的執行形式」；repo 由工具工作目錄綁定，不放進 push argv。
 
 ## Bootstrap：全新空 repo 的第一次 ship
 
@@ -28,8 +29,8 @@ provider 不支援、403、schema 不明、creation restriction，或 required c
 隨即以 `ship-state.sh --bootstrap-default <intended-default> <repo>` 重跑；仍只有它能發出 `BOOTSTRAP`。
 
 ```bash
-# 1. 照抄 ship-state.sh 的 bootstrap-cmd（repo / remote / intended-default 已填好）
-git -C <repo> push -u origin <local-default>
+# 1. 工具工作目錄綁定 ship-state.sh 的 bootstrap-workdir，再照抄 bootstrap-cmd
+git push -u origin <local-default>
 # 2. baseline 建立後重跑偵測：BOOTSTRAP 應已消失，protection / branch-first 回到正常判定
 <project-scripts>/ship-state.sh <repo>
 ```
@@ -121,7 +122,7 @@ git -C <toplevel> commit -m "<符合 target repo convention 的語意描述>
 > 編排 autofix；該 helper 只保留給舊 review recovery。送出前的 squash 邊界一律取本流程 Step 1
 > 記下的 `ship-state.sh` 輸出。
 
-**本節到 commit 為止，不含任何 push。** branch 已 push 過時，覆寫 remote 需要 `--force-with-lease`——**那是 Step 5 的送出動作**，必須等重印摘要、使用者再次確認後才做（`git -C <repo> push --force-with-lease=<feature-branch>:<步驟 0 記下的 SHA> origin <feature-branch>`——**帶 expected SHA，理由見下**）。在這裡順手推掉，等於用 gate 沒顯示過的 commit set 重寫 remote，正是 Step 4 硬 gate 要防的事。
+**本節到 commit 為止，不含任何 push。** branch 已 push 過時，覆寫 remote 需要 `--force-with-lease`——**那是 Step 5 的送出動作**，必須等重印摘要、使用者再次確認後才做（`git push --force-with-lease=<feature-branch>:<步驟 0 記下的 SHA> origin <feature-branch>`——**帶 expected SHA，理由見下**）。在這裡順手推掉，等於用 gate 沒顯示過的 commit set 重寫 remote，正是 Step 4 硬 gate 要防的事。
 
 - **`--force-with-lease`, NEVER `--force`** —— 前者在 remote 有他人新 commit 時會拒絕，後者直接蓋掉。
 - **一律帶 expected SHA：`--force-with-lease=<feature-branch>:<步驟 0 記下的 SHA>`**。裸的 `--force-with-lease` 比對的是本地 remote-tracking ref，而**本流程自己就會 fetch**（本節步驟 0 的 `fetch origin <feature-branch>`、`cleanup-cmd` 的 `fetch --prune`）——fetch 一跑，tracking ref 就更新成遠端的新狀態，lease 檢查形同虛設，協作者剛推的 commit 會被靜默覆蓋。**「別在中間 fetch」不是有效的防護**（流程自己會跑），錨定 SHA 才是。
@@ -132,7 +133,7 @@ git -C <toplevel> commit -m "<符合 target repo convention 的語意描述>
 ## push 失敗處理
 
 - `! [rejected] ...`：**先分流，兩種成因的處置相反**——
-  - **本輪做過 branch 內 squash**（歷史被刻意改寫，見上節）→ `git -C <toplevel> push --force-with-lease=<feature-branch>:<squash 前記下的遠端 SHA> origin <feature-branch>`（帶 expected SHA 的理由見上節）。**NEVER `pull --rebase` here** —— 它會把剛壓掉的那串 review commit 原封不動拉回來，squash **靜默失效**（PR 上痕跡照舊），或因同內容重疊卡在 rebase 衝突中途。
+  - **本輪做過 branch 內 squash**（歷史被刻意改寫，見上節）→ `git push --force-with-lease=<feature-branch>:<squash 前記下的遠端 SHA> origin <feature-branch>`（帶 expected SHA 的理由見上節）。**NEVER `pull --rebase` here** —— 它會把剛壓掉的那串 review commit 原封不動拉回來，squash **靜默失效**（PR 上痕跡照舊），或因同內容重疊卡在 rebase 衝突中途。
   - **沒改寫歷史**（純粹 remote 有他人新 commit）→ 提示 `git -C <repo> pull --rebase origin <branch>` 後重試（feature branch 通常不會撞，除非他人也 push 同 branch）。
 - `src refspec ... does not match` / 無 upstream → 用 `-u origin <branch>`。
 - gh 未登入（`gh auth status` 失敗）→ 停下，提示使用者 `gh auth login`，不要硬推。

@@ -379,7 +379,7 @@ Claude Code 的 `AskUserQuestion` 不可用（背景 turn／工具被停用）�
 
 ## Step 5：依路徑送出
 
-確認後逐 repo 執行（完整指令序列見 `ship-paths.md`）：
+確認後逐 repo 執行（實際 push 的執行形式與完整指令序列見 `ship-paths.md`）：
 
 **進入條件（逐次 outward call 的本地可判定 oracle）**：第一個 outward tool call 的
 immediately preceding assistant content 必須以字面 `Ship 摘要：` 開頭，並逐 repo 列出 Step 4
@@ -390,16 +390,16 @@ immediately preceding assistant content 必須以字面 `Ship 摘要：` 開頭�
 不滿足此形狀就不得進入任何 outward command；回到 Step 4 補齊摘要。摘要後若又改了
 commit set，舊摘要即失效，必須以新的緊鄰 `Ship 摘要：` 重做一次。
 
-> **修飾條件（不是第四條路徑）**：本輪做過 branch 內 squash 且該 branch 已 push 過 → 下列各路徑的 push 指令改為 `git -C <repo> push --force-with-lease=<feature-branch>:<squash 前記下的遠端 SHA> origin <feature-branch>`（**必須帶 expected SHA**——裸 lease 比對本地 tracking ref，而本流程自己會 fetch，詳見 `ship-exceptions.md`）（**NEVER `--force`**；被拒的分流見 `ship-exceptions.md`「push 失敗處理」——那裡 `pull --rebase` 會把剛壓掉的 commit 拉回來）。未 push 過的 branch 照常首推，不需要 force。
-- **PR 路徑**：`git -C <repo> push -u origin <feature-branch>` → 偵測既有 PR（`gh pr view`，多 repo 須 `-R <owner/repo>` 綁定）：有則指向、無則 `gh pr create`（同樣 `-R` 綁定；title/body 由 commits 組；deep-review 的「第三方審查資訊」若有一併放進 body）。完整綁定指令見 `ship-paths.md`。輸出 PR URL。**接著依 Step 4 的授權來源分流**：
+> **修飾條件（不是第四條路徑）**：本輪做過 branch 內 squash 且該 branch 已 push 過 → 依 `ship-exceptions.md`「送出前的 branch 內 squash」使用帶 squash 前已錨定 expected SHA 的 force-with-lease（**NEVER `--force`**；被拒的分流見同檔「push 失敗處理」——那裡 `pull --rebase` 會把剛壓掉的 commit 拉回來）。未 push 過的 branch 照常首推，不需要 force。
+- **PR 路徑**：依 `ship-paths.md`「PR 路徑」push feature branch → 偵測既有 PR（`gh pr view`，多 repo 須 `-R <owner/repo>` 綁定）：有則指向、無則 `gh pr create`（同樣 `-R` 綁定；title/body 由 commits 組；deep-review 的「第三方審查資訊」若有一併放進 body）。輸出 PR URL。**接著依 Step 4 的授權來源分流**：
 
   - 給了 **merge 類說法**（`--merge` / `--bypass-merge` / 對應裸說法）、或在 Step 4 選了「送出並 merge」→ 直接進「Merge 最後一哩」（flag 依「說法表」，`BLOCKED` 等受阻狀態依「merge 受阻時的分流」），**不再問一次**。
   - 給了 **`--pr` /「開 PR」**、或在 Step 4 選了「送出，停在 PR」→ **開完 PR 即止**，附一句提示：「之後說『merge』即可由我接手最後一哩（merge + 清 branch + 同步本地 default），預設保留你的 commit；要壓成一顆就說『merge 壓成一顆』」。
   - **`--pr` 不是 merge 的預備動作**——它是一個完整的終點。**NEVER treat "the PR is now open" as a reason to continue into merge**（rationalization 表已列）。
 
   **不 push default branch；未獲明說 merge 前不 merge。**
-- **直接 push 路徑**（escape hatch：確定無保護**且**使用者明說不用 PR）：push **當前 branch**（branch-first 無條件，故此處一定是 feature branch、非 default）：`git -C <repo> push -u origin <feature-branch>`（**顯式 remote + branch**，不用裸 `git push`——裸 push 受 `push.default` / `remote.pushDefault` / 非預期 upstream 影響，可能推到錯 remote 或多推 ref；`origin` 為 stand-in）。**本路徑不是無保護 repo 的預設**——預設仍是 PR（見 Step 1 第 4 項），走到這裡代表使用者已明說不用 PR，故不再回頭勸開 PR。
-- **Bootstrap 路徑**（`verdict: BOOTSTRAP`）：照抄腳本的 `bootstrap-cmd:`（推已驗證的本地 intended default 建立 baseline），完成後**重跑 `ship-state.sh`，重新取得 remote default、`protection:` 與 `required-policy:`，確認 BOOTSTRAP 已消失**。不得沿用 push 前的 policy/check snapshot。若目前 feature 相對新 baseline 無 diff，回報 endpoint 已由 baseline 達成，不製造空 PR；有 diff 才進正常 PR／checks／merge。重新偵測出 UNKNOWN、creation/policy conflict 或 required context 無法產生都 STOP，不 retry push、不 `--admin`。
+- **直接 push 路徑**（escape hatch：確定無保護**且**使用者明說不用 PR）：依 `ship-paths.md`「直接 push 路徑」push **當前 feature branch**。**本路徑不是無保護 repo 的預設**——預設仍是 PR（見 Step 1 第 4 項），走到這裡代表使用者已明說不用 PR，故不再回頭勸開 PR。
+- **Bootstrap 路徑**（`verdict: BOOTSTRAP`）：依 `ship-exceptions.md`「Bootstrap：全新空 repo 的第一次 ship」使用腳本的 `bootstrap-workdir:`／`bootstrap-cmd:`（推已驗證的本地 intended default 建立 baseline），完成後**重跑 `ship-state.sh`，重新取得 remote default、`protection:` 與 `required-policy:`，確認 BOOTSTRAP 已消失**。不得沿用 push 前的 policy/check snapshot。若目前 feature 相對新 baseline 無 diff，回報 endpoint 已由 baseline 達成，不製造空 PR；有 diff 才進正常 PR／checks／merge。重新偵測出 UNKNOWN、creation/policy conflict 或 required context 無法產生都 STOP，不 retry push、不 `--admin`。
 - 多 repo：逐 repo 送出，最後彙總（各 repo 的 PR URL / push 結果）。
 - push 失敗處理（`rejected` / 無 upstream / gh 未登入）→ 見 `ship-exceptions.md`「push 失敗處理」（單一來源）。
 
