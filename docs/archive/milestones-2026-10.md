@@ -218,3 +218,11 @@
   - 放棄:把歷史 Sonnet RED 改寫為 PASS；為純結案文件重跑既有模型 captures；將本地 candidate 完成當作 PR／merge 完成；將 active contract 在同一 commit 建立又刪除
   - 重議:completion candidate authority、doc audit 或本 PR required checks 未過時處理具體 blocker；行為重議依正式模型決策及既有 backlog
   - 關聯:root-cause-first-model-behavior;X-20261005-root-cause-first-completion-provenance;B-20261005-root-cause-first-sonnet-evidence;docs/plans/2026-10-05-root-cause-first-model-behavior.md
+
+- **M-20261005-project-canonical-push-local · 2026-10-05 Project 首次 push 指令完成雙平台本機驗收**：保留舊版 normal 的雙端首次 opaque deny RED 後，將實際 push 的 repo 綁定移到工具工作目錄、argv 改為 standalone `git push`；bootstrap helper 分別輸出 workdir 與 command。正式雙薄入口、outward hook／rules、送出授權、bootstrap 與 expected-SHA lease 邊界未放寬。Opus target 與 Codex 的 normal／lease／bootstrap／pending／unauthorized 共 10／10 PASS，完整 reference EOF、first-command／workdir、實際 local bare refs 與 lease 均核對；初次無效 bootstrap fixtures 保留，未混入驗收。4 個組合 regression、雙入口適用 validator、shellcheck 與完整 suite exit 0（1568 PASS／0 FAIL，234 秒）通過，351 個測試輸入快照一致。本機 feature branch `fix/project-canonical-push` 實作完成，active assignment 保留；未 commit／push／PR／merge。
+  - 日期來源:direct
+  - 證據:`/tmp/project-canonical-push-red-20261005`；`/tmp/project-canonical-push-green-20261005`；`/tmp/project-canonical-push-bootstrap-20261005`；`/tmp/project-canonical-push-acceptance-20261005.json`；`/tmp/project-canonical-push-suite-20261005.log`；`/tmp/project-canonical-push-suite-20261005.evidence.json`；shared/skills/project/references/pressure-tests.md「Scenario 40 — Push 首次指令與 outward gate 相容」
+  - 邊界:驗收為 Step 5 指令生成／Git／gate composition，pending 是 transport 模擬，非 native approval UI 或 live GitHub E2E；full suite 後僅驗收紀錄與 STATUS 追加，另驗 doc／xref，不冒充新文件已包含於原快照
+  - 放棄:放寬 hook 接受 opaque command；以終端成功掩蓋首次拒絕；重跑同 packet 洗綠；用缺 metadata 的 bootstrap fixture 判 skill 回歸；以 Codex-only validator 改掉 Claude 原生 frontmatter
+  - 重議:正式 target 再現首次 opaque push、repo 綁定錯誤、lease SHA 漂移或 pending 重試；工具不能可靠提供 target cwd；或正式 support／shipping scope 改變
+  - 關聯:D-20261005-project-canonical-push;X-20261005-project-opaque-push;X-20261005-project-bootstrap-fixture;D-20261005-claude-target-model-roles

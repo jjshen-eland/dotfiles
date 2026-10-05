@@ -8,11 +8,20 @@ Merge 另讀 [merge-workflow.md](merge-workflow.md)，例外處置先讀 [ship-e
 
 > **本檔通則**：下文所有 `origin` 為 canonical remote 的 **stand-in**——非 `origin` repo（如 fork 工作流）一律把 `origin` 讀作解析出的 remote（`git -C <repo> remote`：有 `origin` 用之、否則取第一個；fork 場景 push 目標與 PR/protection 查詢目標可能不同 remote，見 `log-prepare.md`「Step 1：逐 repo 狀態 + 流程偵測（先於任何 commit）」）。gh 指令多 repo 時用 `-R <owner/repo>` 或子 shell `cd` 綁定，勿靠 cwd 隱式解析。**host 假設 GitHub.com**（`gh` 走 authenticated default host、compare URL 用 `github.com`）；GHE / 自架需 `GH_HOST` + `host/owner/repo`，不在本 skill 自動處理範圍。
 
+## Push 的執行形式
+
+所有實際 push（含 bootstrap、force-with-lease 與重試）先把執行工具的工作目錄參數（如 `workdir`／`cwd`）
+綁定已查證的 canonical repo root，再以**獨立工具呼叫**直接執行 `git push …`。不要使用 `git -C … push`，
+也不要把 push 放進 wrapper、迴圈、pipeline 或 `cd … && …` 等複合指令：這些形式會在 Codex 的 outward gate
+被判為 opaque，尚未執行就遭拒絕。工具若無工作目錄參數，只能先以獨立呼叫切換並查證可持續的 cwd，再獨立
+push；無法可靠綁定時 STOP。下文每個 push 範例均以 target repo 的工作目錄執行；此形式不改變送出授權或
+approval policy，approval 生命週期遵循 runtime 已載入的契約。
+
 ## PR 路徑
 
 ```bash
 # 1. push feature branch（設 upstream）
-git -C <repo> push -u origin <feature-branch>
+git push -u origin <feature-branch>
 
 # 2. 偵測既有 PR（多 repo：-R 綁定，勿靠 cwd）
 gh pr view -R "$repo_slug" <feature-branch> --json url,state -q .url 2>/dev/null   # 有 → 印 URL 指向既有 PR（已 push 即更新）
@@ -40,7 +49,7 @@ gh pr create -R "$repo_slug" --base <default> --head <feature-branch> \
 
 僅在**明確確認無 protection、且使用者明說不用 PR** 時走，**顯式 remote + branch**（不用裸 `git push`——裸 push 受 `push.default` / `remote.pushDefault` / 非預期 upstream 影響，可能推到錯 remote 或多推 ref）：
 ```bash
-git -C <repo> push -u origin <branch>   # 顯式 remote+branch+設 upstream（已有 upstream 時 -u 無害）
+git push -u origin <branch>   # 顯式 remote+branch+設 upstream（已有 upstream 時 -u 無害）
 ```
 仍需 Step 4 使用者確認。push 後無 PR 動作。
 

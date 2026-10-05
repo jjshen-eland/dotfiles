@@ -110,3 +110,9 @@
   - 放棄:用 Sonnet robustness 失敗否定未承諾的模型範圍；只看 Opus 綠燈刪除承重規則；把 alias 當成固定 snapshot；品質未過就以成本或速度選模
   - 重議:repo default／明選 target 改變；resolved model 漂移造成行為差異；明確增加 Sonnet 支援承諾；或 target 與 probe 在相同 oracle 的分歧改變發布風險
   - 關聯:M-20260915-b23-model-floor-policy-reconciled;M-20260915-b05-deep-plan-model-policy-reassessed;D-20261002-project-model-bootstrap;claude/evals/README.md;docs/plans/2026-10-05-root-cause-first-model-behavior.md
+
+- **D-20261005-project-canonical-push · 2026-10-05 Project 的 repo 綁定移到執行工具工作目錄，保留 outward gate**：修正生成端與既有 gate 的衝突；共同 `ship-paths.md` 單點定義 push 執行形式，exceptions 引用同一來源，bootstrap helper 分開輸出 `bootstrap-workdir` 和 direct `bootstrap-cmd`。保持 explicit remote／branch 與錨定 expected SHA，不能因移除 `-C` 而倚賴未知 cwd。雙端 native acceptance 使用隔離本機 repo／bare remotes，含空白路徑與不同初始 cwd；它驗 command／Git 結果與 gate composition，不冒稱真 GitHub shipping 或 native approval UI 驗收。
+  - 日期來源:direct
+  - 放棄:複製規則到兩份薄入口；對 opaque 指令新增 hook allow exception；只移除 `-C` 而未綁定 repo；加入會執行 push 的 shell wrapper 使 policy 再次看不到 direct argv
+  - 重議:執行工具無法可靠綁定 repo；或 Codex gate／rules 語意改變時，以 fresh trace 重新驗收
+  - 關聯:project-canonical-push;X-20261005-project-opaque-push;D-20260912-cross-runtime-outward-gate;D-20261005-claude-target-model-roles;shared/skills/project/references/ship-paths.md
