@@ -1,5 +1,30 @@
 # Deep Plan — Evals
 
+## Declared document repair and checkpoints — #264
+
+Observed RED: `tests/deep-plan-routing.py DocumentRepair` against `29f76ed` rejected the canonical plan's
+staged checkpoint with `repo-baseline-drift`; the dependency declaration API was absent. Raw:
+`/tmp/issue-264-red-xubq8191.log`. These are synthetic controller fixtures, not native reviewer history.
+
+Frozen oracle: same-batch and explicitly restarted focused repair accept declared plan／SPEC／STATUS changes
+in unstaged, staged and committed states, preserving original results, baseline and counters. Reviewer artifacts
+expose actual worktree／index／HEAD deltas; blind input has no previous findings. Unchanged preexisting dirty code
+is preserved; changed code, unlisted Markdown, another repo, checkpoint code changes followed by revert,
+aliases／symlinks／mode changes, invalid dispositions and exhausted limits fail before dispatch. Review-time
+document／index／HEAD／artifact changes invalidate results. Version-1 import must prove its complete recorded
+snapshot and preserve existing results; unprovable dirty document baselines stop without rewriting the journal.
+
+Use the same isolated artifact through both runtime controller entries and Codex's public ticket launcher.
+Fresh-context workflow probes verify declaration and evidence transport; synthetic success cannot establish
+reviewer quality or justify changing mode, count or budget defaults.
+
+2026-10-05: 36 routing／2 repair-context tests and both validators passed; full suite exit 0, 1568／0.
+Both production targets passed checkpoint admission and code-drift refusal (4 captures); an additional v1
+round with a null document snapshot first reproduced a blocked import, then both targets passed continuation
+after the lookup fix (2 captures). Original histories and repository／Git metadata stayed unchanged; no reviewer
+was dispatched. Source hashes, raw traces and model resolution: `/tmp/issue-264-forward.ku4sKh` and
+`/tmp/issue-264-forward-v1.EKef26`; detailed boundaries: M-20261005-deep-plan-document-repair-local.
+
 ## State routing and reviewer budget isolation — 2026-10-03
 
 使用者明示安全契約：依有效基線／再審原因選模式；輪次只能控制派遣，不得改變 finding 等級；

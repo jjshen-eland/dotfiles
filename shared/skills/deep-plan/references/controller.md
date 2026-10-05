@@ -11,6 +11,10 @@ python3 <skill-dir>/scripts/review-state.py open --plan <absolute-plan> --repo <
 python3 <skill-dir>/scripts/review-state.py status --plan <absolute-plan>
 ```
 
+首次 `open` 以重複的 `--repair-document <absolute-canonical-md>` 宣告 findings 處置可能需要同步修正的
+SPEC／STATUS 等直接相依文件；canonical plan 自動包含，不用額外宣告。集合固定於 journal，不由
+`contracts` 或檔名推導；後續 `open` 不帶此旗標時沿用原集合，明列另一集合則拒絕。
+
 多 repo 重複 `--repo`；使用者明示增加 reviewer 時，`open` 帶 `--count N`。控制器預設是現行兩輪盲審；
 使用者選擇修後 focused 時加 `--policy focused`；只有明示選擇三輪才加 `--max-rounds 3`。
 同一 plan 的 companion journal 位於 plan 旁 `.<plan-name>.review/control.json`，跨 session／runtime 沿用。
@@ -20,6 +24,25 @@ python3 <skill-dir>/scripts/review-state.py status --plan <absolute-plan>
 狀態、輪次、上限、ticket、authorization evidence 都只交給 orchestrator。
 NEVER include controller output, progress, remaining opportunities or a predicted verdict in reviewer input.
 NEVER delete, rename or reinitialize a journal to obtain another review round.
+
+## 文件修正與 checkpoint 邊界
+
+編輯前核對 journal 的 `repair_documents`：只允許同一 target repo 內已宣告的既存 UTF-8 Markdown
+regular files 及 canonical plan 的內容修正。相依文件須使用 exact canonical path；symlink、別名、
+重命名、刪除、mode change、其他 repo 及未宣告文件不在允許集合。缺文件宣告時先停止處理該修正，
+不要修改後才試 admission，也不要把全部 Markdown 列為豁免。
+
+合法 unstaged／staged／committed 修正可在同批剩餘額度內 `prepare --reason repair`；文件 checkpoint
+必須逐顆是原 HEAD 後的單親 commit，且每顆只改允許文件，不能用程式修改再 revert 的最終 tree 冒充。
+原有 dirty 程式與其他 index／worktree 證據必須不變。宣告集合不增加額度，也不放寬 disposition gate。
+控制器保存受審文件的 worktree／index／HEAD 三層基線並產生實際 delta：focused packet 帶原 finding
+處置與完整差異；blind reviewer 另讀 `document_delta`，只有差異，不透露原 findings 或 controller 狀態。
+
+舊 version-1 journal 可用同一 `open` 與明列文件集合接續（只有 plan 時也以 `--repair-document <plan>`
+觸發基線核對）：helper 只在以原 HEAD 文件重建的完整
+index／worktree fingerprint 精確吻合既存有效 snapshot 時附加基線；舊 rounds、results、票證與計數
+不改。原文件已有無法重建的 dirty 內容／index 時會明確拒絕，先取得可核對基線證據；不得假造、
+清除 journal 或把當前文件當成原 baseline。升級本身不是 restart，也不授權新批次。
 
 ## 準備一輪
 
@@ -56,7 +79,8 @@ python3 <skill-dir>/scripts/review-state.py prepare --plan <absolute-plan> --rea
 ```
 
 finding index 從 0 開始；action 是 `fixed`／`rejected`／`accepted`。重複命中仍保留每位 reviewer 的原始紀錄，
-各自對應處置。Helper 檢查形狀、完整性及版本，產生實際 plan diff 並投影允許欄位；不能證明處置本身為真
+各自對應處置。Helper 檢查形狀、完整性及版本，產生實際 plan／宣告文件的三層 diff 並投影允許欄位；
+`contracts` 只是證據入口，不授予文件修改或漂移豁免。Helper 不能證明處置本身為真
 或 accepted 已獲授權，這仍依 workflow 查證。Focused packet 不包含 reviewer IDs、controller state 或 verdict。
 已知輪次／剩餘機會用語會被攔下；這不是任意自然語言的完美過濾器。
 

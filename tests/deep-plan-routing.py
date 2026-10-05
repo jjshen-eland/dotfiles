@@ -327,6 +327,367 @@ class Routing(unittest.TestCase):
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
 
 
+class DocumentRepair(unittest.TestCase):
+    """Issue #264: isolated document checkpoints, with immutable code controls."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.m = load(SCRIPT)
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name).resolve()
+        self.repo, outside, self.stub = seed(self.root)
+        self.plan = self.repo / "plan.md"
+        self.plan.write_bytes(outside.read_bytes())
+        self.spec = self.repo / "SPEC.md"
+        self.spec.write_text("# Contract\nReturn orders.\n")
+        self.state = self.repo / "STATUS.md"
+        self.state.write_text("# State\nContract correction pending.\n")
+        self.checkpoint([self.plan, self.spec, self.state])
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def git(self, *args):
+        return subprocess.check_output(["git", "-C", str(self.repo), *args], stderr=subprocess.STDOUT)
+
+    def stage(self, paths):
+        names = [str(p.relative_to(self.repo)) for p in paths]
+        self.git("add", "--", *names)
+        self.assertEqual(set(self.git("diff", "--cached", "--name-only").decode().splitlines()), set(names))
+        self.git("diff", "--cached", "--check")
+        self.assertTrue(self.git("diff", "--cached"))
+
+    def checkpoint(self, paths):
+        self.stage(paths)
+        self.assertEqual(self.git("branch", "--show-current").strip(), b"test/review")
+        self.git("-c", "user.name=Test", "-c", "user.email=test@example.org", "-c", "commit.gpgsign=false",
+                 "commit", "-qm", "test: document fixture checkpoint")
+
+    def start(self, documents=(), policy="focused", repos=None):
+        options = {"repair_documents": documents} if documents else {}
+        self.m.open_review(self.plan, repos or [self.repo], policy=policy, **options)
+        return self.complete()
+
+    def complete(self, reason="initial", packet=None):
+        ticket = self.m.prepare(self.plan, reason, packet)
+        self.m.claim(Path(ticket["ticket"]))
+        self.m.finish(Path(ticket["ticket"]), records(ticket["token"]))
+        return ticket
+
+    def packet(self):
+        last = self.m.status(self.plan)["rounds"][-1]
+        return {"baseline_sha256": last["plan_sha256"],
+                "dispositions": [{"finding": r["id"] + ":0", "action": "fixed", "evidence": ["plan.md:2"]}
+                                 for r in last["results"]],
+                "contracts": [str(self.spec) + ":2", str(self.state) + ":2"]}
+
+    def repair(self, paths, kind):
+        for path in paths:
+            path.write_text(path.read_text() + "Keep items; include count.\n")
+        if kind == "staged":
+            self.stage(paths)
+        elif kind == "committed":
+            self.checkpoint(paths)
+
+    def restart(self):
+        auth = self.root / "synthetic-authorization.txt"
+        auth.write_text("SYNTHETIC FIXTURE ONLY: request a bounded focused batch.\n")
+        sha = self.m.digest(self.m.control_path(self.plan).read_bytes())
+        return self.m.restart(self.plan, auth, sha)
+
+    def test_canonical_plan_staged_checkpoint_is_admitted(self):
+        self.start()
+        packet = self.packet()
+        self.repair([self.plan], "staged")
+        ticket = self.m.prepare(self.plan, "repair", packet)
+        self.assertEqual(ticket["mode"], "focused")
+        self.assertEqual(len(self.m.status(self.plan)["rounds"]), 2)
+
+    def test_document_states_same_batch_and_authorized_restart(self):
+        # Every matrix cell has its own repository and journal.
+        for restart in (False, True):
+            for kind in ("unstaged", "staged", "committed"):
+                with self.subTest(restart=restart, kind=kind):
+                    case = DocumentRepair("test_canonical_plan_staged_checkpoint_is_admitted")
+                    case.setUp()
+                    try:
+                        (case.repo / "api.py").write_text("def response(rows): return {'items': rows, 'dirty': True}\n")
+                        case.start([case.spec, case.state])
+                        packet = case.packet()
+                        if restart:
+                            case.complete("repair", packet)
+                            packet = case.packet()
+                        case.repair([case.plan, case.spec, case.state], kind)
+                        if restart:
+                            old = case.m.status(case.plan)
+                            case.restart()
+                            self.assertEqual(case.m.status(case.plan)["previous_batches"][-1]["rounds"], old["rounds"])
+                        ticket = case.m.prepare(case.plan, "repair", packet)
+                        self.assertEqual(ticket["mode"], "focused")
+                        evidence = json.loads(Path(ticket["packet"]).read_text())
+                        delta = json.dumps(evidence["document_diffs"])
+                        for path in (case.plan, case.spec, case.state):
+                            self.assertIn(str(path), delta)
+                        self.assertIn("Keep items; include count.", delta)
+                        self.assertEqual(len(case.m.status(case.plan)["rounds"]), 1 if restart else 2)
+                    finally:
+                        case.tearDown()
+
+    def test_worktree_index_and_head_deltas_are_all_visible(self):
+        self.start([self.spec])
+        packet = self.packet()
+        self.spec.write_text("# Contract\nCommitted correction.\n")
+        self.checkpoint([self.spec])
+        self.spec.write_text("# Contract\nStaged correction.\n")
+        self.stage([self.spec])
+        self.spec.write_text("# Contract\nWorking correction.\n")
+        ticket = self.m.prepare(self.plan, "repair", packet)
+        evidence = json.loads(Path(ticket["packet"]).read_text())
+        document = next(d for d in evidence["document_diffs"] if d["path"] == str(self.spec))
+        for layer, text in (("head", "Committed"), ("index", "Staged"), ("worktree", "Working")):
+            self.assertIn("-Return orders.", document[layer])
+            self.assertIn(text + " correction.", document[layer])
+
+    def test_contract_evidence_does_not_declare_edit_permission(self):
+        self.start()
+        packet = self.packet()
+        self.repair([self.spec], "unstaged")
+        with self.assertRaisesRegex(ValueError, "repo-baseline-drift"):
+            self.m.prepare(self.plan, "repair", packet)
+        self.assertEqual(len(self.m.status(self.plan)["rounds"]), 1)
+
+    def test_code_and_unlisted_markdown_still_block_before_dispatch(self):
+        for filename, kind in (("api.py", "unstaged"), ("api.py", "staged"), ("api.py", "committed"),
+                               ("STATUS.md", "unstaged")):
+            with self.subTest(filename=filename, kind=kind):
+                case = DocumentRepair("test_canonical_plan_staged_checkpoint_is_admitted")
+                case.setUp()
+                try:
+                    case.start([case.spec])
+                    packet = case.packet()
+                    case.repair([case.repo / filename], kind)
+                    case.restart()
+                    with self.assertRaisesRegex(ValueError, "repo-baseline-drift"):
+                        case.m.prepare(case.plan, "repair", packet)
+                    self.assertEqual(case.m.status(case.plan)["rounds"], [])
+                    self.assertFalse((case.root / "dispatch.jsonl").exists())
+                finally:
+                    case.tearDown()
+
+    def test_other_repo_and_reverted_code_checkpoint_are_rejected(self):
+        other_root = self.root / "other"
+        other_root.mkdir()
+        other, _, _ = seed(other_root)
+        self.start([self.spec], repos=[self.repo, other])
+        packet = self.packet()
+        original = (other / "api.py").read_bytes()
+        (other / "api.py").write_text("changed\n")
+        with self.assertRaisesRegex(ValueError, "repo-baseline-drift"):
+            self.m.prepare(self.plan, "repair", packet)
+        (other / "api.py").write_bytes(original)
+        code = self.repo / "api.py"
+        original = code.read_bytes()
+        self.repair([code], "committed")
+        code.write_bytes(original)
+        self.checkpoint([code])
+        with self.assertRaisesRegex(ValueError, "repo-baseline-drift"):
+            self.m.prepare(self.plan, "repair", packet)
+
+    def test_declaration_rejects_alias_symlink_code_and_scope_expansion(self):
+        link = self.repo / "alias.md"
+        link.symlink_to(self.spec)
+        for document in (link, self.repo / ".." / "repo" / "SPEC.md", self.repo / "api.py"):
+            with self.subTest(path=document), self.assertRaises(ValueError):
+                self.m.open_review(self.plan, [self.repo], repair_documents=[document])
+        self.start([self.spec])
+        with self.assertRaisesRegex(ValueError, "existing.*scope|document.*scope"):
+            self.m.open_review(self.plan, [self.repo], repair_documents=[self.spec, self.state])
+
+    def test_declared_document_replacement_and_mode_change_are_rejected(self):
+        self.start([self.spec])
+        packet = self.packet()
+        original = self.spec.read_bytes()
+        self.spec.unlink()
+        self.spec.symlink_to(self.state)
+        with self.assertRaises(ValueError):
+            self.m.prepare(self.plan, "repair", packet)
+        self.spec.unlink()
+        self.spec.write_bytes(original)
+        self.spec.chmod(0o755)
+        with self.assertRaises(ValueError):
+            self.m.prepare(self.plan, "repair", packet)
+
+    def test_review_freezes_documents_index_head_and_delta_artifact(self):
+        for change in ("worktree", "index", "head", "artifact"):
+            with self.subTest(change=change):
+                case = DocumentRepair("test_canonical_plan_staged_checkpoint_is_admitted")
+                case.setUp()
+                try:
+                    case.start([case.spec])
+                    packet = case.packet()
+                    case.repair([case.spec], "unstaged")
+                    ticket = case.m.prepare(case.plan, "repair", packet)
+                    case.m.claim(Path(ticket["ticket"]))
+                    if change == "artifact":
+                        Path(ticket["packet"]).write_text("replaced\n")
+                    elif change == "index":
+                        case.stage([case.spec])
+                    elif change == "head":
+                        case.checkpoint([case.spec])
+                    else:
+                        case.spec.write_text("changed during review\n")
+                    with self.assertRaises(ValueError):
+                        case.m.finish(Path(ticket["ticket"]), records("new"))
+                    self.assertEqual(case.m.status(case.plan)["rounds"][-1]["phase"], "invalid")
+                finally:
+                    case.tearDown()
+
+    def test_blind_repair_exposes_delta_without_prior_findings(self):
+        self.start([self.spec], policy="blind")
+        packet = self.packet()
+        self.repair([self.plan, self.spec], "committed")
+        ticket = self.m.prepare(self.plan, "repair", packet)
+        self.assertEqual(ticket["mode"], "blind")
+        self.assertIsNone(ticket["packet"])
+        delta = Path(ticket["document_delta"]).read_text()
+        self.assertIn("Keep items; include count.", delta)
+        self.assertNotIn("wire mismatch", delta)
+        self.assertNotIn("findings_and_evidence", delta)
+        self.assertIn(ticket["document_delta"], Path(ticket["prompt"]).read_text())
+
+    def test_document_set_does_not_bypass_dispositions_or_cap(self):
+        self.start([self.spec])
+        packet = self.packet()
+        self.repair([self.spec], "unstaged")
+        invalid = dict(packet, dispositions=[])
+        with self.assertRaisesRegex(ValueError, "undisposed"):
+            self.m.prepare(self.plan, "repair", invalid)
+        self.complete("repair", packet)
+        self.repair([self.spec], "unstaged")
+        with self.assertRaisesRegex(ValueError, "round-limit"):
+            self.m.prepare(self.plan, "repair", self.packet())
+
+    def test_legacy_journal_import_proves_original_snapshot_and_preserves_results(self):
+        (self.repo / "api.py").write_text("original dirty code\n")
+        self.start()
+        packet = self.packet()
+        path = self.m.control_path(self.plan)
+        legacy = self.m.status(self.plan)
+        legacy["version"] = 1
+        legacy.pop("repair_documents", None)
+        legacy.pop("imported_baseline", None)
+        for rnd in legacy["rounds"]:
+            rnd.pop("document_snapshot", None)
+        path.write_text(json.dumps(legacy))
+        self.repair([self.plan, self.spec, self.state], "committed")
+        upgraded = self.m.open_review(self.plan, [self.repo], repair_documents=[self.spec, self.state])
+        self.assertEqual(upgraded["rounds"], legacy["rounds"])
+        self.assertEqual(upgraded["batch"], legacy["batch"])
+        self.assertEqual(upgraded["max_rounds"], legacy["max_rounds"])
+        ticket = self.m.prepare(self.plan, "repair", packet)
+        self.assertEqual(ticket["mode"], "focused")
+
+    def test_unprovable_legacy_document_baseline_stops_without_rewriting_journal(self):
+        self.spec.write_text("preexisting dirty contract\n")
+        self.start()
+        path = self.m.control_path(self.plan)
+        legacy = self.m.status(self.plan)
+        legacy["version"] = 1
+        legacy.pop("repair_documents", None)
+        legacy.pop("imported_baseline", None)
+        for rnd in legacy["rounds"]:
+            rnd.pop("document_snapshot", None)
+        path.write_text(json.dumps(legacy))
+        original = path.read_bytes()
+        self.repair([self.spec], "unstaged")
+        with self.assertRaises(ValueError):
+            self.m.open_review(self.plan, [self.repo], repair_documents=[self.spec])
+        self.assertEqual(path.read_bytes(), original)
+
+    def test_v1_round_completed_by_new_controller_can_import_document_baseline(self):
+        self.m.open_review(self.plan, [self.repo], policy="focused")
+        path = self.m.control_path(self.plan)
+        legacy = self.m.status(self.plan)
+        legacy["version"] = 1
+        legacy.pop("repair_documents")
+        legacy.pop("imported_baseline")
+        path.write_text(json.dumps(legacy))
+        self.complete()
+        before = self.m.status(self.plan)
+        self.assertIsNone(before["rounds"][-1]["document_snapshot"])
+        packet = self.packet()
+        self.repair([self.plan, self.spec], "committed")
+        self.m.open_review(self.plan, [self.repo], repair_documents=[self.spec])
+        self.assertEqual(self.m.status(self.plan)["rounds"], before["rounds"])
+        ticket = self.m.prepare(self.plan, "repair", packet)
+        self.assertEqual(ticket["mode"], "focused")
+
+    def test_both_runtime_controller_clis_admit_declared_checkpoints(self):
+        for runtime in ("codex", "claude"):
+            with self.subTest(runtime=runtime):
+                case = DocumentRepair("test_canonical_plan_staged_checkpoint_is_admitted")
+                case.setUp()
+                try:
+                    controller = ROOT / runtime / "skills/deep-plan/scripts/review-state.py"
+                    args = [sys.executable, "-B", str(controller)]
+                    opened = subprocess.run(args + ["open", "--plan", str(case.plan), "--repo", str(case.repo),
+                        "--policy", "focused", "--repair-document", str(case.spec)], capture_output=True, text=True)
+                    self.assertEqual(opened.returncode, 0, opened.stdout + opened.stderr)
+                    case.complete()
+                    packet = case.packet()
+                    case.repair([case.plan, case.spec], "committed")
+                    packet_path = case.root / "repair.json"
+                    packet_path.write_text(json.dumps(packet))
+                    prepared = subprocess.run(args + ["prepare", "--plan", str(case.plan), "--reason", "repair",
+                        "--repair", str(packet_path)], capture_output=True, text=True)
+                    self.assertEqual(prepared.returncode, 0, prepared.stdout + prepared.stderr)
+                    ticket = json.loads(prepared.stdout)
+                    self.assertEqual(ticket["mode"], "focused")
+                    self.assertIn(str(case.spec), Path(ticket["packet"]).read_text())
+                    claim = subprocess.run(args + ["claim", "--ticket", ticket["ticket"]], capture_output=True, text=True)
+                    self.assertEqual(claim.returncode, 0, claim.stdout + claim.stderr)
+                    result_path = case.root / "synthetic-results.json"
+                    result_path.write_text(json.dumps(records(runtime)))
+                    finished = subprocess.run(args + ["finish", "--ticket", ticket["ticket"], "--results", str(result_path)],
+                        capture_output=True, text=True)
+                    self.assertEqual(finished.returncode, 0, finished.stdout + finished.stderr)
+                    self.assertTrue(json.loads(finished.stdout)["review_valid"])
+                finally:
+                    case.tearDown()
+
+    def test_public_launcher_transports_focused_and_blind_document_deltas(self):
+        for policy in ("blind", "focused"):
+            with self.subTest(policy=policy):
+                case = DocumentRepair("test_canonical_plan_staged_checkpoint_is_admitted")
+                case.setUp()
+                try:
+                    case.start([case.spec], policy=policy)
+                    packet = case.packet()
+                    case.repair([case.plan, case.spec], "committed")
+                    ticket = case.m.prepare(case.plan, "repair", packet)
+                    args = [sys.executable, "-B", str(LAUNCHER), "--plan", str(case.plan), "--repo", str(case.repo),
+                        "--brief", str(LAUNCHER.parent.parent / "references/planner-brief.md"),
+                        "--schema", str(LAUNCHER.parent.parent / "assets/reviewer-output.schema.json"),
+                        "--codex-bin", str(case.stub), "--ticket", ticket["ticket"]]
+                    log = case.root / "dispatch.jsonl"
+                    ran = subprocess.run(args, capture_output=True, text=True, env=dict(os.environ, DISPATCH_LOG=str(log)))
+                    self.assertEqual(ran.returncode, 0, ran.stdout + ran.stderr)
+                    manifest = json.loads(ran.stdout)
+                    self.assertTrue(manifest["admission"]["review_valid"])
+                    self.assertEqual(len(log.read_text().splitlines()), 2)
+                    field = "document_delta" if policy == "blind" else "packet"
+                    artifact = ticket[field]
+                    self.assertIn(str(case.spec), Path(artifact).read_text())
+                    self.assertIn(artifact, log.read_text())
+                    if policy == "blind":
+                        self.assertEqual(manifest["review_mode"], "discovery")
+                        self.assertEqual(manifest["document_delta_sha256"], manifest["document_delta_sha256_after"])
+                finally:
+                    case.tearDown()
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--transport":
         # Existing process-tree/schema tests exercise the transport function;

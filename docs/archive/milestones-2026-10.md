@@ -233,3 +233,13 @@
   - 放棄:同一 commit 建立又移除唯一 assignment；把未達成的 endpoint 記成已送出；放寬 hook／rules；只以 model terminal success 判驗收；以不同 ref 拼法否定正確 anchored lease
   - 重議:completion candidate authority、doc audit 或 required CI 未過；正式 target 再現 first-command／repo binding／lease／pending 回歸時以新 raw evidence 處理
   - 關聯:project-canonical-push;357dc49;D-20261005-project-canonical-push;M-20261005-project-canonical-push-local;X-20261005-project-push-upstream-coverage
+
+- **M-20261005-deep-plan-document-repair-local · 2026-10-05 Deep-plan 文件修正與 checkpoint 本機驗收**：#264 的 canonical plan／明列 SPEC、STATUS 修正可在同批或明示 focused restart 後，以 unstaged／staged／committed 狀態續審；controller 保存 worktree／index／HEAD 實際差異，public launcher 能傳遞 focused packet 與不含原 finding 的 blind delta。未宣告文件、程式、其他 repo、alias／symlink／mode／checkpoint ancestry、處置與 cap 防護維持；逐 commit 核對也拒絕程式修改再 revert。舊 v1 journal 只有整份原 snapshot hash 可證明時才附加文件基線，原 rounds／results／票證／計數不改。
+  - 日期來源:direct
+  - 驗收:舊 source staged plan RED 保留於 `/tmp/issue-264-red-xubq8191.log`；追加 v1 由新 controller 完成一輪後留下空基線欄位的案例，先重現 import 被遮住，再修正取值分支。最後 36 routing＋2 repair-context、雙入口 quick_validate 通過；最後 `./tests/run.sh` exit 0、1568 PASS／0 FAIL、280 秒，log `/tmp/issue-264-final-suite-h2ynrs84.log`。後續只追加驗收紀錄與 STATUS，另驗 doc audit／xref，不宣稱它們在原 suite 快照內
+  - Native:固定同一 query／fixture，Codex gpt-6.1-sol／xhigh／default（CLI 0.160.0）與 Claude opus[1m]→claude-opus-5-5[1m]／high（CLI 2.1.289）的正向與程式漂移拒絕共 4／4；追加空基線修復後，同兩 target 的 v1 接續 2／2。正常只保留下一份 reserved ticket，拒絕不消耗額度；所有 target repo／Git metadata、原 results／batch／policy／count 均保持，未 dispatch reviewer。兩份 source copy 的 hashes／raw traces／outcomes 分別保留於 `/tmp/issue-264-forward.ku4sKh`、`/tmp/issue-264-forward-v1.EKef26`，禁讀 eval／原 checkout 的工具命中均零
+  - 限制:Native 是 synthetic prior results 的 controller preparation／證據傳遞驗證，不是真實 review 歷史、finding 品質或 GO 判定；未改正式 blind／兩輪 defaults。相依集合固定於初始宣告，v1 原 dirty 文件內容／index 不能精確重建時 fail closed，不猜基線
+  - 範圍:branch=fix/deep-plan-document-repair；本機實作與驗收完成，active assignment 保留；未 commit／push／PR／merge／部署
+  - 放棄:全 Markdown 排除、reset snapshot、重建 journal、用最終 tree 相同放過程式 checkpoint、以機械 green 外推模型品質
+  - 重議:相同允許狀態再被拒絕、未宣告漂移可取 ticket、審查執行期間漂移未使結果失效、或可證明的 v1 基線仍不能無損接續
+  - 關聯:#264;deep-plan-document-repair;D-20261005-deep-plan-document-repair-baseline;D-20261003-deep-plan-controller-adoption;tests/deep-plan-routing.py
