@@ -226,3 +226,10 @@
   - 放棄:放寬 hook 接受 opaque command；以終端成功掩蓋首次拒絕；重跑同 packet 洗綠；用缺 metadata 的 bootstrap fixture 判 skill 回歸；以 Codex-only validator 改掉 Claude 原生 frontmatter
   - 重議:正式 target 再現首次 opaque push、repo 綁定錯誤、lease SHA 漂移或 pending 重試；工具不能可靠提供 target cwd；或正式 support／shipping scope 改變
   - 關聯:D-20261005-project-canonical-push;X-20261005-project-opaque-push;X-20261005-project-bootstrap-fixture;D-20261005-claude-target-model-roles
+
+- **M-20261005-project-canonical-push-workline-complete · 2026-10-05 Project canonical push 工作線完成本地結案準備**：實作 commit `357dc49` 已保存 exact active assignment；同 steward `codex:project-canonical-push` 驗證整個 locked repo set 只有本 work item，post-completion 無 dead stewardship reference，再移除 completed item。上游 log-prepare 的三個衝突範例現只指向 single command authority；原 focused 五案雙端 10／10 與上游 normal／lease 四個有效 captures 支援本批採用，所有 reader FAIL／capacity error／bootstrap-invalid 原 packet 保留。5 個機械 regression／oracle controls 通過，最新 full suite exit 0、1568 PASS／0 FAIL、243 秒，351 inputs 前後一致，helper 同 environment REUSE；後續純結案文件另驗 doc／xref。PR／required CI／merge endpoint pending，尚未 push。
+  - 日期來源:direct
+  - 證據:`/tmp/project-canonical-push-upstream-acceptance-20261005.json`；`/tmp/project-canonical-push-final-suite-20261005.log`；`/tmp/project-canonical-push-final-suite-20261005.evidence.json`；shared/skills/project/references/pressure-tests.md「Scenario 40 — Push 首次指令與 outward gate 相容」
+  - 放棄:同一 commit 建立又移除唯一 assignment；把未達成的 endpoint 記成已送出；放寬 hook／rules；只以 model terminal success 判驗收；以不同 ref 拼法否定正確 anchored lease
+  - 重議:completion candidate authority、doc audit 或 required CI 未過；正式 target 再現 first-command／repo binding／lease／pending 回歸時以新 raw evidence 處理
+  - 關聯:project-canonical-push;357dc49;D-20261005-project-canonical-push;M-20261005-project-canonical-push-local;X-20261005-project-push-upstream-coverage

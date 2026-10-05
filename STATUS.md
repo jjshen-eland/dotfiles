@@ -12,46 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### Project push 指令與 Codex outward gate 相容
-
-- **Writer**: codex:project-canonical-push
-- **Workspace**: branch=fix/project-canonical-push
-- **Write Scope**: shared/skills/project/references, shared/skills/project/scripts/ship-state.sh, tests
-- **Dossier Steward**: codex:project-canonical-push
-- **Context**: `$project --merge` 的正常送出範例使用 `git -C <repo> push`，但既有 Codex hook 將此形式判為
-  opaque 並拒絕；本輪本機對照證實它不匹配 push prefix rule，而直接 `git push` 匹配 `prompt`。
-  force-with-lease 範例及 `ship-state.sh` 的 bootstrap-cmd 同樣產生帶 `-C` 的 push。
-- **Goal**: Project 首次送出 push 即使用符合 gate 的 canonical command，消除指令形狀造成的
-  blocked／重試，同時維持精確 repo 綁定與既有送出安全契約。
-- **Acceptance Criteria**:
-  1. 正常 PR／branch push、force-with-lease 及 bootstrap helper 輸出的送出指令，均由工具工作目錄
-     綁定已查證的 canonical repo root，獨立執行直接 `git push`；保留 explicit remote／branch、upstream
-     與已錨定的 expected SHA。不能把 `cd`、wrapper 或其他命令與 push 合併，也不能依賴未知 cwd。
-  2. 先固定舊範例／helper 輸出遭 gate 拒絕的 RED；修後組合驗證證實首次 push 不再觸發 opaque deny，
-     並匹配既有執行政策。opaque 指令仍受阻，canonical action 仍依政策進行 approval；pending approval
-     不被當成失敗或觸發重試。dry-run 維持既有語意與保守 approval 邊界。
-  3. Claude Code 與 Codex 對同一 fixture／oracle 都通過；正式 target 遵循 `claude/evals/README.md`
-     「模型樓層政策」，保存原始 trace 與 alias／resolved model／effort／service tier／CLI。
-     native trace 證明 repo 綁定、首次指令形狀及被推送的 branch 正確，不能僅以靜態文字判綠。
-  4. 授權、default branch 保護、Ship 摘要、bootstrap 條件與 force-with-lease 的 expected SHA 不變；
-     測試僅使用隔離 fixtures／本地 bare remotes，包含不同 repo／含空白路徑的綁定 control。
-     受影響 regressions、雙入口 validator、doc audit 與 `./tests/run.sh` 均以 exit code 通過。
-- **Constraints**: 修正限於 Project 的指令生成、共用 reference 與必要 eval／regression；不放寬
-  `scripts/outward-action-gate.py`、Codex rules 或 runtime approval policy，不新增送出權限。
-  修改 skill 前完成 repo 的 authoring preflight；先重現再做最小修正，不以補救重試冒充根因修復。
-  使用者已明示 `$project --merge`；依 Project gates 完成本批 commit／feature push／PR／required CI／merge，
-  不含部署或其他 repo。
-- **進度**: 正常／lease／bootstrap 的 push 改為工具工作目錄綁定 repo 的 direct command；Log 上游
-  三個漏修範例也已改為指向單一 command authority。原 focused 五案雙平台 10／10、上游 normal／lease
-  四個有效 captures 通過；reader FAIL、capacity error 與無效 bootstrap 原 packet 如實保留。
-  雙薄入口與 hook／rules 未改，5 個組合／oracle controls 通過；最後一次 full suite exit 0（1568／0），
-  351 個 inputs 前後一致、243 秒，未 commit／push。
-- **下一步**: 將 assignment 存入實作 commit 的 ancestry，再做
-  結案 commit 與 candidate authority gate，送至已授權 PR／required CI／merge endpoint。
-- **關聯**: D-20260912-cross-runtime-outward-gate; D-20260913-project-merge-authorization-ci;
-  D-20261005-claude-target-model-roles; D-20261005-project-canonical-push;
-  X-20261005-project-opaque-push; X-20261005-project-bootstrap-fixture;
-  M-20261005-project-canonical-push-local; X-20261005-project-push-upstream-coverage
+目前無進行中項目。
 
 ## 暫停中
 
