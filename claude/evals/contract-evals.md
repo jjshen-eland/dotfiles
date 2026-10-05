@@ -72,7 +72,8 @@ cd "$SB/g6-r1/work" && HOME="$SB/g6-r1/home-rules" claude -p \
 ```
 
 > ✅ **樓層（2026-08-10 已補齊）**：G1a/G1b/G2/G4/G4b/G6/G7 **全部在 Sonnet 上重跑過**，
-> fixture 皆由 `setup-sandboxes.sh` 產生。`README.md`「模型樓層政策」明訂 Sonnet 才是 PASS 門檻。
+> fixture 皆由 `setup-sandboxes.sh` 產生。這批執行時的政策以 Sonnet 為 PASS 門檻；現行模型角色
+> 以 `README.md`「模型樓層政策」為準，歷史結果不因此改判。
 >
 > **重跑推翻了兩條原本寫在 Opus 數據上的結論**——這正是樓層政策存在的理由，記在此處以免被當成
 > 例行迴歸略過：

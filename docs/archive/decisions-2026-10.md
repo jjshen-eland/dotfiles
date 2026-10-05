@@ -103,3 +103,10 @@
   - 放棄:再做 #246 純 mode split；只縮薄入口或按固定字數刪安全契約；將 normalizer／terminal success 視為 authority 或 mutation oracle；另建無必要的 controller／receipt
   - 重議:實際新 trace 顯示 stage 漏讀、越權、false noop、輸出品質回歸或收益不成立時，固定該原因只驗受影響路徑；不追加全面 prose 審查
   - 關聯:project-reference-routing;X-20261002-project-loading-candidates;D-20261004-project-reuse-mechanical-adoption;docs/plans/2026-10-04-project-reference-routing.md;shared/skills/project/references/pressure-tests.md
+
+- **D-20261005-claude-target-model-roles · 2026-10-05 雙平台正式驗收採各端 production target，Claude 以 Opus、Sonnet 作規則詮釋輔助**：舊中央政策把 Sonnet 一律列為紀律型 skill 發布門，但 repo 自 2026-07-07 已以 `opus[1m]` 為 Claude Code default，使用者也明確表示平常工作通常不採用 Opus 以下模型。portable skill 以同一 fixture／oracle 在兩端各自的實際 production target 驗收：Claude Code 以 Opus 為基準，Codex 以 repo 設定或當次明選的 Codex model 為基準，單端 GREEN 不得冒充雙端完成，Claude 模型階層也不映射到 Codex。各端保存 alias、resolved model、effort、service tier 與 CLI。Sonnet 只作規則詮釋、邊際承重與 robustness 輔助；其 RED 必須保留，可支持保留規則或設計新實驗，但只有交付明確承諾支援 Sonnet 或預先將它列為 target 時才阻擋。G1a／G2 的舊證據仍有效：Opus 兩臂皆綠不能支持刪規則，規則刪改仍需 Sonnet 成對比較或同等直接證據。此決策不把任何歷史 Sonnet RED 重判為 PASS。
+  - 日期來源:direct
+  - 證據:`claude/settings.json` 的 `opus[1m]`；M-20260915-b05-deep-plan-model-policy-reassessed；D-20261002-project-model-bootstrap；D-20261003-review-skills-retain-core；本輪 `/tmp/root-cause-first-opus-{completion,v2-insufficient,v2-controls}-20261005`
+  - 放棄:用 Sonnet robustness 失敗否定未承諾的模型範圍；只看 Opus 綠燈刪除承重規則；把 alias 當成固定 snapshot；品質未過就以成本或速度選模
+  - 重議:repo default／明選 target 改變；resolved model 漂移造成行為差異；明確增加 Sonnet 支援承諾；或 target 與 probe 在相同 oracle 的分歧改變發布風險
+  - 關聯:M-20260915-b23-model-floor-policy-reconciled;M-20260915-b05-deep-plan-model-policy-reassessed;D-20261002-project-model-bootstrap;claude/evals/README.md;docs/plans/2026-10-05-root-cause-first-model-behavior.md

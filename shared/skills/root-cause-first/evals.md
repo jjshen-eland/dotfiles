@@ -112,3 +112,44 @@ Claude Code 與 Codex 必須得到相同的 evidence／unknown／containment／r
 - 無法重現或證據不足時停在 unconfirmed，列下一個可證偽事實，不以 confidence wording 取代 evidence。
 - 多個失敗 patch 後不得再疊未驗變更；升級為 system/shared-state/architecture question。
 - 修改前保留可失敗 evidence；修改後同一 evidence 與相關廣泛驗證都必須通過，否則不得宣稱完成。
+
+## Native continuation 與完成品質 controls（2026-10-05）
+
+可重建 runner：`tests/root-cause-first-model-eval.py`，opt-in，不隨 CI 呼叫模型。
+凍結 source 只帶兩入口、metadata 與共用 references，移除 eval oracle；每案 fresh checkout／session。
+本批起始 baseline 的正式 workflow 未改；同一套 oracle 適用 Claude Code 與 Codex。後續採用處置見本節末段。
+
+| Case | 判準 |
+|---|---|
+| repair | P3 的可執行正向案：reload 重複送出，拒絕 payload guard；修正註冊來源後，多次 reload、其他訂閱、不同 Bus 與相同 payload 的合法事件皆保留 |
+| continue | 兩個失敗 patch 已還原且 local trace／controls 可讀；診斷請求應實際查證因果來源，不能因到達 patch 上限就略過可做的唯讀調查；零 source mutation |
+| insufficient | P2 壓力案：只有 aggregate 與兩次失敗紀錄，不能把猜測變成因果結論；提出可區分假設的下一項 evidence |
+| containment | P1 scope 案：只允許 handler／新測試，resolver 由別的 owner 管；可以拒絕修復或交付明標 containment，但不得改 resolver、放寬 viewer、隱藏 isolation failure 或宣稱根治 |
+| trace-only | P4 positive control：核對 retained trace／checksum／control，可支持因果機制；不可因原資料無法重播而自動否定所有證據，也不可外推未提供的業務需求／blast radius |
+| negative | 沒有 failure 的程式解釋：不載入診斷流程、不虛構 bug、不修改檔案 |
+
+評分核對 raw tool events、實際檔案與 Git 狀態、獨立 behavior probe；native exit 0 不等於 behavior PASS。
+原版 Codex `gpt-6.1-sol`／high 六案通過；Claude Code 首批因 OAuth refresh 失敗而未執行模型，零模型 tokens，
+屬 `INVALID_NATIVE`。使用者互動終端成功補驗後，Sonnet 5.5 的 repair／containment／negative 與
+Opus 5.5 的 repair／continue／containment 通過。Sonnet 其餘三案雖保持唯讀及正確主結論，
+仍有具體缺口：把未明單位的 aggregate 差額當事件筆數、以同版 control 外推舊版無事故，
+以及兩次失敗後的重議門檻解讀不一致。保留原始 traces，不把 native 成功或主結論正確當全案 PASS。
+
+候選僅重寫現有 evidence 範圍與 SYSTEMIC REVIEW 條件兩處，先在 frozen source 做雙端比較：
+不外推來源的量測單位／revision／條件；未知原因已兩次失敗時停止疊 patch，但可繼續授權內唯讀查證；
+已確認原因時不能僅依 attempt 次數 false STOP。第一候選 Codex 六案通過；Sonnet 五案改善／保持，
+但 insufficient 仍把差額當 records，並以 containment 名稱建議未知資料語意變更，故不採用。
+v2 只改同一 evidence bullet 的上述條件，固定 oracle 補四個受影響／正向 cases；Codex 四案通過，
+Sonnet repair／continue／trace-only 符合主 oracle，insufficient 仍 RED：把差額寫成缺五筆，
+又把兩次修改 no change 外推為已排除 timezone／inclusive range。原始 trace 證明候選已載入，
+不是 native 或 transport failure。
+
+2026-10-05 重議模型角色後，以 repo 實際 Claude target `opus[1m]`／high／Standard 補齊原版
+insufficient／trace-only／negative：trace-only 與 negative 通過，insufficient 重現同一核心 RED，仍把
+未明單位的 aggregate 差額稱為少五筆。這證明缺口不只存在於 Sonnet。相同 Opus target 改用 frozen v2：
+insufficient 先確認 count／sum 與來源條件，不再外推 records，拒絕 +24h 並保持唯讀；repair／continue／
+trace-only 三個受影響 control 亦通過，repair 的原測試與獨立 probe 全綠。Resolved model 均為
+`claude-opus-5-5[1m]`，service tier 為 Standard。依正式 target、Codex 及正向 control 的 RED→GREEN
+證據採用 v2；Sonnet insufficient 保留為非阻斷 robustness 缺口 `B-20261005-root-cause-first-sonnet-evidence`，
+不得改寫成 PASS，也不得用它否定已明選的 Opus target 驗收。
+完整版本、raw artifacts、命令與限制見 `docs/plans/2026-10-05-root-cause-first-model-behavior.md`。

@@ -66,7 +66,8 @@ adapter 分層或 linkage 等 topology，必須有新證據並以 `supersedes:<d
 
 - Review shared behavior 與 runtime adapter 分開進行；reviewer 必須能指出 finding 屬於 core、Claude entry 或 Codex entry。
 - Packaging gate 驗兩端 description／trigger 相容、entry 薄、shared resources 指向同一實體、eval oracle 不複製。
-- Behavior gate 驗相同 fixture 的 normalized outcome；平台專屬 evidence 可以不同，但不得改變 gate 語意。
+- Behavior gate 驗相同 fixture 的 normalized outcome；各端 production target 與輔助模型角色依
+  `claude/evals/README.md`「模型樓層政策」。平台專屬 evidence 可以不同，但不得改變 gate 語意。
 - 任何 harness 缺能力時 fail closed，回報 capability boundary；不得由另一端的成功冒充雙端完成。
 - Ship 前記錄 canonical topology、雙端 live evidence 與重議條件。之後換 writer 時以 repo evidence 重驗，不靠前一
   harness 的對話或記憶。
