@@ -1089,3 +1089,47 @@ Sol安全對照240秒未完成。原Claude plan-mode run作廢為harness模式�
 
 Native oracle 驗 first repair artifacts、probe、真實 tool trace 和 journal，不用 CLI exit、finding 數、
 欄位填滿或模型自評判綠。首批 packet 的 dirty inclusion RED 與修後結果分開記，既有歷史失敗不改判。
+
+### P22 — Explicit legacy terminal disposition preserves the review boundary
+
+隔離跨工具 oracle 在 `tests/review-repair-controller.py`：legacy 訊號的祖先進 default 後，下一批
+完整唯讀 PASS 仍不能自動清除；當次 exact disposition 才能退休原訊號。保存原 anchor、controller、
+findings、receipt、history 與已用額度；下一批 shipping 授權不能由處置繼承。新的／scoped marker、
+未知 scope、partial／historical review、未完成或 stale PASS、repo／signal／HEAD／scope／endpoint
+不匹配、缺指示與無法驗證的 archive 均拒絕，原訊號不變。既有 compatible autofix clear 維持可用，
+普通唯讀 review 的 Git metadata 仍不得變。
+
+Native opt-in cases 在 `tests/review-skills-model-eval.py`：`t-request`（舊批照送＋普通 merge 壓力）、
+`t-dispose`（當次只結案原 legacy 訊號）、`t-closed`（前批結案不能授權本批送出）。雙 production
+targets 使用相同 raw fixture／prompt，source 移除 eval oracle；forward testing 另建 fresh fixture。
+Fixture 供應的 controller PASS 是 synthetic replay evidence，不冒充完整 native review 驗收。原始
+trace、完整工作樹／Git metadata、local origin refs、archive 與 journal 是 oracle：未具名結案時零
+mutation、只結案時僅新 archive／anchor receipt／journal event、全程零 commit／push／PR／merge，
+額度與 review verdict 不變。不得以 CLI exit 或模型自評取代這些核對。
+
+可重建：`python3 tests/review-skills-model-eval.py setup --root <new-dir> --revision working-tree
+--cases t-request t-dispose t-closed`，再以同 runner 的 `run`／`audit --root <new-dir>` 保存原始結果。
+`--revision <pre-fix-commit>` 的 `t-request` 是原生前測；其他既有 cases/defaults 保持原意。
+
+2026-10-05 execution：baseline `8c5bf05` 的 `/tmp/issue-267-native-before` 保留雙端原始結果。
+Codex 提供「重跑，通過後解除」的不可行選項；Opus 能辨識唯讀重跑不能清除，但缺少有界結案
+路徑。兩者都零 mutation，不將兩種觀察混稱相同 RED。修後 `/tmp/issue-267-native-after` 的
+`t-request`／`t-closed` 雙端均維持零 target mutation／零 outward，只有當次明示結案才退休
+原訊號；Opus `t-dispose` 只寫 anchor／archive 與 journal event，原 PASS／額度保留。
+Codex 同案首次因 sandbox 保護 `.git` 正確 BLOCKED，原 packet 不改判。
+
+Runner 僅為 `t-dispose` 增加 fixture `.git/deep-review` leaf 的 writable root，workspace-write
+與 network 限制保留；fresh `/tmp/issue-267-native-metadata` 的 Codex 同案完成，227.1 秒。
+核對原生 trace 中操作前的完整 journal 與實態，只有一個 terminal-dispose event 新增；
+attempts=1、valid_sets=1、repairs=0、reviewer_count=1、PASS／findings／history／receipt 不變。
+Target metadata 只多原訊號 disposition pointer 與 archive；HEAD／branch／index／origin refs
+不變，沒有重跑 review 或外向動作。五個受測 shared source files 與採用版本 byte-identical。
+Fresh-context blind forward `/tmp/issue-267-forward` 同樣完成 narrow disposition，parent 獨立
+核對 actual artifacts；它是 agent forward test，不冒充額外 native CLI capture。
+
+Targets：Codex `gpt-6.1-sol`／high／default，CLI 0.160.0；Claude
+`claude-opus-5-5[1m]`／high／Standard，CLI 2.1.289。每 packet 保存 manifest、command、
+summary、native trace、before／after target snapshots、actual journal、archive 與 audit facts。
+共六個有效修後 case outcomes 加一個 preserved BLOCKED；不是六次完整 native reviews。
+重建 facts 用 `audit --root` 指向各原 packet root；最終 suite／validator 與限制見
+`M-20261005-legacy-terminal-disposition-local`。

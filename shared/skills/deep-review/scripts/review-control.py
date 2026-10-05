@@ -580,6 +580,105 @@ def terminal(state, args):
     return {'terminal': 'RECORDED' if args.action == 'terminal-record' else 'CLEARED'}
 
 
+def terminal_evidence(repo):
+    repo = str(Path(repo).resolve())
+    anchor = Path(git(repo, 'rev-parse', '--absolute-git-dir').decode().strip()) / 'deep-review/anchor'
+    original = anchor.read_text() if anchor.exists() else ''
+    lines = [x for x in original.splitlines() if x.startswith('terminal_') and '=' in x]
+    fields = dict(x.split('=', 1) for x in lines)
+    require(len(lines) == len(fields), 'duplicate terminal fields; preserve signal')
+    signal = digest([x for x in lines if not x.startswith('terminal_disposition=')])
+    return repo, anchor, original, fields, signal
+
+
+def disposition_receipt(repo, anchor, fields, signal):
+    identity = fields['terminal_disposition']
+    require(len(identity) == 32 and all(c in '0123456789abcdef' for c in identity),
+            'invalid disposition identity; preserve signal')
+    receipt = read(anchor.parent / 'dispositions' / (identity + '.json'))
+    authorization = receipt['authorization']
+    require(receipt['schema'] == 1 and receipt['id'] == identity and receipt['repo'] == repo
+            and receipt['signal'] == signal and receipt['shipping_authorized'] is False,
+            'disposition does not match this original signal')
+    old_lines = [x for x in receipt['original'].splitlines()
+                 if x.startswith('terminal_') and '=' in x and not x.startswith('terminal_disposition=')]
+    require(digest(old_lines) == signal and 'terminal_scope' not in fields,
+            'disposition is not for this legacy signal')
+    require(authorization['action'] == 'close-legacy-review-terminal'
+            and authorization['repo'] == repo and authorization['signal'] == signal
+            and authorization['head'] == receipt['head']
+            and authorization['scope'] == receipt['review']['receipt']['scope']
+            and authorization['endpoint'] == receipt['endpoint']
+            and receipt['endpoint'] in ('branch', 'pr', 'merge', 'disposition-only')
+            and isinstance(authorization['user_instruction'], str) and authorization['user_instruction'].strip(),
+            'missing exact legacy disposition provenance')
+    scopes = receipt['review']['scopes']
+    require(digest(scopes) == authorization['scope'], 'disposition review identity mismatch')
+    subject = next(s for s in scopes if s['repo'] == repo)
+    require(not subject['paths'] and subject['mode'] != 'range' and subject['head'] == receipt['head'],
+            'disposition requires the complete current subject')
+    for base, head in [(fields['terminal_head'], receipt['head']), (receipt['head'], 'HEAD')]:
+        require(run(['git', '-C', repo, 'merge-base', '--is-ancestor', base, head]).returncode == 0,
+                'disposition endpoints do not cover this signal and lineage')
+    return receipt
+
+
+def terminal_status(repo):
+    repo, anchor, original, fields, signal = terminal_evidence(repo)
+    result = {'terminal': 'ACTIVE' if fields.get('terminal_reason') else 'NONE',
+              'repo': repo, 'signal': signal, 'head': git(repo, 'rev-parse', 'HEAD').decode().strip(),
+              'kind': 'scoped' if 'terminal_scope' in fields else 'legacy',
+              'shipping_authorized': False}
+    if 'terminal_disposition' in fields:
+        receipt = disposition_receipt(repo, anchor, fields, signal)
+        result.update(terminal='DISPOSED', receipt=str(anchor.parent / 'dispositions' / (receipt['id'] + '.json')))
+    return result
+
+
+def terminal_dispose(state, args):
+    repo, anchor, original, fields, signal = terminal_evidence(args.repo)
+    require(fields.get('terminal_reason') and fields.get('terminal_head') and fields.get('terminal_at'),
+            'legacy signal lacks its original identity; preserve it')
+    require('terminal_scope' not in fields, 'scoped signals require compatible terminal-clear, not legacy disposition')
+    require('terminal_disposition' not in fields, 'signal already has a disposition; do not replay approval')
+    require(state['pending'] is None and state['repair'] is None and state['verdict'] == 'PASS',
+            'legacy disposition requires completed PASS verification')
+    scope = current(state)
+    require(state.get('receipt', {}).get('scope') == scope, 'no valid PASS receipt for current content')
+    subject = next(s for s in state['scopes'] if s['repo'] == repo)
+    require(not subject['paths'] and subject['mode'] != 'range',
+            'unknown legacy coverage requires a complete current subject, not partial or historical review')
+    head = git(repo, 'rev-parse', 'HEAD').decode().strip()
+    require(run(['git', '-C', repo, 'merge-base', '--is-ancestor', fields['terminal_head'], head]).returncode == 0,
+            'legacy signal is not in the current endpoint lineage')
+    instruction = read(args.input)
+    require(instruction['action'] == 'close-legacy-review-terminal'
+            and instruction['repo'] == repo and instruction['signal'] == signal
+            and instruction['head'] == head and instruction['scope'] == scope,
+            'current instruction must name the exact repo, legacy signal, HEAD and review scope')
+    require(instruction['endpoint'] in ('branch', 'pr', 'merge', 'disposition-only')
+            and isinstance(instruction['user_instruction'], str) and instruction['user_instruction'].strip(),
+            'explicit current legacy disposition instruction and bounded endpoint required')
+    identity = uuid.uuid4().hex
+    receipt = {'schema': 1, 'id': identity, 'repo': repo, 'signal': signal, 'original': original,
+               'head': head, 'endpoint': instruction['endpoint'], 'authorization': instruction,
+               'shipping_authorized': False, 'at': time.time(),
+               'review': {'state': state['state'], 'batch': state['batch'], 'receipt': state['receipt'],
+                          'scopes': scope_identity(state['scopes']),
+                          'attempts': state['attempts'], 'repairs': state['repairs']}}
+    directory = anchor.parent / 'dispositions'
+    directory.mkdir(exist_ok=True)
+    path = directory / (identity + '.json')
+    require(not path.exists(), 'disposition history cannot be overwritten')
+    write(path, receipt)  # Archive before publishing; interrupted archival cannot silence a signal.
+    require(anchor.read_text() == original and current(state) == scope, 'signal or reviewed content changed during disposition')
+    tmp = anchor.with_name('anchor.' + uuid.uuid4().hex)
+    tmp.write_text(original + ('' if original.endswith('\n') else '\n') + 'terminal_disposition=' + identity + '\n')
+    os.replace(tmp, anchor)
+    event(state, 'terminal-dispose', repo=repo, signal=signal, receipt=str(path), endpoint=instruction['endpoint'])
+    return {'terminal': 'DISPOSED', 'receipt': str(path), 'shipping_authorized': False}
+
+
 def new_batch(state, args):
     authorization = Path(args.authorization).read_text().strip() if args.authorization else ''
     require(authorization, 'explicit current user instruction required; a helper flag is not authorization')
@@ -621,7 +720,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=['open', 'status', 'admit', 'dispatch', 'finish', 'assess',
                                          'repair-start', 'check', 'repair-finish', 'new-batch',
-                                         'terminal-record', 'terminal-clear'])
+                                         'terminal-record', 'terminal-clear', 'terminal-status', 'terminal-dispose'])
     parser.add_argument('--state')
     parser.add_argument('--manifest', action='append')
     parser.add_argument('--route', choices=['ordinary', 'full'], default='ordinary')
@@ -639,6 +738,10 @@ def main():
     parser.add_argument('--authorization')
     args = parser.parse_args()
     try:
+        if args.action == 'terminal-status':
+            require(args.repo, '--repo required')
+            print(json.dumps(terminal_status(args.repo), ensure_ascii=False))
+            return 0  # Read-only inspection never creates a journal, lock or target metadata.
         root = storage()
         if args.action == 'open':
             # Refuse a fixture/cache override inside the target before creating even a lock.
@@ -658,6 +761,9 @@ def main():
                     result = summary(state)
                 elif args.action == 'repair-start':
                     result = repair_start(state, args)
+                elif args.action == 'terminal-dispose':
+                    require(args.repo and args.input, '--repo and --input required')
+                    result = terminal_dispose(state, args)
                 elif args.action.startswith('terminal-'):
                     result = terminal(state, args)
                 else:

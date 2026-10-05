@@ -859,15 +859,14 @@ detect_review_residue() {
 # 之後，原本那道 gate 順帶接住的「這批還沒審完」就沒有別人接了。拆掉守衛就得補上它接住的
 # 東西——這不是為沒見過的問題加規則，是為新造出的暴露補償。
 #
-# 鑑別力全靠 ancestry：anchor 存在 .git/ 下、跨 branch 共用，只憑「有沒有 terminal_reason」
-# 會讓一場舊終止把之後每一批都擋住——天天響的訊號等於沒有訊號。terminal_head 必須是當前
-# HEAD 的祖先，才代表那場終止涵蓋的正是現在要送的這批。
+# Ancestry 決定訊號是否與這條 lineage 相交；已進 default 的舊訊號仍可能反覆命中。
+# 唯一結案例外由 shared controller 驗 exact legacy disposition receipt，不推論當前批已審查。
 #
 # 三種結局刻意不同：非祖先＝別批的事，靜默；terminal_head 已不存在（歷史重建 / gc）＝無從
 # 鑑別，fail-safe 照報；祖先＝攔。誤攔的代價是一個指令，漏放的代價是未審完的 code 進 main。
 detect_review_terminal() {
     local repo="$1"
-    local gitdir anchor reason thead tat when note fmt
+    local gitdir anchor reason thead tat when note fmt controller disposition kind
     gitdir="$(git -C "$repo" rev-parse --absolute-git-dir 2>/dev/null)" || return 0
     anchor="${gitdir}/deep-review/anchor"
     [ -f "$anchor" ] || return 0
@@ -884,6 +883,16 @@ detect_review_terminal() {
         return 0
     fi
 
+    if grep -q '^terminal_disposition=' "$anchor"; then
+        controller="$PROJECT_SCRIPT_DIR/../../deep-review/scripts/review-control.py"
+        if [ -f "$controller" ] && disposition="$(python3 "$controller" terminal-status --repo "$repo" 2>/dev/null)" \
+            && grep -q '"terminal": "DISPOSED"' <<< "$disposition"; then
+            echo "review-terminal-disposition: CLOSED（同一 legacy 訊號已明示結案；不是本批 review PASS 或 shipping 授權）"
+            return 0
+        fi
+        note="${note}（disposition receipt 無法驗證——保留 STOP，不重建或刪除訊號）"
+    fi
+
     # BSD 的 `date -r <epoch>` 與 GNU 的 `date -d @<epoch>` 語意不同且互不相容
     # （GNU 的 -r 是「參照檔案 mtime」），兩邊都試；都失敗就不印時間，不為此中斷
     when=""
@@ -894,9 +903,16 @@ detect_review_terminal() {
     fi
 
     echo "review-terminal: ${reason}${when}${note}"
+    kind=legacy
+    grep -q '^terminal_scope=' "$anchor" && kind=scoped
+    echo "review-terminal-kind: ${kind}"
     echo "  deep-review 在 blocking findings 尚存或必要驗證受阻時終止，本批未取得完整通過。"
     echo "  A ship keyword authorizes HOW to ship, NEVER whether an unreviewed batch may ship. Do NOT let one override this."
-    echo "  處置二選一（Step 4 停下問使用者）：重跑審查（通過且 scope 涵蓋該終止點後 signal 清除）／使用者明說照送（PR 須記一筆「未完整審查」）"
+    if [ "$kind" = legacy ]; then
+        echo "  legacy coverage 不足；單純重跑唯讀 review 不會清除。依 shared controller 的 explicit legacy disposition 分流；當批照送不會結案舊訊號。"
+    else
+        echo "  清除須 compatible current-content PASS 與已修改 owned autofix target；唯讀 PASS 不具 mutation authority。當批照送須明示且 PR 記「未完整審查」。"
+    fi
     echo "verdict: STOP（review-terminal——處置後再送；其餘偵測輸出照常，供摘要使用）"
 }
 

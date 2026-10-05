@@ -810,3 +810,17 @@ output 保真、nonzero exit 保真），不自動使用模型。實測 corpus�
 
 `audit --root <packet>` 產生含 rebuild command 的 artifact index；helper call 依實際 verdict output schema
 核對，不把 `cat .../git-hygiene.sh` 當 execution。Semantic PASS 仍由 operator 的原始工具／實態 oracle 決定。
+
+## Legacy review-terminal disposition regression
+
+`tests/review-repair-controller.py` 在既有 controller gate 中驗跨工具 lifecycle：default 承接 legacy
+祖先後下一批新 PASS 仍保留訊號，exact 明示結案才可退出舊 STOP，新訊號不能借舊 receipt 放行。
+有效結案與 reject controls 同時核對 metadata、archive、review receipt、history 與已用額度，不能
+只看 command exit。Signal／repo／HEAD／scope／endpoint drift、partial／historical／stale PASS
+及缺失 archive 維持拒絕；其 controller protocol 為
+`shared/skills/deep-review/references/control.md`「Explicit legacy terminal disposition」。
+
+Opt-in native replay 經 `tests/review-skills-model-eval.py` 的 `t-request`／`t-dispose`／`t-closed`，
+正常 suite 不使用模型。供應的 PASS 不冒充完整 review；兩端 production 模型的實際 tool trace、
+fixture 全樹／Git metadata、local origin refs 與 journal 才能證明授權分流。原始 oracle 在
+`shared/skills/deep-review/evals.md`「P22 — Explicit legacy terminal disposition preserves the review boundary」。

@@ -372,7 +372,11 @@ Claude Code 的 `AskUserQuestion` 不可用（背景 turn／工具被停用）�
 
 `ship-state.sh` 印 `verdict: STOP` → **停下照訊息處理，即使使用者已給說法**。**A ship keyword authorizes HOW to ship, NEVER whether a batch may ship at all.** doc-governance findings／BROKEN 必須產生 `verdict: STOP`；其他來源包含無 remote、非 bootstrap 的 default 解析失敗、以及——
 
-- **`review-terminal:`**：上一場 deep-review autofix 在 blocking findings 尚存或必要驗證受阻時終止，且那場涵蓋當前 HEAD（腳本已驗過 ancestry，不必自行判斷）。停下依 Runtime adapter 給兩個選項：`重跑審查`（通過且 scope 涵蓋該終止點後 signal 清除）／`知道了，照送`（PR body 記一筆「未完整審查」）。**anchor 的欄位與指令不要攤給使用者看**——那是相容層實作細節，使用者只需回答這一題。
+- **`review-terminal:`**：先依腳本的 `review-terminal-kind:` 分流。Ancestry 表示與這條 lineage 相交，不能證明原 scope 仍是本批，也不能自行忽略已進 default 的舊訊號。
+  - `legacy`：原 coverage 不足，單純重跑唯讀 review 不會清除。先唯讀查證現有 controller PASS 的 freshness、完整 scope 與 ownership；缺有效證據時說明尚缺哪項，依 Runtime adapter 提供「先完成本批完整審查，再處置舊訊號」／「只對本批照送，保留舊訊號並記未完整審查」／「取消，不修改」。已有有效證據時不重跑，給「明示結案這個原始舊訊號，接受原 coverage 不足；只處理此訊號，本批外向動作仍依既有授權」（建議）／「只對本批照送，保留舊訊號並記未完整審查」／「取消，不修改」。結案只能在 exact 當次回答後，依 [review controller 的 Explicit legacy terminal disposition](../../deep-review/references/control.md#explicit-legacy-terminal-disposition) 建立具名 artifact 並執行；舊批照送、普通 merge 或新 PASS 不替代這份決定。STOP 處置後重驗，訊號／HEAD／scope 有變就不沿用舊回答。
+  - `scoped`：清除要同時有 compatible current-content PASS 與已修改 owned autofix target；未修改的唯讀 PASS 不具 mutation authority。依 Runtime adapter 提供「依原 scope 修復並驗證後清除」／「只對本批照送，PR 記未完整審查」／「取消，不修改」。
+  - 無法驗證 disposition receipt：保留 STOP，查證缺失證據，不刪除、重建或重新結案來繞過；不得把它當正常已結案。
+  - **anchor 欄位、hash、JSON 與指令不攤給使用者**；prompt 用 repo、舊審查事件、本批 endpoint 與結果說明。已驗證的 `review-terminal-disposition: CLOSED` 只表示原訊號結案；它不授予本批 shipping、CI、production、bypass 或新的 review PASS。
   - 例外：使用者說的是**「merge 照送」／「merge 未審完」**（見說法表）→ 已預先放行，不停、照送，PR 仍記一筆。
 
 > 為什麼這條存在：Step 4 從「每批停下確認」改成「說法即授權」之後，原本那道 gate 順帶接住的「這批還沒審完」就沒有別人接了。**拆掉守衛就得補上它接住的東西。**

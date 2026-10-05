@@ -124,3 +124,9 @@
   - 重議:上游 Step 5 指向單一 command authority、機械回歸涵蓋該檔，fresh 雙端 normal／lease 在先完整讀 log-prepare 與相關 path references 後仍首次送出 canonical command
   - 關聯:project-canonical-push;M-20261005-project-canonical-push-local;D-20261005-project-canonical-push;tests/project-push-command-test.py
   - 補驗觀察:上游 packet 的 Opus lease 首次 push 正確，但以 compound／head probe 讀 reference，ship-paths 與另一 chunk 合併，原 oracle 判 reader FAIL；新 packet 補齊本階段應有的 workflow 讀取契約後通過，正式 reader 規則未擴寫。Codex normal 在模型執行前以 capacity error 結束、零工具呼叫，另以同模型 fresh packet 補驗；原失敗保留。Codex lease 使用 `refs/heads/feat/change:<exact SHA>`，原 grader 只接受短 ref 名而誤判；實際 Git 更新與 main control 正確，改為接受兩種等價 ref 名，仍拒絕 bare lease、wrong SHA 與 wrong branch，不重跑有效 capture
+
+- **X-20261005-legacy-disposition-native-sandbox · 2026-10-05 #267 Codex disposition replay 的 Git metadata 能力受阻**：首批 frozen native after 的 Codex t-dispose 在 exact 綁定與 PASS 查證後實際呼叫 terminal-dispose，因 workspace-write 保護 fixture 的 .git/deep-review，mkdir dispositions 回 Operation not permitted，原訊號／全部 Git metadata 不變，正確 BLOCKED。保留原 318.9 秒 trace，不算 helper 或雙端驗收 GREEN；同源 Claude t-dispose 與 fresh-context forward 均已完成 narrow mutation。先調整隔離 runner，僅對明示 disposition-only case 宣告該 fixture 的 review metadata writable root，以 fresh fixture 補驗，不修改既有 session 或改 helper 的結案門檻。
+  - 日期來源:direct
+  - 放棄:以 native CLI exit 0 當成功；改用無 sandbox 的全機權限；刪／重建原 fixture journal 或繞過 permission denial；把 parent 手動寫入冒充 native 操作
+  - 重議:明列 fixture metadata root 後的實際 native permission profile 與操作仍受阻，或允許路徑超出 isolated review metadata
+  - 關聯:Issue#267;D-20261005-legacy-terminal-disposition;tests/review-skills-model-eval.py;shared/skills/deep-review/evals.md

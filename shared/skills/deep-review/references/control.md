@@ -170,3 +170,52 @@ a valid receipt for current bytes, original paths and covering endpoints. Read-o
 or unedited targets reject both mutations. Legacy ancestry-only signals remain
 preserved because their path/content coverage is unknown; report that limitation
 for explicit disposition, never clear them opportunistically.
+
+## Explicit legacy terminal disposition
+
+This is a separate user-directed Git-metadata operation, never a side effect of
+read-only review or ordinary shipping approval. Re-establish ownership and obtain
+the user's current instruction to close the named original legacy signal despite
+its unknown coverage. Old batch "ship anyway", ordinary merge, autofix permission
+and a new PASS alone do not authorize it. The helper records provenance; it cannot
+certify that an agent's quotation faithfully represents the user's instruction.
+
+Inspect without mutation:
+
+```text
+review-control.py terminal-status --repo <repo>
+```
+
+For `kind: legacy`, require a completed controller PASS that still matches the
+current complete subject (no path restriction, no historical range), with no
+pending review or repair. Reuse valid evidence; do not rerun review to manufacture
+mutation authority. A legacy PASS does not establish the missing original
+coverage; the explicit disposition must acknowledge that uncertainty. Bind the
+decision to the returned signal identity, current HEAD, controller receipt scope
+and the named endpoint. Keep these implementation fields out of the user prompt;
+explain the old signal, uncertainty, affected batch and consequences plainly.
+
+Only after that exact current instruction, create an external JSON artifact:
+
+```json
+{"action":"close-legacy-review-terminal","repo":"/canonical/repo","signal":"returned-signal-hash","head":"current-full-oid","scope":"current-controller-receipt-scope","endpoint":"merge","user_instruction":"exact current user instruction accepting closure of this original legacy signal with unknown coverage"}
+```
+
+Endpoint is `branch`, `pr`, `merge` or `disposition-only`; it bounds this closure
+decision and grants no outward authority. Signal/HEAD/scope drift requires a fresh
+decision, never rewriting the binding to fit an old approval. Then run:
+
+```text
+review-control.py terminal-dispose --state <file> --repo <repo> --input <json>
+```
+
+The controller archives the original anchor, exact instruction and PASS identity
+under the existing Git metadata's `deep-review/dispositions/`, then appends its
+receipt ID to the anchor. It preserves counters, findings, review verdict and
+original terminal fields. `terminal-status` and Project validate that archive
+against the exact legacy signal and its lineage. Missing/malformed history or a
+new/scoped signal stays blocked; do not delete, reconstruct or retry around it.
+Only this old signal retires. The receipt is neither a current-batch review PASS
+nor push/PR/merge/CI/production authorization. Subsequent review signals retain
+their own gates. Scoped signals continue to use compatible `terminal-clear` and
+its existing autofix mutation boundary.
