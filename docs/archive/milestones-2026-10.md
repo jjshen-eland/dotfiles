@@ -262,3 +262,12 @@
   - 放棄:刪整份 marker／重設 budget；以舊照送或普通 merge 自動結案；以無關 autofix 取得清除權；將 CLI exit 0 或 parent 手動操作當 native 成功；移除 sandbox 繞過 denial
   - 重議:合法處置後同一訊號再攔截無關批次、新 marker 可借舊 receipt 放行，或當次結案／shipping 授權被混用
   - 關聯:Issue#267;D-20261005-legacy-terminal-disposition;X-20261005-legacy-disposition-native-sandbox;shared/skills/deep-review/evals.md;shared/skills/project/references/pressure-tests.md;tests/review-repair-controller.py
+
+- **M-20261005-legacy-terminal-disposition-completion · 2026-10-05 #267 實作工作線結案，送出 endpoint pending**：實作與 exact active assignment 已保存於 `ecd6551d76acc37a025ad4bafdefbf41f31ea946`；同 steward 結束 `codex:issue-267-legacy-review-terminal` 工作線、移除 completed active item。完整 locked repo set 只有 dotfiles，post-completion 沒有其他 active contract 指向該 actor，既有 paused backlog 不變。使用者本輪明示 `$project --merge`；本紀錄僅確認實作結案，PR／required CI／merge endpoint 尚未達成。
+  - 日期來源:direct
+  - 驗收:Log 的 test-evidence helper 對原 suite log 回 NEED_TEST，因缺少當時 input anchor；補跑全套 exit 0、1568 PASS／0 FAIL、303 秒，351 inputs 前後一致、同環境 helper REUSE。證據根 `/var/folders/t5/4b3mtjj52fvdplz5f15mf_ym0000gp/T/issue-267-ship-qgq3h0un` 保存 suite.log、before／after snapshots、environment、execution 與 helper receipts。保留 frozen native runtime 的 48 個 source inputs 核對支持六個有效 replay outcomes REUSE；未重跑模型，首次 sandbox BLOCKED 不改判。全套後只更新 assignment／completion 文件，另驗 doc／xref
+  - 限制:沿用 local milestone 的 supplied-PASS replay、validator adapter 與 forward 範圍；不外推完整 native review 或 live consumer 驗收。Scanner 的 unused fixture copy 有 incidental executable-mode 差異，legacy fixture 沒有 adopted config 且原 trace 零 scanner execution，保留 broad comparison 與 runtime scope 判定，不改 source／既有 packet 洗綠
+  - 範圍:branch=fix/issue-267-legacy-review-terminal；implementation complete、shipping pending，未部署、未修改 consumer metadata
+  - 放棄:同一 commit 建立又移除唯一 assignment；補造原 suite snapshot；為純結案文件重跑有效 native captures；endpoint 未達成先記已 merge；移除或忽略 shipping gates
+  - 重議:completion candidate authority、文件治理或當前 PR HEAD required checks 失敗；本批引入且原 scope 內缺陷依同 PR 有界修復接續
+  - 關聯:Issue#267;ecd6551;D-20261005-legacy-terminal-disposition;X-20261005-legacy-disposition-native-sandbox;M-20261005-legacy-terminal-disposition-local
