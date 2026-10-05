@@ -243,3 +243,11 @@
   - 放棄:全 Markdown 排除、reset snapshot、重建 journal、用最終 tree 相同放過程式 checkpoint、以機械 green 外推模型品質
   - 重議:相同允許狀態再被拒絕、未宣告漂移可取 ticket、審查執行期間漂移未使結果失效、或可證明的 v1 基線仍不能無損接續
   - 關聯:#264;deep-plan-document-repair;D-20261005-deep-plan-document-repair-baseline;D-20261003-deep-plan-controller-adoption;tests/deep-plan-routing.py
+
+- **M-20261005-deep-plan-document-repair-completion · 2026-10-05 Deep-plan 文件續審修復實作結案、送出 pending**：#264 的實作、回歸測試與 assignment 已先保存於 `46bb471bae77024f2cbbdc6c4e688308908c6061`；本次結束 `codex:deep-plan-document-repair` 工作線，移除已驗收 active item。完整 locked repo set 只有 dotfiles；post-completion view 沒有其他 active contract 指向此 actor，既有 paused backlog 不變。本紀錄只確認實作結案，使用者本輪 `$project --merge` 的 PR／required CI／merge endpoint 尚待達成。
+  - 日期來源:direct
+  - 驗收:shipping 前補跑 `./tests/run.sh` exit 0、1568 PASS／0 FAIL；`/tmp/issue-264-ship-pqvdncns` 保存 suite.log、前後一致的完整 input snapshots 與 helper REUSE receipt。v1 雙端 native 的原 source hashes／入口 links／CLI versions 核對一致，精確受測 source inputs 經 test-evidence helper REUSE；此前 36 routing／2 repair-context、雙 validator 與 native 4＋2 的限制沿用本機驗收紀錄。純結案文件另驗 doc／xref
+  - 範圍:branch=fix/deep-plan-document-repair；本機 implementation complete、shipping endpoint pending；未部署
+  - 放棄:同一 commit 建立又移除唯一 assignment；以當前 snapshot 冒充過去測試；把 native 機械成功外推 reviewer 品質；endpoint 未達成先記已 merge
+  - 重議:completion candidate authority、doc audit 或 required CI 失敗；#264 同樣文件 checkpoint 或 drift 拒絕契約再現回歸
+  - 關聯:#264;deep-plan-document-repair;46bb471bae77024f2cbbdc6c4e688308908c6061;D-20261005-deep-plan-document-repair-baseline;M-20261005-deep-plan-document-repair-local
