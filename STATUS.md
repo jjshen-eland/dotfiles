@@ -6,13 +6,26 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 # STATUS.md
 
-個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-10-04)
+個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-10-05)
 
 ---
 
 ## 進行中
 
-目前無進行中項目。
+### Root-cause-first 雙 runtime 行為評估
+
+- **Writer**：`codex:root-cause-first-model-behavior`
+- **Workspace**：`branch=test/root-cause-first-model-behavior`
+- **Write Scope**：`shared/skills/root-cause-first/`、`claude/evals/README.md`、`claude/evals/contract-evals.md`、`docs/skill-portability.md`、`tests/root-cause-first-model-eval.py`；本項 STATUS／plan、`B-20261005-root-cause-first-sonnet-evidence` 與 event-time history。
+- **Dossier Steward**：`codex:root-cause-first-model-behavior`
+- **Context**：Opus target 與 Codex 的 frozen v2 行為驗收已完成；本地 candidate `942034f` 的 active assignment 未保存於 commit ancestry，Project authority 因此 STOP。使用者已選擇 guided recovery，建立 contract 並受控重建尚未 push、無 PR 的同批 candidate。
+- **Goal**：保留已驗證的 evidence／terminal-state 兩處修正、native eval runner 與模型角色決策，完成可查證的雙平台工作線結案及原授權 PR／merge。
+- **Acceptance Criteria**：重建內容與原 candidate 相符；assignment 在 completion parent 可查證；completion authority PASS；保留 Opus／Codex 行為證據與 Sonnet RED backlog；full suite 與受影響文件檢查通過；同 PR 的 required checks 通過後才 merge。
+- **Constraints**：不改既有 oracle、shared topology 或 skill 行為；只重建本地未送出的 `942034f`，不 force-push、不繞過保護或 CI；歷史記錄與 implemented plan 保留。
+- **進度**：fresh full suite exit 0，1567 PASS／0 FAIL，349 個受測 inputs 前後快照一致；文件 ship audit 通過。正在為 recovery 保存 durable assignment。
+- **下一步**：先提交本 contract，再由同 steward 重建 implementation／completion commit；重驗 authority、文件與 required CI 後依原 `$project --merge` 授權完成。
+- **計畫**：`docs/plans/2026-10-05-root-cause-first-model-behavior.md`
+- **關聯**：D-20261005-claude-target-model-roles；M-20261005-root-cause-first-opus-v2-adopted；X-20260930-mobile-questions-steward-candidate；B-20261005-root-cause-first-sonnet-evidence。
 
 ## 暫停中
 
