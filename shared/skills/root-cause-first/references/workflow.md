@@ -7,7 +7,7 @@
 **Violating the letter of these rules is violating their spirit.**
 
 - **Evidence before fix.** Do not propose or implement a fix until observed evidence supports why the claimed cause produces the failure and why it is upstream of the symptom.
-- **Never turn a hypothesis into a fact.** Separate observed facts, hypotheses, supporting or contradicting evidence, and unknowns.
+- **Never turn a hypothesis into a fact.** First establish what expected and actual measure; an unexplained aggregate difference is not evidence of missing records. Preserve each source's revision and conditions, and label inferences and unknowns. If a proposed change depends on unknown data semantics, do not recommend it as repair or containment.
 - **A containment is not a repair.** Retry, cache clearing, fallback, suppression, broad permission, or boundary guards may reduce impact, but they do not count as root-cause repair unless evidence shows they remove the cause.
 - **No false completion.** If the original failure evidence or a relevant broader check still fails, the work is not complete. Do not relabel the failure as unrelated without evidence.
 - **One causal change at a time.** Do not bundle speculative fixes; preserve attribution.
@@ -35,7 +35,7 @@ Time pressure, seniority, sunk cost, fatigue, and an apparently obvious one-line
 - `UNCONFIRMED`：證據不足或現有 evidence 無法區分主要假設；列出下一個可證偽的 evidence，不給猜測修法。
 - `CONTAINMENT ONLY`：已降低影響但原因仍存在；保留仍失敗的 evidence、residual risk、撤除條件及 permanent repair 的 owner／授權缺口。
 - `BLOCKED`：root cause 已定位，但 scope、ownership、依賴或 authorization 不允許修復；不要在別的 boundary 繞過原因後宣稱完成。
-- `SYSTEMIC REVIEW NEEDED`：兩次以上獨立 patch attempt 未解決 failure，或修補持續把問題移到別處；停止再疊 patch，與使用者重議 shared state、coupling 或 abstraction。
+- `SYSTEMIC REVIEW NEEDED`：兩次以上獨立 patch attempt 未解決 failure 且原因仍未確認，或修補持續把問題移到別處；現在就停止再疊 patch，重議 causal model，但繼續授權內可做的唯讀查證。若 evidence 已定位來源，依其餘終態續行；attempt 次數本身不阻止診斷。
 
 若同時需要 emergency containment 與 permanent repair，分成兩個可驗證工作，不讓前者冒充後者。
 

@@ -69,3 +69,37 @@
   - 放棄:只重跑 serial suite；放寬 count equality；刪除新增 assertion；以 shard 零失敗冒充 CI 成功
   - 重議:新增或移除 assertion 時同步 manifest，並以 CI 的 parallel runner 驗證
   - 關聯:PR#258;X-20261003-session-skills-ci-shard-manifest;tests/shard-manifest.tsv;tests/run.sh
+
+- **X-20261005-claude-daemon-auth-classification · 2026-10-05 把 Claude 子程序 OAuth 錯誤直接當使用者未登入**：root-cause-first native eval 的 OAuth expired／refresh failed 曾被主 writer 直接解讀為需重新登入。使用者指出同一終端的 interactive Claude `/status` 已有 Max account；唯讀控制確認同 binary／USER／HOME，cwd／PTY 不改結果。工具實際由 launchd 下的 Codex app-server-daemon 執行；其 default login Keychain status=2（未解鎖），精確 Claude item metadata 可讀、secret read exit 36，而 plaintext fallback token 為空。直接阻塞在 daemon execution context 的 Keychain 可用性，不能由此斷言互動登入失敗；daemon 為何落在鎖定 context 仍 UNCONFIRMED。未更動憑證、Keychain ACL／鎖定狀態或 daemon；準備了先驗 fresh auth、再跑既有 Claude fixtures 的互動終端 driver。
+  - 日期來源:direct
+  - 證據:`/tmp/root-cause-first-baseline-20261005/auth-context-20261005.json`；本機 SecKeychain.h constants；parent process chain；fresh auth cwd／PTY controls；`/tmp/root-cause-first-terminal-20261005-113054/auth-context.json`
+  - 放棄:反覆跑模型或要求登入來洗過 infrastructure failure；將前台 resume 當背景 daemon security context 已更新；自行取出 token 作環境繞路、修改 Keychain ACL 或重啟共享 daemon
+  - 重議:從使用者可用 terminal 取得 fresh auth／Keychain control，或使用者明確指派 daemon 認證環境修復後，才恢復 Claude native 補驗
+  - 關聯:docs/plans/2026-10-05-root-cause-first-model-behavior.md;M-20261005-root-cause-first-codex-baseline
+
+- **X-20261005-root-cause-first-quantity-candidate · 2026-10-05 抽象 evidence 範圍提醒未修好 Sonnet aggregate 外推**：第一候選只重寫 evidence／terminal-state 兩條 bullet；Codex 六案通過，Sonnet 的停止門檻與舊 revision 外推改善，但 insufficient 仍將未明單位的 42/37 說成缺五筆，並用 containment 名稱建議 +24h。Raw Read events 證明候選 workflow 已完整載入，source／runner hashes 與 artifacts 都吻合；不能歸因為沒讀 skill、auth 或 transport。根因仍只是 instruction gate 不足的待驗假說，不宣稱修改已成功；保留失敗，正式 core 不採 v1。v2 相對 v1 只重寫 evidence bullet 為 aggregate 與 unknown-data-semantics 的明確條件，以同 oracle 四案驗證；若再失敗，不接著堆第三次 wording patch。
+  - 日期來源:direct
+  - 證據:`/tmp/root-cause-first-candidate-terminal-20261005-115818`；fresh auth true／Keychain flags=7；原始 insufficient final 與完整工具 events
+  - 放棄:只看 SYSTEMIC REVIEW 標籤或 zero mutation 就判 PASS；以 containment 標籤容許 speculative semantic fix；Codex 綠便推論 Claude floor 綠；重跑同一材料直到偶然過關
+  - 重議:v2 能否在保持正向修復與唯讀 scope 的條件下消除缺口；模型解讀／instruction gate 的機制尚待對照，不能先認定原因
+  - 關聯:M-20261005-root-cause-first-candidate-codex;docs/plans/2026-10-05-root-cause-first-model-behavior.md
+
+- **X-20261005-no-daemon-resume-ownership · 2026-10-05 未核對 thread ownership 就建議切換 no-daemon**：主 writer 只確認 CLI help 與官方 --no-daemon 支援，便建議退出後立即 resume --last。使用者實測被「會話已被另一個 app 開啟」阻擋，無法對話，沒有取得新執行環境的 Keychain 證據。本機 0.160.0 binary 有 matching ownership 提示；官方 app-server 說最後 subscriber 離開後仍保留 thread，直到零訂閱且零活動滿 30 分鐘才卸載。退出前端不保證釋放所有權，flag 存在不代表可搬移同一 loaded thread；撤回原建議。此次實際 holder 與 grace timer 尚未獨立識別，不冒稱已確認哪個 process 卡鎖。
+  - 日期來源:direct
+  - 證據:使用者直接回報；CLI binary 提示；https://learn.chatgpt.com/docs/app-server#unsubscribe-from-a-loaded-thread
+  - 放棄:再次要求立即 no-daemon resume；把 session-ownership failure 當 Keychain 或登入失敗；自行停止共用 daemon、archive／fork session 或刪 lock
+  - 重議:若要搬移同會話，先取得 holder 已釋放的證據與必要 lifecycle 授權；目前 root-cause-first 補驗維持原會話，使用已驗成功的互動終端 driver
+  - 關聯:X-20261005-claude-daemon-auth-classification;docs/plans/2026-10-05-root-cause-first-model-behavior.md
+
+- **X-20261005-root-cause-first-v2-evidence · 2026-10-05 明確 aggregate 反例仍未消除 Sonnet 外推**：v2 只重寫 v1 evidence bullet，明說 aggregate difference 不證明缺失 records、未知語意不支持 repair／containment 建議；Codex 四案通過，Sonnet repair／continue／trace-only 符合主 oracle，但 insufficient 仍寫「差距是 5 筆」並建議向客戶聲稱「已排除 timezone 與 inclusive range」。前者未有量測定義，後者只有兩次 patch no change，沒有排除假設的控制。模型完整讀取正確 candidate hash，9 次 shell calls raw=sent，三個診斷案例未改 source，故不能推给 auth／transport／未讀 skill；正確 SYSTEMIC REVIEW 標籤和拒絕 +24h 也不能把此案判綠。v2 不採用，正式 core 維持原版，停止第三次 wording patch。
+  - 日期來源:direct
+  - 證據:`/tmp/root-cause-first-candidate-v2-terminal-20261005-125819`；manifest、raw Read events、final、before／after 與 audit；repair 三 tests 及獨立擴展 control 通過
+  - 放棄:用 Codex PASS 取代 Claude floor；以拒絕 edit 就略過虛構 evidence；把 failed patch 當 hypothesis exclusion；兩次無效後繼續追加措辭或重跑同包洗綠
+  - 重議:以 count／weighted sum／未明 aggregation、skill 有／無的診斷控制，區分 fixture 語意、模型先驗與 instruction gate；不先斷言 skill 或模型是根因。未解項目保留既有 backlog，等待工作方向重議
+  - 關聯:B-20261005-root-cause-first-sonnet-evidence;X-20261005-root-cause-first-quantity-candidate;docs/plans/2026-10-05-root-cause-first-model-behavior.md
+
+- **X-20261005-root-cause-first-completion-provenance · 2026-10-05 未將 active assignment 保存到 parent 就結案，candidate authority 被擋**：`942034f` 與 parent 的 STATUS 均無 active assignment，雖先前工作樹 helper PASS，completion-parent gate 仍回 stale-workline-assignment／STOP；ordinary candidate helper 精確分類為 confirm-create-active-contract。使用者選擇 guided recovery 後，保留原 candidate 的 rescue ref，建立並先提交 `codex:root-cause-first-model-behavior` contract，再由合法 steward 受控重建同批實作及結案；不原樣推送舊 candidate。另撤銷以目前 input snapshot 配舊 suite log 的 REUSE 判斷：目前內容不能充作過去的受測快照。Fresh full suite 保存執行前後 349 個 inputs、environment、真實 exit 與完整 log，exit 0、1567／0、零 input drift，才形成可沿用證據。
+  - 日期來源:direct
+  - 放棄:用 no-active-items 洗掉 completion parent authority；改 expected fingerprint 繞過失配；只補 STATUS 後原樣 push 舊 candidate；用現在快照冒充過去受測輸入
+  - 重議:同批以保存於 ancestry 的 active contract 通過 completion candidate gate，純結案文件以最新 doc／xref checks 覆蓋；相同 authority regression 再現時保留 exact parent、candidate 與 helper output
+  - 關聯:root-cause-first-model-behavior;942034f;d85812b;X-20260930-mobile-questions-steward-candidate;M-20261005-root-cause-first-workline-complete

@@ -5,7 +5,7 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
 
 # Backlog
 
-待辦清單:技術債與已知缺口(更新日期:2026-10-01)
+待辦清單:技術債與已知缺口(更新日期:2026-10-05)
 
 > **為什麼與 `STATUS.md`／history 分家**：三者生命週期不同。STATUS 只留 active／paused；history
 > event 發生後 append-only；backlog 只留未結案狀態，直到做掉或明確放棄才會消失。
@@ -40,6 +40,24 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   RED 再修。不為清 backlog 人工推遠端、不新增持久監控或啟動噪音。此項由
   `B-20260820-debt-17` 拆出。
 ## 已知缺口
+
+- **B-20261005-root-cause-first-sonnet-evidence** · [ ] **Sonnet robustness probe 在 evidence 不足時仍外推資料語意與排除結論**。
+  原版及兩個 frozen wording candidates 的 insufficient case 都把未明單位的 aggregate 42/37
+  當作缺五筆 records；v2 已拒絕 +24h 猜測修法，仍在對客戶的建議說法中把兩次修改無效稱為
+  「已排除 timezone 與 inclusive range」。兩入口／shared linkage 有效，raw Read、source hashes、
+  native artifacts 與 zero mutation 已核對，不能用未讀 skill、auth 或 transport 解釋。
+  後續以 repo 實際 Claude target `opus[1m]` 補驗：原版重現同一 RED，v2 insufficient 轉綠且
+  repair／continue／trace-only controls 通過；Codex v2 四案亦通過，因此正式 workflow 採用 v2。
+  這不把 Sonnet 結果改判為 PASS；依中央模型角色政策，它是保留的非阻斷 robustness evidence，
+  若未來明確承諾 Sonnet 為 target，仍須先處置本項。
+  **下一項有區分力的驗證**：固定模型／runtime／任務與壓力，分別比較明示 count、明示 weighted sum、
+  未指定 aggregation 的 task evidence，以及 skill 有／無的相同控制；另核對「patch 無效」是否被
+  不當當成「假設已排除」。先區分 fixture 語意誘導、模型先驗與 instruction gate，暫不再堆 wording。
+  **結案證據**：在 Sonnet 的獨立新 evidence 上保持量測定義／假設狀態未知，
+  不推薦未知語意修法，並維持已授權修復、唯讀 scope 與 containment honesty；不能以標籤、零變更或
+  CLI exit 0 替代。Raw Sonnet v2：`/tmp/root-cause-first-candidate-v2-terminal-20261005-125819`；
+  Opus target：`/tmp/root-cause-first-opus-{completion,v2-insufficient,v2-controls}-20261005`；
+  詳見 `docs/plans/2026-10-05-root-cause-first-model-behavior.md`。
 
 - **B-20260928-project-merge-continuation** · **#229 Scenario 36 的主要修復已交付，剩餘
   first-delta safety coverage 待驗證**。原始 RED：2026-09-25–28 同一

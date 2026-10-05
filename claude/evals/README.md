@@ -1,18 +1,20 @@
-# Skill Evals — 弱模型行為測試 harness
+# Skill Evals — Claude 行為測試 harness
 
-> updated: 2026-09-14
+> updated: 2026-10-05
 >
-> 目的：把「skill 在弱模型上是否穩定」變成**可重跑的行為測試**，而不是對 prose 的對抗式 re-review。
+> 目的：把「skill 在雙平台實際 target 是否可靠、規則是否承重」變成**可重跑的行為測試**，而不是對 prose 的對抗式 re-review。
 > 方法論見 `claude/skill-building-guide.md`（TDD-for-skills、evals are the oracle）。
 > 各 skill 的測試情境與歷史結果在該 skill 目錄的 `evals.md`（/project log（前身 uap）為 `skills/project/references/pressure-tests.md`）。
 
 ## 模型樓層政策
 
-- **Sonnet = 目標樓層**：所有紀律型 skill 的 PASS 標準以 Sonnet 為準。
-- **Haiku PASS = 加分**：Haiku 失敗但 Sonnet 通過 → 記錄後自行判斷是否值得補（修補便宜且有失敗證據才補，遵守 Iron Law：no failing eval, no skill change）。
-- Opus/更強模型用來檢查是否「過度解釋」（指令太囉唆），非驗收門。
+- **雙平台正式驗收 = 各端實際承諾的 production target**：portable skill 以同一 fixture／oracle 分別在 Claude Code 與 Codex 驗收；單端 GREEN 不得冒充雙端完成。Claude Code 目前以 `opus[1m]` 為驗收基準；Codex 使用 repo 設定或當次明選的 Codex production model，不能把 Claude 模型階層映射過去。各端都記錄 alias、resolved model、effort、service tier 與 CLI version，避免 alias 漂移被藏掉。
+- **Sonnet = 規則詮釋、承重與 robustness 輔助**：以相同 fixture 做有／無 skill 或前／後成對比較，找出強模型會自行補上的指令缺口與文字歧義。Sonnet 結果可促使保留規則、改善 oracle 或提出後續實驗，但不取代雙平台正式驗收。Sonnet RED 必須保留；只有交付明確承諾支援 Sonnet，或該次工作預先把 Sonnet 列為 target 時，才作發布阻塞門。
+- **Haiku PASS = 加分**：Haiku 失敗但正式 target 通過 → 記錄後自行判斷是否值得補（修補便宜且有失敗證據才補，遵守 Iron Law：no failing eval, no skill change）。
+- 正式 target 的有／無 skill 比較仍用來檢查是否過度解釋、false STOP 或額外成本；品質 gate 通過後才比較成本／延遲。
 - **強模型上成對實驗兩臂沒差，不能推論成「這條規則多餘」。** 強模型往往自己就補上了規則要求的
-  行為——**那恰恰是它掩蓋了規則的作用**。要判一條規則多餘，必須在**樓層**模型上兩臂沒差。
+  行為——**那恰恰是它掩蓋了規則的作用**。要判一條規則多餘，不能只看正式 target；還要在 Sonnet
+  probe 上做成對比較，或取得同等直接的行為證據。
   2026-08-10 實地：G1a/G2 在 Opus 上兩臂皆 3/3 另開 branch，據此寫下「fixture 無鑑別力、kernel
   的 branch-first 邊際價值有限」；同一 fixture 在 Sonnet 上，**無 kernel 的那臂 2/2 直接 commit
   到 `main`**。結論整條被推翻（`contract-evals.md` 該節）。**跑錯樓層不只是證據弱，它會給出

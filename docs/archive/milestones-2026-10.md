@@ -169,3 +169,52 @@
   - 放棄:因進入 Log 重跑輸入未變的 suite／native eval；在同一 commit 建立又移除唯一 durable assignment；把本機結案當作已合併
   - 重議:當批 completion authority、文件稽核或 required CI 未通過時，處理具體失敗再續行；新的行為缺口依既有 decision 條件評估
   - 關聯:project-reference-routing;D-20261004-project-stage-routing;docs/plans/2026-10-04-project-reference-routing.md;STATUS.md
+
+- **M-20261005-root-cause-first-codex-baseline · 2026-10-05 Root-cause-first 原版 Codex 六案通過，Claude 驗收受認證阻塞**：完成 portable preflight，保留雙 thin entries、單一 neutral workflow 與既有 compatibility pointers。凍結 `0cf91a495855b255f44936af39bbb9316458b35f` 後，Codex CLI 0.160.0／gpt-6.1-sol／high 六個 fresh cases 的正常修復、兩次失敗後接續唯讀診斷、證據不足、containment、不可重播 trace 與 negative 邊界通過；34 次 fixture shell calls 的 raw=sent、source hashes、Git control 與獨立 probe 已核對。未重現需要修改正式 core 的 RED。Claude Code 2.1.289 六個 native launches 均因 OAuth expired／refresh failed 在模型執行前終止，零 input/output tokens；全部記 INVALID_NATIVE，不能外推為 skill failure 或新版雙端通過。Runner 後續 batch 在同模型首次 native failure 後停止剩餘 cases。兩入口 validators 與 offline fixture／admission checks 通過，完整 suite 尚待本輪收尾；active assignment 保留，未 commit／push／部署。
+  - 日期來源:direct
+  - 放棄:以舊 Claude PASS 或本輪單端 PASS 冒充雙端新版驗收；把 authentication failure 當 skill RED；在沒有新行為失敗時擴寫正式指令；自動修改 credentials 或改換認證來源
+  - 重議:使用者恢復 Claude 登入後，以同一 frozen oracle 新建 Claude packet；只補未取得的 Sonnet 六案及 Opus 代表案，不重跑已完成 Codex cases
+  - 關聯:D-20260825-portable-root-cause-first;M-20260825-portable-root-cause-first;docs/plans/2026-10-05-root-cause-first-model-behavior.md;shared/skills/root-cause-first/evals.md;tests/root-cause-first-model-eval.py
+  - 同輪後續驗收:完整 `./tests/run.sh` exit 0，1567 PASS／0 FAIL，258 秒；`/tmp/root-cause-first-suite-20261005.log`。Doc audit／whitespace 通過；Python 3.9 setup 與原始 runner hash、拒絕 source drift／重複 packet／existing root 也通過。不改 Claude authentication blocker 或雙端未完成的結論。
+
+- **M-20261005-root-cause-first-claude-baseline · 2026-10-05 Claude 互動終端補驗完成，保留 Sonnet 行為缺口**：使用者終端 fresh auth exit 0／claude.ai、Keychain flags=7，成功取得 Sonnet 5.5 六案與 Opus 5.5 三案。這是 daemon flags=2／auth unavailable 的正向環境控制，確認使用者原本已登入；未修改 credentials、Keychain 或 daemon。兩端三份 repair 的原始 failure 與獨立 controls 通過；containment 沒有越權或冒充根治，diagnose-only 全部零 mutation。但 Sonnet insufficient 把 aggregate 差額外推為五筆事件、trace-only 無證據斷言舊版無事故，兩次失敗門檻亦有解讀偏差，不能宣稱全批行為綠。保留三案原始輸出，以 frozen candidate 精簡重寫現有 evidence 範圍與 terminal-state 條件；正式 core 尚未變更，候選需雙端驗證後才決定採用。
+  - 日期來源:direct
+  - 證據:`/tmp/root-cause-first-terminal-20261005-113420` 的 manifest、raw native JSONL、before／after、audit；CLI 2.1.289，resolved models 為 claude-sonnet-5-5／claude-opus-5-5，high；source／runner hashes、全部 Git control、raw=sent 與 mutation scope 已核對
+  - 邊界:模型自己的部分測試命令接 pipeline 而遮蔽 exit；外部 audit 以直接 subprocess 核對，仍紅的 resolver probe 如實保留。不把 Sonnet 正確主結論等同每句 evidence claim 正確；單次候選比較也不證明所有規則均有邊際價值
+  - 放棄:因使用者登入可用就重試 daemon；把 native terminal success 當品質全綠；不記錄模型的證據外推；以未驗候選替換正式 skill
+  - 重議:候選是否消除具體偏差且不使正常修復／唯讀診斷 false STOP；若不改善，保留失敗、回到具體原因，不重跑同一 packet 洗綠
+  - 關聯:X-20261005-claude-daemon-auth-classification;M-20261005-root-cause-first-codex-baseline;docs/plans/2026-10-05-root-cause-first-model-behavior.md
+
+- **M-20261005-root-cause-first-candidate-codex · 2026-10-05 Evidence／terminal-state 候選完成 Codex 定向驗證**：只在 frozen workflow 重寫兩條已觀察缺口對應的 bullet，兩入口／metadata／shared linkage 不變；Codex 六案通過，修復五個 tests 與獨立 probe 綠，四個唯讀案例全樹不變，containment 僅新增隔離測試且明報 BLOCKED／7 個 failures，沒有假報根治。27 次 fixture shell calls raw=sent，source hashes、artifact snapshot、Git control 與所有 commands 已核對。新增 setup-only workflow override 同時保存 base／candidate hashes 與精確 diff；admission controls、雙入口 validator 與新版 runner 的完整 suite exit 0、1567／0（234 秒）通過。正式 core 未套用；Sonnet 候選尚待使用者可用終端執行，不能以 Codex 或原版 Opus 綠替代。
+  - 日期來源:direct
+  - 證據:`/tmp/root-cause-first-candidate-codex-20261005`；`/tmp/root-cause-first-candidate-suite-20261005.log`；candidate SHA-256 ca7078c0b71892bf8b2c4604820079ec5ba9e6d83c20c5320a6db06fa37ed12b；runner SHA-256 3e405732191f1af85cab66d83e8364a325eee26dd1e6630fe276d2a98c77e01c
+  - 下一步:`python3 -B /tmp/root-cause-first-claude-candidate-20261005.py`，只補 Sonnet 六案；driver 固定 hashes、先驗 fresh auth，daemon fail-closed 已驗且零模型執行，未改 credentials／Keychain／daemon
+  - 邊界:compound shell commands 仍可能遮蔽模型內部測試 exit；audit 用直接 subprocess 重驗並保留真正紅燈。本批是定向候選比較，沒有聲稱全面 ablation 或模型輸出永遠可靠
+  - 關聯:M-20261005-root-cause-first-claude-baseline;docs/plans/2026-10-05-root-cause-first-model-behavior.md
+
+- **M-20261005-root-cause-first-v2-codex · 2026-10-05 第二候選 Codex 四案通過，Claude floor 尚待補驗**：針對第一候選未消除的 aggregate／containment 外推，只重寫同一 evidence bullet；保持 terminal-state 候選、原始 query／fixture／oracle。Codex repair 的六 tests 與獨立 probe 綠；continue、insufficient、trace-only 全樹唯讀，分別保持接續診斷、量測定義未知與只確認算術機制。31 次 shell calls raw=sent，全部 Git control 不變；兩入口 validator 通過。Runner hash 未變，沿用完整 suite 1567／0，未重跑無變化的全套。正式 core 保持原版，Sonnet v2 四案未執行。
+  - 日期來源:direct
+  - 證據:`/tmp/root-cause-first-candidate-v2-codex-20261005`；candidate SHA-256 c3a27a1d845a54fa103593069acc89e3f72d007c124df72e1bc41ea67bf5b4f8；可用終端的固定 hash driver 為 `/tmp/root-cause-first-claude-candidate-v2-20261005.py`
+  - 邊界:沒有測試 daemon restart／no-daemon 是否解決本機 Keychain 差異；官方 CLI 有該選項不代表實測成功。候選也不能在 Sonnet 未驗時宣稱雙端完成
+  - 關聯:X-20261005-root-cause-first-quantity-candidate;docs/plans/2026-10-05-root-cause-first-model-behavior.md
+
+- **M-20261005-root-cause-first-captures-complete · 2026-10-05 原版及兩候選預定 capture 完成，品質 gate 仍有 RED**：使用者終端完成 v2 Sonnet 最後四案；原版 Codex／Sonnet 各六案、Opus 三案，v1 雙端各六案，v2 雙端各四案，共 35 個有效 native captures。另保留原先八個 authentication-stage INVALID_NATIVE，不混入行為評分。兩候選未消除 Sonnet insufficient 的 evidence 外推，均不採用，正式雙入口／shared core 保持原版；不宣稱雙端品質全綠。Runner、凍結 oracle 與原始結果已具備，最新完整 suite exit 0、1567／0 的輸入保持適用，文件另做 audit；未 commit／push／部署。
+  - 日期來源:direct
+  - 邊界:沒有全面 prose ablation、完整 plugin catalog implicit trigger 或任何 production runtime 修復；daemon Keychain 與會話 ownership 的既有觀察不外推為已修好
+  - 下一步:待決定將本輪 review 留在已知缺口，或先做能區分失敗機制的新控制；不再堆第三次 wording patch，詳見 B-20261005-root-cause-first-sonnet-evidence
+  - 關聯:X-20261005-root-cause-first-v2-evidence;docs/plans/2026-10-05-root-cause-first-model-behavior.md;tests/root-cause-first-model-eval.py
+
+- **M-20261005-root-cause-first-opus-v2-adopted · 2026-10-05 Opus target 補驗使 v2 取得正式採用證據**：daemon restart 後 Claude OAuth 在同一 Codex execution context 可實際呼叫模型；以 baseline `0cf91a4`、原 runner 與 frozen oracle 補 `opus[1m]` 原版 insufficient／trace-only／negative。三案均解析為 `claude-opus-5-5[1m]`、high／Standard；後兩案通過，insufficient 重現將未明 aggregate 42−37 說成缺五筆的核心 RED。既有 frozen v2 讓同案先確認 count／sum 與來源條件，拒絕 +24h、零 mutation，並保持 repair／continue／trace-only 三個 controls 通過；repair 原三 tests 及獨立 probe 全綠。連同既有 Codex v2 四案，正式 shared workflow 採用 exact v2 兩個 hunks，SHA-256 `c3a27a1d845a54fa103593069acc89e3f72d007c124df72e1bc41ea67bf5b4f8`。兩入口 validator、完整 suite 1567／0（exit 0，243 秒）及文件 audit 通過；Sonnet insufficient 仍保留 backlog，未改判。本地候選完成，commit／PR／merge endpoint 待 Project 流程處理。
+  - 日期來源:direct
+  - 證據:`/tmp/root-cause-first-opus-completion-20261005`；`/tmp/root-cause-first-opus-v2-insufficient-20261005`；`/tmp/root-cause-first-opus-v2-controls-20261005`；`/tmp/root-cause-first-opus-adoption-suite-20261005.log`;docs/plans/2026-10-05-root-cause-first-model-behavior.md
+  - 邊界:一次 target RED→GREEN 不證明模型永不外推；Sonnet robustness 尚紅；未全面重跑不受兩個 hunks影響的 containment／negative 候選案，也不以原生 exit 0 代替 raw final、Git 實態與 independent probe
+  - 放棄:因 Sonnet probe 紅便否定明選 Opus target；以原版 Opus 三個代表案冒充完整 target；第三次堆措辭；重跑相同 packet 洗綠
+  - 重議:Opus target 在相同 oracle 再現量測語意外推或 false STOP；Codex 對應案回歸；正式支援範圍新增 Sonnet；或 shared wording 對正常修復／containment 造成新行為成本
+  - 關聯:D-20261005-claude-target-model-roles;X-20261005-root-cause-first-v2-evidence;B-20261005-root-cause-first-sonnet-evidence;shared/skills/root-cause-first/references/workflow.md
+
+- **M-20261005-root-cause-first-workline-complete · 2026-10-05 Root-cause-first 本地評估結案，保留 Opus／Codex 驗收與 Sonnet 缺口**：Opus target 與 Codex 的 frozen v2 insufficient／repair／continue／trace-only 驗收支援兩個 shared workflow hunks 採用；正式驗收模型角色決策、native runner 與凍結 implemented plan 保留。Guided recovery 已把 active assignment 存於 `d85812b`，11 個非 STATUS 交付檔在新增 recovery 紀錄前與原 candidate byte-identical；同 steward 移除 completed active item。Fresh full suite exit 0、1567 PASS／0 FAIL、229 秒，349 個 inputs 前後快照一致；後續純結案文件另驗 doc／xref。Sonnet insufficient RED 仍保留於 backlog，未改判；PR／required CI／merge endpoint pending，本地結案不代表已送出。
+  - 日期來源:direct
+  - 證據:`/tmp/root-cause-first-project-suite-20261005.log`；`/tmp/root-cause-first-project-suite-evidence-20261005.json`；同一 environment 的 test-evidence helper REUSE；D-20261005-claude-target-model-roles；M-20261005-root-cause-first-opus-v2-adopted
+  - 放棄:把歷史 Sonnet RED 改寫為 PASS；為純結案文件重跑既有模型 captures；將本地 candidate 完成當作 PR／merge 完成；將 active contract 在同一 commit 建立又刪除
+  - 重議:completion candidate authority、doc audit 或本 PR required checks 未過時處理具體 blocker；行為重議依正式模型決策及既有 backlog
+  - 關聯:root-cause-first-model-behavior;X-20261005-root-cause-first-completion-provenance;B-20261005-root-cause-first-sonnet-evidence;docs/plans/2026-10-05-root-cause-first-model-behavior.md
