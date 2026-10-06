@@ -294,3 +294,12 @@
   - 保存:未 commit／push／install／dotsync，新入口尚未安裝；原 implemented plan 與原始評估 journal 凍結，active assignment 保留至明示授權先保存
   - 關聯:turbo-skill;D-20261006-turbo-public-help;X-20261006-turbo-help-copyable-commands;M-20261006-turbo-skill-local
   - 計數澄清:上述六個組別按三個版本乘兩平台計；初始各兩個 case，v2／v3 各一個 case，實際共八個獨立 fixtures／native invocations，沒有把分組數冒充 case 數
+
+- **M-20261006-turbo-delivery-candidate · 2026-10-06 Turbo 工作線完成並準備交付 candidate**：本批使用者明示 `$project --merge`。Assignment 與原始驗證紀錄已保存於 `62c1f88edfdb77f6ffe8e04552dd1deca1691e58`，實作保存於 `aee046f024ba25a0ea82a4f3bb29cd907cbcbde9`；以原 assignment fingerprint 重驗 `codex:turbo-skill-plan` 的 current-session binding PASS 後移除唯一 completed active item。完整鎖定集合只有 `.dotfiles`，post-completion view 沒有 remaining active item 指向 retiring actor。
+  - 日期來源:direct
+  - 驗收:本批 `./tests/run-parallel.sh` actual exit 0，1570 PASS／0 FAIL（core 171、ship_state 239、integration 1160，integration 287 秒）；測試前後完整 tracked input 與 symlink target 快照一致，Project test-evidence helper exit 0／REUSE，非補造舊 G 的輸入。原 native component matrices、help v2／idle-on v3 與各原始 RED 均依其已記錄的 frozen source 保留
+  - 證據:`/tmp/turbo-project-suite-20261006.log`、`/tmp/turbo-project-suite-{before,after,evidence}-20261006.json`；本次 authority PASS 使用實際 full HEAD 與原 fingerprint
+  - 邊界:本紀錄只表示實作、驗收與結案 candidate；PR／required CI／rebase merge endpoint 尚未達成。交付授權只限本批同 repo／同 PR／同目標／同 session，CI 修復提交最多兩次；沒有 bypass、force-push、default branch push、permission 修改或 dotsync 部署。私人 plan-review journal 原位保留且本機排除，不提交／刪除／改判；原 implemented plan 凍結
+  - 放棄:同一 commit 建立又移除唯一 assignment；把既有成功 log 的當前 snapshot 冒充過去 inputs；僅以 local suite 綠就跳過當前 PR HEAD required CI；未到 endpoint 就宣稱 shipped
+  - 重議:completion candidate authority、doc audit 或當前 PR HEAD required checks 失敗；必要原 scope 內 CI 修復依同批授權接續，不重置額度
+  - 關聯:turbo-skill;62c1f88;aee046f;M-20261006-turbo-skill-local;M-20261006-turbo-public-help;docs/plans/2026-10-05-turbo-skill.md
