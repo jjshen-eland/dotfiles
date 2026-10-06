@@ -173,6 +173,44 @@ setup 腳本會安裝 Claude Code（官方安裝腳本）與 Codex（Homebrew ca
 
 其中 `~/.codex/config.local.toml` 保留本機相依設定，不納入版控。
 
+## Turbo 自主執行
+
+在 Codex 對話中輸入下列指令；Claude Code 把 `$turbo` 換成 `/turbo`。這是 skill 對話指令，
+不是 shell command。不知道有哪些選項時，輸入 `$turbo help` 或 `$turbo --help`。
+
+| 指令 | 功能 |
+| --- | --- |
+| `$turbo help`／`$turbo --help` | 顯示命令、參數與範例；不啟用或改變授權 |
+| `$turbo on [PLAN.md] [--allow actions]` | 啟用並接續計畫審查、實作與驗證；缺少可確認目標時等待任務 |
+| `$turbo off` | 撤銷之後的自動續跑 |
+| `$turbo status`／`$turbo` | 查模式、目標、目前授權、進度與阻擋原因 |
+
+`PLAN.md` 是可省略的計畫路徑；範例中的方括號表示可選，不要照打。
+`--allow` 可用值為 `commit,push,pr,merge`，以逗號分隔。它設定當次目標可選的交付動作，
+不是要求每個動作都必須執行；精確分派依下方 shipping authority。
+
+```text
+$turbo on PLAN.md
+$turbo on PLAN.md --allow commit
+$turbo on PLAN.md --allow commit,push,pr
+$turbo on PLAN.md --allow commit,push,pr,merge
+```
+
+依序為沒有新增交付授權、允許本地 commit、最多到 PR、允許 agent 視需要 merge。
+重複 on 不擴大授權或重設額度；更改集合需先 off，再以新 on 明列。
+On／status 回覆會列目前授權並提示 help。重新開啟／resume 的 session 預設 off。
+Spec／計畫格式見 [Turbo execution contract](shared/skills/turbo/references/execution-contract.md)。
+
+要委任 agent 選擇交付動作，啟動時明列 `--allow commit,push,pr,merge`；終點及必要 gate 依
+[Project 唯一授權表](shared/skills/project/references/ship-policy.md)。只有 on 不授權送出。
+無人值守另需選定 [permission profile](shared/skills/turbo/references/permissions.md) 並確認 hooks
+已載入／受信任；skill 開關不會改動全域 permission，也不能核准 host 的必要人工要求。
+
+目前 native 驗證涵蓋兩端 CLI。交付需保留 runtime 的實際 session transcript；
+`--ephemeral`／`--no-session-persistence` 可處理一般目標，但交付會因缺少摘要證據而停下。
+Claude 執行中的工具需要先用 host interrupt，再送 `off`；排入輸入佇列的 `off` 不會立即取消工具。
+Desktop／IDE／web 的 hook 與權限接點需另外驗證。
+
 ## 版本資訊
 
 - **版本**：v4.0

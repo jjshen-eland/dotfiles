@@ -271,3 +271,26 @@
   - 放棄:同一 commit 建立又移除唯一 assignment；補造原 suite snapshot；為純結案文件重跑有效 native captures；endpoint 未達成先記已 merge；移除或忽略 shipping gates
   - 重議:completion candidate authority、文件治理或當前 PR HEAD required checks 失敗；本批引入且原 scope 內缺陷依同 PR 有界修復接續
   - 關聯:Issue#267;ecd6551;D-20261005-legacy-terminal-disposition;X-20261005-legacy-disposition-native-sandbox;M-20261005-legacy-terminal-disposition-local
+
+- **M-20261006-turbo-native-delivery-local · 2026-10-06 Turbo 雙端完成受控交付及同 PR CI 修復**：fresh native CLI 在當次明列 commit／push／PR／merge 的隔離 fixture 完成合適終點；雙端已有 all-actions 與 seeded CI 修復的實際 local bare ref／provider 結果，required checks 真正檢查 pushed bytes，未 commit／push default branch 或 force。Claude v3 真實 reviewer `aef9ca0c322eaaafe`，先補實際 assistant Ship 摘要再由 native Stop 接續，無真人 continue，merge 到 `fddc44de6b025c6a770c375ff897d8bd1f56f5b3`；Codex v2 同 PR 修 CI 並用兩個真實 reviewer threads，merge 到 `dc6347e91587edb7f09025aa3dc5dffac8de47da`。摘要 guard 的原始 denied calls 保留，未弱化成接受 thinking／tool echo。
+  - 日期來源:direct
+  - 證據:`/tmp/turbo-delivery-forward/{GUARD-RESULTS.md,V3-RESULT.md,guard-evidence.json}`；Claude callback snapshot `1791218825413439000.jsonl` SHA `c7ce925e30ec0744e5d32962dc6091a9f961715a27f217d2b147a1e0bab2f3ba`
+  - 範圍:controlled local gh provider／bare remote 的 native composition，非真實 GitHub E2E；各 frozen source hash 不冒充最終所有 byte 相同。Claude 曾四次 missing-summary deny，後來自動恢復完成，仍有效率限制。Production 本批未 commit／push／deploy。
+  - 關聯:turbo-skill;D-20261006-turbo-native-evidence-transitions;X-20261006-turbo-summary-host-blame
+
+- **M-20261006-turbo-skill-local · 2026-10-06 Turbo portable skill 本地實作與限定 native CLI 驗收完成**：新增 shared core、雙端薄入口與既有 deep-plan／deep-review／repo-review／Project 的 opt-in 接點，沒有 fork workflows。當前 session on／off／status、同 Goal 修正續批、當次具名交付及 evidence-backed stopped 出口均有雙端原生證據。Claude H collector 從 actual SubagentStop 保存完整原文；兩個 fresh Agents 的 return／callback／private capture／controller raw_report 逐字相同，56/56 acceptance 與 22 supplementary checks、current-byte receipt／history／原 cap 同時成立。Claude v4 同 PR 修 CI／medium finding，original 4633 bytes 與作者摘要分存，controlled merge 到 `e515f870172b9af97aa915430940a70cd9e37099`；no-local clone 的 63 checks 在 Python 3.11／3.14 全綠。Codex code-cap E 及 seeded CI v2 證據依其 frozen component source 保留，未冒充最終每一 byte 的 E2E。
+  - 日期來源:direct
+  - 驗收:final G 完整三 shard exit 0、1570 PASS／0 FAIL，含 Turbo 48 tests；integration 1465 秒。雙入口 quick_validate、syntax、ShellCheck、freeze 前 doc／xref audit 與 diff check exit 0。F 的兩個舊通知 gate FAIL 已根因修正，collector 共存與 timestamp／wait4me 誤接負例均綠；原始 model／mechanical RED、missing-summary denials、original reports 及 native IDs 未洗掉
+  - 證據:`/tmp/turbo-full-suite-20261006-g.log`、`/tmp/turbo-doc-audit-20261006-before-freeze.log`、`/tmp/turbo-xref-20261006-before-freeze.log`；`/tmp/turbo-h-root-verification-20261006.json`、`/tmp/turbo-v4-root-verification-20261006.json` 與 plan 的各 packet receipt；current helper SHA `969ac730ed18081862683f2e49ef174b4c1c234d55bd23381c41c9bb54d0848d`
+  - 範圍:Codex CLI 0.160.0／Claude Code 2.1.289 的限定 native surfaces；交付只驗 controlled local gh provider／bare remote，未操作真實 GitHub。Desktop／IDE／web／app-server／TUI compact 未驗，logless delivery fail closed；Claude queued off 需 interrupt，取消 cache 在 next-input reconciliation 撤銷。V4 五次 missing-summary denial 後由 native Stop 自動恢復，效率限制保留
+  - 保存:plan implemented 並凍結；production 尚未 commit／push／install／dotsync，新 Turbo entries 未安裝。既有 Claude settings symlink 已映出 source 修改，未改 global permission；Codex live config 未同步。Active assignment 尚未存在於 candidate parent，保留至明示授權先保存，未宣稱整合／shipping／workline closure
+  - 關聯:turbo-skill;D-20261006-turbo-native-report-collection;X-20261006-turbo-author-report-rewrite;X-20261006-turbo-subagent-hook-blanket-check;docs/plans/2026-10-05-turbo-skill.md
+
+- **M-20261006-turbo-public-help · 2026-10-06 Turbo 可發現的說明介面通過双端 native 檢查**：保留使用者接受的額外 `--allow` 授權；新增 shared workflow 的唯讀 help／--help 路由、on／status 的 action set 與 help 提示、README 人用命令表與範例。雙端薄入口同步 help trigger，Codex metadata 的起始 prompt 是 `$turbo help`。原 controller／hook／permission／shipping authority 未改，bare 維持 status；沒有新增內部 helper 命令或重複 quick-reference。
+  - 日期來源:direct
+  - 驗收:保留 first-help／idle-on 的部分成功與反例，fresh v2 的雙端 help only-read、無 control／bind／review／shipping，所有 on command blocks 經实际 parser 通過；v3 的雙端 actual control output 均 on／idle／goal null／allow 空集合，回覆含 help hint，unknown 未被推定 launch profile。六個初始／v2／v3 fixture 組別的實態與完整 raw logs 保留，首輪錯誤沒有改判
+  - 證據:`/tmp/turbo-public-help-{v2,v3}-verification-20261006.json`、`/tmp/turbo-public-help-{v2,v3}-20261006-results.json` 與各 packet 的 frozen hashes／argv／native.jsonl；雙入口 quick_validate exit 0，doc audit／xref v2 exit 0，diff check exit 0。兩端 HEAD 不變／tree clean／frozen source 不變。Help v2 及 idle-on v3 依各自 frozen source，最後 delta 只在 acknowledgement 的 unknown guard，不冒充每個 packet 所有 bytes 相同
+  - 範圍:Codex CLI 0.160.0／repo production model，Claude Code 2.1.289／opus[1m]，实际 Claude resolved `claude-opus-5-5[1m]`；native CLI 功能檢查，不宣稱 host UI 已渲染 metadata／flags completion。核心仍以 G 的 1570 PASS 為既有證據，本次未改 scripts、md 節名或搬權威，針對人用介面做 native／validators／doc checks，未以原 suite 冒充新 help 驗收
+  - 保存:未 commit／push／install／dotsync，新入口尚未安裝；原 implemented plan 與原始評估 journal 凍結，active assignment 保留至明示授權先保存
+  - 關聯:turbo-skill;D-20261006-turbo-public-help;X-20261006-turbo-help-copyable-commands;M-20261006-turbo-skill-local
+  - 計數澄清:上述六個組別按三個版本乘兩平台計；初始各兩個 case，v2／v3 各一個 case，實際共八個獨立 fixtures／native invocations，沒有把分組數冒充 case 數

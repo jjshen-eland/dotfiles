@@ -128,3 +128,29 @@
   - 放棄:因 terminal commit 已進 default 即靜默忽略；沿用舊批照送或普通 merge 當結案；刪整份 anchor／重設 controller；以無關 autofix 取得 mutation 資格；讓唯讀 review 自動寫 Git metadata
   - 重議:隔離案例顯示合法 exact disposition 仍攔截無關新批、新訊號能借舊 receipt 放行，或未授權 disposition／shipping 被執行
   - 關聯:Issue#267;D-20260823-portable-deep-review;D-20261003-review-repair-controller-adoption;M-20260923-review-terminal-display-local;tests/review-repair-controller.py
+
+- **D-20261005-turbo-delegated-controller · 2026-10-05 Turbo 採新 orchestration skill 與既有 controller 的 opt-in 續批**：使用者同意以新 shared turbo core＋雙端薄入口實作，不 fork deep-plan／code review／Project。新增單次 delegated request，綁當前 session generation／Goal／完整 repo 集合／controller bytes／修正證據；舊批次、findings、上限與 receipts 保留，普通 restart／new-batch 仍要求原本的當次明示授權。已有效審過的內容不能重複當續批進展；測試先重現 permission mode 未保存、已審內容重用與目錄誤作 goal，再修正。交付 action 由 Project 唯一授權表正規化；on 與 launch-time permission profile 分開，沒有全域降權或自動 host approval。
+  - 日期來源:direct
+  - 證據:tests/turbo-mode.py；raw `/tmp/turbo-{mode-red,binding-checkpoint-red,integration-red,baseline-red,timestamp-red}-20261005.log`；第一輪 native `/tmp/turbo-{codex,claude}-complete-20261005-a`。這輪只證明機械控制及阻擋路徑，portable/native 完成驗收仍在進行。
+  - 放棄:永久 fork 三套 workflow；把 agent 建議偽裝成新 user restart 指令；重設 review journal；讓 YAML／private cache 自行授權；以只改 permission mode 就宣稱 unattended ready
+  - 重議:新的實際 fixture 顯示 delegated request 可錯綁、洗掉已用額度／finding、取消後續行，或 native hooks／權限 composition 與目前證據不符
+  - 關聯:turbo-skill;D-20261003-deep-plan-controller-adoption;D-20261003-review-repair-controller-adoption;D-20261005-project-canonical-push;docs/plans/2026-10-05-turbo-skill.md
+
+
+- **D-20261006-turbo-native-evidence-transitions · 2026-10-06 Turbo 補入原生審查證據與同批範圍更新**：依 X-20261006-turbo-prose-only-gates 的 observed failures，active Codex turbo dispatch 改由既有 controller 的 opt-in `native-review` 啟動真實 fresh read-only CLI processes，保留 process／thread／raw output／report／subject bindings，拒絕 main 自寫 report。新增 single-use `refresh-subject`，僅對已授權作者驗收修正、同 roots／paths／原 baseline、剩餘 primary capacity 且無 pending work 更新 subject；撤銷舊 receipt、完整保留次數與歷史。active turbo 的 PreToolUse 依唯一 Project Step 4／5 gate 讀真正 native transcript 的當前可見 Ship 摘要，綁 commit 集合；不是第二份交付授權表。
+  - 日期來源:direct
+  - 取捨:真實 process evidence 只能證明來源與 binding，不能保證 reviewer 語意正確；作者仍獨立查證 findings／Goal。未啟用 turbo 的原 collection／caps 保留。Native transcript 缺席的 ephemeral／no-session-persistence profile 對 delivery fail closed，普通無外向任務仍可執行；不改 global permissions、trust 或 provider policy。
+  - 證據:mechanical counterfeit／refresh／summary RED 與修後 controller tests；callback observer `/tmp/turbo-delivery-forward/observe-{claude,codex}-{off,default}` 實證持久化開關對 transcript 可用性的差異。fresh native 全流程補驗中，尚不外推 GitHub／desktop／app-server。
+  - 關聯:turbo-skill;D-20261005-turbo-delegated-controller;X-20261006-turbo-prose-only-gates
+
+- **D-20261006-turbo-native-report-collection · 2026-10-06 Claude 由原生完成事件保存 review 原文**：依 G 的實際收集失敗，active Claude turbo 保留 native fresh Agent，增加同步 SubagentStop collector，直接保存完整 final text，綁 session／generation／dispatched target 與 ticket／agent ID。Controller finish 以該 capture 保留 raw_report，作者另交的摘要標記 author_summary，不取代原文；capture 缺席或 binding 不符時保留 spent attempt／BLOCKED，不退款、不改 verdict 或 severity。普通 off-mode collection 不變，collector 不續跑或阻擋 reviewer。
+  - 日期來源:direct
+  - 證據:官方 hook schema 與本機 CLI 能力查證；三項先 RED 後 GREEN `/tmp/turbo-original-report-capture-{red-fixed-oracle,green}-20261006.log`。實際 native 支援及逐份保真由 fresh H 補驗，當下未提前判成功。
+  - 取捨:改收集 source 而非增加作者抄錄指令；不擴充 Codex transport 成 Claude process，避免改變 reviewer 的既有診斷工具及權限。Private native artifacts 是來源 evidence，不是語意 grader／user authority；findings extraction 與 Goal AC 仍須作者独立查證。
+  - 關聯:turbo-skill;X-20261006-turbo-author-report-rewrite;D-20261006-turbo-native-evidence-transitions
+
+- **D-20261006-turbo-public-help · 2026-10-06 保留額外交付授權，補上可發現的使用介面**：使用者接受目前 `--allow` 多一層確認，指出無法知道有哪些參數可用。保留 on／off／status 與交付 authority；新增 agent-level help／--help 的唯讀路由、on／status 的目前授權及 help 提示，README 直接列可用語法與範例。Help 不交給 internal helper argparse，也不啟用、bind 或擴權；bare 維持 status。雙端薄入口宣告 help，Codex UI 提供 help 起始 prompt；不宣稱宿主會自動列出 flags。
+  - 日期來源:direct
+  - 證據:本輪使用者「現在這樣設計也不錯，多一層確認，只是要怎麼知道有這些參數可以打呢」；前版 README 只有一個 on 範例、入口只有 workflow 路由，沒有正式 help 或人用參數表；雙端唯讀 help 與啟用提示待驗
+  - 取捨:補可見說明而非改 on 的交付語意；沿用 README 人用權威與 shared workflow，不新增重複 quick-reference store，不改 controller／hook／permission／Project gates。原 implemented plan 保持凍結，新增介面 delta 由既有 active state／history 追蹤
+  - 關聯:turbo-skill;M-20261006-turbo-skill-local;README.md;shared/skills/turbo/references/workflow.md

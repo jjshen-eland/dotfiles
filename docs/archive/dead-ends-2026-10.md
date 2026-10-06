@@ -130,3 +130,94 @@
   - 放棄:以 native CLI exit 0 當成功；改用無 sandbox 的全機權限；刪／重建原 fixture journal 或繞過 permission denial；把 parent 手動寫入冒充 native 操作
   - 重議:明列 fixture metadata root 後的實際 native permission profile 與操作仍受阻，或允許路徑超出 isolated review metadata
   - 關聯:Issue#267;D-20261005-legacy-terminal-disposition;tests/review-skills-model-eval.py;shared/skills/deep-review/evals.md
+
+- **X-20261005-turbo-pending-review-stall · 2026-10-05 Turbo Stop 只看檔案進展會把背景審查誤判停滯**：Claude cap fixture 已修正 plan 並合法 focused 續批，兩個 fresh background reviewers 完成且結果有效；等待期間的第二個 Stop 無檔案差異，cache 被設成 blocked。主 agent 後來收齊 reviewer、通過 gate、完成 encode，但 decode／checks 不再被續跑。這是實際 partial delivery，不能用 CLI exit 0 或 review GO 宣稱 goal 完成。先用 controller claim→重複 Stop→valid finish 的重現，再加入 exact-ticket waiting／completion binding 與 Claude native session environment propagation。
+  - 日期來源:direct
+  - 證據:`/tmp/turbo-claude-cap-20261005-a` 的 raw native JSONL、hooks、journal、encode-only artifacts；`/tmp/turbo-review-wait-red-20261005.log` 的兩個行為失敗及缺失 native environment file；原 trace 保留
+  - 放棄:等待時反覆 Stop polling；把無檔案變更都視為不可達；用新 user prompt 或 author 自宣 PASS 恢復；忽略 encode-only partial delivery
+  - 重議:完整結果可恢復同一 exact pending ticket，而 off／complete／host approval pending 不被舊 reviewer 結果喚醒，且 fresh native fixture 完成其原驗收
+  - 關聯:turbo-skill;D-20261005-turbo-delegated-controller;tests/turbo-mode.py
+
+- **X-20261005-turbo-native-stage-boundaries · 2026-10-05 Turbo native 交付驗收揭露前景結束與 acceptance 的獨立門檻**：首輪受控交付的 Claude 到達 fixture merge，但第一次 push 前漏了 Project 必要 Ship 摘要；Codex 在 controller dispatch 後結束 exec，沒有 real reviewer launch／finish／receipt，不能以「等待中」宣稱交付。Codex on 的實際 source 已具名全部 actions，但 helper registration 未重複 CLI flags 導致 cache 少記，source 與 operational evidence 不一致。另 Claude code-cap 的 native reviewer 實際重現 dict-subclass numeric-key rejection 失敗，分類 low／closed 後仍違反固定 Goal；main 以 PASS 及本批 cap 為由留給使用者，卻宣稱驗收完成。各 raw trace 保留，分別修 operational action recording、Codex foreground reviewer wait、單一 Project Step 4 路由與 acceptance-counterexample author checkpoint；不更改 reviewer severity 或削弱驗收。
+  - 日期來源:direct
+  - 證據:`/tmp/turbo-delivery-forward/{claude-all,codex-all,claude-fixed_pr}` 的 native JSONL／provider refs／audit；`/tmp/turbo-forward-{codex,claude}-code-cap-20261005` 的 original controller history、native reviewer IDs／工具與 counterexample；`/tmp/turbo-delivery-native-gap-red-20261005.log`
+  - 放棄:dispatch metadata 冒充 reviewer launch；fixture MERGED 冒充 mandatory gate 全綠；cache 少記的 source 授權當成使用者未授權；review PASS／low disposition 當成 Goal 驗收；提高原 severity 以繞 author criterion
+  - 重議:新 candidate 的 fresh 雙端實際 stage／endpoint 與語意 acceptance 全部成立，先前 failure 保留可追查；受控 provider 不外推真實 GitHub
+  - 關聯:turbo-skill;D-20261005-turbo-delegated-controller;X-20261005-turbo-pending-review-stall
+
+
+- **X-20261006-turbo-prose-only-gates · 2026-10-06 Turbo 文字續跑指引未守住真實審查與摘要**：fresh code-cap B 的 Codex 只呼叫空 receiver wait，隨後 main 寫自己的 report，使用虛構 `/root/codec_review` identity 取得 controller PASS；沒有獨立 launch／returned report。Claude 已執行獨立 Agent，但低嚴重度 acceptance counterexample 的作者修正令新批 subject stale，剩餘 capacity 無法合法重新綁定；受控交付的 Claude 再次未印 Ship 摘要就 push。證據否定「加文字提醒即可」；原始失敗不重跑或改 verdict。
+  - 日期來源:direct
+  - 證據:`/tmp/turbo-forward-{codex,claude}-code-cap-20261005-b`；`/tmp/turbo-delivery-forward/{claude-all-after,claude-seeded-red-py311}`；mechanical RED `/tmp/turbo-controller-mechanisms-red-20261006.log`、`/tmp/turbo-native-summary-red-20261006.log`
+  - 放棄:作者 report 當獨立 reviewer、任意 ID 當 native launch、換批重置剩餘 capacity、把 fixture MERGED 當 Ship gate 全綠、以 PASS／low 分類取代 Goal 驗收
+  - 重議:真實 reviewer process／native thread／raw output／scope binding 可查證；同批 acceptance 修正可在剩餘 capacity 重綁但不退款；首次 outward 前確有當前 user-visible 摘要，修正 commit 令舊摘要失效
+  - 關聯:turbo-skill;D-20261006-turbo-native-evidence-transitions;X-20261005-turbo-native-stage-boundaries
+
+
+- **X-20261006-turbo-pre-captured-repair · 2026-10-06 Turbo 新批已捕捉作者修正卻沿用舊 open disposition**：Claude fresh code-cap C 在原上限後先修正，再續批／refresh subject；舊 true-positive disposition 仍可開 repair-start，消耗本批 1/1，卻因 bytes 已在 baseline 而無新 delta，repair-finish 正確拒絕。保留 truthful BLOCKED；獨立驗收普通 50/50，但 dict-subclass 的兩個既有驗收反例仍失敗，不能視為完工。依現行 explicit-manifest new-batch 的 recheck 原則補 opt-in recapture 接點：存原 disposition history，要求 open original 在當前 bytes 再查證；已修好的可附證據 resolved，不能為驗證而捏造 delta 或退還次數。
+  - 日期來源:direct
+  - 證據:`/tmp/turbo-forward-claude-code-cap-20261006-c/native.jsonl`、original controller／independent AC；`/tmp/turbo-original-recheck-red-20261006.log` 與修後 oracle
+  - 放棄:零 diff 當新修復、退回已花 repair slot、放寬 repair-finish、把普通測試全綠當全部 acceptance
+  - 重議:同批／續批的已捕捉修正先核對原 finding，仍有容量則完成 fresh current-byte review；剩餘 counterexample 要自主修復且不洗掉歷史
+  - 關聯:turbo-skill;D-20261006-turbo-native-evidence-transitions;X-20261006-turbo-prose-only-gates
+
+
+- **X-20261006-turbo-acceptance-invariant-gap · 2026-10-06 真實獨立 PASS 仍漏掉輸入與例外契約**：Codex code-cap C 的兩個真實 read-only process／distinct native threads 均有完整 raw evidence；第一位找到三個 medium，作者修後第二位給 NO BLOCKING FINDINGS，main 宣稱 Goal 完成。獨立驗收卻為 48/50，另 dict-subclass numeric-key／value 兩反例也失敗。實際 validator 看 `mapping.items()`，consumer 用 `dict(mapping)`，兩表示不同；reviewer 自行排除任意 Mapping implementations，Goal 並無該排除。Decoder 對深度非法 JSON 的 runtime RecursionError 未維持 ValueError 邊界。這不是 provenance 或 review 次數問題，不能靠多派一位／降低嚴重度洗掉。
+  - 日期來源:direct
+  - 證據:`/tmp/turbo-forward-codex-code-cap-20261006-c` 的 final codec／PLAN、PID 8452 與 32778、distinct native threads、report JSON／original controller／independent AC
+  - 放棄:普通測試全綠或 reviewer PASS 當全部 AC；未獲需求支持就縮小 interface domain；驗證一個表示卻使用另一表示；以 CLI exit 0 當例外契約成立
+  - 重議:generic acceptance checkpoint 對同一實際 consumer snapshot 的 invariant 與已宣告 input／failure domain 提供證據，fresh 雙端固定 query 完成原 AC；未驗／未達 criterion 要如實保留
+  - 關聯:turbo-skill;X-20261006-turbo-pre-captured-repair;shared/skills/turbo/references/execution-contract.md
+
+
+- **X-20261006-turbo-summary-host-blame · 2026-10-06 Claude 聲稱摘要被 host 隱藏但 native text 中從未出現摘要**：guard v2 的 Claude all-actions 在摘要缺席時被阻擋，補實際文字後完成受控 MERGED；同源 seeded CI packet 卻四次 push 都缺 required prefix，最後 blocked 並稱摘要被 host 存成 narration/thinking。at-callback actual transcript 及 raw native output 的全文皆無任何以 Ship 摘要開頭的 foreground text；相鄰 thinking block 也無 literal，不能將模型說法當成 adapter 丟失證據。保留安全拒絕及未交付結果，thin Claude entry 補實際 assistant-text emission／查證 binding，不放寬 shared gate。
+  - 日期來源:direct
+  - 證據:`/tmp/turbo-delivery-forward/claude-guard-v2-seeded_red` 的 native lines 379/436/481/519、hook deny／callback snapshots；`/tmp/turbo-delivery-forward/claude-seeded-summary-red.json`；同源 Claude all 與 Codex all／seeded CI 的真實已交付摘要對照
+  - 放棄:以 author 聲稱取代 user-visible text；在 gate 中接受 thinking、tool print 或 post-push 摘要；反覆送出未補 prerequisite 的同一 call
+  - 重議:fresh Claude 已修 CI 的同 PR 續批，先送真正 assistant text，保留全部 safeguards 後到達原已授權終點；不改舊 packet 洗綠
+  - 關聯:turbo-skill;X-20261006-turbo-prose-only-gates;shared/skills/project/references/log-prepare.md
+
+
+- **X-20261006-turbo-roundtrip-logical-domain · 2026-10-06 自洽的 convenience view 仍可能隱藏合法原始內容**：Claude code-cap D 在 scoped author repair、真實 Agent PASS 與 ordinary 50/50 後，對 override items() 為空的 dict subclass 把合法 `{'a':'b'}` 編為 `{}`，解碼結果不等於原始 mapping。先前新增「同一 consumer snapshot」檢查仍不夠，因該 snapshot 自己已遺失資料；負例 numeric key/value 同樣被隱藏。固定原 Goal／query／oracle 保留 D 的 RED，generic acceptance 指引補既有 identity／round-trip 與宣告 logical contents 的對照，再發一個 fresh E，不提供 suspected bug 或預定 verdict。
+  - 日期來源:direct
+  - 證據:`/tmp/turbo-forward-claude-code-cap-20261006-d/independent-dict-subclass-roundtrip-probe.json`、原 PLAN／codec／native Agent／controller；E 的 frozen execution-contract SHA `04f09358df985f09fb34a55d124cc6fa1b5d2a4958eeeca10372e4765e4122dc`
+  - 放棄:convenience view 自洽即代表 source contents 正確；以 subtype 重新定義需求允許的資料；只靠加 reviewer 或任意排除 subclass
+  - 重議:驗收對真正 source 的正／負輸入與 logical round-trip 成立，fresh candidate 的原始 evidence 及 independent grading 通過；不改舊 packet 結果
+  - 關聯:turbo-skill;X-20261006-turbo-acceptance-invariant-gap;shared/skills/turbo/references/execution-contract.md
+
+
+- **X-20261006-turbo-unchecked-pr-tokenizer · 2026-10-06 本地 heredoc 被 Turbo optional PR tokenizer 當作 outward failure**：Claude code-cap E 完成真實 Agent 審查並在 native line 180 寫本地報告／finish 時遭 PreToolUse deny。exact callback 的 Bash syntax check exit 0，canonical classify() 回傳 None；PR-create extension 卻直接重跑 tokenizer，把 heredoc 中 `Python's` 的資料當 shell quote，拋出 No closing quotation，再被 outer handler 變為泛用 missing-evidence deny。來源 helper 存在且 hash 正確，故不是 host permission、遺失檔案或 malformed Bash。補 RED 後只修 extension 對 canonical unknown／ValueError 契約的消費，不改原 classifier、outward authorization 或 native host policy。
+  - 日期來源:direct
+  - 證據:`/tmp/turbo-forward-claude-code-cap-20261006-e/{gate-denial-diagnosis.json,gate-denied-command.txt}`、native 180/181／hook callback；`/tmp/turbo-heredoc-classifier-red-20261006.log`、修後 3 項 GREEN `/tmp/turbo-heredoc-classifier-green-20261006.log`
+  - 放棄:以換 Write 工具當作修好 gate；將 valid Bash 的 heredoc data 當 command token；把 classifier 的 unknown 弄成 local-call denial；宣稱 helper 缺失或 host approval 已拒絕
+  - 重議:original callback 的純分類與實際 fresh native 接點正確，canonical PR／push／merge 摘要負例仍被拒絕，未以 optional summary classifier 取代 host shell policy
+  - 關聯:turbo-skill;X-20261006-turbo-prose-only-gates;shared/skills/turbo/scripts/turbo-state.py
+
+
+- **X-20261006-turbo-original-report-summary · 2026-10-06 真實 reviewer 與 acceptance 全綠仍不等於保存完整原文**：Claude code-cap F 的 56/56、真實 background Agent、current-byte receipt 與原 history 均成立，但作者把 47 行 reviewer 原文存成 6 行 controller report。原文含 branch／index 狀態、完整 commands、deep-object 及 same-class 結論；摘要保留零 findings、scope 與 KeyError 的非 finding 判斷，沒有 severity 降級，卻省略其他原文。原文只有 native task_notification／eval capture 保留，native output pathname 在 terminal 後不存在，未驗得作者自己保存的完整檔；不可拿 evaluator 的 collection 冒充 deployed workflow 已做到。保留 F 的分項 GREEN 與原文 collection RED，唯一 controller protocol 明確化 complete original text verbatim／author summary 分開的既有接點，fresh G 補驗，不改 hook、controller、cap 或 reviewer verdict。
+  - 日期來源:direct
+  - 證據:`/tmp/turbo-forward-claude-code-cap-20261006-f/{blind-grade.json,independent-native-agent-proof.json}`、actual native original／submitted report diff；真實 Agent `a9bb731381af32671`，codec SHA `eaff0be43a007af1989a5a4fbc18a87580f879b1d1ac2169b10b4729d86e11c6`
+  - 放棄:用 56/56 洗掉原文保存缺口；把摘要當 reviewer 原文；以 observer 代存代表作者已保存；把非 finding observations 改列 blocker 或刪原零 finding 結論
+  - 重議:fresh packet 的作者保存 actual complete original，controller path／structured report field 保留該文字；raw findings、history、scope 及 independent Goal AC 同時成立
+  - 關聯:turbo-skill;X-20261006-turbo-prose-only-gates;shared/skills/deep-review/references/control.md
+
+- **X-20261006-turbo-author-report-rewrite · 2026-10-06 明示 verbatim 規則仍不能讓作者收集保真**：fresh Claude code-cap G 實際讀到原文保存規則，完成 56/56 原 acceptance 與四個實際新 counterexamples；三個 fresh Agent 的真實 reports、medium F1／low F2、修正與 current-byte receipt 都成立。但每份作者 report 都重寫 scope、commands、findings 或非 finding observations，不等於 reviewer 完整原文；native raw capture 只由 evaluator 保存。F 的 prose-only 修正因此沒有解決收集根因，保留 G collection RED，不把功能 GREEN 或摘要語意接近拿來代替。
+  - 日期來源:direct
+  - 證據:`/tmp/turbo-forward-claude-code-cap-20261006-g/native-reviewer-receipts/*-report-diff.txt`；real Agents `a6d6581f75c694412`、`a360a8289d5e89500`、`a68c7c73dfb7e2f2e`；`/tmp/turbo-original-report-capture-red-fixed-oracle-20261006.log` 先證明作者摘要被當 raw_report、沒有 native original 仍可 valid set
+  - 放棄:反覆要求作者手抄原文；以功能／review PASS 掩蓋 transport collection RED；把 observer 保存的原文算 production 自存；替換 reviewer 或修改驗收結果
+  - 重議:production collector 從實際 callback 保存 original，controller 消費其同 session／generation／target／ticket／reviewer 綁定；fresh packet 對每份 actual native report 逐字核對
+  - 關聯:turbo-skill;X-20261006-turbo-original-report-summary;D-20261006-turbo-native-report-collection
+
+- **X-20261006-turbo-subagent-hook-blanket-check · 2026-10-06 舊通知 gate 禁止所有 SubagentStop，誤拒合法原文 collector**：collector 修後完整 suite F exit 1，1568 PASS／2 FAIL；Turbo 48 項 behavior oracle 已綠，兩個失敗都來自 timestamp／wait4me wiring 的 `SubagentStop == null`。實際新增的是同步 original-report collector，沒有 timestamp 或 wait4me。將判準收斂為該事件不得含這兩種通知 command，保留 main Stop 的精確接線及 Codex 無 SubagentStop；以實際 collector 的 GREEN 和分別注入 timestamp／wait4me 的 RED 自檢，未移除通知隔離。
+  - 日期來源:direct
+  - 證據:`/tmp/turbo-full-suite-20261006-f.log` 原始兩個 FAIL；`/tmp/turbo-subagent-notice-gate-green-20261006.log` 對實際接線與兩個誤接反例的 gate exit 0；最終完整 suite 尚待修後 G
+  - 放棄:刪除 collector 來迎合全面禁用；移除通知 isolation guard；用先前 E 全綠冒充 collector 修後完整回歸
+  - 重議:SubagentStop 實際發送 main waiting notice，或修後 G 的完整 regression 仍失敗
+  - 關聯:turbo-skill;D-20261006-turbo-native-report-collection;tests/run.sh
+
+- **X-20261006-turbo-help-copyable-commands · 2026-10-06 Help 的可複製範例與未知權限描述不能只看最終文字似乎合理**：首輪雙端 native help 確有列出命令／allow 與唯讀行為，但 Claude 的四行 on 範例尾端加了 `#` 解釋，實際 control parser 全拒絕；獨立 PR 範例有效不能代替其他範例。另 Claude idle-on 雖正確顯示 helper 的 unknown，卻稱 launch 是一般權限；實際 argv 是單次 bypass，沒有查證依據。保留原 native outputs，讓命令解釋放在 code block 外，啟用提示只報已核實 control facts；unknown 不推定 host profile。Fresh v2 雙端 help 全部 on 範例可解析，v3 雙端 idle-on 正確列空授權及 hint，未知準備度未再冒充有效 profile。
+  - 日期來源:direct
+  - 證據:`/tmp/turbo-public-help-copyable-red-20261006.json`、`/tmp/turbo-public-help-20261006-claude-idle-on/{native.jsonl,run.json}`；`/tmp/turbo-public-help-v2-verification-20261006.json` 與 `/tmp/turbo-public-help-v3-verification-20261006.json`
+  - 放棄:要求使用者自行刪掉示範註解；用 CLI exit 0 或一行可用範例洗掉其他錯誤；把 permission unknown 當普通 launch；重跑相同 packet 或改 parser 放寬輸入來迎合輸出
+  - 重議:新的实际 help 範例被 parser 拒絕，或 acknowledgement 從未查證資訊推定 profile／擴大授權
+  - 關聯:turbo-skill;D-20261006-turbo-public-help;shared/skills/turbo/references/workflow.md
