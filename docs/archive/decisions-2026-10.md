@@ -167,3 +167,9 @@
   - 放棄:把 runtime model drift 誤留為個人覆寫；將已識別 cloud cache 視為需保留的未知作者作品；只刪 cache 而不修補同步來源；恢復 skills whole-root link 再讓 cache 寫入 repo；把兩個測試程序的 kill 授權擴到其他 writers
   - 重議:程序 PID／exe／owner／啟動身分不符、source 有新修改、cache 出現追蹤檔或其他 provenance、設定不能由當前 CLI 原生解析，停止對應處置並保留現場；新設定合併前不宣稱遠端永久停用完成
   - 關聯:runtime-layout-convergence;M-20261006-runtime-layout-fleet-twelve-accepted;docs/plans/2026-10-06-runtime-layout-convergence.md;claude/settings.json
+
+- **D-20261006-runtime-model-defaults · 2026-10-06 雙端 repo 模型設定改採 default**：使用者在確認 Claude model=opus[1m] 與 Codex repo 未指定 model、本機保存 gpt-6.1-sol 後，指定 repo 的兩端模型值都改為 default／等效 default。Claude 官方 model configuration 支援 default 作為清除模型指定、回到帳號 runtime default 的特殊值，因此來源改為 model=default；Codex 官方 config basics 列 built-in defaults 為最後 fallback，repo 繼續省略 model，補一行註解表明策略。授權範圍是 repo 設定，不改 Codex 既有 base→runtime-only→local merge，也不清除本機／session 選擇；實際模型仍受各 runtime 的覆寫與帳號設定影響。先前雲端 syncClaudeAiSkills=false 保留，當批 origin/main／dotsync gate 仍有效。
+  - 日期來源:direct
+  - 放棄:為 Codex 寫入未獲官方文件支持的 model=default 字串；把使用者的 repo 模型政策擴成清除所有 runtime／local 覆寫；調整其他推理或權限設定
+  - 重議:官方模型解析契約改變或隔離 native 初始化不接受 default，才調整來源表示方式；需要統一 runtime 保存的模型時另以具名範圍處置
+  - 關聯:runtime-layout-convergence;D-20260912-codex-config-three-layer-merge;D-20261006-runtime-cloud-sync-disposition;claude/settings.json;codex/config.toml

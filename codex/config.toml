@@ -1,5 +1,6 @@
 # Shared Codex defaults managed by ~/.dotfiles/codex/config.toml
 # Machine-specific project trust should live in ~/.codex/config.local.toml
+# Model is intentionally unset: use Codex defaults unless overridden locally or for a session.
 
 model_reasoning_effort = "medium"
 sandbox_mode = "danger-full-access"
