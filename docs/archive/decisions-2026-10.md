@@ -173,3 +173,10 @@
   - 放棄:為 Codex 寫入未獲官方文件支持的 model=default 字串；把使用者的 repo 模型政策擴成清除所有 runtime／local 覆寫；調整其他推理或權限設定
   - 重議:官方模型解析契約改變或隔離 native 初始化不接受 default，才調整來源表示方式；需要統一 runtime 保存的模型時另以具名範圍處置
   - 關聯:runtime-layout-convergence;D-20260912-codex-config-three-layer-merge;D-20261006-runtime-cloud-sync-disposition;claude/settings.json;codex/config.toml
+
+- **D-20261007-claude-model-default-unset · 2026-10-07 Claude 原生 Default 改以省略 model 表示**：supersedes:D-20261006-runtime-model-defaults，僅取代 Claude 來源的 literal model=default 表示方式。使用者回報原生選單新增「default／Custom model」；本機 Claude 2.1.289 的原生推薦 Default 內部值為 null，settings 字串 default 被當成額外自訂選項。SDK 將兩者都序列化成 default，前輪只驗 initialize 成功，漏掉選單唯一性。隔離 metadata-only literal RED 有兩個 default rows、一個 Custom model；省略欄位 control GREEN 只有推薦 Default。原生 schema 的 model 是可選字串，來源採省略欄位，不寫 null 或固定模型 ID；無模型 turn，未證明 literal default 的實際推論失敗。
+  - 日期來源:direct
+  - 證據:使用者選擇第 1 項，只收省略 model；外部 UI 同時回寫 modelSettings.claude-opus-5-5.effortLevel=high 與鍵排序，原檔備份 /tmp/claude-default-fix-20261007.88lvqtc4/settings-ui-before.json，SHA256 3b82aa2d4f441a498da159d8b683fdfee71f9cb1c75bd6165a19358ecd63f77c。先前原始 initialize response 已含重複列，保留不覆寫；fresh literal RED /tmp/claude-default-literal-red-20261007.json，SHA256 d11c59f5ad436e7e6de368af6b730314d72cb1b1e26b745e970bff90c48cec5b，實際 exit 1；unset control exit 0。修後須用來源 model 表示再驗唯一推薦列。
+  - 放棄:將 literal default 的自訂列當成推薦 Default；只用 initialize 成功判設定符合需求；將 native UI 的 high effort 回寫納為 repo 政策；清除本機 settings.local.json 或 session 模型選擇；把 metadata-only 當成模型推論證據
+  - 重議:來源原生選單仍重複或 runtime 的清除覆寫契約變動時，以 fresh native evidence 調整表示方式；實際模型與 effort 的政策變更另取得具名範圍
+  - 關聯:runtime-layout-convergence;D-20261006-runtime-model-defaults;M-20261006-runtime-model-defaults-validated;claude/settings.json;docs/repo-guide.md
