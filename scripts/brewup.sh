@@ -43,9 +43,7 @@ fi
 helper_warn=0
 [ -f "${DOTFILES}/scripts/ensure-ssh-config.sh" ] && { bash "${DOTFILES}/scripts/ensure-ssh-config.sh" 2>/dev/null || helper_warn=1; } || true
 [ -f "${DOTFILES}/scripts/ensure-rc-source.sh" ] && { bash "${DOTFILES}/scripts/ensure-rc-source.sh" 2>/dev/null || helper_warn=1; } || true
-[ -f "${DOTFILES}/scripts/ensure-codex-skills.sh" ] && { bash "${DOTFILES}/scripts/ensure-codex-skills.sh" 2>/dev/null || helper_warn=1; } || true
-[ -f "${DOTFILES}/scripts/ensure-codex-guidance.sh" ] && { bash "${DOTFILES}/scripts/ensure-codex-guidance.sh" 2>/dev/null || helper_warn=1; } || true
-[ -f "${DOTFILES}/scripts/ensure-codex-config.py" ] && { DOTFILES_DIR="${DOTFILES}" python3 "${DOTFILES}/scripts/ensure-codex-config.py" 2>/dev/null || helper_warn=1; } || true
+[ -f "${DOTFILES}/scripts/ensure-runtime.sh" ] && { DOTFILES_DIR="${DOTFILES}" bash "${DOTFILES}/scripts/ensure-runtime.sh" || helper_warn=1; } || true
 [ -f "${DOTFILES}/scripts/ensure-lftprc.sh" ] && { bash "${DOTFILES}/scripts/ensure-lftprc.sh" 2>/dev/null || helper_warn=1; } || true
 # 2. Homebrew
 # Homebrew 自我升級後可能在本 process 的第一次 brew 呼叫安裝 portable-ruby，且下載、重試與

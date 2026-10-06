@@ -1043,12 +1043,6 @@ if [ -d "$SCRIPT_DIR/claude" ]; then
         print_success "已建立 ~/.claude/settings.json symlink"
     fi
 
-    # skills/ (目錄 symlink)
-    if [ -d "$SCRIPT_DIR/claude/skills" ]; then
-        __claude_link "$SCRIPT_DIR/claude/skills" ~/.claude/skills
-        print_success "已建立 ~/.claude/skills/ symlink"
-    fi
-
     unset -f __claude_link
 
     if command -v claude &> /dev/null && [ -x "$SCRIPT_DIR/scripts/claude-plugin-install-hints.sh" ]; then
@@ -1069,40 +1063,10 @@ fi
 # ================================================
 # 步驟 4.6: 設定 Codex 全域配置
 # ================================================
-if [ -d "$SCRIPT_DIR/codex" ]; then
-    print_info "設定 Codex 全域配置..."
-    mkdir -p ~/.codex ~/.codex/rules
-
-    __codex_link() {
-        local src="$1" dst="$2"
-        [ -e "$src" ] || [ -L "$src" ] || return 0
-        if [ -L "$dst" ] || [ -e "$dst" ]; then
-            rm -rf "$dst"
-        fi
-        ln -sf "$src" "$dst"
-    }
-
-    if [ -f "$SCRIPT_DIR/scripts/ensure-codex-config.py" ]; then
-        DOTFILES_DIR="$SCRIPT_DIR" python3 "$SCRIPT_DIR/scripts/ensure-codex-config.py"
-        print_success "已同步 ~/.codex/config.toml"
-    fi
-
-    __codex_link "$SCRIPT_DIR/codex/rules" ~/.codex/rules
-    [ -d "$SCRIPT_DIR/codex/rules" ] && print_success "已建立 ~/.codex/rules symlink"
-
-    if [ -f "$SCRIPT_DIR/scripts/ensure-codex-skills.sh" ]; then
-        DOTFILES_DIR="$SCRIPT_DIR" bash "$SCRIPT_DIR/scripts/ensure-codex-skills.sh"
-        print_success "已建立 ~/.agents/skills/<skill> symlink"
-    fi
-
-    if [ -f "$SCRIPT_DIR/scripts/ensure-codex-guidance.sh" ]; then
-        DOTFILES_DIR="$SCRIPT_DIR" bash "$SCRIPT_DIR/scripts/ensure-codex-guidance.sh"
-        print_success "已建立 ~/.codex/AGENTS.md symlink"
-    fi
-
-    unset -f __codex_link
-else
-    print_info "未找到 codex/ 目錄，跳過 Codex 配置"
+if [ -f "$SCRIPT_DIR/scripts/ensure-runtime.sh" ]; then
+    print_info "設定共用 runtime layout／Codex guidance 與 config..."
+    DOTFILES_DIR="$SCRIPT_DIR" bash "$SCRIPT_DIR/scripts/ensure-runtime.sh"
+    print_success "Runtime 共用部署完成"
 fi
 
 # ================================================

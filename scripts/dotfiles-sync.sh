@@ -67,14 +67,8 @@ fi
 # 確保互動 rc 有 source shell/functions.sh（幂等；讓便利函數免重跑 setup 即散佈）
 [ -f "$DOTFILES_DIR/scripts/ensure-rc-source.sh" ] && { bash "$DOTFILES_DIR/scripts/ensure-rc-source.sh" 2>/dev/null || local_helper_warn=1; } || true
 
-# 確保 ~/.agents/skills 指向 dotfiles（幂等；讓 Codex skill 免重跑 setup 即散佈）
-[ -f "$DOTFILES_DIR/scripts/ensure-codex-skills.sh" ] && { bash "$DOTFILES_DIR/scripts/ensure-codex-skills.sh" 2>/dev/null || local_helper_warn=1; } || true
-
-# 確保全域 Codex guidance 指向 dotfiles（幂等；既有主機免重跑 setup）
-[ -f "$DOTFILES_DIR/scripts/ensure-codex-guidance.sh" ] && { bash "$DOTFILES_DIR/scripts/ensure-codex-guidance.sh" 2>/dev/null || local_helper_warn=1; } || true
-
-# 合併 repo defaults、runtime-only state 與 config.local.toml（原子寫入）。
-[ -f "$DOTFILES_DIR/scripts/ensure-codex-config.py" ] && { env DOTFILES_DIR="$DOTFILES_DIR" python3 "$DOTFILES_DIR/scripts/ensure-codex-config.py" 2>/dev/null || local_helper_warn=1; } || true
+# 新裝與升級共用 runtime layout／guidance／config entry。
+[ -f "$DOTFILES_DIR/scripts/ensure-runtime.sh" ] && { env DOTFILES_DIR="$DOTFILES_DIR" bash "$DOTFILES_DIR/scripts/ensure-runtime.sh" || local_helper_warn=1; } || true
 
 # 確保 ~/.lftprc 指向 dotfiles（幂等；既有主機免重跑 setup）
 [ -f "$DOTFILES_DIR/scripts/ensure-lftprc.sh" ] && { bash "$DOTFILES_DIR/scripts/ensure-lftprc.sh" 2>/dev/null || local_helper_warn=1; } || true
@@ -113,12 +107,8 @@ sync_remote() {
             [ -f scripts/ensure-ssh-config.sh ] && { bash scripts/ensure-ssh-config.sh 2>/dev/null || helper_warn=1; } || true
             # 確保互動 rc 有 source shell/functions.sh（幂等）
             [ -f scripts/ensure-rc-source.sh ] && { bash scripts/ensure-rc-source.sh 2>/dev/null || helper_warn=1; } || true
-            # 確保 ~/.agents/skills 指向 dotfiles（幂等；免重跑 setup 即拿到最新 Codex skill）
-            [ -f scripts/ensure-codex-skills.sh ] && { bash scripts/ensure-codex-skills.sh 2>/dev/null || helper_warn=1; } || true
-            # 確保全域 Codex guidance 指向 dotfiles（幂等）
-            [ -f scripts/ensure-codex-guidance.sh ] && { bash scripts/ensure-codex-guidance.sh 2>/dev/null || helper_warn=1; } || true
-            # 原子合併 repo defaults、runtime-only state 與 local override
-            [ -f scripts/ensure-codex-config.py ] && { DOTFILES_DIR="$HOME/.dotfiles" python3 scripts/ensure-codex-config.py 2>/dev/null || helper_warn=1; } || true
+            # 新裝與升級共用 runtime layout／guidance／config entry。
+            [ -f scripts/ensure-runtime.sh ] && { DOTFILES_DIR="$HOME/.dotfiles" bash scripts/ensure-runtime.sh || helper_warn=1; } || true
             # 確保 ~/.lftprc 指向 dotfiles（幂等）
             [ -f scripts/ensure-lftprc.sh ] && { bash scripts/ensure-lftprc.sh 2>/dev/null || helper_warn=1; } || true
             if [ "$helper_warn" -eq 0 ]; then echo "OK"; else echo "OK_HELPER_WARN"; fi
@@ -135,7 +125,7 @@ sync_remote() {
     # 而「其他主機仍是舊實體目錄」正是這訊息唯一會觸發的場合，吞掉等於設計意圖落空。
     # `|| true` 不可省：穩態下（skill 已是 symlink）grep 無配對回 1，在 set -euo pipefail 下會
     # 讓整個 sync_remote 當場退出，連後面的 ✅/⚠️/❌ 回報一併消失 → 同步失敗變靜默成功。
-    printf '%s\n' "$result" | grep -E '^(↻|⚠️|↩)' | sed "s|^|  ${host}: |" || true
+    printf '%s\n' "$result" | grep -E '^(↻|⚠️|↩|  .*"(status|reason|transaction|receipt|backups)")' | sed "s|^|  ${host}: |" || true
 
     local last_line
     last_line="$(echo "$result" | tail -1)"
