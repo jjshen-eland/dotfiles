@@ -351,3 +351,9 @@
   - 放棄:用 bootstrap 快照代替最終文件版本測試；將 pure wording 同步冒稱新 native source 全綠；為零 prose findings 再重開 reviewer 批次；把本地驗收當外向授權
   - 重議:真實合法續審仍拒絕、caller guard 被繞過、或 canonical 指令使 reviewer 漏／降級具體問題時，以新原始證據重現後修正；後續 shipping／跨工作線接續另核對當批授權及最新基線
   - 關聯:#271;deep-plan-repair-evidence;M-20261006-deep-plan-focused-go;M-20261006-deep-plan-bootstrap-verified;D-20261006-deep-plan-evidence-control-boundary
+
+- **M-20261006-deep-plan-repair-completion-candidate · 2026-10-06 #271 修復已提交、結案 candidate 準備送審**：本輪使用者明示 `$project --merge`，授權本批 commit／feature push／PR／rebase merge，未授權部署。實作與已核對的既有規劃文件先提交為 `cc9a54a4f73b6ac1691d09665ffa018a79a5e46e`，parent 中保留兩項 active assignment；現在僅移除已完成的 #271，runtime 收斂維持 active／draft、原 journal 與 findings 保留。這是同一 steward 的工作項結案，不是 runtime actor retirement 或 ownership transfer。Code／reviewer prompts 相對前次完整 suite 未變；test-evidence 指出 STATUS／milestone／implemented plan 的結案文字差異，未宣稱全套 REUSE。雙端原生驗證、計畫 GO、獨立 code review 的作者修正及無修後獨立 PASS 等限制沿用 M-20261006-deep-plan-repair-local-completion。結案文件完成後核對 doc／xref、candidate parent authority，並驗當前送出內容；尚未 push、PR 或 merge，endpoint pending。
+  - 日期來源:direct
+  - 放棄:同一 commit 抹掉唯一 assignment；把剩餘 runtime 項目說成完工；endpoint 未抵達就宣稱 shipped；將舊全套結果的當前 snapshot 冒充過去 inputs
+  - 重議:completion candidate authority、文件 audit 或當前 PR HEAD required CI 失敗；同 scope 的必要 CI 修復依本輪具名授權有界接續
+  - 關聯:#271;deep-plan-repair-evidence;cc9a54a;M-20261006-deep-plan-repair-local-completion;M-20261006-runtime-layout-plan-preflight;docs/plans/2026-10-06-deep-plan-repair-evidence.md
