@@ -102,5 +102,9 @@ Review期間 plan、repo 證據、prompt、brief 與 packet 的變動皆使結�
 新指示明確選擇 policy／limit 時才帶對應旗標。新批次仍可用上一批的有效基線做 repair；額度更新不抹除證據。
 NEVER manufacture authorization evidence or silently change policy to bypass an exhausted batch.
 
+當前使用者已以 turbo 委任同一 Goal 時，新增續批走
+[Turbo exhausted review batches](../../turbo/references/workflow.md#exhausted-review-batches)
+的 `delegated-reentry` API。不要把 agent 建議填入上述普通 restart 的使用者指示。
+
 若 reviewer 從目標文件／檢索讀到審查進度或作者預定 verdict，列明實際暴露及 review-validity 限制，
 不得以「它說會忽略」冒充隔離成功；不要改寫 canonical plan 來隱藏這些來源。
