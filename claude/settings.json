@@ -24,6 +24,7 @@
     ]
   },
   "model": "opus[1m]",
+  "syncClaudeAiSkills": false,
   "hooks": {
     "SessionStart": [
       {

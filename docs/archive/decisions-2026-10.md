@@ -161,3 +161,9 @@
   - 放棄:將此次拒絕歸因 Turbo；整體停用壓力防護；刪改來源歷史／省去必要文件；任意 caller document data 豁免；synthetic prepare 成功冒充完整 native lifecycle
   - 重議:來源綁定、原 RED、#264 regression 或 native reviewer／admission 任一步仍失敗時不宣告完成；新證據才調整最小修法
   - 關聯:#271;#264;#268;#270;deep-plan-repair-evidence;docs/plans/2026-10-06-deep-plan-repair-evidence.md;D-20261003-deep-plan-controller-adoption;D-20261005-deep-plan-document-repair-baseline
+
+- **D-20261006-runtime-cloud-sync-disposition · 2026-10-06 Eagle08 的測試 daemon、runtime drift 與雲端 skill cache 明示處置**：使用者指出 eagle08 Codex processes 是已完成測試、明示可 kill；synced 是 Claude 雲端同步 skills cache，要求權威 settings.json 停用同步並刪除該目錄；model 修改為 runtime drift。Fresh 唯讀查證為 PID 18379／18483 的 0.160.1 app-server daemon，settings model opus[1m] → opus（其他為格式變化），synced 位於 legacy whole-root link 指向的 repo；root 與設定檔尚未變更。決定只終止這兩個已核身程序、備份後還原該 drift，將具名 synced cache 移出 repo／discovery；不把此授權擴成 kill 其他主機或刪除未知第三方。權威設定實際缺 syncClaudeAiSkills，官方支援 false；因此補來源設定，cache 清理僅為處置，不冒稱永久停用。settings.json 檔案 symlink 保持，skills root 按已合併的實體 discovery／逐項 symlink 設計。新設定的 shipping 授權另取當批明示 endpoint，origin/main 前不散佈。
+  - 日期來源:direct
+  - 放棄:把 runtime model drift 誤留為個人覆寫；將已識別 cloud cache 視為需保留的未知作者作品；只刪 cache 而不修補同步來源；恢復 skills whole-root link 再讓 cache 寫入 repo；把兩個測試程序的 kill 授權擴到其他 writers
+  - 重議:程序 PID／exe／owner／啟動身分不符、source 有新修改、cache 出現追蹤檔或其他 provenance、設定不能由當前 CLI 原生解析，停止對應處置並保留現場；新設定合併前不宣稱遠端永久停用完成
+  - 關聯:runtime-layout-convergence;M-20261006-runtime-layout-fleet-twelve-accepted;docs/plans/2026-10-06-runtime-layout-convergence.md;claude/settings.json

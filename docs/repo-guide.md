@@ -28,7 +28,7 @@ home alias 或路徑進入 repo 時，兩個 helper 一併跳過，其他安全 
 
 | 位置 | 管理邊界 |
 | --- | --- |
-| `~/.claude/skills` | 實體 root，repo adapters 逐項連結；synced／第三方保留 |
+| `~/.claude/skills` | 實體 root，repo adapters 逐項連結；第三方保留，雲端 synced 依權威 settings 的同步政策處理 |
 | `~/.agents/skills` | 實體 root，Codex adapters 逐項連結 |
 | `${CODEX_HOME:-~/.codex}/skills` | 原生／system／第三方保留；新入口就緒後只清理本 repo 舊鏈 |
 | `${CODEX_HOME:-~/.codex}/rules` | 實體 root；repo default 為 `dotfiles.rules`，其他為 `dotfiles-<name>`；`default.rules` 是可寫的個人規則檔 |
@@ -36,6 +36,11 @@ home alias 或路徑進入 repo 時，兩個 helper 一併跳過，其他安全 
 
 目前交付 migration 階段；handoff resolver 的 legacy fallback 保留至 fleet 遷移驗收完成。
 不須逐台重跑完整 setup 或安裝 CLI。套件、登入、trust、plugins 與 config.local.toml 不由 layout 遷移。
+
+權威 `claude/settings.json` 設 `syncClaudeAiSkills: false`，停用 claude.ai skills 的下載與載入；
+`~/.claude/settings.json` 維持連到該檔的 symlink。已識別的 cloud cache 清理須先確認無 writer，
+移出 repo 與 discovery 路徑並留可回復備份，不刪未知第三方。設定語意見
+[Claude 官方設定說明](https://support.claude.com/en/articles/12512180-use-skills-in-claude)。
 
 ```sh
 python3 scripts/ensure-runtime-layout.py           # 唯讀 inventory
