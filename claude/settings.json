@@ -23,7 +23,6 @@
       "Bash(shasum *)"
     ]
   },
-  "model": "default",
   "syncClaudeAiSkills": false,
   "hooks": {
     "SessionStart": [
