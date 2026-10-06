@@ -7180,18 +7180,18 @@ fi
 # brewup 也必須接上：allup 走的是 brewup 而非 dotsync，只掛 dotfiles-sync 等於
 # 「日常全機隊更新」不重建 symlink，來源檔改名時該連結靜默失效。
 for wiring_file in setup-mac-env.sh setup-linux-env.sh scripts/dotfiles-sync.sh scripts/brewup.sh; do
-    if grep -q 'ensure-codex-guidance.sh' "$ROOT/$wiring_file"; then
-        ok "$wiring_file 已接上 Codex guidance helper"
+    if grep -q 'ensure-runtime.sh' "$ROOT/$wiring_file"; then
+        ok "$wiring_file 已接上 共用 runtime entry"
     else
-        bad "$wiring_file 未接上 Codex guidance helper"
+        bad "$wiring_file 未接上 共用 runtime entry"
     fi
 done
 for setup_file in setup-mac-env.sh setup-linux-env.sh; do
     # shellcheck disable=SC2016  # 刻意比對 setup 原始碼中的字面 $SCRIPT_DIR，不在測試 shell 展開
-    if grep -q 'DOTFILES_DIR="$SCRIPT_DIR" bash "$SCRIPT_DIR/scripts/ensure-codex-guidance.sh"' "$ROOT/$setup_file"; then
-        ok "$setup_file 以實際 clone 路徑部署 guidance"
+    if grep -q 'DOTFILES_DIR="$SCRIPT_DIR" bash "$SCRIPT_DIR/scripts/ensure-runtime.sh"' "$ROOT/$setup_file"; then
+        ok "$setup_file 以實際 clone 路徑部署 runtime"
     else
-        bad "$setup_file 未把實際 clone 路徑傳給 guidance helper"
+        bad "$setup_file 未把實際 clone 路徑傳給 runtime entry"
     fi
 done
 
@@ -7303,16 +7303,43 @@ done
 echo '{}' > "$bup/dotfiles/claude/settings.json"
 echo "# fixture known_hosts" > "$bup/dotfiles/ssh/known_hosts"
 
-bup_make_helpers() {   # $1=失敗的 helper 名（空字串＝全部成功）
-    for bup_h in ensure-rc-source ensure-codex-skills ensure-codex-guidance ensure-lftprc; do
-        {
-            echo '#!/usr/bin/env bash'
-            echo "echo ran >> \"$bup/marks/${bup_h}.log\""
-            if [ "$bup_h" = "$1" ]; then echo 'exit 1'; else echo 'exit 0'; fi
-        } > "$bup/dotfiles/scripts/${bup_h}.sh"
-        chmod +x "$bup/dotfiles/scripts/${bup_h}.sh"
+bup_make_helpers() {   # $1=失敗的 helper；真實共用 entry 串接真實 guidance/config。
+    export BUP_HELPER_FAILURE="$1"
+    mkdir -p "$bup/dotfiles/codex/skills/demo" "$bup/dotfiles/claude/skills/demo" "$bup/dotfiles/codex/rules"
+    printf '# fixture skill\n' > "$bup/dotfiles/codex/skills/demo/SKILL.md"
+    printf '# fixture skill\n' > "$bup/dotfiles/claude/skills/demo/SKILL.md"
+    printf 'model = "fixture"\n' > "$bup/dotfiles/codex/config.toml"
+    printf '# guidance\n' > "$bup/dotfiles/codex/AGENTS.md"
+    cp "$ROOT/scripts/ensure-runtime.sh" "$ROOT/scripts/ensure-runtime-layout.py" "$bup/dotfiles/scripts/"
+    for bup_h in ensure-rc-source ensure-lftprc; do
+        printf '#!/usr/bin/env bash\necho ran >> "%s"\nexit 0\n' "$bup/marks/${bup_h}.log" > "$bup/dotfiles/scripts/${bup_h}.sh"
     done
+    {
+        printf '#!/usr/bin/env bash\necho ran >> "%s"\n' "$bup/marks/ensure-codex-guidance.log"
+        printf 'exec bash "%s"\n' "$ROOT/scripts/ensure-codex-guidance.sh"
+    } > "$bup/dotfiles/scripts/ensure-codex-guidance.sh"
+    {
+        printf '#!/usr/bin/env python3\nimport pathlib, subprocess, sys\n'
+        printf 'pathlib.Path("%s").open("a").write("ran\\n")\n' "$bup/marks/ensure-codex-config.log"
+        printf 'sys.exit(subprocess.call([sys.executable, "%s"]))\n' "$ROOT/scripts/ensure-codex-config.py"
+    } > "$bup/dotfiles/scripts/ensure-codex-config.py"
+    # A correct guidance link is a no-op; remove only this disposable fixture link to test ln failure.
+    rm -f "$bup/home/.codex/AGENTS.md"
 }
+bup_real_ln="$(command -v ln)"
+bup_real_yq="$(command -v yq)"
+{
+    # shellcheck disable=SC2016 # Variables expand in the generated fixture shell.
+    printf '#!/usr/bin/env bash\n[ "${BUP_HELPER_FAILURE:-}" = ensure-codex-guidance ] && exit 1\n'
+    printf 'exec "%s" "$@"\n' "$bup_real_ln"
+} > "$bup/bin/ln"
+{
+    # shellcheck disable=SC2016 # Variables expand in the generated fixture shell.
+    printf '#!/usr/bin/env bash\n[ "${BUP_HELPER_FAILURE:-}" = ensure-codex-config ] && exit 1\n'
+    printf 'exec "%s" "$@"\n' "$bup_real_yq"
+} > "$bup/bin/yq"
+printf '#!/usr/bin/env bash\necho "$$ %s /usr/bin/python3"\n' "$(id -u)" > "$bup/bin/ps"
+chmod +x "$bup/bin/ln" "$bup/bin/yq" "$bup/bin/ps"
 
 # Homebrew 自我升級後，第一個 brew 呼叫可能先安裝 portable-ruby；該 bootstrap 的所有進度都
 # 寫到 stderr。若第一個呼叫正好是下面刻意吞 stderr 的 `brew trust`，使用者在 pull 之後會看見
@@ -7381,9 +7408,14 @@ else
 fi
 # 失敗不得中斷：下游的 Homebrew 段仍須執行，否則 helper 一失敗就整台不再更新套件
 if [ -f "$bup/marks/brew.log" ]; then ok "helper 失敗後下游 brew 段仍執行"; else bad "helper 失敗中斷了後續更新"; fi
-for bup_h in ensure-rc-source ensure-codex-skills ensure-codex-guidance ensure-lftprc; do
+for bup_h in ensure-rc-source ensure-codex-guidance ensure-codex-config ensure-lftprc; do
     if [ -f "$bup/marks/${bup_h}.log" ]; then ok "brewup 呼叫了 ${bup_h}"; else bad "brewup 未呼叫 ${bup_h}"; fi
 done
+
+bup_make_helpers ensure-codex-config
+bup_out="$(DOTFILES_DIR="$bup/dotfiles" HOME="$bup/home" PATH="$bup/bin:$PATH" bash "$BUP" 2>&1)"; bup_rc=$?
+assert_rc "config 失敗經共用 entry → brewup 仍 exit 0" 0 "$bup_rc"
+if grep -q '⚠️' <<< "$bup_out"; then ok "config 失敗經共用 entry 對使用者可見"; else bad "config 失敗被共用 entry 吞掉"; fi
 
 # pull 換掉 brewup.sh 自己 → 必須用新版重跑。執行中的 bash 會繼續跑舊內容（git 是 unlink +
 # 新建，process 握著舊 inode），不重跑的話「pull 進新版、卻用舊版跑完這一輪」，本次新增的
@@ -9509,9 +9541,9 @@ assert_rc "render 期間 config 被其他 writer 改動 → exit 1" 1 "$rc"
 assert_eq "race guard 保留外部 writer 內容" "wins" "$(yq eval '.external' -p toml "$ccm/home/config.toml" 2>/dev/null)"
 
 for wiring_file in setup-mac-env.sh setup-linux-env.sh scripts/brewup.sh; do
-    if grep -q 'ensure-codex-config.py' "$ROOT/$wiring_file"; then ok "$wiring_file 使用 Codex config helper"; else bad "$wiring_file 未使用 Codex config helper"; fi
+    if grep -q 'bash .*scripts/ensure-runtime.sh' "$ROOT/$wiring_file"; then ok "$wiring_file 使用共用 runtime entry"; else bad "$wiring_file 未使用共用 runtime entry"; fi
 done
-assert_eq "dotsync 本機＋遠端都使用 Codex config helper" 2 "$(grep -c 'ensure-codex-config.py' "$ROOT/scripts/dotfiles-sync.sh")"
+assert_eq "dotsync 本機＋遠端都使用共用 runtime entry" 2 "$(grep -c 'bash .*scripts/ensure-runtime.sh' "$ROOT/scripts/dotfiles-sync.sh")"
 if ! rg -q '__extract_codex_local_config' "$ROOT/setup-mac-env.sh" "$ROOT/setup-linux-env.sh"; then
     ok "setup 的兩份 inline Codex merge 已移除"
 else
@@ -9519,7 +9551,20 @@ else
 fi
 
 ds="$TMP/dotsync-e2e"
-mkdir -p "$ds/dotfiles" "$ds/home" "$ds/bin"
+mkdir -p "$ds/dotfiles/scripts" "$ds/home/.ssh" "$ds/bin" "$ds/remote/.dotfiles/scripts"
+cp "$bup/dotfiles/scripts/ensure-runtime.sh" "$bup/dotfiles/scripts/ensure-runtime-layout.py" "$ds/dotfiles/scripts/"
+cp -R "$bup/dotfiles/codex" "$bup/dotfiles/claude" "$ds/dotfiles/"
+cp "$ROOT/scripts/ensure-codex-guidance.sh" "$ROOT/scripts/ensure-codex-config.py" "$ds/dotfiles/scripts/"
+cp -R "$ds/dotfiles/." "$ds/remote/.dotfiles/"
+cp "$bup/bin/ps" "$ds/bin/ps"
+# yq dependency failure exercises the real config helper in both local and remote entry.
+cat > "$ds/bin/yq" <<'DSYQ'
+#!/usr/bin/env bash
+[ "${DOTSYNC_CONFIG_FAIL:-0}" = 1 ] && exit 1
+exec "$DOTSYNC_REAL_YQ" "$@"
+DSYQ
+chmod +x "$ds/bin/yq"
+export DOTSYNC_REAL_YQ="$bup_real_yq" DOTSYNC_REMOTE_HOME="$ds/remote"
 printf 'hostgood 127.0.0.1\nhostbad 127.0.0.2\n' > "$ds/inventory"
 cat > "$ds/bin/git" <<'DSGIT'
 #!/usr/bin/env bash
@@ -9531,7 +9576,11 @@ cat > "$ds/bin/ssh" <<'DSSSH'
 for arg in "$@"; do
     case "$arg" in
       hostbad) printf '%s\n' hostbad >> "$DOTSYNC_SSH_LOG"; exit 255 ;;
-      hostgood) printf '%s\n' hostgood >> "$DOTSYNC_SSH_LOG"; printf '%s\n' OK; exit 0 ;;
+      hostgood)
+        printf '%s\n' hostgood >> "$DOTSYNC_SSH_LOG"
+        for remote_command in "$@"; do :; done
+        HOME="$DOTSYNC_REMOTE_HOME" bash -c "$remote_command"
+        exit $? ;;
     esac
 done
 exit 255
@@ -9553,6 +9602,17 @@ out="$(INVENTORY_FILE="$ds/inventory" DOTFILES_DIR="$ds/dotfiles" HOME="$ds/home
     DOTSYNC_SSH_LOG="$ds/ssh.log" PATH="$ds/bin:$PATH" bash "$ROOT/scripts/dotfiles-sync.sh" hostgood 2>&1)"; rc=$?
 assert_rc "本機與所有遠端成功 → dotsync exit 0" 0 "$rc"
 if grep -q 'local=ok remote_ok=1 remote_failed=0' <<< "$out"; then ok "dotsync 全綠總計正確"; else bad "dotsync 全綠總計錯誤"; fi
+
+out="$(DOTSYNC_CONFIG_FAIL=1 INVENTORY_FILE="$ds/inventory" DOTFILES_DIR="$ds/dotfiles" HOME="$ds/home" \
+    DOTSYNC_SSH_LOG="$ds/ssh.log" PATH="$ds/bin:$PATH" bash "$ROOT/scripts/dotfiles-sync.sh" hostgood 2>&1)"; rc=$?
+assert_rc "真實 entry 的 config 失敗 → dotsync exit 1" 1 "$rc"
+if grep -q 'local=failed remote_ok=0 remote_failed=1' <<< "$out"; then ok "local/remote entry 失敗都納入 dotsync 終判"; else bad "dotsync 漏掉真實 entry 失敗"; fi
+if [ -L "$ds/home/.claude/skills/demo" ] && [ -L "$ds/remote/.agents/skills/demo" ]; then ok "dotsync 真正執行 local/remote runtime layout"; else bad "dotsync runtime entry 接線失效"; fi
+
+echo "▶ 29. runtime layout migration／recovery 隔離行為"
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT/tests/runtime-layout.py" > "$TMP/runtime-layout.log" 2>&1
+runtime_layout_rc=$?
+if [ "$runtime_layout_rc" -eq 0 ]; then ok "runtime layout isolation behavior suite"; else bad "runtime layout isolation behavior suite"; cat "$TMP/runtime-layout.log"; fi
 
 echo "▶ 28. neutral shared skill core topology"
 SHARED_SKILLS="$ROOT/shared/skills"

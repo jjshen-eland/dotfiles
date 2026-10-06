@@ -630,6 +630,9 @@ lib 缺席與 merge-base 失敗皆降級 UNKNOWN。
 
 ## 18d. brewup.sh helper 部署與失敗告知（全隔離）
 
+Deployment wiring 守共用 `ensure-runtime.sh`；舊 Codex helper 的獨立行為 oracle 保留。
+brewup fixture 執行真實 entry／layout／guidance／config，以隔離 ln／yq 失敗驗證傳遞，套件更新仍繼續且警告可見。
+
 ## 18e. ensure-ssh-config.sh 幂等重生 ~/.ssh/config
 
 原子寫入 + 完整性驗證。
@@ -758,6 +761,17 @@ managed-path manifest 移除既有 live config 中原本由 repo 管理的該 ke
 
 dotsync 必須把本機 pull／helper 與每台 remote 的結果全數納入終判；任一失敗仍跑完其餘 requested
 hosts，最後輸出 `local`、`remote_ok`、`remote_failed` 聚合總計，只有全綠時 exit 0。
+
+## 29. Runtime layout migration／recovery
+
+`tests/runtime-layout.py --baseline` 從固定的改版前 setup source 真實重現 rules／upgrade 差異；
+不是缺新 module 的 import failure。正常 suite 在隔離 HOME／repo／ps 執行，守未知 ownership、
+parent alias、第三方與個人資料保全、兩個 handoff stores 的生命週期衝突、mode／mtime／bytes、
+實際 transaction 邊界、中斷 recover、rollback 及第二次 apply 不改 inode／receipt／備份。
+只以相同 created 日期不能宣稱同 provenance；不同 slugs 的可合併 control 與 anchor 衝突分別驗證。
+DOTFILES_RUNTIME_TEST_FAIL 僅為隔離 fault injection，不繞過任何 guard。
+Entry fixture 的 SSH 替身執行實際遠端 shell／共用 entry，不只回顯 OK；config failure 同時納入 local／remote 終判。
+新增 assertion 同步 shard manifest，serial 與 parallel 都須以實際 exit 驗證。
 
 ## 未列於本檔的節
 

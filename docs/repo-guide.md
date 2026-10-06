@@ -20,6 +20,43 @@ scripts/doc-governance.py find '<自然語言問題或 stable ID>'
 - **Linux Ubuntu**: bash（`~/.bashrc`, `~/.bash_profile`）
 - **使用者自訂設定**：`.local` 檔案（不會被腳本覆寫）
 
+## Runtime 正式結構與遷移
+
+新裝與升級共用 `scripts/ensure-runtime.sh`：兩份 setup、dotsync 本機／遠端與 brewup 都呼叫它。
+它先處理 layout，確認 Codex home 的父路徑安全後，再沿用原 guidance／三層 config merge；
+home alias 或路徑進入 repo 時，兩個 helper 一併跳過，其他安全 root 仍可完成。sysup 沒有 runtime 部署階段。
+
+| 位置 | 管理邊界 |
+| --- | --- |
+| `~/.claude/skills` | 實體 root，repo adapters 逐項連結；synced／第三方保留 |
+| `~/.agents/skills` | 實體 root，Codex adapters 逐項連結 |
+| `${CODEX_HOME:-~/.codex}/skills` | 原生／system／第三方保留；新入口就緒後只清理本 repo 舊鏈 |
+| `${CODEX_HOME:-~/.codex}/rules` | 實體 root；repo default 為 `dotfiles.rules`，其他為 `dotfiles-<name>`；`default.rules` 是可寫的個人規則檔 |
+| `~/.agents/handoffs` | 正式實體 store，保留 active／archive／附檔及 mode／mtime；明示 HANDOFF_DIR 仍由 skill 處理 |
+
+目前交付 migration 階段；handoff resolver 的 legacy fallback 保留至 fleet 遷移驗收完成。
+不須逐台重跑完整 setup 或安裝 CLI。套件、登入、trust、plugins 與 config.local.toml 不由 layout 遷移。
+
+```sh
+python3 scripts/ensure-runtime-layout.py           # 唯讀 inventory
+python3 scripts/ensure-runtime-layout.py dry-run
+python3 scripts/ensure-runtime-layout.py apply
+python3 scripts/ensure-runtime-layout.py verify
+python3 scripts/ensure-runtime-layout.py recover --transaction <report-id>
+python3 scripts/ensure-runtime-layout.py rollback --transaction <report-id>
+```
+
+`--home`／`--repo` 可指定隔離目標；CODEX_HOME 沿既有 override。資料接管需 current／本地 Git 歷史的完整
+內容證據；未知副本、root alias、特殊檔、handoff 路徑或工作線／provenance 衝突皆停止受影響 root。
+其他安全 root 可完成，最後非零回報成功與 blocked 範圍；缺 CLI 明示能力缺項，檔案準備不等於原生載入驗證。
+
+搬移既有 root 前必須沒有同使用者的 Claude／Codex writers。報告 PID／command；包括常駐 app-server
+daemon，結束對話不等於退出。從其所屬 app 正常停止後，在普通 terminal 重新 inventory／apply；工具不 kill。
+`~/.runtime-layout` 保存私有 lock／transaction receipt，原資料備份與 stage 留在 root 的同 filesystem
+sibling（discovery root 外）。備份不自動刪除。中斷後依報告 id 明示 recover；只接受原 PID 已退出且狀態
+吻合。rollback 保留換下的新版本，也要求 target／backup 未再被修改；新 checkpoint／個人規則存在時拒絕。
+未知中斷狀態須保留現場人工診斷，不得刪 lock 或任選一邊。
+
 ## 可用工具
 
 ### 優先使用這些現代化工具

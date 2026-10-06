@@ -357,3 +357,45 @@
   - 放棄:同一 commit 抹掉唯一 assignment；把剩餘 runtime 項目說成完工；endpoint 未抵達就宣稱 shipped；將舊全套結果的當前 snapshot 冒充過去 inputs
   - 重議:completion candidate authority、文件 audit 或當前 PR HEAD required CI 失敗；同 scope 的必要 CI 修復依本輪具名授權有界接續
   - 關聯:#271;deep-plan-repair-evidence;cc9a54a;M-20261006-deep-plan-repair-local-completion;M-20261006-runtime-layout-plan-preflight;docs/plans/2026-10-06-deep-plan-repair-evidence.md
+
+- **M-20261006-runtime-layout-resumed · 2026-10-06 #271 合併後接回 runtime 一致性專案**：使用者要求回到原 dotfiles 一致性工作；同一 `codex:runtime-layout-convergence` writer／steward 在既有 feature branch fast-forward 到 `79269535b3a3a741a87c3f7a8bb1c8a161ce2fcd`，working tree 起初乾淨。#271 的 PR #272 已 MERGED、issue 已 CLOSED，兩平台 required CI 通過；不將其交付授權擴至本項。原 runtime journal 第 1 批兩輪／四位 reviewers、原 findings 與第 2 批原始 blind 授權保持；新批目前零 tickets／reviewers，接續該批而非再 restart。原 blocking finding 的 CI assertion manifest／parallel runner 相依已補正；逐檔 manifest SHA 與原計畫一致，仍是 dated snapshot、不代表 apply 時 quiescence。持久資料遷移與 SPLIT 放行判準改變維持完整、criteria-impact 的審查路徑；尚無本項 code／主機遷移或新 gate 結論。
+  - 日期來源:direct
+  - 放棄:重設 journal 或沿用原 NO-GO 作 GO；把 #271 protected source／history 變更假稱 focused 文件 checkpoint；把上一批 merge 授權擴為本項 shipping／部署
+  - 重議:新的實質 Goal／判準決策、缺必要集合證據、有效 reviewer／admission 缺口或原 cap 耗盡時，按既有 workflow 處理
+  - 關聯:runtime-layout-convergence;#271;M-20261006-runtime-layout-plan-preflight;M-20261006-deep-plan-repair-completion-candidate;docs/plans/2026-10-06-runtime-layout-convergence.md
+
+- **M-20261006-runtime-layout-plan-go · 2026-10-06 Runtime 目錄收斂規劃可進入本地實作**：沿用已授權的第二批與原 journal，兩輪共四位 fresh reviewers。首次 verifiable/medium finding 指出 deployment wiring assertions／brewup fixtures 仍固定舊 helper 接線；同一 canonical plan 補齊真實共用 entry、實際 clone 傳遞及 config／guidance 失敗傳遞驗收；judgment/low daemon 建議亦補明手動正常退出與重新 inventory，不放寬 offline guard。後續兩位均無 findings，transport／admission 與受審來源前後不變性核對通過，gate GO。Reviewer 已揭露 STATUS／document delta／history exposure，不能宣稱完全未接觸歷史結論。本項只獲本地實作／驗證授權；migration 程式、原生載入與 fleet 尚未驗收，不承接 #271 shipping endpoint。
+  - 日期來源:direct
+  - 放棄:保留舊 helper 名稱註解讓新接線測試假綠；把 daemon 退出條件豁免；用 plan GO 冒充 migration／fleet 完工
+  - 重議:實作發現不可回復資料風險、核心 Goal／判準變更或必要集合證據不足
+  - 關聯:runtime-layout-convergence;M-20261006-runtime-layout-resumed;docs/plans/2026-10-06-runtime-layout-convergence.md
+
+- **M-20261006-runtime-layout-local-candidate · 2026-10-06 Runtime layout 共用 entry 與隔離候選完成**：新增 standard-library layout 工具及 ensure-runtime.sh，兩份 setup／brewup／dotsync 本機與遠端改共用；保留原 Codex guidance／三層 config merge、舊 helper 獨立安全 oracle 及 handoff resolver。Inventory／dry-run 唯讀、ownership／process／parent guards、私有 receipts／sibling backups、explicit recover／rollback、第二次 no-op 均有隔離 fixture。Baseline 真實兩格 assertion RED；新增 date-only provenance 誤判、無錨點同 bytes 不同名漏攔及 inventory 後 parent alias 置換分別先 RED 再修。22 個 unit cases（含十個安裝與四個 rollback boundary subcases）通過；真實部署接線的開發 integration 唯一失敗曾是新追加的無錨點案例，已修，其結果未冒充最後全綠。雙 runtime production targets 各 h-read／h-archive，四個 fresh native session 的實際 helper calls／artifact／Git state 核對通過：遷移 checksum／mode／mtime 相同，active 唯讀不 consume，archive 不重複 consume，不承接舊 commit／push claims。Native source 為未改的 7926953 handoff adapters/core；使用明示 repo-local skill／HANDOFF_DIR，host transport 非通用 sandbox，不宣稱全域 discovery／rules loading。最後全套 serial／parallel 與 docs／xref 待終驗；沒有 commit／push／PR／merge／本機或 fleet apply，fallback 留待部署驗收後清理。
+  - 日期來源:direct
+  - 放棄:把 created 同日當 checkpoint 同來源；以檔名不同允許同 bytes 舊 claims 重現；只在 inventory 檢查 parents、不在 transaction 再核對；以明示 fixture 載入冒充全域 runtime 驗收
+  - 重議:最後 suite／manifest／資料保全或 native fixtures 失敗；主機 apply 時 writer／ownership／snapshot 不明則先停止該 root
+  - 關聯:runtime-layout-convergence;M-20261006-runtime-layout-plan-go;docs/plans/2026-10-06-runtime-layout-convergence.md
+
+- **M-20261006-runtime-layout-transaction-validation · 2026-10-06 Runtime 遷移錯誤狀態攔截已驗證**：追加 readonly probes 發現 inventory 未列 writers，以及 recover 可跳過未知步驟而誤報 committed；缺 stage 的 receipt 亦會在拒絕前先搬動 target。原始失敗與 fixtures 保留，修為 process 清單可觀察、operation 集合／input scope／stage／snapshot shape 及 step 在 mutation 前正向驗證。24 個 unit cases 通過，未知 receipt 不搬原 store，保留新 checkpoint 與備份。首次固定輸入 serial／parallel 各 1575 PASS／1 FAIL，342 source leaf files／34 directory links 前後相同；唯一 suite 失敗為本項新條目泛用標題搶占 unrelated lookup，entry_score 的 title 權重與 counterfactual 已核對，僅修正本次新標題為 runtime 工作項的具體結果，原 facts／ID／日期與既有歷史保持。原 title-free corpus gate 再驗通過，未改 search core、query、答案、門檻或 metadata alias。修正版 full suite 待重跑。Final migration controls 已重建四個 native 輸入，bytes／mode／mtime 與已驗證的原生輸入相同；未改 handoff skill source，不冒稱新的全域 discovery／rules loading。
+  - 日期來源:direct
+  - 放棄:未知 receipt 跳步後回成功；先搬資料再檢查 receipt 缺欄位；隱藏 writer 或假稱關對話即離線；為檢索測試降低門檻、改 query 或擴改 search core
+  - 重議:修正版 full suite、來源不變性或資料保全失敗，先保留原始證據並修正 causal source
+  - 關聯:runtime-layout-convergence;M-20261006-runtime-layout-local-candidate;M-20261006-runtime-layout-plan-go;docs/plans/2026-10-06-runtime-layout-convergence.md
+
+- **M-20261006-runtime-layout-config-parent-guard · 2026-10-06 Codex home 別名拒絕後的 helper 寫入已攔截**：隔離共用 entry 重現 `.codex` parent 指向 fixture repo 時，layout 非零拒絕但 config helper 仍改寫 source；原 RED 保存於 `/tmp/runtime-layout-config-parent-red-20261006.log`。新增唯讀 native-home parent guard，兩個既有 helper 只在 guard 通過後執行，其他安全 root 仍可完成；獨立 helper 契約未改。25 個 unit cases exit 0，repo bytes／identity 保持且安全 roots 完成。當前 migration SHA 的四份 controls 重建產物與已驗 native 輸入 bytes／mode／mtime 相同，證據 `/tmp/runtime-layout-native-final-controls-v2-20261006/evidence.json`；handoff source 未改，保留明示 skill／HANDOFF_DIR 的驗證邊界。修正版全套待終驗，未在真實 host apply 或交付。
+  - 日期來源:direct
+  - 放棄:只攔 layout 卻讓後續 helper 穿過同一 parent alias；因單一 Codex root blocked 就停止所有安全 root；將 fixture 能力外推 fleet 已遷移
+  - 重議:共用 entry 的來源保護、修正版 full suite 或資料保全失敗時，先保留原始失敗再修 causal source
+  - 關聯:runtime-layout-convergence;M-20261006-runtime-layout-transaction-validation;docs/plans/2026-10-06-runtime-layout-convergence.md
+
+- **M-20261006-runtime-layout-local-acceptance · 2026-10-06 Runtime 共用部署與資料搬移候選已完成本地驗收**：修正版完整 serial／parallel 均 terminal exit 0、1576 PASS／0 FAIL（core 171、ship_state 239、integration 1166）；342 source leaf files／34 directory links 在啟動前凍結、完成後相同，記錄更新前亦核對 current 相同。Raw logs 與 inputs evidence 保存於 `/tmp/runtime-layout-final-{serial,parallel}-v2-20261006.{log,evidence.json}`，前次 1575／1 的失敗證據保留。25 個隔離 unit cases 通過，涵蓋來源／個人資料保全、writers、十個安裝與四個 rollback boundary subcases、recover、未知 receipt、parent alias 和 no-op；真實 common entry 的 brewup／local／remote fixtures 驗失敗傳遞。ShellCheck、doc-governance ship／xref、title-free retrieval corpus、authority gate、diff 檢查通過。兩端共四個 native handoff cases 的 artifact／Git／helper trace 及當前 migration controls 相符；未改 7926953 handoff source，只驗明示 skill／HANDOFF_DIR，不代表全域 discovery／rules loading 或 fleet 已遷移。此後僅更新 STATUS／本 in-progress plan／此 event-time 記錄，另驗文件，不將先前全套冒稱覆蓋新記錄；未宣稱修後獨立 code-review PASS。本地候選可交付，尚未 commit／push／PR／merge／真實 host apply；14 目標 rollout 與 resolver cleanup 仍屬後續，active assignment 保留。
+  - 日期來源:direct
+  - 放棄:改 aggregator 門檻迎合 count drift；把失敗 log 覆蓋成成功；全套後更新紀錄卻冒稱 source 全同；以 fixture 或本地綠宣稱全機隊完工
+  - 重議:本批 shipping checks 或 fresh fleet ownership／writer／snapshot 不符時，停止受影響動作並保留資料；resolver cleanup 須先完成 14 目標遷移驗收
+  - 關聯:runtime-layout-convergence;M-20261006-runtime-layout-config-parent-guard;M-20261006-runtime-layout-local-candidate;docs/plans/2026-10-06-runtime-layout-convergence.md
+
+- **M-20261006-runtime-layout-delivery-candidate · 2026-10-06 Runtime 共用入口與搬移工具準備交付**：使用者明示本批 `$project --merge`，授權此次 feature commit／push／PR／rebase merge 及同 PR 原 scope 內最多兩次必要 CI 修復，不包含主機部署。唯讀盤點為單一 dotfiles repo、17 個已核對本工作線的未提交檔案、protected main 與兩平台 required contexts；無 review residue／terminal。Exact `codex:runtime-layout-convergence` 的原 assignment fingerprint 與當前 HEAD 重驗 `current-session-workline-binding`／PASS，active assignment 與 in-progress plan 保留，因 fleet 遷移與 resolver cleanup 尚未完成。既有 serial／parallel 各 1576／0 的 helper 比對僅指出 STATUS／plan／本月 milestone 收尾文字變更，程式及受驗 skill source 未變；補驗文件與 xref，不冒稱全套 REUSE 或修後獨立 code-review PASS。當前尚未 commit／push／PR／merge，endpoint pending；原失敗與 native exposure／loading 限制保留於既有 acceptance records。
+  - 日期來源:direct
+  - 放棄:把此批 merge 授權擴成 fleet apply；過早移除 active assignment 或 fallback；覆蓋原失敗與檢查證據；把收尾文件的新 snapshot 倒填為過去全套 inputs
+  - 重議:authority／doc audit／當前 PR HEAD required checks 或 provider gates 失敗時，依既有有界同批修復處理，不 bypass 或自動擴 scope
+  - 關聯:runtime-layout-convergence;M-20261006-runtime-layout-local-acceptance;docs/plans/2026-10-06-runtime-layout-convergence.md

@@ -40,6 +40,7 @@ runtime state 而復活；請勿手改該註解。setup、`brewup`、`dotsync` �
 
 ## 跨機散佈
 
-- `scripts/ensure-codex-skills.sh` 幂等連結每個版控 adapter 到 `~/.agents/skills/<name>`；新 links 驗證後，只清掉仍 resolve 到本 repo 的 legacy `~/.codex/skills/<name>` symlink。
-- `scripts/ensure-codex-guidance.sh` 幂等連結 `codex/AGENTS.md` 到 `${CODEX_HOME:-$HOME/.codex}/AGENTS.md`；接管既有實體檔前會備份。
-- setup 腳本負責新機初始化；`dotfiles-sync.sh` 在每次 pull 後重跑兩個 helper，讓既有主機不必重跑 setup。
+setup、brewup 與 dotsync 共用 `scripts/ensure-runtime.sh`，統一 layout 與原 guidance／config helpers。
+正式目錄、rules 的個人可寫位置、ownership gates、備份及 recover／rollback 用法見
+[Runtime 正式結構與遷移](../docs/repo-guide.md#runtime-正式結構與遷移)。
+`ensure-codex-skills.sh` 保留獨立介面與既有行為測試；日常部署採共用 entry 的 migration gate。

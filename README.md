@@ -172,6 +172,8 @@ setup 腳本會安裝 Claude Code（官方安裝腳本）與 Codex（Homebrew ca
 - Codex：同步到 `~/.codex/`
 
 其中 `~/.codex/config.local.toml` 保留本機相依設定，不納入版控。
+Skills、個人 rules 與 handoff 的正式位置，以及既有機器的安全遷移／回復用法，見
+[Runtime 正式結構與遷移](docs/repo-guide.md#runtime-正式結構與遷移)。setup、dotsync 與 brewup 共用入口。
 
 ## Turbo 自主執行
 

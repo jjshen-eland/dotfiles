@@ -2,9 +2,9 @@
 #
 # ensure-codex-skills.sh — 幂等確保 ~/.agents/skills/<name> 指向 dotfiles 的 Codex adapters
 #
-# 由 dotfiles-sync.sh（本機與遠端）於 git pull 後呼叫，讓既有主機不必重跑 setup 也能拿到
-# 最新的 codex skill。Codex 的共用個人 skill discovery root 是 ~/.agents/skills；
-# setup、brewup 與 dotsync 都只呼叫這支 helper，避免三份安裝邏輯漂移。
+# 保留獨立呼叫介面及既有行為測試；日常部署由 ensure-runtime.sh 統一接入
+# ensure-runtime-layout.py 的 ownership／transaction gates。Codex 個人 discovery root
+# 是 ~/.agents/skills。
 # 沒有這條散佈路徑，skill 會停在安裝當下的版本——
 # 實證：某台的 ~/.codex/skills/repo-review 停在 3/21 的實體目錄，dotfiles 已到 7/17，
 # autocodex 的一行協議因此跑到舊 skill。

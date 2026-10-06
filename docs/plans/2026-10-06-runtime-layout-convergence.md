@@ -2,13 +2,15 @@
 
 - 工作項：runtime-layout-convergence
 - 日期：2026-10-06
-- 狀態：draft
+- 狀態：in-progress
 - 種類：implementation plan
 - 需求來源：使用者要求同版 dotfiles 的新裝／升級／重跑得到相同受管理 runtime 結構，並於 2026-10-06 指示「開工」。
 - Writer／Dossier Steward：`codex:runtime-layout-convergence`
 - Workspace：`branch=refactor/runtime-layout-convergence`
-- 基線：`338da91fc3a2ba6ce2487e63d0f8ab4b6c527ab1`
-- 需求／驗收權威：[STATUS.md](../../STATUS.md)「Runtime 目錄收斂與 legacy 遷移」。使用者「開工」授權本地實作／驗證，尚無本批 shipping／fleet deployment 授權。
+- 原規劃／盤點基線：`338da91fc3a2ba6ce2487e63d0f8ab4b6c527ab1`
+- 接續基線：`79269535b3a3a741a87c3f7a8bb1c8a161ce2fcd`；#271 已經 PR #272 合併，接續時 runtime setup／helpers 尚未實作。原盤點維持其採集時間與限制，apply 前仍須重新量測。
+- 需求／驗收權威：[STATUS.md](../../STATUS.md)「Runtime 目錄收斂與 legacy 遷移」。使用者「開工」授權本地實作／驗證，現已明示本批 `$project --merge`；fleet deployment 尚待當批授權。
+- 本地階段：migration／共用 entry 與隔離驗收完成，serial／parallel 各 1576 PASS／0 FAIL；證據與原生驗證邊界見 M-20261006-runtime-layout-local-acceptance。後續 shipping、14 目標遷移及 resolver cleanup 尚待完成，計畫維持 in-progress。
 
 ## Runtime 現況與影響邊界
 
@@ -46,7 +48,7 @@ CLI 有 inventory（預設唯讀）、dry-run、apply、verify、指定 transact
 
 1. lstat source、target、parents；拒絕不明 root alias、特殊檔、parent 穿入 repo。已知整 root symlink 只操作 link 本身，不能把 resolve 到 repo 的來源搬走／刪除。正確 entry 依 inode／resolved identity 判斷。
 2. ownership 不靠名稱：managed-name 實體副本須與 current repo 或可取得的 historical Git tree 的完整 bytes／link manifest 相符才可備份接管。未知／自訂差異停止該 root。其他名稱保留 bytes／mode／mtime／link；shallow clone 缺舊 blob 就 unknown，不自動 fetch。
-3. 需要搬移既有 runtime root／handoff 資料時，檢查已知 Claude／Codex writer processes；有 writer 或 process inventory 失敗就停止該 target，提示關閉 writers 後由普通 terminal 重跑。copy＋digest 不能證明沒有 open-file writer；agent 不得自行假稱 quiescent。未知非合作 writer 另由 before／after snapshots／inode guards 偵測，不宣稱防禦惡意程序。
+3. 需要搬移既有 runtime root／handoff 資料時，檢查已知 Claude／Codex writer processes；有 writer 或 process inventory 失敗就停止該 target，列出 PID／命令，區分互動工作與常駐 app-server daemon。結束互動工作不等於 daemon 已退出；使用者須透過所屬 app 的正常退出／停止方式關閉，從普通 terminal 重新 inventory，確認無 writers 才重跑。agent 不自動 kill、不豁免 daemon，也不以等待或結束對話冒充解除阻擋。copy＋digest 不能證明沒有 open-file writer；agent 不得自行假稱 quiescent。未知非合作 writer 另由 before／after snapshots／inode guards 偵測，不宣稱防禦惡意程序。
 4. 同 filesystem sibling stage 建候選，完整保留資料／mtime／mode；不跟隨子 symlink 搬外部內容，handoff symlink 缺可驗證安全 mapping 就停止。snapshot 含類型／lstat identity／內容；copy 前後須一致。stage 驗證、備份位置可寫且不會覆蓋、最後原 snapshot 再驗才 commit。
 5. receipt 先記 intent 再 rename；舊 target 留在 discovery 外 backup，stage 換入 target，verify 後記 committed。每一步 failure 非零且保留 stage／原資料／receipt，不猜成功；一般重跑不刪 backup。
 6. recover 僅在 recorded PID 不存在、現狀精確匹配已記步驟時釋放 stale lock並恢復／續作。未知狀態停止。rollback 要求 installed target 與 receipt 相符且 writers 關閉；target／backup 有後續修改就拒絕，不能刪新 checkpoint／個人規則。
@@ -67,8 +69,8 @@ fleet 驗收後 cleanup 固定正式 store，舊 store／migration residue 明�
 3. inventory／ownership／dry-run：fresh、whole-root／per-entry links、historical pristine copy、未知碰撞、source alias、broken parents、system／synced／第三方保全。
 4. transaction tests：每個 receipt／rename 邊界故障、中斷 recovery／rollback、並行 lock、外部更新／inode 替換、跨 filesystem／symlink escapes。來源可回復，未知狀態拒絕。
 5. handoff single／split／alias 合併 checksum／mtime／anchors 不變；新增 active 對 archive 的已消費副本、同工作線跨 store、不確定数字 slug、相同內容不同 archive 名的 conflict fixtures，明確配對無交集 workline 的可合併 control；雙端 bundled helper survey／predecessor／verify normalized outcomes 一致、consume-once／frontmatter 假錨點 regressions。fixture 用新日期或明設 TTL，不拿 live survey 清原資料來驗收。
-6. 共用入口 stub package／git／SSH／process 工具，走真正 local／remote invocation；fresh／upgrade／rerun 比較 managed layout，native state／config 三層／缺 CLI 可觀察。兩端 validator、deterministic tests、雙 runtime blind forward eval，受測者只拿 raw fixture／skill，不洩漏 oracle／預定修正。
-7. 新增或調整 assertion 時同步 tests/shard-manifest.tsv 的各 shard 期望值，不放寬 tests/shard-aggregate.py 判準；同時跑完整 ./tests/run.sh 與 ./tests/run-parallel.sh，核對總數／各 shard 計數和真實 exit，避免 serial 全綠卻 CI count drift。doc-governance ship／xref audit、diff check 通過，保留 inputs fingerprint 與實際 exit。CI 相依依據為 M-20261001-pr249-shard-manifest-synchronized；此階段未新增測試，不改現行 manifest 計數。舊 helper 直接測試、原安全 oracle 不刪；history／implemented plans 不改寫。
+6. 共用入口 stub package／git／SSH／process 工具，走真正 local／remote invocation；fresh／upgrade／rerun 比較 managed layout，native state／config 三層／缺 CLI 可觀察。同步遷移 tests/run.sh 的 deployment wiring assertions：四個部署脚本不再要求直接出現 ensure-codex-guidance.sh，setup 的實際 clone 路徑傳遞改驗共用 entry；setup／brewup 的 config helper 名稱與 dotsync 本機＋遠端兩處的舊 helper 計數改驗共用 entry 的實際呼叫與其內部 config/guidance 接線。brewup helper-failure fixture 和 dotsync 本機／SSH fixtures 改帶真實共用 entry，僅隔離其下游工具，驗證 guidance／config 失敗確實傳入 entry，再分別產生 brewup 可見警告且繼續套件更新、dotsync 非零終判；不以保留舊名稱註解或空 stub 讓 wiring assertion 假綠。獨立舊 helper 的備份／安全／幂等行為測試仍保留。兩端 validator、deterministic tests、雙 runtime blind forward eval，受測者只拿 raw fixture／skill，不洩漏 oracle／預定修正。
+7. 新增或調整 assertion 時同步 tests/shard-manifest.tsv 的各 shard 期望值，不放寬 tests/shard-aggregate.py 判準；同時跑完整 ./tests/run.sh 與 ./tests/run-parallel.sh，核對總數／各 shard 計數和真實 exit，避免 serial 全綠卻 CI count drift。doc-governance ship／xref audit、diff check 通過，保留 inputs fingerprint 與實際 exit。CI 相依依據為 M-20261001-pr249-shard-manifest-synchronized。舊 helper 直接測試、原安全 oracle 不刪；history／implemented plans 不改寫。
 8. 新批 shipping／部署授權與 origin/main 前，不在本機／遠端 apply 此版。inventory 14 目標，macs 本機只計一次，逐台記 revision／layout／writers／CLI／data snapshots；不自動關 runtime、trust hooks、安裝 CLI。
 9. canary 後全 fleet，逐台 verify／rerun；有 CLI 原生只讀載入，無 CLI capability-limited，不冒稱全功能可用。14 目標 migration 通過後才移除 fallback，再依同樣 shipping／deployment gate 驗證；最後 freeze implemented、移除 active item。
 
