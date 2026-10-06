@@ -472,3 +472,9 @@
   - 放棄:將 settings 字串與 SDK 序列化值混為原生選單同一選項；以舊 initialize success 或 full suite 冒稱唯一性已驗；順便納入 UI high effort 或清除 local/session 覆寫
   - 重議:原生選單再出現重複列或來源／local 設定有新 drift，重驗受影響範圍；fleet 修正須新的當批交付與部署授權
   - 關聯:runtime-layout-convergence;D-20261007-claude-model-default-unset;M-20261006-runtime-model-defaults-validated;docs/plans/2026-10-06-runtime-layout-convergence.md
+
+- **M-20261007-claude-default-native-291 · 2026-10-07 Claude 2.1.291 原生 Default 補驗通過**：本輪 $project --merge 交付檢查時目前 CLI 為 2.1.291，不假定既有 2.1.289 紀錄覆蓋當前環境。以現行 binary 補驗 literal default RED exit 1（default 兩列／Custom model 一列）與 repo 省略 model GREEN exit 0（推薦 Default 一列／Custom model 零列）；來源 snapshot 與 CLI／probe binary fingerprints 前後相同，Project test-evidence helper 對 GREEN 回 REUSE，environment matched。仍是隔離 HOME、無 tools／hooks／MCP／session persistence／model turn 的 metadata-only 選單驗證；CLI 安裝／升級不是本批操作。Raw /tmp/project-merge-20261007._r02ruzn，GREEN response SHA256 e4a7c7a6a8fac80f560b6b89765f47c3ae74cf665b68550309fad0822e783988、normalized execution evidence SHA256 e0e0c74356c5c0bdf793ad395261b4b788a6135b2c66175578385f6d045ded46；CLI binary SHA256 9a1d2ed6bb4421e8fc80c892c0413f293be3ee50ae3d7dda1a7622197a056690。本輪 endpoint 已獲 --merge 授權，當下 PR／required CI／merge 尚待，不宣稱來源或 fleet 已交付。
+  - 日期來源:direct
+  - 放棄:只因 repo inputs 相同就假定外部 CLI 環境相同；把 RED 的 exit 1 當成可沿用的成功測試；以選單 metadata 宣稱模型 turn 或 fleet rollout
+  - 重議:required CI 或 provider gates 未通過時維持 pending；環境 fingerprints 或來源變動時重驗受影響檢查
+  - 關聯:runtime-layout-convergence;D-20261007-claude-model-default-unset;M-20261007-claude-native-default-verified;docs/plans/2026-10-06-runtime-layout-convergence.md
