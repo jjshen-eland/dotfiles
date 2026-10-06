@@ -133,7 +133,7 @@ def writers():
     found = []
     for line in ps.stdout.splitlines():
         fields = line.strip().split(None, 2)
-        if len(fields) != 3 or not fields[0].isdigit() or not fields[1].isdigit():
+        if len(fields) != 3 or not fields[0].isdigit() or not re.fullmatch(r'-?\d+', fields[1]):
             raise Blocked('unparseable process inventory')
         pid, uid, command = fields
         if int(uid) == os.getuid() and re.match(r'^(codex|claude)(?:\b|[- ])', Path(command).name, re.I):

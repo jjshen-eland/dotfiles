@@ -9,8 +9,8 @@
 - Workspace：`branch=refactor/runtime-layout-convergence`
 - 原規劃／盤點基線：`338da91fc3a2ba6ce2487e63d0f8ab4b6c527ab1`
 - 接續基線：`79269535b3a3a741a87c3f7a8bb1c8a161ce2fcd`；#271 已經 PR #272 合併，接續時 runtime setup／helpers 尚未實作。原盤點維持其採集時間與限制，apply 前仍須重新量測。
-- 需求／驗收權威：[STATUS.md](../../STATUS.md)「Runtime 目錄收斂與 legacy 遷移」。使用者「開工」授權本地實作／驗證，現已明示本批 `$project --merge`；fleet deployment 尚待當批授權。
-- 本地階段：migration／共用 entry 與隔離驗收完成，serial／parallel 各 1576 PASS／0 FAIL；證據與原生驗證邊界見 M-20261006-runtime-layout-local-acceptance。後續 shipping、14 目標遷移及 resolver cleanup 尚待完成，計畫維持 in-progress。
+- 需求／驗收權威：[STATUS.md](../../STATUS.md)「Runtime 目錄收斂與 legacy 遷移」。使用者「開工」授權本地實作／驗證，PR #273 已合併 origin/main `744356df`，使用者現已明示本批「14 個目標的遷移部署與驗收」。
+- 本地階段：migration／共用 entry 與隔離驗收完成，serial／parallel 各 1576 PASS／0 FAIL；證據與原生驗證邊界見 M-20261006-runtime-layout-local-acceptance。shipping 已完成（PR #273，required macOS／Ubuntu CI 通過）；14 目標遷移已取得本批授權，resolver cleanup 須待全體遷移驗收，計畫維持 in-progress。
 
 ## Runtime 現況與影響邊界
 
@@ -77,3 +77,44 @@ fleet 驗收後 cleanup 固定正式 store，舊 store／migration residue 明�
 ## 交付邊界
 
 需要新產品決策、ownership 衝突、writer／snapshot 不明、collision、Write Scope 越界時停受影響工作並列證據；安全同項工作可繼續。本地測試全綠可交付 migration／共用部署實作，STATUS 明列尚待 shipping、fleet migration、後續 cleanup，不能以本地綠冒充專案完工。
+
+## 2026-10-06 本批 fleet 驗收快照
+
+版本 `744356df2caae0cf63b76692798390474267f4a6`；以共用 entry 部署，不執行完整 setup、brewup 套件更新或 kill writers。be01（無 CLI）及 eagle06（有 legacy 資料／雙 CLI）先通過 canary，才續其餘十台。下表的「通過」含 apply／verify／共用 entry 重跑均 exit 0、source 不變、個人設定／第三方／原生內容在 migration 階段保留、重跑含 inode 無變動、committed receipts／retained backups／無 stage residue 核對。
+
+| 目標 | 部署 revision | Layout／重跑 | 原生 discovery | Handoff 資料 |
+| --- | --- | --- | --- | --- |
+| eagle03 | 744356df | 通過 | Codex／Claude 通過 | 正式空 store |
+| eagle06 | 744356df | 通過（資料 canary） | Codex／Claude 通過 | 六檔／mode／mtime 完整搬移 |
+| eagle07 | 744356df | 通過 | Codex／Claude 通過 | 正式空 store |
+| eagle08 | 338da91f | blocked：3 writers、repo 本機修改 | 未驗 | 無 store，未變更 |
+| eagle09 | 744356df | 通過 | Codex／Claude 通過 | 正式空 store |
+| macs | 744356df | blocked：13 writers；負 UID 修正尚未交付 | 未驗 | 18 檔留在 legacy，未變更 |
+| db01 | 744356df | 通過 | Codex／Claude 通過 | 空 archive／mode／mtime 完整搬移 |
+| ap01 | 744356df | 通過 | Codex／Claude 通過 | 正式空 store |
+| ap02 | 744356df | 通過 | Claude 通過；Codex 缺 CLI | 正式空 store |
+| macmini | 744356df | 通過 | Codex／Claude 通過；四個額外 plugins 保留 | 一檔／mode／mtime 完整搬移 |
+| m4mini | 744356df | 通過 | 兩端缺 CLI，capability-limited | 正式空 store |
+| agent01 | 744356df | 通過 | Codex／Claude 通過 | 正式空 store |
+| fe01 | 744356df | 通過 | Claude 通過；Codex 缺 CLI | 正式空 store |
+| be01 | 744356df | 通過（無 CLI canary） | 兩端缺 CLI，capability-limited | 正式空 store |
+
+原生驗證使用各台實際 HOME、新暫存 cwd，未追加 repo-local skills 或 extra user roots。Codex skills/list 與 Claude metadata-only initialize 列出 user adapters；前者原生 parser 讀正式 rules 全集，gh pr merge 為 prompt，沒有執行 merge 命令，未直接觀測 session 自動 enforcement。後者 temporary no tools／hooks／MCP，沒有 model turn 或 persisted session，不改 hook trust；tokenSource none，不宣稱模型登入。8 台 Codex 啟動後原生 .system 被 CLI 重建，部分 auth／Claude cache 亦改變；pre-apply → post-apply → post-rerun 的原生／個人 snapshots 相同，與 native startup 分階段核對，所有 managed roots／handoff／第三方 entries 在 startup 後相同。CLI binary 版本未升級。
+
+Raw snapshots／helper exits／receipt checks／native responses／artifact manifest 在 `/tmp/runtime-layout-fleet-20261006`；acceptance.json SHA256 `25df5ed7135092d7e49982a39eab02003f3d7ff992d6d13ae2de06a2b33a9943`，artifact-manifest.json SHA256 `e6ba2e367ca40871dfeab23567c89f3c93a3e1a9c3dcd7e608b0f32f390294f0`。暫存 evidence 不是授權或跨機 authority；此表／STATUS 保持 durable 結果。初次過廣的 native 後全樹比較與 exclusive user count audit 失敗另留 attempt1，不覆蓋原始 evidence。
+
+兩個 blocked 目標初末 runtime roots 相同。eagle08 的 `claude/settings.json` 修改及 `claude/skills/synced/` 未追蹤內容，須使用者／writer 明示處置；不能自動覆蓋或自行認領。macs 的真實 ps `1622 -2 /usr/libexec/dhcp6d` 重現 parser failure，隔離 RED 保存在 `/tmp/runtime-layout-negative-uid-red-20261006.log`；一行修正接受 signed UID，26 cases 驗同 UID writer 仍列出／阻擋、malformed UID 仍失敗，真實 inventory 已列 13 writers，未在本機 apply。修正的完整 serial（408.167s）／parallel（328.435s）均 exit 0、1576 PASS／0 FAIL；parallel core 171／ship_state 239／integration 1166。376 tracked source paths 各次啟動前凍結、結束後相同；raw logs 與 evidence 在 /tmp/runtime-layout-deployment-{serial,parallel}-20261006.*。全套後只更新 STATUS／此 plan／event-time 紀錄，另驗文件，不將舊 inputs 倒填為收尾文字。使用者現以 `$project --merge` 授權修正與紀錄的本批交付，endpoint 尚待完成；origin/main 前不散佈。所有 writers 需由 owning app 正常停止，從普通 terminal 重新 inventory；agent 不 kill。12／14 不足以移除 fallback，active plan 保持 in-progress。
+
+inventory 外兩部 MacBook 依 D-20260917-terminal-macbooks-outside-inventory 維持自主更新，不新增中央 fan-out；目前未量測其 runtime，不沿用 identity rollout 的歷史驗收或休眠狀態作為本項結果。建議另追蹤兩部終端的本機 runtime 驗收，追加 acceptance 範圍尚待確認；現行 14 台表維持 12 台通過、2 台 blocked。legacy cleanup 前須釐清額外終端是否仍依賴舊 store。
+
+macs 與兩部 MacBook 的本機流程：先保存工作並由所屬 app 正常停止 Claude／Codex 互動程序和常駐 daemon，從普通 Terminal 確認 repo 為 clean main；本批修正合併後依序執行以下命令，任一步非零即保留現場並處理該原因。未知 repo 修改先分類，不自動 stash／reset。
+
+```sh
+cd ~/.dotfiles &&
+git pull --ff-only &&
+python3 scripts/ensure-runtime-layout.py inventory &&
+DOTFILES_DIR="$PWD" bash scripts/ensure-runtime.sh &&
+python3 scripts/ensure-runtime-layout.py verify
+```
+
+再重跑 common entry／verify，核對 data checksum／mode／mtime、retained backups 與 receipts 無新增；有 CLI 的端於新 cwd 驗原生 discovery，缺 CLI 明示能力缺項。eagle08 另須先處置已識別的本機修改並重新查 writers，才可 pull／apply。完整 setup／brewup 不是本批必要操作；brewup 的 helper 失敗可警告後仍 exit 0，不能只用 brewup exit 作 runtime 驗收。
