@@ -42,6 +42,11 @@ home alias 或路徑進入 repo 時，兩個 helper 一併跳過，其他安全 
 移出 repo 與 discovery 路徑並留可回復備份，不刪未知第三方。設定語意見
 [Claude 官方設定說明](https://support.claude.com/en/articles/12512180-use-skills-in-claude)。
 
+Repo 的模型預設不固定具體模型：Claude 設 `model: "default"`，Codex 省略 `model`。
+實際解析依帳號與 runtime 的設定優先序；Codex 合併保留的 runtime-only／local 模型選擇仍可覆寫。
+語意見 [Claude model configuration](https://code.claude.com/docs/en/model-config#model-aliases)
+與 [OpenAI Docs config basics](https://learn.chatgpt.com/docs/config-file/config-basic#configuration-precedence)。
+
 ```sh
 python3 scripts/ensure-runtime-layout.py           # 唯讀 inventory
 python3 scripts/ensure-runtime-layout.py dry-run

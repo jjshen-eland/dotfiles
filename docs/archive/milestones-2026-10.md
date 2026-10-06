@@ -447,3 +447,9 @@
   - 放棄:用 cache 當下不存在冒充永久同步停用；以 temporary override 冒充來源已交付；因 commit／dotsync 授權自行擴成新批 push／PR／merge；覆寫原始測試 inputs
   - 重議:本批 shipping gate 或 dotsync／fresh post-deploy 失敗時保留現場；逐台核對 source revision、false 與 symlink，macs 未遷移仍保持明列
   - 關聯:runtime-layout-convergence;D-20261006-runtime-cloud-sync-disposition;M-20261006-eagle08-runtime-accepted;docs/plans/2026-10-06-runtime-layout-convergence.md;claude/settings.json
+
+- **M-20261006-runtime-model-defaults-validated · 2026-10-06 雙端 repo default 模型設定本地驗證通過**：Claude model 由 opus[1m] 改為 default，Codex 繼續省略 model 並註解其等效 default 策略。JSON 與 HEAD 語意比對只有 model 改變，syncClaudeAiSkills=false 及其他設定相同；Codex TOML 可解析且不固定 model。隔離 native Claude metadata-only 初始化接受來源讀出的 default／cloud false，無模型 turn／production apply，不宣稱帳號 default 的實際模型。真實 Codex merge helper 驗 fresh 不生成 model、runtime 已保存模型保留、local 模型優先，三案重跑 bytes／inode／mtime 都相同；只寫暫存 target，未修改本機 live config。七項 checks exit 0，declared source inputs 前後相同；raw evidence /tmp/runtime-model-defaults-20261006.evidence.json，native raw response /tmp/runtime-model-defaults-native-20261006.json（私有）。變更是設定值／註解與紀錄，另驗 doc audit／xref／retrieval；前次 full suite 不冒稱覆蓋新模型設定。
+  - 日期來源:direct
+  - 放棄:用 literal default 填入 Codex 模型 ID；清除 runtime-only／local 模型選擇；以 metadata-only 初始化宣稱帳號模型已實際推論
+  - 重議:新設定原生解析／合併或文件 audit 失敗則停止交付；永久散佈仍待當批 origin/main gate，macs 遷移阻擋不因模型改值而解除
+  - 關聯:runtime-layout-convergence;D-20261006-runtime-model-defaults;D-20261006-runtime-cloud-sync-disposition;docs/plans/2026-10-06-runtime-layout-convergence.md
