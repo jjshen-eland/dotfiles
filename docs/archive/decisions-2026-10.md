@@ -154,3 +154,10 @@
   - 證據:本輪使用者「現在這樣設計也不錯，多一層確認，只是要怎麼知道有這些參數可以打呢」；前版 README 只有一個 on 範例、入口只有 workflow 路由，沒有正式 help 或人用參數表；雙端唯讀 help 與啟用提示待驗
   - 取捨:補可見說明而非改 on 的交付語意；沿用 README 人用權威與 shared workflow，不新增重複 quick-reference store，不改 controller／hook／permission／Project gates。原 implemented plan 保持凍結，新增介面 delta 由既有 active state／history 追蹤
   - 關聯:turbo-skill;M-20261006-turbo-skill-local;README.md;shared/skills/turbo/references/workflow.md
+
+- **D-20261006-deep-plan-evidence-control-boundary · 2026-10-06 #271 以来源可核對的文件資料區分 reviewer 控制輸入**：ROOT CAUSE CONFIRMED。現行 controller 的合法歷史矩陣有 12 assertion failures；Turbo 前 #268 合併版 `8c5bf05` 同樣 12 failures、0 errors。Git blame 顯示 `no_pressure(payload)` 來自 10/3 controller，10/5 #268 將完整 document delta 納入該 payload，Turbo 未改此拒絕位置。實作方向為保留 caller schema／處置／壓力檢查，canonical 文件／原 reviewer evidence 以可核對的來源資料角色傳遞，不把歷史當控制指令；資料 delta 必須由既有基線與 exact 宣告 snapshot 重建，不能以 caller 任意 document 包裝免檢。原始歷史、完整差異、journal／checkpoint／admission 防護與 defaults 保留，先審查未實作的計畫再驗最小修法。
+  - 日期來源:direct
+  - 證據:tests/deep-plan-routing.py 的 #271 RED；`/tmp/issue-271-red-20261006.log`；`/tmp/issue-271-red-source-20261006/manifest.json`；pre-Turbo source／raw log 位於 `/var/folders/t5/4b3mtjj52fvdplz5f15mf_ym0000gp/T/issue-271-pre-turbo-qydtp5mv`；#268／#270 merge metadata
+  - 放棄:將此次拒絕歸因 Turbo；整體停用壓力防護；刪改來源歷史／省去必要文件；任意 caller document data 豁免；synthetic prepare 成功冒充完整 native lifecycle
+  - 重議:來源綁定、原 RED、#264 regression 或 native reviewer／admission 任一步仍失敗時不宣告完成；新證據才調整最小修法
+  - 關聯:#271;#264;#268;#270;deep-plan-repair-evidence;docs/plans/2026-10-06-deep-plan-repair-evidence.md;D-20261003-deep-plan-controller-adoption;D-20261005-deep-plan-document-repair-baseline

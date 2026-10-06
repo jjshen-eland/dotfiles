@@ -12,7 +12,7 @@
 - reviewer 只回報，不改寫計畫。Reviewer verdict 不是 approval。
 - 輪次由 plan 的機械 journal 控制；現行預設最多兩輪。不得重開批次追求表面收斂。
 - target repositories 在 reviewer 工作期間唯讀。不得修改本 skill、eval、field log 或無關 repo。
-- 首次reviewer prompts不含前輪findings；修後focused路徑依§5提供證據入口。兩者都不含作者辯護、預定verdict、round number、進度提示或plan內文。
+- 首次 reviewer prompts 不額外投影前輪 reviewer results；修後 focused 路徑依 §5 提供證據入口。Orchestrator 不額外注入作者辯護、預定 verdict、round number、進度提示或 plan 內文；來源文件資料的投影與實際 exposure 依 [controller.md](controller.md)。
 
 完整路徑追蹤：artifact/repo 已確認、第一輪完成、findings 已處置、第二輪完成、gate 已回報。
 
@@ -81,7 +81,7 @@ Finding 要求同步修正規格／STATUS 等文件時，編輯前依 controller
 
 處置完成後，依 controller 以同一 artifact 的實際差異與處置證據 prepare 下一輪；保持相同 N 與新的
 reviewer contexts。預設仍為盲審；focused policy 的 packet 由 helper 產生，只供查證原 finding、實際修正、
-同類問題與語意相依。輪次與剩餘機會只由 controller／orchestrator 持有，不傳給 reviewer。
+同類問題與語意相依。輪次與剩餘機會由 controller／orchestrator 持有，不額外投影給 reviewer；來源文件的歷史文字與實際 exposure 依 controller 的資料邊界處理。
 沒有修正／finding 時不造 packet；核心方案改變或缺必要事實時先返回相應決策／查證。
 
 - 沒有 blocking finding：`GO`。

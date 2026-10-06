@@ -36,7 +36,8 @@ regular files 及 canonical plan 的內容修正。相依文件須使用 exact c
 必須逐顆是原 HEAD 後的單親 commit，且每顆只改允許文件，不能用程式修改再 revert 的最終 tree 冒充。
 原有 dirty 程式與其他 index／worktree 證據必須不變。宣告集合不增加額度，也不放寬 disposition gate。
 控制器保存受審文件的 worktree／index／HEAD 三層基線並產生實際 delta：focused packet 帶原 finding
-處置與完整差異；blind reviewer 另讀 `document_delta`，只有差異，不透露原 findings 或 controller 狀態。
+處置與完整差異；blind reviewer 另讀 `document_delta`，只投影來源差異，不額外帶原 reviewer results 或
+controller 狀態。來源文件本身可能保留審查歷史，不能因此宣稱完全隔離。
 
 舊 version-1 journal 可用同一 `open` 與明列文件集合接續（只有 plan 時也以 `--repair-document <plan>`
 觸發基線核對）：helper 只在以原 HEAD 文件重建的完整
@@ -82,7 +83,11 @@ finding index 從 0 開始；action 是 `fixed`／`rejected`／`accepted`。重�
 各自對應處置。Helper 檢查形狀、完整性及版本，產生實際 plan／宣告文件的三層 diff 並投影允許欄位；
 `contracts` 只是證據入口，不授予文件修改或漂移豁免。Helper 不能證明處置本身為真
 或 accepted 已獲授權，這仍依 workflow 查證。Focused packet 不包含 reviewer IDs、controller state 或 verdict。
-已知輪次／剩餘機會用語會被攔下；這不是任意自然語言的完美過濾器。
+Caller 的 evidence／contracts 中已知輪次、剩餘機會與預定 verdict 指令會被攔下；這不是任意
+自然語言的完美過濾器。原始 reviewer findings 與由受審基線、目前 canonical snapshot 重建的文件
+差異按資料保留，不做相同字詞拒絕。Caller 提供的 current／document data 必須與實際來源吻合；
+來源吻合只證明 provenance，不使文件中的指令成為授權。兩端 prompt 使用
+`evidence-role-prompt.txt` 說明資料角色與實際 exposure 的回報方式。
 
 ## 完成與停止
 

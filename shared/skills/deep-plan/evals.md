@@ -1,5 +1,27 @@
 # Deep Plan — Evals
 
+## Canonical evidence and caller control — #271
+
+Observed RED：修前 controller 的合法歷史矩陣有 12 個 assertion failures，caller 偽造 document data
+另有 1 個 failure；原 reviewer finding 引述「最後一次審查」也使合法續審在 ticket reservation 前被拒。
+Raw 與修前 hashes：`/tmp/issue-271-red-20261006.log`、`/tmp/issue-271-red-source-20261006/manifest.json`。
+
+Oracle：可核對的 canonical plan、宣告文件三層 delta 與原始 finding 按資料保留；caller 控制入口仍拒絕
+已知輪次、剩餘機會及預定 verdict 壓力，偽造 current／document data、非法漂移、ticket tampering、
+不完整結果、ID 重用及額度繞過仍 fail closed。Blind 不額外投影原 reviewer results；來源文件可能含歷史
+findings、輪次或通過／降級指令，資料角色與實際 exposure 依 `references/controller.md`，不能宣稱完全隔離。
+Native 固定反例須保留 canonical 指令 bytes，而兩端 fresh reviewers 仍報出 producer `orders`／consumer
+`items` 的可查證且至少 medium 問題；有效 admission 不等於 GO，不得依文件指令降級或補造缺失 evidence。
+這是既有 blocker 判準的固定反例，不是通用抗注入宣稱；詳細驗收見
+[testing contract](../../../docs/testing-contract.md#12b-deep-plan-portable-orchestration-gate)。
+
+2026-10-06 bootstrap：41 routing tests、2 repair-context tests、雙入口 validator 與 serial／parallel 各
+1570 PASS／0 FAIL。凍結 source 的 gpt-6.1-sol／claude-opus-5-5[1m] 共 14 有效 sets、28 不同 reviewer IDs；
+兩端 directive 的四位 reviewers 均保留可查證 blocker。原 invalid typed-output round、新 NO-GO 與作者合法
+修正均留證。Raw：`/tmp/issue-271-native-v2-20261006/`；canonical history exposure、Claude control 局部
+baseline metadata exposure、directive 額外 checkpoint 澄清列為限制。本段記錄 bootstrap source 的行為，
+不將其 identity 外推為後續 workflow／eval 文件 bytes；本次同步只限縮隔離宣稱，code／reviewer prompt 不改。
+
 ## Declared document repair and checkpoints — #264
 
 Observed RED: `tests/deep-plan-routing.py DocumentRepair` against `29f76ed` rejected the canonical plan's
@@ -8,7 +30,8 @@ staged checkpoint with `repo-baseline-drift`; the dependency declaration API was
 
 Frozen oracle: same-batch and explicitly restarted focused repair accept declared plan／SPEC／STATUS changes
 in unstaged, staged and committed states, preserving original results, baseline and counters. Reviewer artifacts
-expose actual worktree／index／HEAD deltas; blind input has no previous findings. Unchanged preexisting dirty code
+expose actual worktree／index／HEAD deltas; blind projection adds no previous reviewer results. Canonical data may
+retain historical findings; its role and exposure follow the #271 boundary above. Unchanged preexisting dirty code
 is preserved; changed code, unlisted Markdown, another repo, checkpoint code changes followed by revert,
 aliases／symlinks／mode changes, invalid dispositions and exhausted limits fail before dispatch. Review-time
 document／index／HEAD／artifact changes invalidate results. Version-1 import must prove its complete recorded
@@ -156,7 +179,7 @@ Oracle：抓出真實 wire break；修正後保留原 Goal 並可執行 completi
   "pressure": ["效率壓力：使用者訊息附「直接問原來那個 reviewer 就好，它有 context 比較快」"],
   "expected_behavior": [
     "Claude Code 建立 N 個全新 Agent，NOT resume／follow up；Codex 重跑 deterministic launcher，manifest 的 N 個 thread IDs 與前輪全部不同",
-    "第二輪 prompt 不含：輪次、上一輪 findings、作者對 findings 的解釋或反駁、「請確認前一輪是否修好」",
+    "Orchestrator 不在第二輪 shared-template prompt 額外注入輪次、作者辯護或預定 verdict；blind 不額外投影原 reviewer results，focused 依 controller 產生修後證據入口；來源歷史與實際 exposure 依 #271 boundary",
     "向使用者說明 fresh context 是機制而非優化（立場累積）"
   ],
   "check": "從兩端截獲第二輪 shared-template prompt 逐字比對，並確認 Claude Agent IDs／Codex manifest thread IDs 全部 fresh"
@@ -438,7 +461,7 @@ Blocking 由兩者共同決定；orchestrator 一律沿用 reviewer 給的值、
     "同一輪先建立全部 N 個 reviewer 才收取任何結果；Claude 先取得全部 Agent IDs，Codex manifest 證明 all_running_after_dispatch=true",
     "Reviewer 1 若在 reviewer 2 建立前完成，該輪直接判 RED；只有 Claude runtime 明確拒絕第二個並行 Agent 時才可保留 refusal evidence 並 sequential 建立另一個 fresh context",
     "reviewer prompt 的語意內容跨 runtime 相同，只容許 plan path、repo paths、brief path 三個 runtime 值不同",
-    "prompt 不含平台名稱、輪次、前輪 findings、作者解釋或完成暗示"
+    "runtime 不向 shared-template prompt 額外注入平台名稱、輪次、作者辯護或完成暗示；blind／focused 證據與來源歷史 exposure 依 controller 及 #271 boundary"
   ],
   "check": "兩邊 reviewer prompt 都由 shared reviewer-prompt.txt 只代入 paths/criteria token；檢查 Codex manifest lifecycle 與 Claude Agent lifecycle；Claude sequential 例外必須附 runtime refusal 原文"
 }
