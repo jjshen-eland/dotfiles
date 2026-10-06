@@ -399,3 +399,33 @@
   - 放棄:把此批 merge 授權擴成 fleet apply；過早移除 active assignment 或 fallback；覆蓋原失敗與檢查證據；把收尾文件的新 snapshot 倒填為過去全套 inputs
   - 重議:authority／doc audit／當前 PR HEAD required checks 或 provider gates 失敗時，依既有有界同批修復處理，不 bypass 或自動擴 scope
   - 關聯:runtime-layout-convergence;M-20261006-runtime-layout-local-acceptance;docs/plans/2026-10-06-runtime-layout-convergence.md
+
+- **M-20261006-runtime-layout-merged-deployment-authorized · 2026-10-06 Runtime 搬移工具合併與 fleet 部署授權**：PR #273 已 rebase merge 至 origin/main `744356df2caae0cf63b76692798390474267f4a6`；candidate `296ef96baa5fc4e28fa7a69a40f4357032be08e0` 與 merged tree 相同，required macOS／Ubuntu CI 通過。使用者另明示本批「14 個目標的遷移部署與驗收」，此為當批 runtime 部署授權，不含套件更新、kill writers、未知資料覆蓋或新 code shipping。fresh raw no-follow inventory 完成 14 目標，reader／逐台證據在 `/tmp/runtime-layout-fleet-20261006`；macs 計一次。12 個遠端 clean／無 writers，eagle08 有修改的 claude/settings.json、untracked synced skills 與 3 個 writers，保留現場；macs 有 13 個 writers，另重現 dhcp6d UID -2 使 production ps parser 非零，未放寬 guard。原盤點保留其採集時間；先 be01 無 CLI canary，再 eagle06 的六檔 handoff／雙 CLI canary，尚未 apply。
+  - 日期來源:direct
+  - 放棄:以原盤點冒充當下無 writers；自動 reset 遠端本機修改；以 merge 授權冒充部署或新批 shipping；遇單台 blocked 就放棄其他安全目標
+  - 重議:canary、資料保全、origin revision 或 writer／ownership 不符時停止受影響目標並保留證據；14 目標通過前不移除 fallback
+  - 關聯:runtime-layout-convergence;M-20261006-runtime-layout-local-acceptance;M-20261006-runtime-layout-delivery-candidate;docs/plans/2026-10-06-runtime-layout-convergence.md
+
+- **M-20261006-runtime-layout-canary-accepted · 2026-10-06 Runtime 首批兩台搬移與原生 discovery 通過**：be01（Linux、無 CLI／無 store）與 eagle06（Linux、雙 CLI／六檔 legacy handoff）均 fast-forward 至 origin/main 744356df，common entry apply／verify／rerun／verify-rerun exit 0。Source snapshots 前後相同；runtime roots、個人設定重跑後含 inode／mode／mtime／bytes 相同，eagle06 receipts／retained backups 也相同。六檔 handoff 整體 content／mode／mtime 搬到正式 store，legacy path 已移出 discovery。eagle06 Codex 0.154.0 原生 skills/list 在新暫存 cwd、不追加 skill roots 的情況列出 11 個 user adapters，system skills 仍可見；原生 execpolicy parser 讀正式 rules 全集後 gh pr merge 為 prompt，未執行命令，未冒稱直接觀測 session 自動 rules enforcement。Claude 2.1.269 metadata-only initialize 列出 11 個 user adapters；temporary no hooks/tools/MCP、無 model turn／persisted session，不改 hook trust。其 account tokenSource none，不冒稱登入／模型 API 可用。be01 只有 layout 能力，不安装 CLI。初次 Claude probe 的空 MCP schema 錯誤已保留 attempt1，改 probe 為 mcpServers 空表後握手成功；未修改 production source。逐台 raw receipts／snapshots／native response 保存於 /tmp/runtime-layout-fleet-20261006；可繼續其他十台 safe targets，blocked macs／eagle08 保留。
+  - 日期來源:direct
+  - 放棄:把 CLI 缺席或 metadata-only 握手冒充模型可用；以 explicit rules parser 冒充自動 enforcement；使用 live handoff survey 清資料來驗收；重跑產生新 backups
+  - 重議:其餘 targets 的 writer／dirty tree／snapshot 不符停止該台；全體遷移驗收前保留 legacy resolver
+  - 關聯:runtime-layout-convergence;M-20261006-runtime-layout-merged-deployment-authorized;docs/plans/2026-10-06-runtime-layout-convergence.md
+
+- **M-20261006-runtime-layout-fleet-twelve-accepted · 2026-10-06 Runtime 十二台正式 store 與逐台載入驗收**：兩台 canary 後，共 eagle03／eagle06／eagle07／eagle09／db01／ap01／ap02／macmini／m4mini／agent01／fe01／be01 十二台 fast-forward 至 744356df，common entry apply／verify／rerun／verify-rerun 全 exit 0。每台三個 committed transactions 的 candidate／before backups 正確、stage 不存在，重跑不新增 receipts／backup。Source 與個人設定在 migration 前後相同；handoff 的七檔及 db01 空 archive 保留 content／mode／mtime，舊 store 移出 discovery。8 Codex／10 Claude 原生 metadata-only discovery 驗出 11 repo adapters，macmini 另四個 plugin skills 可見。Codex 原生 parser 驗 gh pr merge 為 prompt，未執行命令／模型 turn，未冒稱自動 enforcement；無 CLI 能力缺項明列。原生啟動後 .system 重建與部分 auth／Claude cache 變化另記，三階段 manifest 證明 migration 未變更它們，native 後 managed／handoff／第三方仍相同。初次 audit 將 native system lifecycle 與 macmini 額外插件當失敗，原 log 留 attempt1；依 sources／phases 改 evidence reporter，不改 production guard。macs 13 writers／18 檔 legacy、eagle08 3 writers／dirty repo 各 blocked，初末 runtime roots 相同；本批是 12／14，未移除 fallback。逐台表在原 in-progress plan，raw evidence 路徑及 SHA 同表。
+  - 日期來源:direct
+  - 放棄:自動 autostash／reset 遠端未知修改；把 .system 的 native 生命周期冒充資料搬移失敗或宣稱全樹不變；要求 user skills 僅有 repo entries 而遺失第三方；以 12 台冒稱全 fleet 完工
+  - 重議:解除兩台 writer／修改與本機 parser 的交付阻擋後，fresh 再驗；14 目標通過前保留 fallback
+  - 關聯:runtime-layout-convergence;M-20261006-runtime-layout-canary-accepted;docs/plans/2026-10-06-runtime-layout-convergence.md
+
+- **M-20261006-runtime-layout-negative-uid-repair · 2026-10-06 Runtime 程序清單支援 macOS 負 UID 的本地修正**：真實 ps exit 0，但 dhcp6d UID -2 被 isdigit 拒絕，production inventory 非零且未列 writers；隔離端到端 RED 在修改前保存。只改 UID 欄位 validation 接受 -?\d+，PID／三欄／malformed input／same-user writer guard 不放寬。26 cases exit 0（8.204s），同 UID daemon／malformed UID controls 仍 blocked、離線 legacy 搬移可成功；真實本機 inventory process ok 且列出 13 個 writers，handoff 仍 blocked，未 apply。Raw RED／GREEN／live report 在 /tmp/runtime-layout-negative-uid-{red,green,live-fixed}-20261006.*。Full serial／parallel 待終驗，修正尚未交付 origin/main，需要新批具名 shipping 授權；未修改 skill／fallback。
+  - 日期來源:direct
+  - 放棄:跳過全 ps inventory、隱藏當前 writers 或忽略所有 parse errors 來繞過本機阻擋；在 origin/main 前散佈修正
+  - 重議:完整 suites、source invariance 或 malformed／writer controls 不符時保留失敗證據，停止交付；本機 app／daemon 正常退出後才可遷移
+  - 關聯:runtime-layout-convergence;M-20261006-runtime-layout-fleet-twelve-accepted;docs/plans/2026-10-06-runtime-layout-convergence.md
+
+- **M-20261006-runtime-layout-negative-uid-acceptance · 2026-10-06 Runtime signed UID 修正完整測試已通過**：原 RED → 一行 causal repair → 26 cases 後，完整 serial／parallel 均 exit 0、1576 PASS／0 FAIL；耗時 408.167s／328.435s，parallel core 171／ship_state 239／integration 1166。376 tracked source paths（含 34 directory links）各次凍結 before／after 相同；raw logs 與 JSON evidence 在 /tmp/runtime-layout-deployment-{serial,parallel}-20261006.*。再次按各 host 的 repo SKILL.md entry 名稱對照原生 metadata，8 Codex／10 Claude 的 11 adapters 完整一致，macmini 四個 extra plugin skills 保留；證據 /tmp/runtime-layout-native-adapter-names-20261006.json。Doc ship audit／diff 已通過，終驗後只更新 STATUS／原 plan／此 event 記錄並另驗 docs，不冒稱 full suite 的 inputs 涵蓋新記錄。修改保留在 refactor/runtime-layout-convergence，尚未 commit／push／PR／merge；deployment authorization 不擴成新 shipping。Fleet 維持 12／14，macs／eagle08 的阻擋與 fallback 保持。
+  - 日期來源:direct
+  - 放棄:用 parser 修正豁免 real writers；將 full suite 前後 fingerprints 改成收尾文字；把此批 deployment 擴為新批 code shipping；宣稱 14 台完工
+  - 重議:新批 shipping gate 或剩餘兩台 fresh writer／ownership／snapshot 不符，停止受影響動作並保留資料
+  - 關聯:runtime-layout-convergence;M-20261006-runtime-layout-negative-uid-repair;M-20261006-runtime-layout-fleet-twelve-accepted;docs/plans/2026-10-06-runtime-layout-convergence.md

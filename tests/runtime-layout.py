@@ -36,6 +36,8 @@ class RuntimeLayoutTests(unittest.TestCase):
         ps = self.bin / 'ps'
         ps.write_text('#!/bin/sh\n[ "${PS_FAIL:-0}" = 1 ] && exit 1\n'
                       f'echo "$$ {os.getuid()} /usr/bin/python3"\n'
+                      '[ "${PS_NEGATIVE_UID:-0}" = 1 ] && echo "1622 -2 /usr/libexec/dhcp6d"\n'
+                      '[ "${PS_BAD_UID:-0}" = 1 ] && echo "1622 -invalid /usr/libexec/dhcp6d"\n'
                       f'[ "${{PS_WRITER:-0}}" = 1 ] && echo "4711 {os.getuid()} /app-server-daemon/bin/codex"\nexit 0\n')
         ps.chmod(0o755)
         self.env = {k: v for k, v in os.environ.items() if k not in ('CODEX_HOME', 'DOTFILES_DIR', 'DOTFILES_RUNTIME_TEST_FAIL')}
@@ -91,6 +93,22 @@ class RuntimeLayoutTests(unittest.TestCase):
         report = self.run_cli('inventory', expected=1, PS_FAIL='1')
         self.assertFalse(report['process_inventory']['ok'])
         self.assertTrue(p.exists())
+
+    def test_negative_system_uid_does_not_hide_current_user_writer(self):
+        self.handoff()
+        before = self.module.snapshot(self.home)
+        report = self.run_cli('inventory', PS_NEGATIVE_UID='1')
+        self.assertTrue(report['process_inventory']['ok'])
+        self.assertEqual([], report['process_inventory']['writers'])
+        report = self.run_cli('inventory', expected=1, PS_NEGATIVE_UID='1', PS_WRITER='1')
+        self.assertTrue(report['process_inventory']['ok'])
+        self.assertEqual(4711, report['process_inventory']['writers'][0]['pid'])
+        report = self.run_cli('inventory', expected=1, PS_BAD_UID='1')
+        self.assertFalse(report['process_inventory']['ok'])
+        self.assertEqual(before, self.module.snapshot(self.home))
+        self.run_cli(PS_NEGATIVE_UID='1')
+        self.assertTrue(self.root('handoffs').is_dir())
+        self.assertFalse((self.home / '.claude/handoffs').exists())
 
     def test_fresh_whole_link_upgrade_and_idempotence(self):
         for kind in ('claude-skills', 'codex-skills', 'codex-rules'):
