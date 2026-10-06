@@ -49,6 +49,7 @@ fallback conventions 則由該 repo 自己的規定勝出。Repo 沒有契約檔
 
 ## PR / Git
 
+- 當前使用者明示 turbo 的具名 Goal／action delivery delegation 時，依 `~/.claude/skills/project/references/ship-policy.md` 唯一授權表接續；只有 on 不授權交付 action。
 - merge 的授權來源（補充 kernel 的 merge 條）：使用者明說 merge / bypass merge——**不論在哪一輪說的**，`/project log` 的引數或事後另說皆算。
 - 使用者明說 merge 後的標準收尾：merge PR → 清 remote/本地 branch → 同步本地 default，**一路做完不再回問**。**壓不壓由說法決定、預設保留**（裸「merge」＝保留語意 commit）。說法表與完整序列見 `~/.claude/skills/project/references/ship-paths.md`「說法表」＋「Merge 最後一哩」（唯一權威，勿在此重述對照）。
 - **說法授權的是「怎麼送」，never whether an unreviewed batch may ship.** `ship-state.sh` 印 `verdict: STOP`（含 `review-terminal:` 上一場審查未修完就終止）→ 停下處置，關鍵字不得覆蓋。

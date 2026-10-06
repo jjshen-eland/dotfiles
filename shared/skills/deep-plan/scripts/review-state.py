@@ -12,6 +12,7 @@ import difflib
 import fcntl
 import hashlib
 import json
+import importlib.util
 import os
 from pathlib import Path
 import re
@@ -23,6 +24,17 @@ import uuid
 DEFAULT_POLICY = "blind"
 DEFAULT_LIMIT = 2
 REFS = Path(__file__).resolve().parent.parent / "references"
+
+
+def turbo_module(optional=False):
+    helper = Path(__file__).resolve().parents[2] / 'turbo/scripts/turbo-state.py'
+    if optional and not helper.exists():
+        return None
+    spec = importlib.util.spec_from_file_location('turbo_state', helper)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
 # Known workflow-pressure forms, not a general semantic/injection detector.
 PRESSURE = re.compile(r"(?:last|final)\s+(?:review|round|attempt)|(?:round|review)[ _-]*(?:number|limit|[0-9]+)|"
                       r"(?:no more|remaining)\s+(?:repair|review|attempt)|最後.{0,5}(?:審|輪|次)|"
@@ -528,6 +540,9 @@ def claim(ticket):
         t, s = check_ticket(ticket, "reserved")
         s["rounds"][-1]["phase"] = "running"
         save(path, s)
+        turbo = turbo_module(optional=True)
+        if turbo:
+            turbo.checkpoint_from_environment(path, s['repos'], t['token'], event='started')
         return t
 
 
@@ -575,10 +590,16 @@ def finish(ticket, results):
             if s["rounds"] and s["rounds"][-1]["token"] == t["token"]:
                 s["rounds"][-1]["phase"] = "invalid"
                 save(path, s)
+                turbo = turbo_module(optional=True)
+                if turbo:
+                    turbo.checkpoint_from_environment(path, s['repos'], t['token'], event='failed')
             raise
         last = s["rounds"][-1]
         last.update(phase="complete", results=results, repos_after=snapshots(t["plan"], t["repos"]))
         save(path, s)
+        turbo = turbo_module(optional=True)
+        if turbo:
+            turbo.checkpoint_from_environment(path, s['repos'], t['token'])
         return {"review_valid": True, "started": len(s["rounds"]), "remaining": s["max_rounds"] - len(s["rounds"]),
                 "findings": findings(last)}
 
@@ -604,9 +625,31 @@ def restart(plan, evidence, expected_sha, policy=None, max_rounds=None):
         return s
 
 
+def delegated_reentry(plan, request, expected_sha):
+    """Opt-in renewal; never reinterpret an agent recommendation as a new user turn."""
+    with locked(plan) as path:
+        if digest(path.read_bytes()) != expected_sha:
+            raise ValueError('stale-delegated-request')
+        s = status(plan)
+        if len(s['rounds']) < s['max_rounds'] or any(r['phase'] != 'complete' for r in s['rounds']):
+            raise ValueError('finish the original bounded batch before delegated reentry')
+        authority = turbo_module().consume_request(request, path, 'deep-plan', s['repos'], expected_sha, plan)
+        s['previous_batches'].append({'batch': s['batch'], 'rounds': s['rounds'],
+                                     'policy': s['policy'], 'max_rounds': s['max_rounds'],
+                                     'delegation': authority})
+        s['rounds'] = []
+        s['batch'] += 1
+        s['policy'] = authority['mode']
+        # Blind still has its established two-round limit; renewal never enlarges a batch.
+        if s['policy'] == 'blind':
+            s['max_rounds'] = DEFAULT_LIMIT
+        save(path, s)
+        return s
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("action", choices=["open", "prepare", "claim", "finish", "status", "restart"])
+    p.add_argument("action", choices=["open", "prepare", "claim", "finish", "status", "restart", "delegated-reentry"])
     p.add_argument("--plan")
     p.add_argument("--repo", action="append")
     p.add_argument("--repair-document", action="append", help="exact canonical Markdown dependency; fixed at open")
@@ -620,6 +663,7 @@ def main():
     p.add_argument("--results")
     p.add_argument("--authorization-evidence")
     p.add_argument("--expected-state-sha")
+    p.add_argument("--input")
     a = p.parse_args()
     if a.action == "open":
         result = open_review(a.plan, a.repo or [], a.policy, a.max_rounds, a.count, a.repair_document)
@@ -631,6 +675,8 @@ def main():
         result = finish(a.ticket, read(a.results))
     elif a.action == "restart":
         result = restart(a.plan, a.authorization_evidence, a.expected_state_sha, a.policy, a.max_rounds)
+    elif a.action == "delegated-reentry":
+        result = delegated_reentry(a.plan, a.input, a.expected_state_sha)
     else:
         result = status(a.plan)
         result["state_sha256"] = digest(control_path(a.plan).read_bytes())

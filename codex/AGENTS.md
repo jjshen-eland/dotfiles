@@ -63,4 +63,5 @@ conventions, never its safety floor; stricter rules stack. Without a repo contra
 ## Explicit workflow pointers
 
 - Project lifecycle and shipping are explicit-only: use `$project spec` for an active contract, `$project transfer` for owner handoff, and `$project --pr` or `$project --merge` only when the user explicitly invokes that skill and endpoint.
+- An explicit current-goal turbo delivery delegation follows the sole authorization table in `~/.agents/skills/project/references/ship-policy.md`; on alone grants no delivery action.
 - Session-exit evidence is explicit-only: use `$ready4quit` only when the user explicitly invokes it. It audits readiness but does not ship repository changes.

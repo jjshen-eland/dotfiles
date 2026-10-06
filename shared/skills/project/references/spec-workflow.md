@@ -19,7 +19,10 @@
    `<runtime>:<workline>` 作 actor／steward；已有 steward 時必須 exact same-runtime resume，或由 exact human
    steward 以本輪 `as=` bounded delegation 建立 item（durable steward 保持 human actor）。尚未建立 feature
    branch 時 `Workspace` 先填 `unassigned`。普通身分宣稱、`--merge` 或「原 session 已退出」都不放行。
-5. 模糊處直接問，不猜。暫停則移到 `暫停中` 並寫可觀察的恢復條件。
+5. 模糊處直接問，不猜。當前使用者已委任 turbo 時，依
+   [Turbo execution contract](../../turbo/references/execution-contract.md) 補可驗證的預設與執行資訊；
+   同 Goal／acceptance 的一般做法由 agent 調查後選擇，改變需求解讀的歧義仍須依使用者已選預設判定。
+   暫停則移到 `暫停中` 並寫可觀察的恢復條件。
 6. Legacy repo 依自己的 STATUS schema 寫 spec，不強迫建立 history/backlog family。
 
 ### Spec 成功後的 Log invocation 提示

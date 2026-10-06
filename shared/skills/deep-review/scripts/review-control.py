@@ -12,6 +12,7 @@ import difflib
 import fcntl
 import hashlib
 import json
+import importlib.util
 import os
 from pathlib import Path
 import shutil
@@ -25,6 +26,16 @@ SCRIPTS = Path(__file__).resolve().parent
 ENV = dict(os.environ, GIT_OPTIONAL_LOCKS='0', PYTHONDONTWRITEBYTECODE='1')
 SEVERITIES = {'critical', 'high', 'medium', 'low'}
 RELATIONS = {'independent', 'unresolved-original', 'repair-introduced', 'repair-exposed', 'unknown'}
+
+
+def turbo_module(optional=False):
+    helper = SCRIPTS.parents[1] / 'turbo/scripts/turbo-state.py'
+    if optional and not helper.exists():
+        return None
+    spec = importlib.util.spec_from_file_location('turbo_state', helper)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 class Blocked(Exception):
@@ -300,7 +311,8 @@ def admit(state, args):
         covered.update(assignment['repos'])
     require(covered == repos, 'partition omits a confirmed repository')
     ticket = uuid.uuid4().hex
-    mode = policy['followup'] if args.reason == 'repair' else 'blind'
+    mode = (policy['followup'] if args.reason == 'repair' else
+            state.get('next_initial_mode', 'blind') if args.reason == 'initial' else 'blind')
     state['attempts'] += 1
     if args.reason == 'second':
         state['second_attempts'] += 1
@@ -318,7 +330,7 @@ def admit(state, args):
                                               'subject_files', 'working_tree_included', 'fingerprint')} for s in selected],
                   'concern': assignment['concern'], 'language': args.language}
         if mode == 'focused':
-            packet['repair'] = state['repair_packet']
+            packet['repair'] = state.get('repair_packet', {'original_findings': [f['raw'] for f in state['findings']]})
         path = Path(state['state']).parent / ('input-' + uuid.uuid4().hex + '.json')
         write(path, packet)
         state['pending']['packets'].append({'path': str(path), 'sha256': digest(packet), 'assignment': assignment['id']})
@@ -334,6 +346,17 @@ def dispatch(state, args):
     p['phase'] = 'dispatched'
     state['reviewer_count'] += len(p['assignments'])
     event(state, 'dispatched', ticket=p['ticket'])
+    turbo = turbo_module(optional=True)
+    if turbo:
+        context = turbo.live_context([s['repo'] for s in state['scopes']])
+        if context and context['runtime'] == 'codex':
+            p['native_required'] = True
+            save(state)
+        elif context and context['runtime'] == 'claude':
+            p['native_claude'] = {key: context[key] for key in ('runtime', 'session', 'generation')}
+            save(state)
+        turbo.checkpoint_from_environment(state['state'], [s['repo'] for s in state['scopes']],
+                                          p['ticket'], event='started')
     return {'ticket': p['ticket'], 'packets': [x['path'] for x in p['packets']]}
 
 
@@ -346,6 +369,18 @@ def finish(state, args):
         require(all(digest(read(x['path'])) == x['sha256'] for x in p['packets']), 'review packet drift')
         reports = read(args.input)
         require(isinstance(reports, list), 'results must be a list')
+        if p.get('native_required'):
+            proof = p.get('native_proof', {})
+            require(proof.get('input') == str(Path(args.input).resolve()) and
+                    proof.get('input_sha256') == hashlib.sha256(Path(args.input).read_bytes()).hexdigest()
+                    and proof.get('scope') == p['scope'],
+                    'Turbo Codex requires native-review process evidence; author reports are not independent reviews')
+            require(len(proof.get('processes', [])) == len(reports), 'native process set incomplete')
+            for process, report in zip(proof['processes'], reports):
+                require(process['exit'] == 0 and process['thread_id'] == report['reviewer'] and
+                        process['assignment'] == report['assignment'] and process['report'] == report['report'] and
+                        all(hashlib.sha256(Path(process[k]).read_bytes()).hexdigest() == process[k + '_sha256']
+                            for k in ('trace', 'report')), 'native process/report evidence drift')
         expected = {a['id']: a for a in p['assignments']}
         require(len(reports) == len(expected) and {r['assignment'] for r in reports} == set(expected),
                 'partial or duplicate result set')
@@ -358,6 +393,15 @@ def finish(state, args):
             require(r['result'] == 'complete', 'review incomplete')
             raw = Path(r['report']).read_text()
             require(raw.strip(), 'empty original report')
+            if p.get('native_claude'):
+                turbo = turbo_module()
+                native_path, original = turbo.native_report(p['native_claude'], state['state'],
+                                                           p['ticket'], r['reviewer'])
+                # Keep the submitted text explicitly separate; never call it the original.
+                r['submitted_report'] = r['report']
+                if raw != original:
+                    r['author_summary'] = raw
+                r['report'], raw = native_path, original
             require(isinstance(r['findings'], list), 'findings must be a list')
             ids = set()
             for f in r['findings']:
@@ -379,6 +423,7 @@ def finish(state, args):
             state['second_done'] = True
         else:
             state['primary_valid'] = True
+            state.pop('next_initial_mode', None)
         state['pending'] = None
         state['repair_ready'] = False
         state['verdict'] = result_verdict(state)
@@ -389,7 +434,14 @@ def finish(state, args):
         state['verdict'] = 'BLOCKED'
         state.pop('receipt', None)
         event(state, 'invalid-result', ticket=p['ticket'], reason=str(error))
+        turbo = turbo_module(optional=True)
+        if turbo:
+            turbo.checkpoint_from_environment(state['state'], [s['repo'] for s in state['scopes']],
+                                              p['ticket'], event='failed')
         raise Blocked(str(error))
+    turbo = turbo_module(optional=True)
+    if turbo:
+        turbo.checkpoint_from_environment(state['state'], [s['repo'] for s in state['scopes']], p['ticket'])
     return summary(state)
 
 
@@ -679,9 +731,11 @@ def terminal_dispose(state, args):
     return {'terminal': 'DISPOSED', 'receipt': str(path), 'shipping_authorized': False}
 
 
-def new_batch(state, args):
+def new_batch(state, args, delegated=False):
+    before_subject = scope_identity(state['scopes'])
     authorization = Path(args.authorization).read_text().strip() if args.authorization else ''
-    require(authorization, 'explicit current user instruction required; a helper flag is not authorization')
+    if not delegated:
+        require(authorization, 'explicit current user instruction required; a helper flag is not authorization')
     require(state['pending'] is None, 'cannot abandon an active dispatch')
     failed_repair = state['repair']
     if failed_repair is not None:
@@ -707,8 +761,29 @@ def new_batch(state, args):
             state['repair_ready'] = False
             state.pop('receipt', None)
     fresh(state)
+    authority = None
+    if delegated:
+        require(args.input and args.expected_state_sha, 'delegated request and state binding required')
+        require(hashlib.sha256(Path(state['state']).read_bytes()).hexdigest() == args.expected_state_sha,
+                'stale delegated review state')
+        primary_limit = 1 + (state['policy']['repair_limit'] if state['policy']['route'] == 'full' else 0)
+        require((state['policy']['autofix'] and state['policy']['repair_limit'] > 0 and
+                 state['repairs'] >= state['policy']['repair_limit']) or
+                state['attempts'] - state['second_attempts'] >= primary_limit,
+                'original review budget remains; use its existing transitions')
+        authority = turbo_module().consume_request(args.input, state['state'], 'deep-review',
+                                                  [s['repo'] for s in state['scopes']], args.expected_state_sha)
+        authorization = authority['instruction']
+        if scope_identity(state['scopes']) != before_subject:
+            invalidate_open_dispositions(state)
+            state['primary_valid'] = state['second_done'] = state['repair_ready'] = False
+            state.pop('receipt', None)
     state['history'].append({'batch': state['batch'], 'attempts': state['attempts'], 'repairs': state['repairs'],
-                             'verdict': state['verdict'], 'authorization': authorization, 'failed_repair': failed_repair})
+                             'verdict': state['verdict'], 'authorization': authorization,
+                             'delegation': authority, 'policy': dict(state['policy']), 'failed_repair': failed_repair})
+    if authority:
+        state['policy']['followup'] = authority['mode']
+        state['next_initial_mode'] = authority['mode']
     state['batch'] = uuid.uuid4().hex
     state['attempts'] = state['repairs'] = state['second_attempts'] = 0
     state['verdict'] = 'BLOCKED'
@@ -716,11 +791,53 @@ def new_batch(state, args):
     return summary(state)
 
 
+def invalidate_open_dispositions(state):
+    for finding in state['findings']:
+        if finding['open']:
+            if finding['disposition'] is not None:
+                finding.setdefault('disposition_history', []).append(finding['disposition'])
+            finding['disposition'] = None
+            finding['recheck'] = True
+
+
+def refresh_subject(state, args):
+    require(state['pending'] is None and state['repair'] is None, 'finish pending dispatch/repair first')
+    require(args.input and args.expected_state_sha and
+            hashlib.sha256(Path(state['state']).read_bytes()).hexdigest() == args.expected_state_sha,
+            'current single-use subject refresh binding required')
+    require(all(s['mode'] != 'range' for s in state['scopes']), 'immutable range cannot be refreshed')
+    primary_limit = 1 + (state['policy']['repair_limit'] if state['policy']['route'] == 'full' else 0)
+    require(state['attempts'] - state['second_attempts'] < primary_limit,
+            'review capacity exhausted; use legal delegated-reentry with current manifests instead')
+    before = state['scopes']
+    after = [capture_after(s) for s in before]
+    require(scope_identity(after) != scope_identity(before), 'current subject has no changed content')
+    authority = turbo_module().consume_request(args.input, state['state'], 'deep-review',
+                                               [s['repo'] for s in before], args.expected_state_sha,
+                                               transition='refresh-subject')
+    state['scopes'] = persist_scopes(after, Path(state['state']).parent)
+    state['primary_valid'] = state['second_done'] = state['repair_ready'] = False
+    state['verdict'] = 'BLOCKED'
+    state.pop('receipt', None)
+    state['next_initial_mode'] = authority['mode']
+    invalidate_open_dispositions(state)
+    event(state, 'subject-refreshed', before=scope_identity(before), after=scope_identity(after), delegation=authority)
+    return summary(state)
+
+
+def native_review(state, args):
+    spec = importlib.util.spec_from_file_location('native_review_transport', SCRIPTS / 'native-review.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.launch(sys.modules[__name__], state, args)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=['open', 'status', 'admit', 'dispatch', 'finish', 'assess',
                                          'repair-start', 'check', 'repair-finish', 'new-batch',
-                                         'terminal-record', 'terminal-clear', 'terminal-status', 'terminal-dispose'])
+                                         'terminal-record', 'terminal-clear', 'terminal-status', 'terminal-dispose',
+                                         'delegated-reentry', 'refresh-subject', 'native-review'])
     parser.add_argument('--state')
     parser.add_argument('--manifest', action='append')
     parser.add_argument('--route', choices=['ordinary', 'full'], default='ordinary')
@@ -736,6 +853,8 @@ def main():
     parser.add_argument('--reason', default='initial')
     parser.add_argument('--language', default='user requested language')
     parser.add_argument('--authorization')
+    parser.add_argument('--expected-state-sha')
+    parser.add_argument('--review-model')
     args = parser.parse_args()
     try:
         if args.action == 'terminal-status':
@@ -764,6 +883,12 @@ def main():
                 elif args.action == 'terminal-dispose':
                     require(args.repo and args.input, '--repo and --input required')
                     result = terminal_dispose(state, args)
+                elif args.action == 'delegated-reentry':
+                    result = new_batch(state, args, delegated=True)
+                elif args.action == 'refresh-subject':
+                    result = refresh_subject(state, args)
+                elif args.action == 'native-review':
+                    result = native_review(state, args)
                 elif args.action.startswith('terminal-'):
                     result = terminal(state, args)
                 else:

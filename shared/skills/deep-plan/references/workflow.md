@@ -88,7 +88,10 @@ reviewer contexts。預設仍為盲審；focused policy 的 packet 由 helper �
 - Blocking findings 全部精確對應已接受且已記錄的 trade-offs：`GO`，逐條列殘留風險。
 - 有新 blocking finding 或舊 finding 未有效處置：`NO-GO`。
 
-達本批上限後停止，不因 NO-GO 自動換模式或重開。若阻斷集中在缺少的事實，先取得事實；若已動到 Goal、核心判準或架構，退回 spec/Goal 決策。Finding 變少不是收斂證據。
+達本批上限後停止，不因 NO-GO 自動換模式或重開。若當前使用者已以 turbo 委任同一 Goal 的作者修正與續批，
+改走 [Turbo exhausted review batches](../../turbo/references/workflow.md#exhausted-review-batches) 的
+`delegated-reentry`；原 journal、處置、上限與 reviewer 獨立性仍須保留。未啟用時維持原 controller 的明示 restart。
+若阻斷集中在缺少的事實，先取得事實；若已動到 Goal、核心判準或架構，退回 spec/Goal 決策。Finding 變少不是收斂證據。
 
 ## 6. Report
 

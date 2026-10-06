@@ -5979,6 +5979,14 @@ if grep -q "base 用 head" <<< "$spc_out" && grep -q "可能已過期" <<< "$spc
     ok "fetch 失敗 → base 建議帶「可能已過期」警告"
 else bad "fetch 失敗後的 base 建議未標示 ref 可能過期：$spc_out"; fi
 
+echo "▶ turbo session controls, native wiring and delegated review"
+if python3 -B "$ROOT/tests/turbo-mode.py" >"$TMP/turbo-mode.out" 2>&1; then
+    ok "turbo controls／native wiring／delegated review behavior oracle"
+else
+    cat "$TMP/turbo-mode.out"
+    bad "turbo behavior oracle failed"
+fi
+
 echo "▶ 16b. agent-turn-end-timestamp.sh（Claude Code／Codex Stop hook）"
 TET="$ROOT/scripts/agent-turn-end-timestamp.sh"
 tet_bin="$TMP/tet-bin"
@@ -6016,15 +6024,27 @@ else
     bad "turn-end timestamp hook script 不存在或不可執行：$TET"
 fi
 
+# SubagentStop may collect Turbo reviewer evidence, but must never emit main-agent
+# waiting notices. Check those commands instead of forbidding unrelated hooks.
+claude_subagent_quiet='
+    [(.hooks.SubagentStop // [])[] | .hooks[]?
+     | select(.command | contains("agent-turn-end-timestamp.sh") or contains("wait4me-hook.sh"))]
+    | length == 0
+'
 if jq -e \
-    --arg timestamp '"$HOME"/.dotfiles/scripts/agent-turn-end-timestamp.sh' \
+    --arg timestamp '"$HOME"/.dotfiles/scripts/agent-turn-end-timestamp.sh claude' \
+    --arg turbo 'python3 "$HOME"/.dotfiles/shared/skills/turbo/scripts/turbo-state.py hook Stop --runtime claude' \
     --arg wait4me 'WAIT4ME_ENV_FILE="$HOME/Projects/krepo/.env" "$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh stop' '
     .hooks.Stop == [{hooks: [
         {type: "command", command: $timestamp, timeout: 3},
         {type: "command", command: $wait4me, timeout: 5, async: true}
-    ]}]
-    and (.hooks.SubagentStop == null)
-' "$ROOT/claude/settings.json" >/dev/null 2>&1; then
+    ]}, {hooks: [{type: "command", command: $turbo, timeout: 5}]}]
+' "$ROOT/claude/settings.json" >/dev/null 2>&1 \
+    && jq -e "$claude_subagent_quiet" "$ROOT/claude/settings.json" >/dev/null 2>&1 \
+    && ! jq -e ".hooks.SubagentStop = [{hooks: [{command: \"agent-turn-end-timestamp.sh\"}]}] | $claude_subagent_quiet" \
+        "$ROOT/claude/settings.json" >/dev/null 2>&1 \
+    && ! jq -e ".hooks.SubagentStop = [{hooks: [{command: \"wait4me-hook.sh stop\"}]}] | $claude_subagent_quiet" \
+        "$ROOT/claude/settings.json" >/dev/null 2>&1; then
     ok "Claude Code 主 agent Stop 同時接線 timestamp 與 wait4me"
 else bad "Claude Code Stop hook 未精確接線 timestamp／wait4me"; fi
 
@@ -6038,7 +6058,7 @@ codex_tet_expected='[[hooks.Stop]]
 
 [[hooks.Stop.hooks]]
 type = "command"
-command = '\''"$HOME"/.dotfiles/scripts/agent-turn-end-timestamp.sh'\''
+command = '\''"$HOME"/.dotfiles/scripts/agent-turn-end-timestamp.sh codex'\''
 timeout = 3
 
 [[hooks.Stop.hooks]]
@@ -6522,8 +6542,8 @@ if jq -e \
     and ([.hooks.PermissionRequest[].hooks[] | select(.command == $permission and .async == true)] | length) == 1
     and ([.hooks.Stop[].hooks[] | select(.command == $stop and .async == true)] | length) == 1
     and ([.hooks.SessionEnd[].hooks[] | select(.command == $end)] | length) == 1
-    and (.hooks.SubagentStop == null)
 ' "$ROOT/claude/settings.json" >/dev/null 2>&1 \
+    && jq -e "$claude_subagent_quiet" "$ROOT/claude/settings.json" >/dev/null 2>&1 \
     && [ "$codex_wait4me_prompt" = "$codex_wait4me_prompt_expected" ] \
     && grep -q '^\[\[hooks\.UserPromptSubmit\]\]$' "$ROOT/codex/config.toml" \
     && grep -q '^\[\[hooks\.PermissionRequest\]\]$' "$ROOT/codex/config.toml" \
@@ -9536,7 +9556,7 @@ if grep -q 'local=ok remote_ok=1 remote_failed=0' <<< "$out"; then ok "dotsync �
 
 echo "▶ 28. neutral shared skill core topology"
 SHARED_SKILLS="$ROOT/shared/skills"
-portable_skills="check-crawl-quality deep-plan handoff nc-notify ready4quit root-cause-first send-mail wait4me"
+portable_skills="check-crawl-quality deep-plan handoff nc-notify ready4quit root-cause-first send-mail turbo wait4me"
 if [ -d "$SHARED_SKILLS" ] && [ -z "$(find "$SHARED_SKILLS" -name SKILL.md -print 2>/dev/null)" ]; then
     ok "shared skill core 存在且不暴露 runtime entry"
 else bad "shared skill core 缺漏或誤放 SKILL.md"; fi

@@ -45,6 +45,16 @@
             "timeout": 3
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME\"/.dotfiles/shared/skills/turbo/scripts/turbo-state.py hook SessionStart --runtime claude",
+            "timeout": 5
+          }
+        ],
+        "matcher": "startup|clear|resume|compact|fork"
       }
     ],
     "UserPromptSubmit": [
@@ -53,6 +63,15 @@
           {
             "type": "command",
             "command": "WAIT4ME_ENV_FILE=\"$HOME/Projects/krepo/.env\" \"$HOME\"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh prompt",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME\"/.dotfiles/shared/skills/turbo/scripts/turbo-state.py hook UserPromptSubmit --runtime claude",
             "timeout": 5
           }
         ]
@@ -68,6 +87,15 @@
             "async": true
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME\"/.dotfiles/shared/skills/turbo/scripts/turbo-state.py hook PermissionRequest --runtime claude",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "Stop": [
@@ -75,7 +103,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$HOME\"/.dotfiles/scripts/agent-turn-end-timestamp.sh",
+            "command": "\"$HOME\"/.dotfiles/scripts/agent-turn-end-timestamp.sh claude",
             "timeout": 3
           },
           {
@@ -83,6 +111,15 @@
             "command": "WAIT4ME_ENV_FILE=\"$HOME/Projects/krepo/.env\" \"$HOME\"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh stop",
             "timeout": 5,
             "async": true
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME\"/.dotfiles/shared/skills/turbo/scripts/turbo-state.py hook Stop --runtime claude",
+            "timeout": 5
           }
         ]
       }
@@ -94,6 +131,38 @@
             "type": "command",
             "command": "\"$HOME\"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh session-end",
             "timeout": 3
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME\"/.dotfiles/shared/skills/turbo/scripts/turbo-state.py hook SessionEnd --runtime claude",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME\"/.dotfiles/shared/skills/turbo/scripts/turbo-state.py hook SubagentStop --runtime claude",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME\"/.dotfiles/shared/skills/turbo/scripts/turbo-state.py hook PreToolUse --runtime claude",
+            "timeout": 5
           }
         ]
       }

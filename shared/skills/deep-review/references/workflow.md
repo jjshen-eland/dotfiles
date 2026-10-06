@@ -10,6 +10,12 @@ Treat review as read-only unless the user explicitly asks to fix confirmed
 findings. Phrases such as “before I push”, “make sure it is safe”, or “review
 this” do not authorize edits, staging, commits, pushes, or merges.
 
+An actual current-user turbo delegation for this same goal includes author repair;
+load [Turbo controls and authority](../../turbo/references/workflow.md#controls-and-authority)
+and select `--autofix` when opening the controller after ownership is verified.
+It does not select a second opinion or grant shipping actions. Initial blind review
+and the original repair limit remain unchanged; delegated mode choice is for renewal.
+
 Track these independent choices:
 
 - **Scope:** repositories, commit range, paths, or explicit full-repository audit.
@@ -337,6 +343,13 @@ batch. Exhaustion stops dispatch; only a new explicit user instruction permits
 `new-batch`, preserving evidence. Recommend focused for an already verified local
 repair with a valid baseline, blind for a newly confirmed changed/invalid scope;
 do not infer the mode solely from the count or a failed verdict.
+
+When the actual current user enabled turbo for this goal, its delegation includes
+author repair and choosing focused/blind renewal. Follow
+[Turbo exhausted review batches](../../turbo/references/workflow.md#exhausted-review-batches)
+and use `delegated-reentry` after the existing budget is exhausted. Keep ordinary
+`new-batch` authorization unchanged. Reviewer isolation, scope, owned writes,
+autofix preflight and terminal/PASS rules still apply. Turbo-off keeps the defaults.
 
 If the primary review passed but the requested second reviewer produced no valid
 result, retain `Primary: PASS`, mark `Second review: BLOCKED`, and use top-level

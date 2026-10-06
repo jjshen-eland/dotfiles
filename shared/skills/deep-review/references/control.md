@@ -55,7 +55,11 @@ with no parent conclusions or extra lifecycle commentary. Keep ticket/state path
 counts, policies and this protocol out of reviewer inputs. Never launch after a
 failed gate. A partial or invalid result consumes its attempt; it is not a refund.
 
-Save original reports and native reviewer identities, then submit a complete set:
+Save each reviewer's complete original report text verbatim, including scope,
+commands and non-finding observations, and reference it in the controller input.
+A separately labelled author summary does not replace that original. Native
+structured reports may retain the exact original text in their `report` field.
+Preserve native reviewer identities, then submit a complete set:
 
 ```json
 [{"assignment":"source","reviewer":"native-unique-id","result":"complete","report":"/outside/target/report.txt","findings":[{"id":"F1","severity":"medium","location":"a.py:12","trigger":"concrete input","impact":"wrong output","evidence":"source or executed probe"}]}]
@@ -70,6 +74,20 @@ Malformed/partial sets, reused identities, packet mutation or subject drift yiel
 BLOCKED and no valid receipt. Original report text and raw severities are retained;
 structured extraction must faithfully match them. The helper cannot certify a
 model's claim that it inspected a file or reported every finding.
+
+For a dispatch bound to active Codex turbo, use `native-review --state <file>
+--ticket <already-dispatched-ticket>` instead of author-assembled `finish` results.
+This transport launches real fresh read-only Codex processes, retains raw JSONL,
+native thread IDs and report hashes, and admits only their complete current set.
+Failure or cancellation retains the spent attempt. `--review-model` may carry an
+explicit reviewer model choice; otherwise use the native default. Off-mode review
+retains its ordinary collection protocol. Active Claude turbo keeps fresh native
+Agents; its synchronous `SubagentStop` collector saves each complete final report
+outside targets, bound to the native session, generation, dispatched ticket and
+reviewer identity. `finish` retains that exact native text as `raw_report` and
+references its capture artifact. A different author-submitted report remains a
+separately labelled `author_summary`, never the original. Missing captures block
+the spent attempt without refund; do not replace them with author recollection.
 
 Independently verify every new finding, then submit dispositions using controller
 finding IDs from `status` (not the reviewer's local `F1`):
@@ -162,6 +180,26 @@ blind scope: pass every new manifest to `new-batch` with the explicit scope-chan
 instruction, then use `admit --reason initial`. Open earlier findings require
 revalidation and cannot silently disappear. A mode recommendation is separate
 from authorization to dispatch.
+
+The separate turbo `delegated-reentry` API consumes the original current-goal
+delegation through [Turbo exhausted review batches](../../turbo/references/workflow.md#exhausted-review-batches).
+It accepts `--input <request> --expected-state-sha <sha>` and the same `--state`;
+when changed scope is independently confirmed, include every new `--manifest`.
+Do not put an agent recommendation into ordinary `--authorization`.
+
+For an in-scope author acceptance repair outside the blocking-finding autofix
+transition, turbo may use `refresh-subject --state <file> --input <request>
+--expected-state-sha <sha>` with a request bound to `refresh-subject`. It requires
+remaining primary capacity and no pending dispatch/repair, captures the same roots,
+selected paths and original baseline, revokes the old receipt and keeps all
+counters, findings and historical sets. It cannot refresh a historical range or
+refill a cap. Use `admit --reason initial` and independently verify the current
+subject; past low findings remain recorded and Goal acceptance remains separate.
+Changed-subject turbo renewal/refresh archives each open original disposition and
+requires its independent recheck. If the original trigger is already fixed in the
+captured current bytes, assess it as `resolved` with evidence; do not start a new
+repair merely to verify an already-fixed subject. A repair-finish still requires
+real delta and never refunds an incorrectly spent attempt.
 
 After editing an authorized target, persist a stopped review with
 `terminal-record --state <file> --repo <repo> --reason blocking-findings` (or
