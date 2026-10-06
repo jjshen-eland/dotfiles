@@ -14,8 +14,8 @@
 分類前完整閱讀 reviewer contract：
   {BRIEF_ABSOLUTE_PATH}
 
-不要改寫計畫。以繁體中文輸出：
-1. Findings；每條必含問題、層別（可查證／判斷）、嚴重度（阻斷／高／中／低）與證據（檔案:行號或命令結果）。
-2. 已查證為真的宣稱。
-3. 需要外部服務、production data 或即時網路而未驗證的宣稱。
-4. 最後一句說明目前是否建議開始執行。
+不要改寫計畫。輸出一個 JSON object，只有以下四個欄位；敘述與證據用繁體中文：
+- findings：array；每條 object 恰含 issue、layer（verifiable／judgment）、severity（blocker／high／medium／low）、evidence（非空 string array）。判斷層 finding 也須有具體檔案:行號或命令結果；缺依據者列在 unverified_claims，不省略欄位或交由他人補造。
+- verified_claims：string array，已查證為真的宣稱。
+- unverified_claims：string array，需外部或尚無依據而未驗證的宣稱。
+- recommendation：start／do_not_start，依 brief 給出目前建議。

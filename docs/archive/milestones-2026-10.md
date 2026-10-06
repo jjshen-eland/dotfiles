@@ -303,3 +303,51 @@
   - 放棄:同一 commit 建立又移除唯一 assignment；把既有成功 log 的當前 snapshot 冒充過去 inputs；僅以 local suite 綠就跳過當前 PR HEAD required CI；未到 endpoint 就宣稱 shipped
   - 重議:completion candidate authority、doc audit 或當前 PR HEAD required checks 失敗；必要原 scope 內 CI 修復依同批授權接續，不重置額度
   - 關聯:turbo-skill;62c1f88;aee046f;M-20261006-turbo-skill-local;M-20261006-turbo-public-help;docs/plans/2026-10-05-turbo-skill.md
+
+- **M-20261006-runtime-layout-plan-preflight · 2026-10-06 Runtime 收斂計畫、真實集合盤點與差異重現已建立**：依使用者「開工」在 `refactor/runtime-layout-convergence` 撰寫本項唯一 implementation plan；兩份 setup、dotsync 本機／遠端及 brewup 納入共用部署，sysup 因只有 apt 不新增 runtime 階段。隔離執行原 Codex helper／setup link 函式均 exit 0，但 Claude 新 entry 缺失、rules 仍為整 root link、既有 runtime approval bytes 遺失，證實差異不能由 exit 0 判完成。14 目標唯讀盤點全數成功、revision 皆為 `338da91`；正式 handoff store 均不存在，新增雙 store 合併放行格目前為零。legacy-only 為 eagle06（6 檔）、macs（18 檔）、db01（0 檔）、macmini（1 檔）；本機 snapshot 有 runtime processes，不具 offline migration 條件。deep-plan 兩輪各兩位 fresh reviewers、transport／admission 有效；集合證據及跨 active/archive 再啟用風險已補正，第二輪新增的 CI assertion manifest／parallel runner 相依已補入計畫，本批仍 NO-GO、等待明示修後續審。尚未實作、變更 runtime、commit 或散佈。
+  - 日期來源:direct
+  - 放棄:以同相對路徑無碰撞推定雙 store 無生命週期衝突；只跑 serial suite 即推定平行 CI 可用；未遷移 fleet 就移除 handoff fallback
+  - 重議:同範圍修後續審通過後實作；部署前重新盤點 writer／data snapshot，不把此次量測當 quiescence 授權
+  - 關聯:STATUS.md;docs/plans/2026-10-06-runtime-layout-convergence.md;D-20260823-portable-handoff-skill;M-20261001-pr249-shard-manifest-synchronized
+
+- **M-20261006-deep-plan-repair-evidence-spec · 2026-10-06 #271 合法文件續審修復規格已建立**：使用者明示 `$project spec #271` 後，由現有 `codex:runtime-layout-convergence` steward 建立獨立 active contract，涵蓋 focused repair、blind restart、合法文件 checkpoint、fresh native reviewers／admission 及反向 controls。Runtime 收斂的新批已依原始使用者選項 restart，prepare 尚未保留 ticket 就因 STATUS delta 的「第一輪／第二輪」被 `no_pressure` 拒絕；與 #271 本文／補充的直接因果一致，沒有新 reviewer 結果。完整續審流程是否還有缺口列為待查證，沒有宣稱已修好或 GO；runtime 計畫／原 journal／findings 保留，待此修復後合法接續。本輪只有規格與必要 active-state 更新，沒有 code／commit／外向動作。
+  - 日期來源:direct
+  - 放棄:另開重複 issue；只讓某個詞通過就宣告完整流程已修好；刪改 canonical 歷史、換 blind 或重建 journal 迴避拒絕
+  - 重議:原 RED、#264 checkpoint、native lifecycle 或反向 controls 仍未通過時維持未完成；新因果證據才調整最小修法
+  - 關聯:#271;#264;#268;STATUS.md;D-20261003-deep-plan-controller-adoption;D-20261005-deep-plan-document-repair-baseline;M-20261005-deep-plan-document-repair-local;M-20261006-runtime-layout-plan-preflight
+
+- **M-20261006-deep-plan-repair-evidence-preflight · 2026-10-06 #271 原行為重現與獨立計畫查證完成、續審自我依賴已定位**：現行來源的合法歷史矩陣 12 assertion failures、forged document data 1 failure 均保留；Turbo 前 #268 合併版相同合法矩陣仍 12 failures、0 errors，排除 Turbo 是本拒絕來源。未實作計畫取得兩份 fresh、完整、有效 admission 的查證；canonical 指令未取得命令權限的完成判定有一條可查證 medium 與一條同根因判斷 medium 建議，已補 native 固定 blocker／指令 fixture oracle。修後 prepare 未保留新 ticket：document delta 無壓力命中，卻將原 reviewer finding 引用的「最後一次審查」判為 `review-pressure-in-input`。沒有新 reviewer、GO 或修復程式；原 journal／findings 留存，需明示改採 bootstrap 修復及修後續審順序。
+  - 日期來源:direct
+  - 放棄:因歷史字詞消失就假稱合法續審；刪改 reviewer 原始 finding 以取得 ticket；重建 journal；把有效 initial reviewer set 當修後 GO
+  - 重議:使用者明示 bootstrap／續審順序後再修；原 RED、反向 controls、完整 native lifecycle 或 admission 仍失敗時維持未完成
+  - 關聯:#271;deep-plan-repair-evidence;docs/plans/2026-10-06-deep-plan-repair-evidence.md;D-20261006-deep-plan-evidence-control-boundary;M-20261006-deep-plan-repair-evidence-spec
+
+- **M-20261006-deep-plan-bootstrap-native-red · 2026-10-06 使用者授權 bootstrap、最小邊界修復與 native RED 已保留**：使用者選 `1`，授權先在 #271 feature branch 修最小 data／control 邊界、驗證與獨立 code review，再沿原 journal 新批續審；不授權 shipping。合法歴史矩陣及 forged data／caller pressure／原 finding controls 已轉綠；獨立 code review 的 bytecode 自製 source drift 有新 assertion RED，修為不寫 cache 的 source import，保留真正 bytes／link drift 檢查。Native Codex 原生 baseline 與 committed repair／focused admission 有效，未修完的 fixture suite finding 仍正確 NO-GO；新批 canonical GO／降級指令有完整 delta，兩位 fresh reviewers 均保留 wire blocker、揭露實際 exposure。Claude 原生首輪因 reviewer 判斷層 findings 缺 evidence 被 parent／controller 正確拒絕，invalid journal 與原文未改；共同 template 以原四欄 typed JSON contract 承重，再以改版 source／新 fixture 驗證。此時尚無雙端完整 GREEN 或原 #271 修後 GO。
+  - 日期來源:direct
+  - 放棄:把 code review 後作者修正說成第二份獨立 PASS；補造缺失 reviewer evidence；重派原 invalid ticket；以移動中的 suite 輸入宣稱最終快照全綠
+  - 重議:完整 native lifecycle／反向 controls 與最終 repo checks 通過，再以原 journal 做使用者已授權的新批計畫續審；任一相關有效性缺口未修前維持未完成
+  - 關聯:#271;deep-plan-repair-evidence;D-20261006-deep-plan-evidence-control-boundary;M-20261006-deep-plan-repair-evidence-preflight
+
+- **M-20261006-deep-plan-bootstrap-verified · 2026-10-06 #271 bootstrap 與雙端完整原生驗證完成**：最小 source-bound data／caller-control 修復保留原 findings、canonical 歷史與所有非文件／checkpoint／ticket guards。41 routing tests、repair-context、双入口 validator 通過；完整 serial／parallel 各 exit 0、1570 PASS／0 FAIL，受測 source snapshot 在執行中取得且至完成無 repo 編輯。改版 source 的 native gpt-6.1-sol／claude-opus-5-5[1m] 共 14 有效 complete sets、28 不同 IDs，實際 blocking baseline 經合法作者修正／文件 checkpoint 到 focused admission 與同 journal 明示新批 blind；新 finding 正常判 NO-GO，不以結果有效冒充 GO。Canonical GO／降級指令反例四位均保留可查證 blocker，source identity 未改。原始資料在 `/tmp/issue-271-native-v2-20261006/`、suite logs／evidence 在 `/tmp/issue-271-final-{serial,parallel}-evidence.json`；固定 oracle 不外推通用抗注入，canonical exposure、Claude control 部分 baseline metadata exposure 及 directive 額外 checkpoint 澄清均保留。獨立 code review 的 bytecode drift 與 consumer suite 缺漏已由作者修復驗證；修後 assess 因 scope drift 拒絕，沒有修後獨立 PASS receipt。下一步執行使用者已授權的原 #271 journal 新批計畫續審，尚無其 gate 或 shipping。
+  - 日期來源:direct
+  - 放棄:把 native fixture GO 當原 #271 計畫 GO；宣稱 canonical 歷史完全隔離；把執行中 snapshot 說成啟動前 capture；冒稱修後獨立 code-review PASS
+  - 重議:原 journal 續審依實際完整 findings 判 gate；新增實質 code 或驗證缺口才擴大測試，suite 後驗收文件更新另經文件 audit
+  - 關聯:#271;deep-plan-repair-evidence;M-20261006-deep-plan-bootstrap-native-red;D-20261006-deep-plan-evidence-control-boundary
+
+- **M-20261006-deep-plan-bootstrap-reentry-gate · 2026-10-06 #271 授權原 journal 續審有效、本批 NO-GO 與文件處置已留證**：按使用者選項 `1` 保留原 journal 的舊結果、IDs、baseline、policy／count／cap 後 restart；兩輪各兩位 fresh reviewers、同 prompt、read-only snapshots／artifact hashes 與 admission 均有效。第一輪两位皆有 verifiable medium，同根因為 shared workflow／現行 eval oracle 的隔離宣稱未同步（eval 2/2、workflow 1/2），已補原計畫的剩餘相依工作。第二輪一位新增 STATUS 第 3 項驗收同類 medium、另一位無 findings，依法為 NO-GO；已核對并修正 STATUS 與原計畫的資料／控制措辭，原分類／結果未改。兩份 skill 文件維持未改，不能將計畫處置當成修後實作驗收；本批額度已滿，Turbo 未啟用，未再派 reviewer。原始 manifest／處置為 `/tmp/issue-271-plan-reentry-review-{1,2}.json` 與 `/tmp/issue-271-plan-reentry-dispositions-1.json`；下一批建議同範圍 focused，需新的使用者明示授權，不用舊 `1` 再授權一批。
+  - 日期來源:direct
+  - 放棄:因已有測試全綠而忽略新的活契約矛盾；按較有利 reviewer verdict 判 GO；同批 stealth 修改 protected skill 檔；自動續批或重設 journal
+  - 重議:同 Goal 文件處置取得新授權後沿原 journal 查證；GO 後同步剩餘 workflow／eval oracle 與必要驗證
+  - 關聯:#271;deep-plan-repair-evidence;M-20261006-deep-plan-bootstrap-verified;D-20261006-deep-plan-evidence-control-boundary
+
+- **M-20261006-deep-plan-focused-go · 2026-10-06 #271 明示新批續審 GO、剩餘契約同步已實作**：使用者再次選 `1` 明示同 Goal focused 續審，原 journal 保留前兩批、原 IDs／結果／policy／cap，新批 policy focused、N=2、最多兩輪。Focused 修後查證無 findings，無新修正時依 controller 用獨立查證完成第二輪；四份 fresh typed results／transport／admission 均有效、零 findings，gate GO。原始結果為 `/tmp/issue-271-focused-review-{1,2}.json`，授權原文記錄為 `/tmp/issue-271-focused-authorization-20261006.json`；不把 reviewer 建議當授權。隨後同步 workflow 及現行 eval oracle 的過度隔離宣稱，限定不額外投影 reviewer results／controller 壓力，保留 canonical 歷史及 exposure 邊界。Code／reviewer prompt 未變；bootstrap native 證據仍綁原 source，不外推最終文件 identity，正進行最後文件與 repo 驗證。
+  - 日期來源:direct
+  - 放棄:無 finding 時偽造 repair packet；把新批 policy 寫成正式預設已改；重寫前批 NO-GO；以計畫 GO 冒充最終驗收或 shipping 授權
+  - 重議:最終 diff 改變 runtime 行為／判準時須新 oracle 與必要雙端 forward；純隔離宣稱修正以 source／prompt hashes、回歸與文件 audit 驗收
+  - 關聯:#271;deep-plan-repair-evidence;M-20261006-deep-plan-bootstrap-reentry-gate;D-20261006-deep-plan-evidence-control-boundary
+
+- **M-20261006-deep-plan-repair-local-completion · 2026-10-06 #271 本地修復、計畫續審與最終驗收完成**：合法 canonical 歷史／原 finding 保留，caller 控制與來源核對分離，非法漂移、checkpoint／ticket／typed results／cap guards 保持。原 journal 的明示 focused 新批兩輪／四位 fresh reviewers 無 findings、gate GO；其後完成 workflow／現行 eval oracle 的隔離宣稱同步，未改 code／reviewer prompts 或正式 defaults。最終 serial／parallel 各 terminal exit 0、1570 PASS／0 FAIL；373 輸入於啟動前凍結，完成後完全一致，兩端 validator、文件／xref 與 diff 檢查通過。完整 logs／fingerprints：`/tmp/issue-271-contract-sync-{serial,parallel}-evidence.json`，snapshot SHA `b281d296216a7b2a75ba2ee1cf31949d064d643498b6be3eaa1ad619b1823482`。Native bootstrap 的 14 sets／28 IDs 與限制保持，最終 frozen-source 比對僅 workflow 說明不同，code／reviewer prompt／entries／schemas bytes 相同；eval oracle 未向 native 受測者提供。此後的 STATUS／計畫／milestone 結案文字另經文件 audit，不以全套 REUSE 掩蓋文件差異。計畫 implemented 並凍結，active assignment 留待本批 shipping；未 commit／push／PR／merge／部署，未修改原 NC／runtime journal，也未宣稱 fleet 遷移或修後獨立 code-review PASS。
+  - 日期來源:direct
+  - 放棄:用 bootstrap 快照代替最終文件版本測試；將 pure wording 同步冒稱新 native source 全綠；為零 prose findings 再重開 reviewer 批次；把本地驗收當外向授權
+  - 重議:真實合法續審仍拒絕、caller guard 被繞過、或 canonical 指令使 reviewer 漏／降級具體問題時，以新原始證據重現後修正；後續 shipping／跨工作線接續另核對當批授權及最新基線
+  - 關聯:#271;deep-plan-repair-evidence;M-20261006-deep-plan-focused-go;M-20261006-deep-plan-bootstrap-verified;D-20261006-deep-plan-evidence-control-boundary

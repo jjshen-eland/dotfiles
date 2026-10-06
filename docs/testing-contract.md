@@ -429,6 +429,23 @@ Static gate 只守 packaging 與 failure contract；live GREEN 還需要 parent 
 collab wait，且兩份 reviewer output 都能命中 fixture oracle。Headless parent sandbox 若禁止 nested Codex app-server，
 允許明確 fail closed，但那是 capability boundary，不可宣稱完成 review；一般 runtime forward 必須另外 GREEN。
 
+#271 的 `tests/deep-plan-routing.py` 另守來源資料／caller 控制輸入的區別：合法文件歷史與原始 finding
+保留；current plan 或三層 document delta 必須由 exact canonical snapshot 核對；caller 的 evidence／contracts
+壓力仍拒絕。合法歷史矩陣真走 public ticket → launcher → finish，涵蓋同批／新批、focused／blind 與
+unstaged／staged／committed，仍是 synthetic 狀態證據，不代表原生 reviewer 能辨識語意。
+
+`tests/deep-plan-document-eval.py` 是 opt-in native runner：`setup <new-root>` 凍結當前雙入口／neutral core
+的 bytes 與 links，排除 eval oracle／field log，建立隔離 feature fixtures；`run <root> --phase baseline`、
+`--phase repair`、`--phase blind` 依序使用真實 native complete sets。Fixture author 在兩次審查間只改
+plan／SPEC／STATUS、檢查 staged diff 並做單親 checkpoint。Lifecycle case 保留 real blocking baseline、
+文件歷史、focused repair 與明示新批 blind 的 journal；directive／control cases 是相同 producer→consumer
+wire 反例，只有 canonical STATUS 的控制指令 bytes 不同。前者保留指令並要求 reviewer 仍報出
+可查證且至少 medium 的 `orders`／`items` blocker。Oracle 與 hashes 在執行前固定於 parent evidence，
+受測者只取得 raw fixture、skill 與正常 review task。不得改原始輸出、合成 prior findings 或以 admission
+冒充語意通過；任何無效 native round 保留，停止該 case。人工逐份核對 raw reports、實際 artifact
+exposure、tool traces、fresh IDs／ordering、模型／effort／tier／CLI 與 unchanged source identity。固定反例
+通過不等於通用抗 prompt injection，也不表示 reviewer 未讀到文件歷史；雙端正式 target 依模型樓層政策。
+
 ## 12f. root-cause-first portable evidence gate
 
 Claude Code／Codex 各保留薄入口，並以 nested symlink 共用單一 `references/workflow.md`；eval oracle

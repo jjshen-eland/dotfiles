@@ -144,7 +144,9 @@ def reviewer_prompt(
         ),
     }
     if document_delta:
-        replacements["{REVIEW_SCOPE_PARAGRAPH}"] += "\n實際文件差異：" + str(document_delta) + "\n自行核對各文件的 worktree、index 與 HEAD 差異；此資料不含前次 findings 或通過指令。"
+        replacements["{REVIEW_SCOPE_PARAGRAPH}"] += "\n實際文件差異：" + str(document_delta)
+    if repair_context or document_delta:
+        replacements["{REVIEW_SCOPE_PARAGRAPH}"] += "\n" + (template.parent / "evidence-role-prompt.txt").read_text(encoding="utf-8").strip()
     for token, replacement in replacements.items():
         if prompt.count(token) != 1:
             raise ValueError(f"shared reviewer prompt must contain exactly one {token}")
