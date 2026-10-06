@@ -6,13 +6,23 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 # STATUS.md
 
-個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-10-05)
+個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-10-06)
 
 ---
 
 ## 進行中
 
-目前無進行中項目。
+### turbo-skill
+
+- **Writer**：`codex:turbo-skill-plan`
+- **Workspace**：`branch=docs/turbo-skill-plan`
+- **Write Scope**：`shared/skills/{turbo,deep-plan,deep-review,project}/`、雙端對應 skill entries／links、`codex/config.toml`、`claude/settings.json`、必要 lifecycle／ensure／timestamp 接點、`tests/` 的相關 oracle／runner、使用說明與本工作項的 adopted dossier／history；不包含其他工作項、全域 permission 開關或部署。
+- **Dossier Steward**：`codex:turbo-skill-plan`
+- **Goal**：依 [turbo 計畫](docs/plans/2026-10-05-turbo-skill.md)，建立 portable session mode，從 plan review 持續到實作、code review 與已授權交付；遇到 cap 自主修正及選模式續批，無法達標或無進展時停止並說明。
+- **Acceptance Criteria**：雙端 on／off／status 與 session 隔離；既有 review controllers 的 delegated-reentry 保留歷史、原批上限及有效結果／receipt；同目標的自主選擇與一次具名交付授權；native 續跑、取消及 permission／outward gate 組合證據；turbo off 回歸、behavior evals、validators、repo suite 與 documentation audit 全綠。補強雙端 help／--help 與啟用提示：能發現命令、goal 路徑、四種 allow 值與範例；help 不啟用或擴權，bare 維持 status。未驗 native surface 不宣稱支援。
+- **Constraints**：沿用 kernel 與唯一 review／shipping authority；來源／scope／ownership／host permission 不由 artifact 自授；本批使用者明示 `$project --merge`，交付依原 scope／同 PR 與 required gates；不含 dotsync／全域 permission 修改。原 deep-plan journal 保留，未把本次開工指示冒充新 review-batch 指示。
+- **Progress**：原核心本地驗收完成，G suite exit 0／1570 PASS，詳見 M-20261006-turbo-skill-local。新增唯讀 help、啟用提示與 README 參數表：雙端 help v2 的範例經实际 parser 通過，idle-on v3 證明 on／idle／無 goal／allow 空集合及 help hint，未知權限未再推定 launch profile。首輪原文與反例保留；雙入口 validator、doc／xref 及 diff checks 通過，詳見 M-20261006-turbo-public-help。
+- **Next**：依本批 `$project --merge` 先保存 assignment 與成果，再建立可驗證的結案 candidate、補齊測試快照並開 PR；required checks 通過後以 rebase merge 完成。原 implemented plan 凍結，介面 delta 記於既有 state／history。原 review journal 私人產物保持原位、不提交；新 entries 未安裝，不包含部署。
 
 ## 暫停中
 
