@@ -13,6 +13,7 @@ token.json
 
 # macOS 系統檔案
 .DS_Store
+._*
 .AppleDouble
 .LSOverride
 

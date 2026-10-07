@@ -10,6 +10,7 @@
 # 1cc. tests/run.sh 禁止 printf 經 pipeline 喂給 grep -q（pipefail/SIGPIPE 假判）
 #  1h. known-hazards 的 pipeline 狀態指引標明 Bash／zsh 差異與跨 shell 首選
 #   2. bash -n 語法 gate
+#  2a. macOS 打包 metadata 預設、單次覆寫與 Linux 平台邊界
 #   3. scripts/lib/inventory.sh 解析
 #   4. inventory_append 行為
 #   5. render-etc-hosts.sh 區塊生成、IP 數值排序、--apply 冪等
@@ -978,6 +979,10 @@ for f in "${SHELL_GATE_FILES[@]}"; do
     bash -n "$f" || { syntax_fail=1; echo "     syntax fail: $f"; }
 done
 if [ "$syntax_fail" -eq 0 ]; then ok "bash -n 全部通過"; else bad "bash -n 有語法錯誤"; fi
+
+echo "▶ 2a. macOS 打包 metadata 預設與單次覆寫"
+python3 -B "$ROOT/tests/test_mac_metadata.py"
+assert_rc "macOS metadata 預設、archive、Git 忽略與 defaults 平台邊界" 0 $?
 
 # ACTOR_RE 是刻意的複本：doc-governance.py 逐字 vendored 進每個受治理的 repo，不能 import
 # skill tree 的東西；steward-authority.py 只活在 project skill 裡。兩份規則一旦漂移，

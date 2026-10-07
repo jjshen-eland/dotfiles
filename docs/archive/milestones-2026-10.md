@@ -533,3 +533,9 @@
   - 放棄:以作者摘要代替可核驗 test evidence；拿目前 snapshot 冒充過去受測 inputs；在 PR／CI 尚待时記錄已 merge；將來源交付擴為 live migration 或 fallback cleanup
   - 重議:本批 required CI／provider gates 失敗則依同 PR 有界修復接續；新 source／environment drift 重驗受影響範圍，兩次 CI 修復提交額度不重設
   - 關聯:runtime-layout-convergence;D-20261007-runtime-deployment-summary;M-20261007-runtime-deployment-output-local;M-20261007-inventory-handoff-cleanup-ready;docs/plans/2026-10-06-runtime-layout-convergence.md
+
+- **M-20261007-macos-archive-metadata-local · 2026-10-07 macOS 打包 AppleDouble 預設與單次覆寫完成本地驗收**：feature branch fix/macos-archive-metadata 先固化缺少環境預設／AppleDouble 忽略／網路磁碟設定的 RED，再修 setup 產出的 .zshenv、既有 Git 全域忽略與 macOS defaults entry；Claude always-on 只加觸發入口，known-hazards 留實測與嚴格打包診斷。實際非互動 zsh 與 bash child 取得 COPYFILE_DISABLE=1；macOS raw archive 無自動 AppleDouble，env -u 恢復，空字串仍抑制；strict flags 加 exclude 去除 xattr headers 與現成雜檔。Python 6 tests exit 0、1 skipped（實際 GNU/Linux tar 僅在 Linux 執行）；Linux defaults guard 以 stub 驗證無 defaults 呼叫，Linux bash 來源未改。完整 ./tests/run.sh exit 0、1576 PASS／0 FAIL、431s，含 shellcheck、bash syntax、doc governance 與 xref；raw log 位於 /tmp/dotfiles-mac-metadata-suite-20261007.log。來源驗收後移除此批 active item，不結案原 Runtime 工作；未執行本機 setup／defaults、主機 fan-out、push／PR／merge。
+  - 日期來源:direct
+  - 放棄:用 macOS 的 Linux stub 冒稱真實 GNU/Linux tar 已執行；把 COPYFILE_DISABLE 當成清除所有 xattr／現成雜檔；在未交付來源時套用本機或散佈設定
+  - 重議:部署另依當批具名授權與 origin/main 前提；實際 Linux archive control 或新工具出現可重現污染時先固化 RED 再修
+  - 關聯:D-20261007-macos-archive-metadata;setup-mac-env.sh;git/gitignore_global;write-mac-defaults.sh;claude/known-hazards.md;tests/test_mac_metadata.py

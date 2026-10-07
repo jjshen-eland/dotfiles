@@ -62,6 +62,10 @@ print_success "Finder: 顯示路徑列"
 defaults write com.apple.finder ShowStatusBar -bool true
 print_success "Finder: 顯示狀態列"
 
+# Finder: 網路磁碟不寫入 .DS_Store（不影響本機磁碟）
+defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true
+print_success "Finder: 網路磁碟不寫入 .DS_Store"
+
 # Dock: 放在右側
 defaults write com.apple.dock orientation -string "right"
 print_success "Dock: 放在螢幕右側"
@@ -95,6 +99,6 @@ killall Finder 2>/dev/null || true
 killall Dock 2>/dev/null || true
 print_success "已重新啟動 Finder 和 Dock 以套用設定"
 
-print_info "部分設定（鍵盤、觸控板）可能需要重新登入後才完全生效"
+print_info "部分設定（鍵盤、觸控板、網路磁碟）可能需要重新登入後才完全生效"
 
 echo -e "\n${GREEN}✅ macOS 系統偏好設定完成！${NC}\n"

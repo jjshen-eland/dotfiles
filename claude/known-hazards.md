@@ -81,6 +81,35 @@ Apple 因 GPLv3 停更：bash 3.2、rsync 已換成自寫的 openrsync、BSD awk
 
 ---
 
+## macOS tar／打包送到 Linux
+
+### 2026-10-07 實測：AppleDouble 污染 release archive
+
+macOS 內建 tar 會把檔案的延伸屬性與 resource fork 轉成 `._*`（AppleDouble）；
+送到 Linux 後可能被安裝流程當成 release 檔案。dotfiles 的 macOS setup 在 `.zshenv`
+設定 `COPYFILE_DISABLE=1`，非互動 zsh 與其 bash child 都會繼承。
+
+本機 bsdtar 3.5.3／libarchive 3.7.4 的 xattr＋resource fork fixture 證實：
+
+- 設成 `1` 或空字串都抑制自動 AppleDouble；需要完整 metadata 時須
+  `env -u COPYFILE_DISABLE tar …`。`COPYFILE_DISABLE= tar …` **不會恢復** metadata；
+  單次取消不影響後續命令的預設值。
+- 變數不移除 PAX xattr headers，也不排除磁碟上已存在的 `.DS_Store`／`._*`；
+  Git 全域忽略只防誤提交，不是 tar 排除規則。嚴格跨平台打包用：
+
+  ```sh
+  tar --no-mac-metadata --no-xattrs --exclude='.DS_Store' --exclude='._*' -cf release.tar payload/
+  ```
+
+  `--no-mac-metadata` 是 macOS tar 選項，勿無條件帶到 GNU/Linux tar。
+- macOS `tar -tf` 會處理並隱藏 AppleDouble，不能用它證明 archive 沒有 `._*`；
+  驗證原始 entries 要用獨立 reader（如 Python `tarfile`）。
+
+Linux tar 不使用 `COPYFILE_DISABLE`；Linux bash setup 不因此新增 `BASH_ENV`。
+Finder 的 `DSDontWriteNetworkStores` 只處理網路磁碟，不能當成本機 `.DS_Store` 清理。
+
+---
+
 ## SIGPIPE + pipefail
 
 ### 兩處實地
