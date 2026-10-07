@@ -4,12 +4,12 @@ set -uo pipefail
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
 export DOTFILES_DIR
 runtime_rc=0
-if ! python3 "$DOTFILES_DIR/scripts/ensure-runtime-layout.py" apply; then
+if ! python3 "$DOTFILES_DIR/scripts/ensure-runtime-layout.py" apply --summary; then
     echo '⚠️  Runtime layout blocked; inspect the report/receipt before retrying'
     runtime_rc=1
 fi
 # Guidance/config retain their backup/merge contracts, after native-home safety.
-if python3 "$DOTFILES_DIR/scripts/ensure-runtime-layout.py" guard-config-home; then
+if python3 "$DOTFILES_DIR/scripts/ensure-runtime-layout.py" guard-config-home --summary; then
     if ! bash "$DOTFILES_DIR/scripts/ensure-codex-guidance.sh"; then
         runtime_rc=1
     fi

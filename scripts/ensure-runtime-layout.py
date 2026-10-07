@@ -643,12 +643,36 @@ def reverse_transaction(path, r):
     write_receipt(path, r)
 
 
+def emit_report(report, summary=False):
+    """Keep complete diagnostics; summarize only successful deployment calls."""
+    command = report.get('command')
+    if not summary or not report.get('ok') or command not in ('apply', 'guard-config-home'):
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return
+    if command == 'guard-config-home':
+        return
+    roots = report['roots']
+    changed = [root for root in roots if root['status'] == 'committed']
+    status = f'updated {len(changed)}/{len(roots)} roots' if changed else f'unchanged ({len(roots)} roots)'
+    missing = [name for name, available in report['cli'].items() if not available]
+    if missing:
+        status += '; CLI unavailable: ' + ', '.join(missing)
+    print('✓ Runtime layout: ' + status)
+    for root in changed:
+        print(f"  {root['name']}: committed ({root['transaction']})")
+        print(f"    receipt: {root['receipt']}")
+        for backup in root['backups']:
+            print(f'    backup: {backup}')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', nargs='?', default='inventory', choices=['inventory', 'dry-run', 'apply', 'verify', 'recover', 'rollback', 'guard-config-home'])
     parser.add_argument('--home', default=os.environ.get('HOME'))
     parser.add_argument('--repo', default=os.environ.get('DOTFILES_DIR', str(Path(__file__).resolve().parents[1])))
     parser.add_argument('--transaction')
+    parser.add_argument('--summary', action='store_true',
+                        help='Summarize successful deployment calls; errors and other commands retain JSON.')
     args = parser.parse_args()
     try:
         if not args.home:
@@ -658,7 +682,7 @@ def main():
             # Shared entry must not let the independent helpers follow a rejected
             # native-home parent into the source repository.
             layout.guard(layout.codex / 'config.toml')
-            print(json.dumps({'ok': True, 'command': args.command, 'target': str(layout.codex)}, ensure_ascii=False))
+            emit_report({'ok': True, 'command': args.command, 'target': str(layout.codex)}, args.summary)
             return 0
         if args.command in ('recover', 'rollback'):
             if not args.transaction:
@@ -692,10 +716,10 @@ def main():
             except (Blocked, OSError, ValueError) as error:
                 results.append({'name': name, 'target': str(layout.targets[name]), 'status': 'blocked', 'reason': str(error)})
                 failed = True
-        print(json.dumps({'ok': not failed, 'command': args.command, 'roots': results,
-                          'cli': {name: shutil.which(name) is not None for name in ('codex', 'claude')},
-                          'process_inventory': process_inventory,
-                          'native_loading_verified': False}, ensure_ascii=False, indent=2))
+        emit_report({'ok': not failed, 'command': args.command, 'roots': results,
+                     'cli': {name: shutil.which(name) is not None for name in ('codex', 'claude')},
+                     'process_inventory': process_inventory,
+                     'native_loading_verified': False}, args.summary)
         return 1 if failed else 0
     except (Blocked, OSError, ValueError, KeyError, TypeError) as error:
         print(json.dumps({'ok': False, 'reason': str(error)}, ensure_ascii=False))

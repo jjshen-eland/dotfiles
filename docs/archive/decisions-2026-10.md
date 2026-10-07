@@ -204,3 +204,9 @@
   - 放棄:把 aggregate scope 改成每位的 path 子集而失去完整 fingerprint 錨點；只改 prompt 卻讓 controller 仍接受漏檔／重複 primary；從自由文字猜 paths；讓所有 reviewer 繼續承擔整份 broad subject
   - 重議:exact subject paths 無法表達實際必要 responsibility 時，先保留新的 failing fixture，再擴充有界 representation；不可省略 aggregate coverage 或把 required evidence 缺失改標 complete
   - 關聯:#274;D-20260823-portable-deep-review;docs/plans/2026-10-07-deep-review-primary-responsibility.md;tests/review-primary-scope.py
+
+- **D-20261007-runtime-deployment-summary · 2026-10-07 日常 runtime 部署摘要保留遷移與失敗診斷**：使用者回報 brewup 每次先印完整 JSON，並授權採成功摘要／遷移明細／失敗完整診斷。基線 6ddb7a5 的真實共用 entry 在隔離 canonical fixture 全 roots unchanged、exit 0、home 不變時仍印 36 行 apply／guard-config-home JSON；修復前新增回歸的 unchanged、migration 明細、缺 CLI 摘要三案 RED，原 JSON 與部分失敗 controls GREEN。採 layout CLI 明示 --summary、共用 entry 啟用該旗標；直接 CLI 保留預設 JSON。formatter 僅處理已成功的 apply／guard，失敗 report 不摘要，不改 migration／ownership／writer／transaction 判準或各部署 caller 的 exit 契約。
+  - 日期來源:direct
+  - 放棄:把 stdout 全重導到 /dev/null（失去 partial success／writer／receipt 診斷）；只改 brewup 而讓共用入口其他 caller 持續印相同雜訊；將工具的預設 JSON 改為人類摘要而破壞既有驗收 reader
+  - 重議:caller 需要完整 machine-readable deployment report 時，以直接 CLI 取得；摘要出現不可辨識的失敗或能力缺項時，先補真實 failing fixture 再調整 formatter
+  - 關聯:runtime-layout-convergence;scripts/ensure-runtime.sh;scripts/ensure-runtime-layout.py;tests/runtime-layout.py;docs/repo-guide.md

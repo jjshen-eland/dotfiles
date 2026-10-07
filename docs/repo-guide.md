@@ -26,6 +26,10 @@ scripts/doc-governance.py find '<自然語言問題或 stable ID>'
 它先處理 layout，確認 Codex home 的父路徑安全後，再沿用原 guidance／三層 config merge；
 home alias 或路徑進入 repo 時，兩個 helper 一併跳過，其他安全 root 仍可完成。sysup 沒有 runtime 部署階段。
 
+共用入口成功且 layout 未變更時只印一行摘要；有遷移時列出變更 root、transaction、receipt 與保留備份。
+失敗仍印完整 JSON 診斷並保留原 exit 語意；直接執行下列 layout 工具預設仍輸出 JSON。
+`--summary` 只摘要成功的 apply／guard-config-home；CLI 缺項仍可見，摘要不代表原生載入已驗證。
+
 | 位置 | 管理邊界 |
 | --- | --- |
 | `~/.claude/skills` | 實體 root，repo adapters 逐項連結；第三方保留，雲端 synced 依權威 settings 的同步政策處理 |
