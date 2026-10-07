@@ -34,32 +34,6 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **下一步**：現行 inventory 的 layout 遷移驗收已完成；Claude Default 表示修正進入 origin/main 後，須依當批部署授權同步並核對各端來源設定，本次 merge 不代表 fleet 模型設定已同步。inventory 外兩部 MacBook 依 D-20260917-terminal-macbooks-outside-inventory 維持自主更新，已提供各自執行的離線 rollout 指令，尚無 runtime 驗收結果；先釐清這兩部終端是否仍依賴舊 store，再依原 plan 處理 legacy fallback cleanup 與定向行為驗證。原生 .trash 依 runtime retention 管理，不當作永久備份；本機 handoff 原備份仍保留。本項仍 in-progress。
 - **關聯**：#271; D-20260823-portable-handoff-skill; D-20260912-neutral-portable-skill-core; D-20260912-codex-config-three-layer-merge; M-20260912-codex-config-and-dotsync-exit; M-20261001-handoff-frontmatter-anchor-verify; D-20261007-claude-model-default-unset; M-20261007-claude-native-default-verified; M-20261007-macs-runtime-layout-accepted
 
-### 3. CI 測試可信度與必要覆蓋
-
-- **Writer**：`codex:runtime-layout-convergence`
-- **Workspace**：`branch=fix/ci-test-confidence`
-- **Write Scope**：tests/, .github/workflows/test.yml, scripts/render-etc-hosts.sh, scripts/all-up.sh, scripts/sign-host-keys.sh, scripts/sign-user-key.sh, docs/testing-contract.md
-- **Dossier Steward**：`codex:runtime-layout-convergence`
-- **Context**：使用者要求審查 CI 測試的必要性、缺少的必要測試與內容正確性。2026-10-07 本機完整 parallel suite exit 0，頂層斷言 core 171／ship_state 239／integration 1166，共 1576 全綠；隔離 fixture 仍重現 hosts 異常 marker 刪除非管理內容、all-up 吞掉 brewup 失敗、兩支 SSH 簽署腳本失敗卻 exit 0，以及 CI matrix 字串假綠、heredoc scanner exit 被忽略／delimiter 誤判、parallel cleanup 留下 descendant。使用者以 `$project spec` 及 recovery 選項明確確認前任已停止，由本 session 接續既有工作線與 dossier 維護並新增本契約。
-- **Goal**：讓必要 CI 測試可證偽地攔截已確認的錯誤與漏跑，補齊高風險運維腳本的失敗／內容保全覆蓋；在不減少有效防線的前提下去除已證明的重複檢查。
-- **Acceptance Criteria**：
-  1. 實作前把七項審查發現各自固化為隔離、自動、可重現的 RED fixture；先保存現行失敗結果，再修實作或 gate，修後同一 fixture GREEN，並保留相鄰合法輸入的正向 control。測試不得讀取真實 CA、更新本機或連線實際主機；SSH／SCP／sudo／套件更新使用隔離替身。
-  2. hosts renderer 對缺少／逆序／巢狀等無法無歧義辨識的 marker 拒絕寫入，原檔保持；正常完整區塊替換仍保留非管理內容且冪等。遠端處理採同樣的內容保全判準，以捕獲的真實遠端 payload 在隔離 target 驗證，不接觸 `/etc/hosts`。
-  3. all-up 將 brewup 與適用 sysup 的結果共同納入主機與全程終判，後段成功或 sudo 略過不得掩蓋前段失敗；任一必要階段失敗最終非零，其他指定主機仍被處理。覆蓋 macOS／Linux、全成功／部分失敗、sudo 略過與 SSH 失敗，核對 exit、逐台結果與總計。
-  4. sign-host-keys／sign-user-key 的全成功、部分失敗與全失敗皆有行為測試；任一主機失敗最終非零，其他指定主機仍被處理，計數與實際替身呼叫一致。涵蓋取 key、簽署、上傳與必要部署步驟失敗，不以成功文案代替完成證據。
-  5. CI contract gate 解析實際 YAML 結構，驗證 PR trigger、雙 OS matrix、唯讀權限、dependencies 與完整 suite 執行 step；註解或不執行區段中的相同文字不得滿足契約。固定 Ubuntu-only 加 macOS comment 的 RED，並保留正常雙 OS workflow GREEN；不新增未授權 provider 設定或 branch protection mutation。
-  6. heredoc gate 在 scanner 自身失敗時 fail closed，不把空 stdout 當零 findings；delimiter 比對遵守普通 heredoc 與 `<<-` 的 tab 語意。固定縮排 delimiter 提早關閉造成的漏報，保留 quoted heredoc、herestring、註解與安全內容注入的正向 controls。Scanner 的 RED／GREEN 與 scanner-error 各自核對 exit／findings；這個漏報 fixture 現行 ShellCheck 另可攔截，不將它描述為整套 CI 的漏判。
-  7. parallel runner 遇 SIGINT／SIGTERM 或 child 中斷時，最終非零且停止仍活躍的 shard／descendant，沒有可繼續寫入或持有輸出 pipe 的殘留程序；cleanup 保留 Bash 3.2 空 array 相容性。以實際 runner 與隔離 child tree 驗證，不只抽取 cleanup function，也不只核對目錄消失；result aggregator 的缺件／錯誤／重複 summary controls 持續通過。
-  8. 盤點每個 gate 的風險、oracle 與覆蓋範圍。ShellCheck／bash -n 對同一 canonical 實體檔只掃一次，仍涵蓋 runtime-specific wrappers 且 symlink 接線有獨立驗證；現行 76 個輸入／53 個實體檔只作事前基線，不把這兩個數字固定成永久門檻。其他形式或字句檢查只有在可證明重複或替代測試能攔同一失敗時才精簡；保留 kernel 複本一致性、授權／資料保全、雙 OS 與 shard 完整性防線。
-  9. `./tests/run.sh` 與 `./tests/run-parallel.sh` 均以實際 exit 0 驗收，assertion 變更同步 shard manifest，serial／parallel 執行集合與結果一致；macOS／Ubuntu PR CI、doc-governance audit 與 xref 均通過。文件區分 wiring 檢查、確定性行為測試與 opt-in native/model eval 的證據邊界，不宣稱未執行環境或未驗模型行為已通過。
-  10. 使用者以「開始，先量測」追加本地 macOS section 耗時量測：保留現行三個 shards 與全部 assertions，以原 runner 的 stdout section 邊界記錄 foreground wall time、原始 log、exit、來源 fingerprint 與環境；先量測 integration，區分本機與 GitHub runner，量測前不刪測試或實作重新分片。
-  11. 使用者量測後以「繼續」授權本地分片優化：先清查候選連續區段的跨段變數／functions／fixtures；新 shard 必須獨立初始化必要依賴，保持原 integration assertions 的互斥完整聯集及原 serial 順序。同步 manifest，保留 integration 聚合入口，實跑完整 serial／parallel 比對逐條 assertions 與 exit，signal／child failure cleanup controls 持續通過；以本機前後 wall time 評估改善，不冒充 GitHub runner 或雙 OS 的驗收。
-- **Constraints**：使用者以「開工」授權本項本地實作與驗證；本輪另明示 `$project --merge`，依該 invocation 的 shipping policy 執行本批 feature branch／PR／required CI／rebase merge 與必要同 PR 修復，不含部署，授權不跨 session／批次。保留既有 runtime 遷移工作，不把本項當成其驗收或結案。沿用同一 Dossier Steward，兩項 scripts／tests scope 相交，須由同一 writer 順序處理，禁止平行 writer。實作前遵守先 RED 再修；不因測試數變少、跑得更快或文件措辭改變而宣稱品質改善。不擴成套件升級、SSH／CA 架構改版、模型 eval 自動化或治理重設計；若需修改 skill entry／shared core，先依 authoring route，並另核對 scope。
-- **進度**：本地可信度修正與分片優化均完成驗證：七項原始 RED 已修正，11 組隔離測試 GREEN；額外固定 lint 重複、dependency continue-on-error、matrix 順序誤紅、custom shell 假綠與 supervisor spawn signal race 的 controls。新版完整 serial／parallel 均 exit 0、1574 PASS／0 FAIL；逐段 assertion 順序與完整多重集合相同，只正規化成功 local-fetch 文案的實測耗秒（原始值保留於 log）。五段測試內容保持，manifest 為 172／239／112／383／668；獨立分片的 Git fixtures／路徑自行初始化，Bash 5.3／3.2 的 runner 清理 controls 通過。必要性與 oracle 邊界已記於 testing contract，canonical 檔案聯集及 wrappers／接線 gates 保留。雙 OS PR CI 與 native/model eval 尚未執行，未達 AC9 的結案條件；本項與 runtime 工作均維持 active。
-- **量測**：本地 macOS 26.7.1／32 logical CPUs 的 section 基線見 M-20261007-ci-section-profile（原 integration 322.540s）；依實測切為 plan（9b–12b）／review（12bb–16）／runtime（turbo–結尾）。新版完整 parallel wall time 136.994s，core／ship_state／plan／review／runtime 為 42／56／104／137／116s；最長 shard 較前版 integration 的 332s 約縮短 59%。新版 serial wall time 414.120s；來源 fingerprints 前後相同，raw／timings／rebuild script 與逐條集合比對位於 /tmp/ci-shard-optimization.s1bblvei/。此為單次本機驗證，不把比例當 GitHub runner 保證。
-- **下一步**：依本輪 `$project --merge` 準備語意提交與 PR，執行雙 OS required CI 並讀取 GitHub macOS 實際 wall time；CI 通過後結案本項、驗完成紀錄並依授權合併與清理自身分支。仍未 commit／push，不宣稱 Ubuntu／provider 或 native/model 已驗證；runtime 工作維持 active。
-- **關聯**：M-20260916-ci-test-sharding; docs/testing-contract.md
-
 ## 暫停中
 
 - **B-20260902-gh-account-autoswitch**：pending；維持 backlog 既有觸發條件，在條件實際發生前不開發、
