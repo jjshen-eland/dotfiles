@@ -96,7 +96,11 @@ for server in "${SERVERS[@]}"; do
     fi
 
     # 2. 用 Host CA 簽署（principal 包含 alias + 實際 hostname/IP）
-    actual_host=$(ssh -G "$server" 2>/dev/null | awk '/^hostname / {print $2}')
+    if ! actual_host=$(ssh -G "$server" 2>/dev/null | awk '/^hostname / {print $2}'); then
+        print_error "${server}：無法解析 SSH hostname"
+        FAILED=$((FAILED + 1))
+        continue
+    fi
     principals="$server"
     [ -n "$actual_host" ] && [ "$actual_host" != "$server" ] && principals="$server,$actual_host"
 
@@ -130,11 +134,16 @@ for server in "${SERVERS[@]}"; do
     # 4. 上傳 User CA 公鑰
     user_ca_pub="$DOTFILES_DIR/ssh/user_ca.pub"
     if [ -f "$user_ca_pub" ]; then
-        scp "$user_ca_pub" "$server:/tmp/user_ca.pub" 2>/dev/null || true
+        if ! scp "$user_ca_pub" "$server:/tmp/user_ca.pub" 2>/dev/null; then
+            print_error "${server}：上傳 User CA 失敗"
+            FAILED=$((FAILED + 1))
+            continue
+        fi
     fi
 
     # 5. 在伺服器上部署 Host Certificate + User CA
     deploy_cmd='
+        set -e
         # 備份 sshd_config（失敗時可 rollback）
         sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
 
@@ -161,7 +170,7 @@ for server in "${SERVERS[@]}"; do
             if command -v systemctl &>/dev/null; then
                 sudo systemctl reload sshd 2>/dev/null || sudo systemctl reload ssh 2>/dev/null
             else
-                sudo launchctl kickstart -k system/com.openssh.sshd 2>/dev/null || true
+                sudo launchctl kickstart -k system/com.openssh.sshd 2>/dev/null
             fi
             echo "OK"
         else
@@ -171,8 +180,7 @@ for server in "${SERVERS[@]}"; do
     '
 
     # shellcheck disable=SC2029  # 刻意 client 端展開 $deploy_cmd（上方組好的完整遠端腳本）
-    result=$(ssh "$server" "$deploy_cmd" 2>/dev/null)
-    if [ "$result" = "OK" ]; then
+    if result=$(ssh "$server" "$deploy_cmd" 2>/dev/null) && [ "$result" = "OK" ]; then
         print_success "${server}：certificate 已部署"
         SUCCESS=$((SUCCESS + 1))
     else
@@ -195,3 +203,5 @@ if [ $SUCCESS -gt 0 ]; then
     echo "  cp $DOTFILES_DIR/ssh/known_hosts $DOTFILES_DIR/ssh/known_hosts.bak"
     echo "  # 編輯 $DOTFILES_DIR/ssh/known_hosts，移除逐條 fingerprint，保留 @cert-authority + GitHub"
 fi
+
+[ "$FAILED" -eq 0 ]

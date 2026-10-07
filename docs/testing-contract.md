@@ -29,10 +29,24 @@ root `CLAUDE.md` 與全域 `claude/CLAUDE.md` 合計 58,681B 恆常載入。
 - **exit 0/2 契約**（凡獨立掃描器皆適用）：內容問題走 stdout、掃描器自身失敗走 **exit 2**。
   `tests/run.sh` 是 `set -uo pipefail`、**無 `set -e`**，掃描器死掉的空 stdout 會被判成「乾淨」，
   gate 於是靜默變成永遠綠。兩者不可混用。
+- **布林 validator**（如 CI contract）使用 exit 0 通過／1 契約不符／2 執行錯誤；
+  call site 必須核對 exit，不能套用 finding scanner 的「零 stdout」判準。
 - **掃描器要自檢**：RED/GREEN fixture 是必要的——掃描器被改壞而恆不匹配時，對真實檔案的
   空輸出一樣長得像「通過」。
 - **gate 誤報的代價是逼人改壞寫法以求過測**，所以收窄判準時寧可放掉 false negative，
   也不要製造 false positive。
+
+本次 CI 審查的必要性判準：保留能攔截獨立失敗的 gate；只有同一實體腳本重複送進
+ShellCheck／bash -n 已取得可刪除的等價覆蓋證據。頂層 assertion 數是 shard 完整性帳目，不能作為品質分數。
+
+| Gate 範圍 | 風險與 oracle | 本次處置與證據邊界 |
+|---|---|---|
+| 1、1b、1c、1cc、2 | ShellCheck、Bash parser、字元／heredoc fixtures 與 printf-to-grep-q gate 攔截語法、展開與 pipefail 假判 | 保留不同 oracle；canonical 輸入去重；heredoc 另驗 scanner error |
+| 1d、1e、1g、2b | xref、kernel 複本與治理 scanner／synthetic repo，防權威接線與檢索退化 | 保留；內容／接線一致不等於模型遵從 |
+| 1f、1h、12 系列、28 | 同型處置與跨 runtime packaging／契約文句完整性 | 保留 wiring 檢查；native/model 行為另由 opt-in eval 驗收 |
+| 3–7、15–16、18 系列、22–23、25 平台 fixture | 隔離檔案與 PATH／SSH 替身，核對內容、exit、冪等與平台分支 | 保留；補齊 hosts 資料保全、all-up 與兩支 signing scripts 的失敗傳遞 |
+| 8–11、13–14、17、19–21、24、26–27、29 | 真 git fixture、stubbed provider 與程序／檔案輸出，防授權、生命週期與清理錯誤 | 保留；替身成功不代表真實 provider／模型已驗證 |
+| 25 CI／shards | YAML 結構、manifest／completion artifacts、實際 runner signal fixture | 保留雙 OS 與完整集合；驗 active step，並確認 descendant 終止 |
 
 ---
 
@@ -42,6 +56,11 @@ root `CLAUDE.md` 與全域 `claude/CLAUDE.md` 合計 58,681B 恆常載入。
 
 涵蓋 `scripts/`、setup 腳本、`claude/skills/*/scripts/` 與其 `lib/`、`shell/functions.sh`、
 以及 **`claude/evals/*.sh`**。
+
+`tests/shell-gate-files.py` 以 realpath 去重，ShellCheck 與 bash -n 共用同一份清單；
+shared core 的多個 symlink 只掃一次，runtime-specific wrappers 各自保留。清單測試比對
+既有 glob 的 canonical 聯集，不把本次 76／53 基線固定成永久門檻。必要 literal path 缺件、
+dangling file symlink 或清單異常縮小必須非零；symlink 接線仍由 packaging gate 驗證。
 
 shellcheck 以 `-P SCRIPTDIR` 解析 `source=`，故 lib 的相對寫法跨 cwd 都成立。
 
@@ -59,6 +78,10 @@ evals 於 2026-08-08 補入四個 gate——**納入時它零 findings**。便�
 
 **判準**：delimiter 未加引號 **+ body 字面含反引號** → 那段會被 bash 當命令替換**真的執行**。
 掃描器追蹤 quoted heredoc 的進出、排除 `<<<` 與註解行，並以 RED/GREEN fixture 自檢。
+普通 heredoc 的 delimiter 不可去掉前置空白；`<<-` 只可去掉 tab。空格縮排的假 closer
+仍屬 body，後續字面反引號必須被抓到。真實掃描另核對 awk exit，非零不能以空 stdout 判綠；
+`tests/test_ci_confidence.py` 以實際 gate 注入 scanner-error。此 delimiter RED 另可由
+ShellCheck 攔截，不能描述為整套 CI 都漏報。
 
 **判準刻意只管字面**：`$(cat 某檔)` 注入的反引號不會被執行——命令替換的結果不重新掃描
 （2026-08-07 實測）。曾為它加過一條規則，會把每個用 heredoc 灌檔的正常寫法判紅，
@@ -176,6 +199,10 @@ record 的粗體 label／冒號後 body 邊界由 synthetic fixture 固定；rea
 ## 3–4. inventory.sh 解析、inventory_append
 
 ## 5–6. render-etc-hosts.sh、render-ssh-config.sh
+
+hosts 的 marker 缺 END、孤立 END、逆序或巢狀時拒絕覆寫，核對原檔 bytes 不變；
+合法替換保留非管理內容且冪等。遠端傳送同一個 apply function，測試捕獲並執行真實 payload，
+只將 target 改為 temp file，不連線主機或碰 `/etc/hosts`。
 
 ## 7. add-new-host.sh --dry-run 煙霧測試
 
@@ -639,7 +666,11 @@ brewup fixture 執行真實 entry／layout／guidance／config，以隔離 ln／
 
 ## 22. brewup / sysup / brewfix
 
-`sysup.sh` 平台 guard。
+`sysup.sh` 平台 guard。`all-up.sh` 的必要 brewup／適用 sysup 分別記錄失敗，
+後段成功或 sudo 略過不覆蓋前段失敗；以兩台 host、Linux／Darwin、SSH failure 與成功 controls
+核對逐台結果、總計和最終 exit。兩支 signing scripts 的取 key／簽署／上傳／必要部署失敗
+均使全程非零，仍繼續其他 host；全成功、部分／全失敗計數以 SSH／SCP／ssh-keygen 替身驗證，
+CA 檔案是 temp placeholder，不讀真實 CA。這些 oracle 位於 `tests/test_ci_confidence.py`。
 
 **`brewfix.sh`**：macOS-only guard／未知參數不得被當成 `--fix`／唯讀模式絕不刪除／`--fix` 清完複驗／
 **無卡死 process 時不得驚動 `killall syspolicyd`**／lsof 條目正常的同一 process 不得誤判為卡死／
@@ -721,6 +752,11 @@ local 覆寫 global）。同樣明列、不假裝擋得住。
   checks 承擔，而不是在壞 commit 已合入後才重驗。
 - CI 不得把 runner image 的任意預裝版本當成 dependency contract；`shellcheck`、`ripgrep`、`yq` 必須由同一個
   明示的 Homebrew install step 收斂，避免 OS image 版本差異改變 gate verdict 或因缺 `rg` 造成連鎖假紅。
+- `tests/ci-contract.py` 用既有 yq 轉 JSON 後驗 active trigger、permissions、matrix 與執行 step；
+  Ubuntu-only 加 macOS comment、`if: false` suite、write permission 加 read comment、echo install
+  都必須判紅；install／suite 的 continue-on-error 不可吞掉必要階段失敗。必要 step 使用
+  builtin bash／sh，workflow／job／step 的 custom `shell: echo {0}` 不得把實際 run 退化為印出 script 路徑；
+  job／step 的 builtin override、explicit bash 與 matrix 順序交換保留 GREEN。文句存在不能證明 CI 真的執行。shell template 語意依 [GitHub workflow syntax](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#custom-shell)。
 - bare Git fixture 必須以 `git init --bare -b <intended-default>` 明示 remote HEAD；不得依賴 host 的
   `init.defaultBranch`。否則在預設 `master` 的 runner 上 push `main` 後再 clone，會留下 unborn checkout，
   讓 branch、merge-base 與 review-anchor 測試連鎖假紅。第 25 節有反向 gate 阻止未帶 `-b` 的 bare fixture。
@@ -730,13 +766,22 @@ local 覆寫 global）。同樣明列、不假裝擋得住。
 - 完整 suite 可把彼此獨立且唯讀 repo 的 slow gates（目前為 ShellCheck 與 doc-governance deterministic
   suite）和 fixture-heavy 主流程並行，但必須逐 pid 收 exit code、彙總原始失敗輸出，且 EXIT cleanup
   終止未收斂的 child；並行只縮短 critical path，不得縮小掃描檔案或測試集合。
-- CI 以 `tests/run-parallel.sh` 在每個 OS job 內同時跑 `core`、`ship_state`、`integration`；三者是
-  `tests/run.sh` 中互斥且聯集完整的連續 assertion 區段，各自建立 temp/state/output。開發者仍可直接執行
-  `./tests/run.sh`，其預設 `all` 會依原順序跑完全套。
+- CI 以 `tests/run-parallel.sh` 在每個 OS job 內同時跑 `core`、`ship_state`、`plan`（9b–12b）、
+  `review`（12bb–16）、`runtime`（turbo–結尾）；五者是 `tests/run.sh` 中互斥且聯集完整的連續
+  assertion 區段，各自建立 temp/state/output。`plan` 自建 section 9b／10 的 local-only Git fixture，
+  `runtime` 自建 section 19 所需的 ship-state baseline；review-state script 路徑由共同前置定義，
+  不依賴其他 shard 的執行副作用。開發者仍可直接執行 `./tests/run.sh`，其預設 `all` 依原順序跑完全套；
+  `DOTFILES_TEST_SHARD=integration` 保留為依序執行 `plan`＋`review`＋`runtime` 的相容入口，不列入 parallel manifest。
 - `tests/shard-manifest.tsv` 固定每個 shard 的成功 assertion 數；聚合器要求每個 child rc 為零、每份 log
   恰有一條身分相符的 `SHARD_RESULT`、計數與 manifest 相符，且不接受缺件或額外 result artifact。任何
   signal、漏寫 completion artifact、重複 summary、計數漂移或聚合器錯誤都使 OS job 非零；shard log 以
   身分前綴完整輸出，不用縮減診斷換速度。
+- `tests/shard-supervisor.py` 為每個 shard 建立專屬 process group。SIGINT／SIGTERM 或任一
+  child 非零時終止其餘 group，bounded TERM grace 後 KILL，reap leader；正常完成也清理殘留
+  descendant。signal handler 只記中斷旗標，讓剛建立的 child 先完成 ownership 登記，再清理；
+  fixture 在 Popen 回傳前送 TERM，確認啟動邊界也不留下 orphan。實際 runner fixture 以忽略 TERM
+  的 descendant 驗停止與非零，不能只驗目錄刪除。
+
 
 ## 26. outward-action gate
 

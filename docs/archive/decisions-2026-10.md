@@ -180,3 +180,21 @@
   - 放棄:將 literal default 的自訂列當成推薦 Default；只用 initialize 成功判設定符合需求；將 native UI 的 high effort 回寫納為 repo 政策；清除本機 settings.local.json 或 session 模型選擇；把 metadata-only 當成模型推論證據
   - 重議:來源原生選單仍重複或 runtime 的清除覆寫契約變動時，以 fresh native evidence 調整表示方式；實際模型與 effort 的政策變更另取得具名範圍
   - 關聯:runtime-layout-convergence;D-20261006-runtime-model-defaults;M-20261006-runtime-model-defaults-validated;claude/settings.json;docs/repo-guide.md
+
+- **D-20261007-ci-confidence-regression-first · 2026-10-07 CI 缺口先固化隔離反例，精簡僅限已證明重複的掃描**：CI 工作契約的七項問題由 tests/test_ci_confidence.py 固化為九組行為測試；原版執行 exit 1，30 個失敗子案例與一個 child 中斷不收斂的逾時重現內容遺失、錯誤聚合與 gate 假綠，合法輸入 controls 同批執行。修復對準 marker 狀態機、各階段結果、結構化 workflow 與程序樹生命週期。保留既有安全／授權／雙 OS／結果聚合防線；只有 canonical 實體檔重複 lint 取得直接盤點證據，其他字句 gate 未取得等價覆蓋證據，不先刪除。新 regression 無實際主機連線或真實 CA；runner 反例測實際 entry，故 child 逾時屬生命週期 RED，不是模型或 provider 行為。
+  - 日期來源:direct
+  - 放棄:以全套原有 1576 PASS 證明沒有缺口；先改程式再改 expected；只抽 cleanup function 或用字數／測試數下降當品質改善
+  - 重議:新的 gate 仍有可重現假綠／誤紅，或另一形式檢查取得可證偽的等價替代覆蓋時
+  - 關聯:CI 測試可信度與必要覆蓋;M-20260916-ci-test-sharding;tests/test_ci_confidence.py
+
+- **D-20261007-ci-supervisor-signal-flag · 2026-10-07 shard supervisor 的 signal handler 只記旗標**：實作中的初版 handler 直接 raise，隔離 fixture 在 OS 已建立 child、Popen 尚未回傳登記前送 TERM，重現 supervisor 非零但 shard 繼續存活。改成 handler 記中斷旗標，完成 spawn 的 ownership 登記後才停止 launch／poll，finally 清理專屬 process groups；同一 fixture GREEN，既有實際 runner 的 INT／TERM／child 中斷 controls 仍 GREEN。此為本次候選實作的啟動邊界缺口，與原始 runner 的 descendant 清理缺口分開記錄。
+  - 日期來源:direct
+  - 放棄:在 handler raise exception，將尚未登記 child 的啟動窗口留給 finally 猜測；用全機 process-name 掃描補清理
+  - 重議:process spawn 或 signal 模型改變時，以啟動邊界和實際 runner fixtures 重驗所有權與清理
+  - 關聯:D-20261007-ci-confidence-regression-first;tests/shard-supervisor.py;tests/test_ci_confidence.py
+
+- **D-20261007-ci-measured-integration-split · 2026-10-07 依 section 時間把 integration 分成三個獨立區段**：使用者在外部 observer 基線完成後以「繼續」授權本地優化。採 plan（9b–12b）／review（12bb–16）／runtime（turbo–結尾）的連續切分，不拆單一行為 suite 或移除 timeout／signal controls；加上 core／ship_state，保留同一 OS job 內五 shard。跨段盤點找出 plan 的 gh-local、runtime 的 section 19 ship-state baseline，以及 review-state script 路徑：獨立 shard 自建必要 Git／provider stub fixtures，路徑提升至共同前置。原五段 assertion body bytes 保持（只移出該路徑宣告），新三段實際 assertion 順序與舊 integration raw log 分別精確相同（112／383／668）；manifest 合計仍為 1574，integration 聚合入口保留。首次本地 parallel exit 0、136.994s；新三段 104／137／116s，對照本項上一版最長 shard 332s。實際 runner 清理測試改從 manifest 取得完整 shard 名集合，INT／TERM／child 中斷及 spawn race 的 11 組 controls 在 Bash 5.3 與 3.2 均 GREEN。
+  - 日期來源:direct
+  - 放棄:按 assertion 數平均切分、依賴其他 shard 的 tmp 副作用、增加 OS matrix jobs、刪掉慢的安全反例；以單次本機改善當作 hosted CI 保證
+  - 重議:完整 serial／parallel 結果不一致、新跨段依賴、hosted CPU／I/O 成本或 section 排名改變時，依原始結果重新配平；雙 OS PR CI 仍待當批具名 delivery 授權
+  - 關聯:M-20261007-ci-section-profile;D-20261007-ci-supervisor-signal-flag;CI 測試可信度與必要覆蓋;docs/testing-contract.md

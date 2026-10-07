@@ -83,30 +83,32 @@ REMOTE_SNIPPET='
 BREWUP="$HOME/.dotfiles/scripts/brewup.sh"
 SYSUP="$HOME/.dotfiles/scripts/sysup.sh"
 os=$(uname -s)
+stage_failed=0
 
 run_sysup() {
   if [ -x "$SYSUP" ]; then bash "$SYSUP"; else bash -ic "sysup"; fi
 }
 
 if [ -x "$BREWUP" ]; then
-  bash "$BREWUP"
+  bash "$BREWUP" || stage_failed=1
 elif [ "$os" = "Darwin" ]; then
-  zsh -ic "brewup"
+  zsh -ic "brewup" || stage_failed=1
 else
-  bash -ic "brewup"
+  bash -ic "brewup" || stage_failed=1
 fi
 
 if [ "$os" != "Darwin" ]; then
   if [ "${ALLUP_GUARD_SUDO:-1}" = "1" ]; then
     if sudo -n true 2>/dev/null; then
-      run_sysup
+      run_sysup || stage_failed=1
     else
       echo "WARN: 略過 sysup — 此主機 sudo 需密碼，非互動無法執行"
     fi
   else
-    run_sysup
+    run_sysup || stage_failed=1
   fi
 fi
+exit "$stage_failed"
 '
 
 indent() { while IFS= read -r line; do printf '    %s\n' "$line"; done; }

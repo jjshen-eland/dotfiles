@@ -17,11 +17,11 @@
 #
 # 用法：awk -f tests/heredoc-gate.awk <檔案...>   命中即逐行印出，無命中則無輸出。
 
-FNR == 1 { in_here = 0; delim = ""; quoted = 0 }
+FNR == 1 { in_here = 0; delim = ""; quoted = 0; strip_tabs = 0 }
 {
     if (in_here) {
         line = $0
-        sub(/^[ \t]+/, "", line)          # `<<-` 允許 delimiter 前有 tab 縮排
+        if (strip_tabs) sub(/^\t+/, "", line)
         if (line == delim) { in_here = 0; next }
         if (!quoted && index($0, "`") > 0)
             printf "%s:%d: unquoted heredoc(<<%s) body 含反引號——會被當命令替換執行\n", \
@@ -45,6 +45,7 @@ FNR == 1 { in_here = 0; delim = ""; quoted = 0 }
             continue
         }
         tok = substr(s, RSTART, RLENGTH)
+        strip_tabs = (tok ~ /^<<-/)
         sub(/^<<-?[ \t]*/, "", tok)
         quoted = (tok ~ /^['"]/)
         gsub(/['"]/, "", tok)
