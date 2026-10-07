@@ -210,3 +210,10 @@
   - 放棄:把 stdout 全重導到 /dev/null（失去 partial success／writer／receipt 診斷）；只改 brewup 而讓共用入口其他 caller 持續印相同雜訊；將工具的預設 JSON 改為人類摘要而破壞既有驗收 reader
   - 重議:caller 需要完整 machine-readable deployment report 時，以直接 CLI 取得；摘要出現不可辨識的失敗或能力缺項時，先補真實 failing fixture 再調整 formatter
   - 關聯:runtime-layout-convergence;scripts/ensure-runtime.sh;scripts/ensure-runtime-layout.py;tests/runtime-layout.py;docs/repo-guide.md
+
+- **D-20261007-macos-archive-metadata · 2026-10-07 macOS 打包預設抑制 AppleDouble，完整 metadata 明示單次取消**：使用者要求 dotfiles 預設 COPYFILE_DISABLE=1；先以真實 macOS tar、xattr 與 resource fork 重現自動 AppleDouble，再在 setup 產出的 .zshenv 設預設。實測環境變數空字串仍啟用抑制，使用者同意將原提議的空值覆寫改成 env -u COPYFILE_DISABLE tar；父 shell 預設保留。變數不去除 PAX xattr 或現成 .DS_Store／._*，嚴格打包以 macOS tar 的 --no-mac-metadata --no-xattrs 加 exclude 處理，地雷入口與細節按既有分工記錄。Git 忽略只補缺少的 ._*；既有 write-mac-defaults.sh 納入網路磁碟 DSDontWriteNetworkStores，維持 Darwin guard 與獨立套用。Bash 設定只由 Linux setup 管理，GNU/Linux tar 不使用此變數，macOS zsh 的 bash child 已繼承，故不新增 BASH_ENV 或改 Linux shell 初始化。使用者確認原 writer 停止並移交本批重疊範圍與 dossier stewardship；原 Runtime 工作不續作，也不宣告其結案。
+  - 日期來源:direct
+  - 證據:tests/test_mac_metadata.py 修前 exit 1；本機 bsdtar 3.5.3／libarchive 3.7.4 的 raw archive 對照；macOS tar -tf 會隱藏 AppleDouble，改以 Python tarfile 驗證
+  - 放棄:以 COPYFILE_DISABLE= 空值當成恢復 metadata；以 Git ignore 或 tar -tf 證明 tar 產物乾淨；新增 bash 非互動初始化機制；對 live preferences、setup 或主機執行部署
+  - 重議:需要預設移除所有 xattr 或其他打包工具產生 metadata 時，先重現該工具再調整範圍；Linux 實際 tar control 保留於既有 Ubuntu CI，不用 macOS stub 冒稱已在 Linux 執行
+  - 關聯:setup-mac-env.sh;git/gitignore_global;write-mac-defaults.sh;claude/CLAUDE.md;claude/known-hazards.md;tests/test_mac_metadata.py

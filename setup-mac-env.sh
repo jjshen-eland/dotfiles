@@ -513,6 +513,9 @@ __dedupe_path
 # 環境變數
 # -------------------------------------------
 
+# macOS 打包預設不生成 AppleDouble；需要完整 Mac metadata 時單次用 env -u COPYFILE_DISABLE tar ...
+export COPYFILE_DISABLE=1
+
 # 從 .env 載入 API Keys（如果存在）
 if [ -f ~/.env ]; then
     set -a
