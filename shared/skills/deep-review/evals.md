@@ -1133,3 +1133,94 @@ summary、native trace、before／after target snapshots、actual journal、arch
 共六個有效修後 case outcomes 加一個 preserved BLOCKED；不是六次完整 native reviews。
 重建 facts 用 `audit --root` 指向各原 packet root；最終 suite／validator 與限制見
 `M-20261005-legacy-terminal-disposition-local`。
+
+## Primary responsibility projection and readonly native evidence（#274）
+
+P23 的 oracle 是原始 packet／native inputs、報告、actual commands／status、完整當前 journal 與
+subject／source snapshots；不能以 CLI exit 或模型自評 complete 判綠。
+
+- 39-file aggregate 的 12／14／13 primary ownership，以及 2-way partitions，須保持 aggregate
+  immutable endpoints／fingerprints 不變，packet 只把各自 primary 責任放進 primary_scope。
+- Controller 在派遣前驗完整 path 聯集、互斥性與 repo／path 邊界。共用 repo 的自由文字分工、
+  漏 path、重複／越界／錯誤型別 primary 不能消耗有效派遣；ordinary 仍擁有完整 subject。
+- 真實 native positive cases 走 admit → dispatch → fresh native reviewers → result／aggregate admission。
+  每位完成自身 primary＋必要 dependents 後，其他 assignments 的未審區域不自動變成自身 incomplete。
+  跨 repo interface 的原始 endpoints、primary ownership 與必要 contract pass 必須完整。
+- Required-fact case 中，受影響 assignment 缺實際 provider ABI evidence 仍 incomplete；其他
+  independent primary assignments 不因它的缺口而 incomplete，整組 admission 仍 BLOCKED。
+- Readonly command 的 scratch／permission failure 要保留真實 status；write-free probes、static 或
+  核對原始 execution artifacts 可建立必要 facts 時可完成，不把 denial 改標 test PASS。
+  Python isolated probes 不得只靠 PYTHONDONTWRITEBYTECODE：`-I` 忽略該環境變數；target 中
+  ignored bytecode 的新增同樣是 mutation，snapshot guard 必須阻擋並保留原始失敗。
+  Blind orchestrator／reviewer 的第一個 Git inspection 同樣需停用 optional locks；pre-first-call
+  index mtime 變更不可由 bytes 一致或開始太晚的 snapshot 冒稱完整 metadata 保全。
+- Packet／brief／subject drift、fake／reused reviewer、partial／duplicate sets 或 incomplete child 仍
+  阻擋。Failed sets、原始 incomplete structured reports、raw logs 與已用 attempts 保持可查，不退票。
+
+機械重建：`python3 -B tests/review-primary-scope.py <repo-root>`；使用真正 controller／Git fixtures，
+fake transport 只驗 process／artifact-retention 邊界，不能冒稱 native acceptance。
+Native opt-in 重建（每次使用新的 destination，既有失敗 batch 不搬移／重設）：
+
+```text
+python3 -B tests/review-primary-native-eval.py --destination <new-absolute-dir> --runtime codex --case two
+python3 -B tests/review-primary-native-eval.py --destination <new-absolute-dir> --runtime claude --case three
+```
+
+`two`／`three`／`interface`／`required` 使用同一份 fixture／oracle 跑雙端。Source bundle 排除 eval
+oracles；Codex 用正式 native-review，Claude 用 fresh readonly CLI sessions 與既有 off-mode collection。
+各 packet 保留 source hashes、subject／Git metadata snapshots、CLI version、實際 argv、native
+identities、完整 reports／traces。只讀實際 evidence 判 coverage 與必要 facts，不為保證結果放寬 permissions。
+
+2026-10-07 execution：原始 free-text projection regression exit 1，以及 incomplete report
+遺失的 RED 保留後修復；`tests/review-primary-scope.py` 11 項 GREEN。原生矩陣如下：
+
+| Fixture | Codex retained case | Claude retained case | Raw-report／journal oracle |
+|---|---|---|---|
+| two | c1 | a1 | 2 complete；attempt=1、valid_sets=1、PASS |
+| three | c2 | a2 | 3 complete；attempt=1、valid_sets=1、PASS |
+| interface | c3 | a3 | 3 complete；兩 repo endpoint／primary 聯集完整、PASS |
+| required | c4、c5 | a5 | complete／incomplete／complete；attempt=1、valid_sets=0、BLOCKED、無 receipt |
+| required readonly RED | — | a4 | part-2 寫出 ignored bytecode；snapshot guard BLOCKED，原 cache／reports／failed set 保留 |
+| two with initial-read barrier | c6 | a6 | 2 complete；首次僅讀完整 brief／packet，再 inspection；attempt=1、valid_sets=1、PASS |
+
+Roots 為 `/tmp/review-primary-native-20261007-<case>`。六個初始 positives 與 c4/a4 使用 primary
+修復版；a4 的實際 `-I`＋environment-only bytecode protection failure 取得 RED 後，brief
+新增 explicit `-B`／in-memory probe 限制。c5/a5 用全新 fixture 驗修後 readonly boundary，
+不重開 a4；這兩版 frozen source 只差 canonical brief。後續 Git metadata RED 促成 early brief
+loading 與 separate first-read barrier，c6/a6 以該版 source 補驗雙端原生完整 workflow。
+各版 inputs 保留於各自 frozen source，未回寫舊 packet。所有預期 protocol outcomes 的
+source／subject／Git content 與 mode snapshots 一致；metadata 的 pre-first-call 完整保全另由 f4 驗證。
+
+Parent audit 核對全部 12 次原生執行的 32 個 fresh native identities、packet ownership 聯集、
+原始 report 與 actual trace 的逐字一致、process exit、artifact hashes 與 journal；保留 a4 為
+readonly RED，不由最終 BLOCKED 洗掉 mutation。Facts 在 `/tmp/project-274-native-acceptance.json`，
+SHA256 `5179ade2e378e99528745503615a58b93132dc7db80b312e8cd4d13bee4f19b5`；重建
+`python3 -B /tmp/project-274-native-audit-20261007.py`。最後 full suite 的 thin-entry gate 曾因
+Codex adapter 32 行取得 RED（`/tmp/project-274-loading-final-suite.log`，1574／1、exit 1）；
+僅 reflow 雙入口至 29／30 行，全部 tokens／mode 相同，未改 native-tested behavior 或放寬 gate。
+Audit 另保存 frozen／current entry hashes 與逐 token 一致證據。Codex positives 的 heredoc／xcrun
+cache denials 有 actual trace 與原始報告；reviewer 改用 write-free probes 後才宣告必要 facts 已查明。
+這些是 isolated fixture reviews，未重跑原 NC live batch。
+
+Blind forward roots 為 `/tmp/review-primary-forward-20261007-f0` 至 `f4`。f0 protocol PASS、
+f1/f2/f3 的 required-fact BLOCKED 均保留，但各批初始 Git inspection 改動 index metadata，
+屬 readonly RED，不能以 bytes 一致或事後 snapshot 洗綠。f2 顯示 adapter 載入 brief 太晚；
+f3 顯示 reviewer 把 reference reads 與 target inspection 放在同一個 initial tool call。
+f4 的 fresh orchestrator 與兩位 reviewers 只取得 thin entry、raw fixture 與使用者任務，未提供
+候選修法、expected verdict 或 eval oracle；actual original reports 與 journal 為 complete／complete、
+attempt=1、valid_sets=1、PASS。Parent 在首次 call 前捕捉所有 target／Git entries（含 files 與 dirs）的
+content／mode／size／mtime_ns，修後逐項一致，frozen source 同樣保持。Original reviewer identities
+為 `/root/forward_scope_loading/part_0`、`/root/forward_scope_loading/part_1`；這是實際 agent transport，
+不另冒稱 CLI model metadata。`f4/parent-preservation.json` SHA256
+`f0dce3064f1da98b90916bb9ce84d9a46f58edaec7d7cef232d303b7fef9bf9a`；
+關聯 X-20261007-review-git-status-index-mtime。
+
+Targets：Codex native default（無 model override），CLI 0.160.1；retained JSONL 未曝 resolved
+model／effort／service tier，記 not exposed，不推定為具名模型。Claude alias `opus[1m]`、
+resolved `claude-opus-5-5[1m]`、high（argv）／standard（native usage），CLI 2.1.291。
+每次的 argv、CLI version 與原生 metadata 均保存於上述 packet roots。
+
+最後完整 regression：`/tmp/project-274-packaging-final-suite.log` terminal exit 0，
+1575 PASS／0 FAIL，426s；雙入口 validator、doc-governance ship audit 與 xref 通過。
+本地驗收 M-20261007-deep-review-primary-local；未 commit／push／PR／merge／部署，
+未以本地 macOS suite 冒稱本批 GitHub 雙 OS required CI。

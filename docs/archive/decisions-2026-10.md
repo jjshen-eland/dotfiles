@@ -198,3 +198,9 @@
   - 放棄:按 assertion 數平均切分、依賴其他 shard 的 tmp 副作用、增加 OS matrix jobs、刪掉慢的安全反例；以單次本機改善當作 hosted CI 保證
   - 重議:完整 serial／parallel 結果不一致、新跨段依賴、hosted CPU／I/O 成本或 section 排名改變時，依原始結果重新配平；雙 OS PR CI 仍待當批具名 delivery 授權
   - 關聯:M-20261007-ci-section-profile;D-20261007-ci-supervisor-signal-flag;CI 測試可信度與必要覆蓋;docs/testing-contract.md
+
+- **D-20261007-deep-review-primary-responsibility · 2026-10-07 Deep-review 分離 aggregate subject 與 reviewer primary responsibility**：#274 的原始三份 packets checksum 一致且都含完整 39-file subject；controller 的 assignment schema 只有 repo／concern，無法驗證同 repo 的 12／14／13 path ownership。修復前新增的真實 controller CLI regression 已取得 RED：共用 repo 的自由文字分工仍被接受。採結構化 canonical repo → exact subject paths，先驗 primary 完整聯集、互斥性與合法邊界；packet 另列 primary_scope，aggregate immutable scope 保持完整，必要 semantic dependents 不限於 primary ownership。Single reviewer／互斥 whole-repo 舊輸入可無歧義展開；同 repo 的多 reviewer 缺少 primary 則在 dispatch 前停止，不從 concern 猜邊界。保留 ordinary 完整責任、fresh identity、完整結果集合、drift／attempt history gates 與既有 topology；readonly execution 限制另按 required facts 判斷，不用忽略錯誤或 desired-verdict prompt 洗成 complete。
+  - 日期來源:direct
+  - 放棄:把 aggregate scope 改成每位的 path 子集而失去完整 fingerprint 錨點；只改 prompt 卻讓 controller 仍接受漏檔／重複 primary；從自由文字猜 paths；讓所有 reviewer 繼續承擔整份 broad subject
+  - 重議:exact subject paths 無法表達實際必要 responsibility 時，先保留新的 failing fixture，再擴充有界 representation；不可省略 aggregate coverage 或把 required evidence 缺失改標 complete
+  - 關聯:#274;D-20260823-portable-deep-review;docs/plans/2026-10-07-deep-review-primary-responsibility.md;tests/review-primary-scope.py

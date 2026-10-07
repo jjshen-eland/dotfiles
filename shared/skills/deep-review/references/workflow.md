@@ -10,6 +10,10 @@ Treat review as read-only unless the user explicitly asks to fix confirmed
 findings. Phrases such as “before I push”, “make sure it is safe”, or “review
 this” do not authorize edits, staging, commits, pushes, or merges.
 
+Before the first target Git inspection, read the complete
+[canonical reviewer brief](portable-reviewer-brief.md). Its readonly diagnostics
+contract applies to the orchestrator as well as every reviewer.
+
 An actual current-user turbo delegation for this same goal includes author repair;
 load [Turbo controls and authority](../../turbo/references/workflow.md#controls-and-authority)
 and select `--autofix` when opening the controller after ownership is verified.
@@ -138,6 +142,11 @@ The following size-based partition rules apply only to the full path:
 Do not give the complete broad scope to every reviewer. If capacity cannot cover
 the confirmed scope, narrow assignments honestly and report the unreviewed
 portion as `BLOCKED`; never imply full coverage.
+
+For same-repository partitions, declare structured primary paths as described by
+the controller protocol. Its packet separates each bounded `primary_scope` from
+the full aggregate immutable `scope`; necessary semantic dependents may cross
+primary boundaries. Completion and readonly evidence use the canonical reviewer brief.
 
 Submit the assignments to `admit`, then consume its ticket with `dispatch` before
 starting any reviewer. A nonzero gate means no dispatch. Give each reviewer the

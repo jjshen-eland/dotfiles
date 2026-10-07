@@ -3982,6 +3982,12 @@ else
     cat "$TMP/review-repair-controller.out"
     bad "review controller behavior regression"
 fi
+if python3 -B "$ROOT/tests/review-primary-scope.py" "$ROOT" >"$TMP/review-primary-scope.out" 2>&1; then
+    ok "review primary scope：path partitions、aggregate receipt、drift 與 incomplete 原始證據"
+else
+    cat "$TMP/review-primary-scope.out"
+    bad "review primary responsibility regression"
+fi
 
 echo "▶ 12c. project skill 跨 Claude Code／Codex 共用核心"
 if python3 "$ROOT/tests/project-test-evidence-test.py" >"$TMP/project-test-evidence-test.out" 2>&1; then
