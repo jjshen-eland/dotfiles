@@ -478,3 +478,21 @@
   - 放棄:只因 repo inputs 相同就假定外部 CLI 環境相同；把 RED 的 exit 1 當成可沿用的成功測試；以選單 metadata 宣稱模型 turn 或 fleet rollout
   - 重議:required CI 或 provider gates 未通過時維持 pending；環境 fingerprints 或來源變動時重驗受影響檢查
   - 關聯:runtime-layout-convergence;D-20261007-claude-model-default-unset;M-20261007-claude-native-default-verified;docs/plans/2026-10-06-runtime-layout-convergence.md
+
+- **M-20261007-ci-confidence-local-validation · 2026-10-07 CI 可信度修正通過本地完整驗證**：branch fix/ci-test-confidence 上修正七項原始回歸：hosts 異常 marker 保全、all-up 及兩支 signing scripts 失敗聚合、CI 結構判準、heredoc scanner error／delimiter 語意與 parallel descendants 清理；11 組隔離測試含合法 controls，另覆蓋候選 supervisor 的 spawn signal race，以及 CI dependency continue-on-error、matrix 順序與 custom shell 邊界。原始九組 RED exit 1（30 failures／1 timeout error），lint RED 固定 76 inputs／53 canonical files，修後檔案聯集保持且每個實體檔只掃一次。serial exit 0，1574 PASS／0 FAIL（407s）；定稿 parallel exit 0，172／239／1163，共 1574（最長 shard 332s）；最後補充 controls 的 core 補驗 exit 0（172／0，40s）。日誌 /tmp/ci-confidence-serial.log、/tmp/ci-confidence-parallel-verified.log、/tmp/ci-confidence-core-final.log；沒有真實 SSH／SCP／CA／package mutation，沒有 container attach。變更未 commit／push，雙 OS PR CI 未執行，故記本地驗證而非完成交付或關閉 active contract；native/model eval 不在此證據範圍。
+  - 日期來源:direct
+  - 放棄:以頂層斷言數下降或舊 baseline 全綠當品質提升；以本地 macOS 宣稱 Ubuntu／PR provider 或 native/model 已驗證；沿用其他批次 shipping 授權
+  - 重議:首次具名 delivery 的 required CI、環境 drift 或新增可重現假綠／誤紅時重驗受影響 gates，保留其 raw exit 與 controls
+  - 關聯:D-20261007-ci-confidence-regression-first;D-20261007-ci-supervisor-signal-flag;CI 測試可信度與必要覆蓋;docs/testing-contract.md
+
+- **M-20261007-ci-section-profile · 2026-10-07 macOS integration 的 section 時間基線已量測**：依使用者「開始，先量測」在本地 macOS 26.7.1 arm64／32 logical CPUs／Python 3.14.8／Homebrew Bash 5.3.20，使用外部 stdout observer 跑原 tests/run.sh 的 integration，未修改 runner／分片／assertions。Foreground section wall time 以原 header 邊界與 monotonic clock 量測（selector interval 0.05s）；全程 322.540s、1163 PASS／0 FAIL、exit 0，run.sh SHA256 69aff0bac839c461f488255790529a3c915d2c34f97956e2270346851214804a 前後相同。12b deep-plan 84.917s、12bb deep-review 79.139s、turbo 45.249s、12c project 32.052s 合計 241.357s（74.8%）；連續候選區間 9b–12b／12bb–16／turbo–結尾為 93.392／124.123／105.023s。此為單次本機基線與切分候選，不是 CPU exclusive time 或 GitHub macos-15 實測／效能承諾；fixture 依賴與並行 CPU／I/O 成本尚須驗證。Raw log／JSON／observer 位於 /tmp/ci-section-profile.3x4qgj/，JSON 帶 environment、source hash 與 rebuild argv；重建命令為 python3 /tmp/ci-section-profile.3x4qgj/profile.py /Users/jjshen/.dotfiles /tmp/ci-section-profile.3x4qgj。本輪未實作分片或刪測試、未送出 CI。
+  - 日期來源:direct
+  - 放棄:以 assertion 數平均分片；把 GitHub 彙總時才印出的 log timestamps 當 section 執行時間；對整套開 xtrace 造成 I/O 干擾；用本機 32-core 的比例直接承諾 hosted wall time
+  - 重議:來源／環境 drift、重複基線有顯著變異、切點 fixture 依賴未能隔離或 hosted profiling 排名不同時，以新實測重新配平
+  - 關聯:M-20261007-ci-confidence-local-validation;M-20260916-ci-test-sharding;CI 測試可信度與必要覆蓋;tests/run.sh
+
+- **M-20261007-ci-shards-local-validated · 2026-10-07 五 shard 完整驗證與本機加速通過**：branch fix/ci-test-confidence 按 section 基線把原 integration 切成 plan／review／runtime，保留原 serial 順序與 integration 聚合入口；跨段 Git fixtures／review-state 路徑獨立初始化。完整 parallel exit 0、1574 PASS／0 FAIL，monotonic wall time 136.994s；core／ship_state／plan／review／runtime 的 runner elapsed 為 42／56／104／137／116s，最長 shard 由前版 332s 降至 137s（約 59%）。完整 serial exit 0、1574／0，wall time 414.120s。逐段 assertion 順序及完整多重集合相同，只正規化成功 local-fetch 文案的實測秒數；原值與原始 log 保留。新三段與舊 integration log 的 112／383／668 條順序精確相同，五段 assertion body bytes 保持（review-state 路徑宣告移至共同前置）；無測試移除，manifest 合計不變。11 組隔離 controls 在 Bash 5.3／3.2 均 GREEN，實際五 shard runner 的 INT／TERM／child interruption／spawn race 清理通過；Bash 3.2 dispatch smoke 確認 all／integration／unknown 的選段及 exit。量測環境同本機基線，run.sh SHA256 edf4b86a3c33b0780287d02482d49a5f87ce55964bf8347e22b4672f746a358a，四個 runner／manifest／test fingerprints 前後相同。Raw logs、JSON、body audit、comparison 與 rebuild scripts 位於 /tmp/ci-shard-optimization.s1bblvei/；重跑 python3 /tmp/ci-shard-optimization.s1bblvei/measure.py parallel（或 serial），再以 compare.py 比對。未 commit／push，未執行 GitHub 雙 OS PR CI；不將本機 32-core 單次改善當 hosted 效能承諾。
+  - 日期來源:direct
+  - 放棄:只核對總數而漏掉重複／遺失的 assertion；為了輸出完全相同而改原始 log；以本地結果冒稱 GitHub macOS／Ubuntu 完成
+  - 重議:hosted wall time／CPU／I/O 顯著不同、來源／環境 drift 或新跨段依賴時，以新實測重新配平並重驗完整集合／exit
+  - 關聯:D-20261007-ci-measured-integration-split;M-20261007-ci-section-profile;CI 測試可信度與必要覆蓋;docs/testing-contract.md

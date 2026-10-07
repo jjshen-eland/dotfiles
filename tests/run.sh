@@ -3,7 +3,8 @@
 # tests/run.sh — dotfiles 腳本驗證（shellcheck + 語法 + 純邏輯行為測試）
 #
 # 用法：./tests/run.sh
-# CI shard：DOTFILES_TEST_SHARD=core|ship_state|integration ./tests/run.sh
+# CI shard：DOTFILES_TEST_SHARD=core|ship_state|plan|review|runtime ./tests/run.sh
+# integration 仍可依原順序執行 plan + review + runtime。
 # 涵蓋：
 #   1. shellcheck / bash -n 全腳本 gate（含 shared/skills/*/scripts/ 與兩個 runtime adapter）
 # 1cc. tests/run.sh 禁止 printf 經 pipeline 喂給 grep -q（pipefail/SIGPIPE 假判）
@@ -55,16 +56,13 @@ export DOTFILES_PRECOMMIT_OFF=1
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT" || exit 1   # 相對路徑的 source 解析與 git 操作以 repo 根為基準（從外部目錄執行時避免 SC1091 誤報）
-# gate 的 glob（含 skills 的 lib/）在無匹配時預設會以**字面值**傳給 shellcheck / bash -n，
-# 讓 gate 以「檔案不存在」失敗而非跳過——某個 skill 沒有 lib/ 就會誤報。
+# Resolve shared-core symlinks once; distinct runtime wrappers stay in scope.
 shopt -s nullglob
-# nullglob 是 process-wide 的，代價是**其他** glob 若哪天失效會靜默窄化（gate 照樣全綠、
-# 實際少掃一批檔）。用下界斷言把那個代價擋回來：數字取保守下界，新增腳本只會讓它更寬鬆。
-_gate_files=("$ROOT"/scripts/*.sh "$ROOT"/shared/skills/*/scripts/*.sh "$ROOT"/claude/skills/*/scripts/*.sh "$ROOT"/tests/*.sh)   # nullglob 下無匹配即空陣列
-if [ "${#_gate_files[@]}" -lt 15 ]; then
-    echo "❌ gate 檔案數異常少（${#_gate_files[@]}）——glob 可能已靜默窄化，先修再跑" >&2
-    exit 1
-fi
+gate_file_output="$(python3 "$ROOT/tests/shell-gate-files.py" "$ROOT")" || exit 1
+SHELL_GATE_FILES=()
+while IFS= read -r gate_file; do
+    SHELL_GATE_FILES+=("$gate_file")
+done <<< "$gate_file_output"
 FIX="$ROOT/tests/fixtures"
 # mktemp 失敗必須當場中止：本腳本沒有 set -e，而下面的 `cd "$TMP"` 在 TMP 為空時**回傳 0
 # 且不改目錄**，pwd -P 於是交出當下 cwd（第 35 行剛切到 repo 根）——EXIT trap 就會
@@ -90,26 +88,30 @@ PASS=0
 FAIL=0
 TEST_SHARD="${DOTFILES_TEST_SHARD:-all}"
 case "$TEST_SHARD" in
-    all|core|ship_state|integration) ;;
+    all|core|ship_state|plan|review|runtime|integration) ;;
     *) echo "未知 DOTFILES_TEST_SHARD：${TEST_SHARD}" >&2; exit 2 ;;
 esac
 suite_started_at="$(date +%s)"
 GITC=(git -c user.name=test -c user.email=test@test -c commit.gpgsign=false)
 SS_SCRIPT="$ROOT/claude/skills/project/scripts/ship-state.sh"
+RS_SCRIPT="$ROOT/claude/skills/deep-review/scripts/review-state.sh"
 
 shard_enabled() {
+    if [ "$TEST_SHARD" = integration ]; then
+        case "$1" in plan|review|runtime) return 0 ;; esac
+    fi
     [ "$TEST_SHARD" = all ] || [ "$TEST_SHARD" = "$1" ]
 }
 
-# section 9 與 9b+ 都只讀這個 local-only fixture；獨立 shard 不可依賴 core 的副作用。
-if [ "$TEST_SHARD" = ship_state ] || [ "$TEST_SHARD" = integration ]; then
+# section 9、9b、10 只讀這個 local-only fixture；獨立 shard 不可依賴 core 的副作用。
+if [ "$TEST_SHARD" = ship_state ] || [ "$TEST_SHARD" = plan ] || [ "$TEST_SHARD" = integration ]; then
     git init -q -b main "$TMP/gh-local"
     (cd "$TMP/gh-local" && echo x > a.txt && "${GITC[@]}" add a.txt && "${GITC[@]}" commit -qm init)
 fi
 
 # Section 19 has a few cross-contract assertions against ship-state. In the serial suite it reuses
-# section 9 fixtures; the integration shard recreates only that immutable baseline locally.
-if [ "$TEST_SHARD" = integration ]; then
+# section 9 fixtures; standalone runtime/integration recreate only that baseline locally.
+if [ "$TEST_SHARD" = runtime ] || [ "$TEST_SHARD" = integration ]; then
     cat > "$TMP/gh-open" <<'STUB'
 #!/usr/bin/env bash
 case "$*" in
@@ -147,17 +149,7 @@ assert_rc() {
 if shard_enabled core; then
 echo "▶ 1. shellcheck gate（背景執行，結尾彙總）"
 shellcheck_out="$TMP/shellcheck.out"
-shellcheck -x -P "SCRIPTDIR:$ROOT/scripts" \
-    "$ROOT"/scripts/*.sh "$ROOT/scripts/lib/inventory.sh" \
-    "$ROOT"/claude/scripts/*.sh \
-    "$ROOT"/shared/skills/*/scripts/*.sh "$ROOT"/shared/skills/*/scripts/lib/*.sh \
-    "$ROOT"/claude/skills/*/scripts/*.sh "$ROOT"/claude/skills/*/scripts/lib/*.sh \
-    "$ROOT"/codex/skills/*/scripts/*.sh \
-    "$ROOT/.githooks/dispatcher" \
-    "$ROOT/shell/functions.sh" \
-    "$ROOT/setup-mac-env.sh" "$ROOT/setup-linux-env.sh" "$ROOT/write-mac-defaults.sh" \
-    "$ROOT"/claude/evals/*.sh \
-    "$ROOT"/tests/*.sh >"$shellcheck_out" 2>&1 &
+shellcheck -x -P "SCRIPTDIR:$ROOT/scripts" "${SHELL_GATE_FILES[@]}" >"$shellcheck_out" 2>&1 &
 shellcheck_pid=$!
 background_pids="$background_pids $shellcheck_pid"
 
@@ -166,6 +158,10 @@ doc_test_out="$TMP/doc-governance-tests.out"
 python3 "$ROOT/tests/test_doc_governance.py" >"$doc_test_out" 2>&1 &
 doc_test_pid=$!
 background_pids="$background_pids $doc_test_pid"
+
+echo "▶ CI confidence regressions（隔離運維替身與實際 runner 中斷）"
+python3 -B "$ROOT/tests/test_ci_confidence.py"
+assert_rc "CI confidence 回歸與合法 control 全部通過" 0 $?
 
 echo "▶ 2c. shard aggregation fail-closed suite"
 python3 "$ROOT/tests/test_shard_aggregate.py"
@@ -269,7 +265,10 @@ hd_hits="$(awk -f "$HD_GATE" \
     "$ROOT/setup-mac-env.sh" "$ROOT/setup-linux-env.sh" "$ROOT/write-mac-defaults.sh" \
     "$ROOT"/claude/evals/*.sh \
     "$ROOT"/tests/*.sh)"
-if [ -z "$hd_hits" ]; then
+hd_rc=$?
+if [ "$hd_rc" -ne 0 ]; then
+    bad "heredoc scanner 執行失敗（exit ${hd_rc}），不可視為零命中"
+elif [ -z "$hd_hits" ]; then
     ok "無 unquoted heredoc 的 body 含反引號"
 else
     bad "有 unquoted heredoc 的 body 含反引號（一律改 <<'EOF'，變數走 os.environ/sys.argv）"
@@ -975,16 +974,7 @@ fi
 
 echo "▶ 2. bash -n 語法 gate"
 syntax_fail=0
-for f in "$ROOT"/scripts/*.sh "$ROOT/scripts/lib/inventory.sh" \
-         "$ROOT"/claude/scripts/*.sh \
-         "$ROOT"/shared/skills/*/scripts/*.sh "$ROOT"/shared/skills/*/scripts/lib/*.sh \
-         "$ROOT"/claude/skills/*/scripts/*.sh "$ROOT"/claude/skills/*/scripts/lib/*.sh \
-         "$ROOT"/codex/skills/*/scripts/*.sh \
-         "$ROOT/.githooks/dispatcher" \
-         "$ROOT/shell/functions.sh" \
-         "$ROOT/setup-mac-env.sh" "$ROOT/setup-linux-env.sh" "$ROOT/write-mac-defaults.sh" \
-         "$ROOT"/claude/evals/*.sh \
-         "$ROOT"/tests/*.sh; do
+for f in "${SHELL_GATE_FILES[@]}"; do
     bash -n "$f" || { syntax_fail=1; echo "     syntax fail: $f"; }
 done
 if [ "$syntax_fail" -eq 0 ]; then ok "bash -n 全部通過"; else bad "bash -n 有語法錯誤"; fi
@@ -3094,7 +3084,7 @@ out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-stale")"
 if echo "$out" | grep -q "dossier-flag:.*落後 repo 活動"; then ok "STATUS.md 落後 repo 活動 >30 天 → 過期 flag"; else bad "過期未偵測"; fi
 
 fi
-if shard_enabled integration; then
+if shard_enabled plan; then
 echo "▶ 9b. branch-first.sh 情況 A/B 判定與救援序列"
 BF_SCRIPT="$ROOT/claude/skills/project/scripts/branch-first.sh"
 
@@ -3192,7 +3182,6 @@ assert_rc "缺 branch 名 → exit 2" 2 $?
 assert_rc "非法 branch 名 → exit 2" 2 $?
 
 echo "▶ 10. review-state.sh scope-priority / round 判定"
-RS_SCRIPT="$ROOT/claude/skills/deep-review/scripts/review-state.sh"
 
 # fixture：bare origin + clone，main 已 push
 git init --bare -q -b main "$TMP/rs-origin.git"
@@ -3894,6 +3883,8 @@ else
     bad "deep-plan launcher signal handler 重複 cleanup（RED）"
 fi
 
+fi
+if shard_enabled review; then
 echo "▶ 12bb. deep-review skill 跨 Claude Code／Codex 共用核心"
 DRS_CLAUDE="$ROOT/claude/skills/deep-review"
 RRS_CODEX="$ROOT/codex/skills/repo-review"
@@ -5979,6 +5970,8 @@ if grep -q "base 用 head" <<< "$spc_out" && grep -q "可能已過期" <<< "$spc
     ok "fetch 失敗 → base 建議帶「可能已過期」警告"
 else bad "fetch 失敗後的 base 建議未標示 ref 可能過期：$spc_out"; fi
 
+fi
+if shard_enabled runtime; then
 echo "▶ turbo session controls, native wiring and delegated review"
 if python3 -B "$ROOT/tests/turbo-mode.py" >"$TMP/turbo-mode.out" 2>&1; then
     ok "turbo controls／native wiring／delegated review behavior oracle"
@@ -9167,42 +9160,13 @@ assert_eq "worktree-specific 的 MERGE_HEAD 能停用 guard" "0" "$hk_rc"
 
 echo "▶ 25. cross-platform contract（CI、Ubuntu preflight、plugin hints）"
 CI_FILE="$ROOT/.github/workflows/test.yml"
-if [ -f "$CI_FILE" ] \
-    && grep -q 'macos-15' "$CI_FILE" \
-    && grep -q 'ubuntu-24.04' "$CI_FILE" \
-    && grep -q './tests/run-parallel.sh' "$CI_FILE" \
-    && grep -q 'SHARDS=(core ship_state integration)' "$ROOT/tests/run-parallel.sh" \
-    && grep -q 'shard-manifest.tsv' "$ROOT/tests/run-parallel.sh" \
-    && grep -q 'contents: read' "$CI_FILE"; then
-    ok "GitHub Actions 以唯讀權限在 macOS 15 + Ubuntu 24.04 跑完整三 shard suite"
+ci_contract_out="$(python3 "$ROOT/tests/ci-contract.py" "$CI_FILE" 2>&1)"
+ci_contract_rc=$?
+if [ "$ci_contract_rc" -eq 0 ]; then
+    ok "GitHub Actions 結構：PR-only、唯讀、雙 OS 與完整 suite"
 else
-    bad "缺少雙 OS 或完整三 shard GitHub Actions contract"
-fi
-if grep -q '^  pull_request:$' "$CI_FILE" \
-    && ! grep -q '^  push:$' "$CI_FILE"; then
-    ok "CI 僅由 PR 觸發，不在 merge 後對 main 重跑同一套完整 suite"
-else
-    bad "CI trigger contract 應為 PR-only，避免 main 重複完整 run"
-fi
-
-# GitHub-hosted images 的預裝工具不是跨 OS 契約：run 34676591841 的 Ubuntu image 帶
-# ShellCheck 0.9.0、macOS 則由 Homebrew 裝 0.11.0，且兩者都缺 rg。只用 command -v
-# 接受 runner 內任意版本會讓同一份 shell gate 產生不同 verdict，缺 rg 更會讓後續 assertion
-# 大量連鎖假紅。zsh caller fixture 也不能依賴 runner 剛好預裝 zsh；四項 suite dependency
-# 必須由同一個明示的 Homebrew install step 收斂。
-ci_dependency_block="$(sed -n '/name: Install test dependencies/,/name: Run complete suite/p' "$CI_FILE")"
-if grep -Eq 'brew install .*shellcheck' <<< "$ci_dependency_block" \
-    && grep -Eq 'brew install .*ripgrep' <<< "$ci_dependency_block" \
-    && grep -Eq 'brew install .*yq' <<< "$ci_dependency_block" \
-    && grep -Eq 'brew install .*zsh' <<< "$ci_dependency_block"; then
-    ok "CI 明示安裝 shellcheck、ripgrep、yq、zsh"
-else
-    bad "CI dependency contract 缺 shellcheck／ripgrep／yq／zsh"
-fi
-if grep -Eq 'command -v shellcheck.*\|\|' <<< "$ci_dependency_block"; then
-    bad "CI 仍會接受 runner 任意預裝的 ShellCheck 版本"
-else
-    ok "CI 不以任意預裝 ShellCheck 取代一致 provider"
+    bad "GitHub Actions contract 失敗（exit ${ci_contract_rc}）"
+    printf '%s\n' "$ci_contract_out"
 fi
 
 # GitHub runners 的 init.defaultBranch 未必與開發機一致。bare fixture 若不明示 HEAD，

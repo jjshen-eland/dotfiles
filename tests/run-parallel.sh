@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 RESULTS="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
 [ -n "$RESULTS" ] && [ -d "$RESULTS" ] || { echo "invalid results directory" >&2; exit 1; }
 RESULTS="$(cd "$RESULTS" && pwd -P)"
-SHARDS=(core ship_state integration)
+SHARDS=(core ship_state plan review runtime)
 child_pids=()
 
 cleanup() {
@@ -22,19 +22,10 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 130' INT TERM
 
-for shard in "${SHARDS[@]}"; do
-    (
-        DOTFILES_TEST_SHARD="$shard" "$ROOT/tests/run.sh" >"$RESULTS/$shard.log" 2>&1
-        child_rc=$?
-        printf '%s\n' "$child_rc" >"$RESULTS/$shard.rc.tmp"
-        mv "$RESULTS/$shard.rc.tmp" "$RESULTS/$shard.rc"
-    ) &
-    child_pids+=("$!")
-done
-
-for pid in "${child_pids[@]}"; do
-    wait "$pid" >/dev/null 2>&1 || true
-done
+python3 "$ROOT/tests/shard-supervisor.py" "$ROOT" "$RESULTS" "${SHARDS[@]}" &
+child_pids+=("$!")
+wait "${child_pids[0]}"
+supervisor_rc=$?
 child_pids=()
 
 for shard in "${SHARDS[@]}"; do
@@ -49,3 +40,5 @@ done
 python3 "$ROOT/tests/shard-aggregate.py" \
     --manifest "$ROOT/tests/shard-manifest.tsv" \
     --results "$RESULTS"
+aggregate_rc=$?
+[ "$supervisor_rc" -eq 0 ] && [ "$aggregate_rc" -eq 0 ]

@@ -91,8 +91,11 @@ rotate_local() {
     fi
 
     # 3. 修正權限
-    chmod 600 ~/.ssh/id_autogen
-    chmod 644 ~/.ssh/id_autogen.pub ~/.ssh/id_autogen-cert.pub
+    if ! chmod 600 ~/.ssh/id_autogen || ! chmod 644 ~/.ssh/id_autogen.pub ~/.ssh/id_autogen-cert.pub; then
+        print_error "localhost：設定 key 權限失敗"
+        FAILED=$((FAILED + 1))
+        return
+    fi
 
     print_success "localhost：key 已重新產生並簽署"
     SUCCESS=$((SUCCESS + 1))
@@ -138,7 +141,11 @@ rotate_remote() {
     fi
 
     # 5. 修正權限
-    ssh "$server" "chmod 600 ~/.ssh/id_autogen && chmod 644 ~/.ssh/id_autogen.pub ~/.ssh/id_autogen-cert.pub" 2>/dev/null || true
+    if ! ssh "$server" "chmod 600 ~/.ssh/id_autogen && chmod 644 ~/.ssh/id_autogen.pub ~/.ssh/id_autogen-cert.pub" 2>/dev/null; then
+        print_error "${server}：設定 key 權限失敗"
+        FAILED=$((FAILED + 1))
+        return
+    fi
 
     print_success "${server}：key 已重新產生並簽署"
     SUCCESS=$((SUCCESS + 1))
@@ -154,3 +161,5 @@ done
 
 echo ""
 print_info "完成：成功 $SUCCESS / 失敗 $FAILED / 總計 ${#SERVERS[@]}"
+
+[ "$FAILED" -eq 0 ]

@@ -47,12 +47,17 @@ apply_to_file() {
 
     local tmp
     tmp="$(mktemp)"
-    # 移除所有 pilot-infra 區塊（包含前後重複）
-    awk -v b="$BEGIN_MARKER" -v e="$END_MARKER" '
-        $0 == b { in_block=1; next }
-        $0 == e { in_block=0; next }
+    # 驗證 marker 狀態並移除完整區塊；異常輸入不碰原檔。
+    if ! awk -v b="$BEGIN_MARKER" -v e="$END_MARKER" '
+        $0 == b { if (in_block) bad=1; in_block=1; next }
+        $0 == e { if (!in_block) bad=1; in_block=0; next }
         !in_block { print }
-    ' "$target" > "$tmp"
+        END { if (bad || in_block) exit 1 }
+    ' "$target" > "$tmp"; then
+        rm -f "$tmp"
+        echo "error: $target marker 順序或數量異常" >&2
+        return 1
+    fi
 
     # 去除尾部多餘空行
     # （只保留不超過一個尾行的空行）
@@ -72,29 +77,21 @@ apply_to_file() {
 
 apply_to_remote() {
     local host="$1"
-    local block
+    local block hosts
     block="$(render_block)"
-    # shellcheck disable=SC2087  # 刻意 client 端展開 $BEGIN_MARKER/$END_MARKER/$block；server 端變數已用 \$ 逸出
-    ssh "$host" "sudo bash -s" <<REMOTE
-set -e
-TARGET=/etc/hosts
-TMP=\$(mktemp)
-awk -v b='$BEGIN_MARKER' -v e='$END_MARKER' '
-    \$0 == b { in_block=1; next }
-    \$0 == e { in_block=0; next }
-    !in_block { print }
-' "\$TARGET" > "\$TMP"
-while [ -s "\$TMP" ] && [ -z "\$(tail -n 1 "\$TMP")" ]; do
-    sed -i.bak -e '\$d' "\$TMP" && rm -f "\$TMP.bak"
-done
-echo "" >> "\$TMP"
-cat >> "\$TMP" <<'BLOCK'
-$block
-BLOCK
-cp "\$TMP" "\$TARGET"
-rm -f "\$TMP"
-echo "OK"
-REMOTE
+    hosts="$(inventory_hosts)"
+    # Transport the exact local guard/render behavior; stdin contains no evaluated payload.
+    {
+        printf '%s\n' 'set -euo pipefail' 'TARGET=/etc/hosts'
+        printf 'BEGIN_MARKER=%q\nEND_MARKER=%q\n' "$BEGIN_MARKER" "$END_MARKER"
+        declare -f apply_to_file
+        printf 'render_block() { printf "%%s\\n" %q; }\n' "$block"
+        printf 'inventory_hosts() { printf "%%s\\n" %q; }\n' "$hosts"
+        # TARGET expands in the transported remote script.
+        # shellcheck disable=SC2016
+        printf '%s\n' 'apply_to_file "$TARGET"'
+    } | ssh "$host" "sudo bash -s"
+
 }
 
 case "${1:-}" in

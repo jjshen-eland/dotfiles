@@ -1,4 +1,6 @@
 # shard	expected successful assertions
-core	171
+core	172
 ship_state	239
-integration	1166
+plan	112
+review	383
+runtime	668
