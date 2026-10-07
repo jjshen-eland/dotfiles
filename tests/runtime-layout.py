@@ -55,6 +55,27 @@ class RuntimeLayoutTests(unittest.TestCase):
     def root(self, name):
         return self.module.Layout(self.home, self.repo).targets[name]
 
+    def prepare_common_entry(self):
+        scripts = self.repo / 'scripts'
+        scripts.mkdir(exist_ok=True)
+        for name in ('ensure-runtime.sh', 'ensure-runtime-layout.py'):
+            shutil.copy2(ROOT / 'scripts' / name, scripts / name)
+        # Only isolate unrelated guidance/config work; run the real layout and entry.
+        (scripts / 'ensure-codex-guidance.sh').write_text(
+            '#!/usr/bin/env bash\n'
+            '[ "${FIXTURE_GUIDANCE_FAIL:-0}" = 1 ] && { echo guidance-failed >&2; exit 1; }\n'
+            'exit 0\n')
+        (scripts / 'ensure-codex-config.py').write_text(
+            'import os, sys\n'
+            'if os.environ.get("FIXTURE_CONFIG_FAIL") == "1":\n'
+            '    print("config-failed", file=sys.stderr)\n'
+            '    raise SystemExit(1)\n')
+        return scripts / 'ensure-runtime.sh'
+
+    def run_common_entry(self, **env):
+        return subprocess.run(['bash', str(self.prepare_common_entry())],
+                              env={**self.env, **env}, text=True, capture_output=True)
+
     def handoff(self, slug='alpha', archive=False, legacy=True):
         store = self.home / ('.claude/handoffs' if legacy else '.agents/handoffs')
         p = store / ('archive/20261006-' + slug + '.md' if archive else slug + '.md')
@@ -82,6 +103,105 @@ class RuntimeLayoutTests(unittest.TestCase):
             self.assertFalse(report['native_loading_verified'])
             self.assertEqual(before, self.module.snapshot(self.home))
         self.run_cli('verify', expected=1)
+
+    def test_common_entry_unchanged_success_is_one_line(self):
+        self.run_cli()
+        before = self.module.snapshot(self.home)
+        run = self.run_common_entry()
+        self.assertEqual(0, run.returncode, run.stdout + run.stderr)
+        self.assertEqual(1, len(run.stdout.splitlines()))
+        self.assertTrue(run.stdout.startswith('✓ Runtime layout: unchanged (5 roots)'), run.stdout)
+        self.assertEqual(before, self.module.snapshot(self.home))
+
+    def test_common_entry_migration_lists_receipts_and_retained_backups(self):
+        old = self.handoff()
+        before = self.module.snapshot(old.parent, False)
+        run = self.run_common_entry()
+        self.assertEqual(0, run.returncode, run.stdout + run.stderr)
+        self.assertIn('✓ Runtime layout: updated 4/5 roots', run.stdout)
+        self.assertNotIn('"ok":', run.stdout)
+        receipts = sorted((self.home / '.runtime-layout').glob('*.json'))
+        self.assertEqual(4, len(receipts))
+        for path in receipts:
+            receipt = json.loads(path.read_text())
+            self.assertIn(receipt['name'] + ': committed', run.stdout)
+            self.assertIn(receipt['id'], run.stdout)
+            self.assertIn(str(path), run.stdout)
+            for op in receipt['operations']:
+                if op['backup'] and Path(op['backup']).exists():
+                    self.assertIn(op['backup'], run.stdout)
+        self.assertEqual(before, self.module.snapshot(self.root('handoffs'), False))
+        installed = self.module.snapshot(self.home)
+        rerun = self.run_common_entry()
+        self.assertEqual(0, rerun.returncode, rerun.stdout + rerun.stderr)
+        self.assertEqual(1, len(rerun.stdout.splitlines()))
+        self.assertEqual(installed, self.module.snapshot(self.home))
+
+    def test_common_entry_partial_failure_keeps_complete_json(self):
+        custom = self.root('claude-skills') / 'demo'
+        custom.mkdir(parents=True)
+        (custom / 'custom.txt').write_text('user-owned data')
+        before = self.module.snapshot(custom)
+        run = self.run_common_entry()
+        self.assertEqual(1, run.returncode, run.stdout + run.stderr)
+        report, _ = json.JSONDecoder().raw_decode(run.stdout.lstrip())
+        self.assertFalse(report['ok'])
+        self.assertEqual(5, len(report['roots']))
+        blocked = next(row for row in report['roots'] if row['name'] == 'claude-skills')
+        self.assertEqual('blocked', blocked['status'])
+        self.assertTrue(blocked['reason'])
+        committed = next(row for row in report['roots'] if row['name'] == 'codex-skills')
+        self.assertEqual('committed', committed['status'])
+        self.assertTrue(Path(committed['receipt']).is_file())
+        self.assertIn('cli', report)
+        self.assertIn('process_inventory', report)
+        self.assertFalse(report['native_loading_verified'])
+        self.assertEqual(before, self.module.snapshot(custom))
+
+    def test_common_entry_writer_and_process_failures_keep_diagnostics(self):
+        old = self.handoff()
+        before = self.module.snapshot(old.parent)
+        for env in ({'PS_WRITER': '1'}, {'PS_FAIL': '1'}):
+            with self.subTest(env=env):
+                run = self.run_common_entry(**env)
+                self.assertEqual(1, run.returncode, run.stdout + run.stderr)
+                report, _ = json.JSONDecoder().raw_decode(run.stdout.lstrip())
+                self.assertFalse(report['ok'])
+                processes = report['process_inventory']
+                if 'PS_WRITER' in env:
+                    self.assertEqual(4711, processes['writers'][0]['pid'])
+                    self.assertEqual('daemon', processes['writers'][0]['kind'])
+                else:
+                    self.assertFalse(processes['ok'])
+                    self.assertTrue(processes['error'])
+                self.assertEqual(before, self.module.snapshot(old.parent))
+
+    def test_common_entry_summary_retains_guidance_and_config_failures(self):
+        self.run_cli()
+        for env, diagnostic in (({'FIXTURE_GUIDANCE_FAIL': '1'}, 'guidance-failed'),
+                                ({'FIXTURE_CONFIG_FAIL': '1'}, 'config-failed')):
+            with self.subTest(diagnostic=diagnostic):
+                run = self.run_common_entry(**env)
+                self.assertEqual(1, run.returncode, run.stdout + run.stderr)
+                self.assertIn(diagnostic, run.stderr)
+
+    def test_common_entry_summary_exposes_missing_cli(self):
+        self.run_cli()
+        self.prepare_common_entry()
+        for name, target in (('python3', sys.executable), ('bash', shutil.which('bash'))):
+            (self.bin / name).symlink_to(target)
+        run = subprocess.run(['bash', str(self.repo / 'scripts/ensure-runtime.sh')],
+                             env={**self.env, 'PATH': str(self.bin)}, text=True, capture_output=True)
+        self.assertEqual(0, run.returncode, run.stdout + run.stderr)
+        self.assertEqual(1, len(run.stdout.splitlines()))
+        self.assertIn('CLI unavailable: codex, claude', run.stdout)
+
+    def test_direct_layout_commands_keep_default_json(self):
+        for command in ('inventory', 'dry-run', 'apply', 'verify', 'guard-config-home'):
+            with self.subTest(command=command):
+                report = self.run_cli(command)
+                self.assertTrue(report['ok'])
+                self.assertEqual(command, report['command'])
 
     def test_inventory_exposes_writers_and_failed_process_inventory(self):
         p = self.handoff()

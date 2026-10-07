@@ -5,8 +5,8 @@
 - 狀態：in-progress
 - 種類：implementation plan
 - 需求來源：使用者要求同版 dotfiles 的新裝／升級／重跑得到相同受管理 runtime 結構，並於 2026-10-06 指示「開工」。
-- Writer／Dossier Steward：`codex:runtime-layout-convergence`
-- Workspace：`branch=refactor/runtime-layout-convergence`
+- Writer／Dossier Steward：`codex:runtime-deployment-output`
+- Workspace：`branch=fix/runtime-deployment-output`
 - 原規劃／盤點基線：`338da91fc3a2ba6ce2487e63d0f8ab4b6c527ab1`
 - 接續基線：`79269535b3a3a741a87c3f7a8bb1c8a161ce2fcd`；#271 已經 PR #272 合併，接續時 runtime setup／helpers 尚未實作。原盤點維持其採集時間與限制，apply 前仍須重新量測。
 - 需求／驗收權威：[STATUS.md](../../STATUS.md)「Runtime 目錄收斂與 legacy 遷移」。使用者「開工」授權本地實作／驗證，PR #273 已合併 origin/main `744356df`，使用者現已明示本批「14 個目標的遷移部署與驗收」。
@@ -145,3 +145,9 @@ M-20261007-macs-runtime-layout-accepted 的本機離線接續驗收：使用者�
 新暫存 cwd 的 metadata-only 原生 probe，Codex／Claude 各載入 11 repo adapters，Codex 全 native rules parser 對 gh pr merge 回 prompt（未執行命令）；Claude 使用已部署的 user settings，沒有 temporary cloud opt-out override。Native Claude 啟動時依 syncClaudeAiSkills=false 將已下載 skills 移至 ~/.claude/skills/.trash 並移除 synced；[官方行為說明](https://code.claude.com/docs/en/skills#skills-synced-from-claudeai) 與本機 2.1.289 schema 一致。215 個 skill 檔案的內容／mode／mtime／dev／inode 完整移到 trash，3 個 .bucket-*／manifest.json／.last-complete-round 同步索引由 runtime 清除；runtime 與 repo 的 synced／syncd 四路徑 absent。首次 reporter 要求 native startup 全 root bytes／inode 不變而失敗，保留 native-preservation-attempt1.json；逐項反證僅 Claude skills root mtime、identified synced→trash、三個索引清除及 .claude.json cache 改變，其他 managed entries、handoff、native skills／rules、私人設定、receipt／backup／source 相同，沒有放寬 production guard。原生 trash 會受 retention 清理，不宣稱永久備份或所有 218 個 cache 檔仍在；metadata-only 不宣稱 model turn、登入模型推論或 10 分鐘背景週期。
 
 Raw evidence 為 /tmp/macs-runtime-rollout-20261007.mt8BvI，含 user run.log／inventory／verify／verify-rerun、committed receipt 原始指紋、pre-native／post-native snapshots、native responses、保留的失敗 reporter 與定向 acceptance。acceptance.json SHA256 d5d55970dce4e8e6b2676a852c6cc102e3cb91e4e301a6e452ed540505ab3c37；artifact-manifest.json SHA256 4d00627425d3299f8c58bc55d07ce4a31c31e9168a2ed60a160cc2944751483f；receipt SHA256 71516f8d91daf8362378509fb26e9e39d157e82a82718756ff839cd015362304。現行 inventory layout 14／14 已驗（缺 CLI 能力邊界沿上表），原十三台 evidence／歷史 blocked 快照未覆寫。Inventory 外兩部 MacBook 仍未量測、追加驗收範圍待確認；其 legacy store 相容影響未釐清前保留 fallback，本 plan 不結案。本輪只補驗收紀錄，未追加 source 改動或新的 push／PR／merge。
+
+## 2026-10-07 日常部署輸出接續
+
+使用者選擇原 writer 已停止、由本輪接續，assignment 已同步至 STATUS；本批授權為輸出摘要的本地修正與驗證，不能沿用舊 rollout／shipping 授權。驗收以 STATUS 新增的第 9 項為權威。基線重現及取捨見 D-20261007-runtime-deployment-summary；先新增隔離行為回歸取得 RED，再改 formatter 與共用入口。未執行 live runtime apply 或 brewup 套件更新；legacy cleanup 仍待原驗收邊界釐清，不因本批輸出修正結案。
+
+本批 formatter／共用 entry 與 33 個隔離案例已驗；最終 serial／parallel 各 1575 PASS／0 FAIL、terminal exit 0，349 個 tracked 檔案內容快照前後與兩 runner 間一致。無 CLI 環境的摘要測試過度指定已先重現再修正，原初輪 serial 與 failure controls 保留；完整驗收及 raw evidence 指向 M-20261007-runtime-deployment-output-local。全套後只補此段與 STATUS／milestone，再驗文件，不將原 input snapshot 倒填為收尾文字。輸出修正尚待本批 shipping；未延伸成 legacy cleanup 或額外終端的完整 native 驗收。

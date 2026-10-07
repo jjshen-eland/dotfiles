@@ -818,6 +818,10 @@ DOTFILES_RUNTIME_TEST_FAIL 僅為隔離 fault injection，不繞過任何 guard�
 Entry fixture 的 SSH 替身執行實際遠端 shell／共用 entry，不只回顯 OK；config failure 同時納入 local／remote 終判。
 新增 assertion 同步 shard manifest，serial 與 parallel 都須以實際 exit 驗證。
 
+共用 entry 的輸出回歸走真實 layout／entry：unchanged 成功僅一行、有遷移列出 receipt 與 retained backups、
+重跑不新增交易或改動資料；部分成功／ownership 阻擋、writer／process inventory 失敗保留完整 JSON 與非零。
+guidance／config 的失敗與缺 CLI 不因摘要消失，直接 layout CLI 的預設 JSON 契約不變。
+
 ## 未列於本檔的節
 
 `dotfiles-sync` 遠端回報段（ssh 失敗與無告知時都不可吞掉主機結果）已有測試但無獨立節號。
