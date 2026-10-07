@@ -14,13 +14,12 @@ Review a precisely bounded local change set without inheriting the author's
 conclusions. Default to read-only reporting; modify files only when the user
 explicitly requests autofix.
 
-Resolve `<skill-root>` as the directory containing this `SKILL.md`. Read
-[references/workflow.md](references/workflow.md) completely and follow it. When
-starting any reviewer, require that reviewer to read
-[references/portable-reviewer-brief.md](references/portable-reviewer-brief.md)
-completely before inspecting the target.
-Before any reviewer dispatch or repair, use
-[scripts/review-control.py](scripts/review-control.py) as specified by that protocol.
+Resolve `<skill-root>` as the directory containing this `SKILL.md`. Before the
+first target Git inspection, read [references/workflow.md](references/workflow.md) and
+[references/portable-reviewer-brief.md](references/portable-reviewer-brief.md) completely and follow them.
+Do not batch these initial reads with target Git commands. When starting any reviewer, require that reviewer to read
+[references/portable-reviewer-brief.md](references/portable-reviewer-brief.md) completely before inspecting the target.
+Before any reviewer dispatch or repair, use [scripts/review-control.py](scripts/review-control.py) as specified by that protocol.
 
 Use [scripts/review-scope.sh](scripts/review-scope.sh) to capture and re-verify
 each repository's review subject. Treat a failed scope check as `BLOCKED`; never

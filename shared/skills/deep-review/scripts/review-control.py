@@ -272,6 +272,65 @@ def result_verdict(state):
     return 'PASS'
 
 
+def primary_assignments(scopes, assignments):
+    """Validate finite path ownership without grading concern prose or dependencies."""
+    subjects = {s['repo']: s['subject_files'] for s in scopes}
+    ids, repo_counts = set(), {}
+    normalized = []
+    for assignment in assignments:
+        require(isinstance(assignment, dict) and set(assignment) in (
+            {'id', 'repos', 'concern'}, {'id', 'repos', 'concern', 'primary'}),
+            'assignment fields: id, repos, concern, optional primary')
+        require(isinstance(assignment['id'], str) and assignment['id'] and assignment['id'] not in ids,
+                'assignment IDs must be distinct nonempty strings')
+        require(isinstance(assignment['concern'], str) and assignment['concern'].strip(), 'missing concern')
+        require(isinstance(assignment['repos'], list) and assignment['repos'] and
+                all(isinstance(p, str) and p and Path(p).is_absolute() for p in assignment['repos']),
+                'assignment repos must be nonempty absolute paths')
+        repos = [str(Path(p).resolve()) for p in assignment['repos']]
+        require(len(set(repos)) == len(repos) and set(repos) <= set(subjects),
+                'assignment has unknown or duplicate repos')
+        ids.add(assignment['id'])
+        for repo in repos:
+            repo_counts[repo] = repo_counts.get(repo, 0) + 1
+        normalized.append({**assignment, 'repos': repos})
+    require(set(repo_counts) == set(subjects), 'partition omits a confirmed repository')
+    owned = set()
+    for assignment in normalized:
+        primary = assignment.get('primary')
+        if primary is None:
+            require('primary' not in assignment and all(repo_counts[r] == 1 for r in assignment['repos']),
+                    'shared-repo assignments require structured primary paths; concern is not coverage')
+            primary = {r: list(subjects[r]) for r in assignment['repos']}
+        require(isinstance(primary, dict) and all(isinstance(r, str) and r and Path(r).is_absolute()
+                                                for r in primary), 'primary must map absolute repos to path lists')
+        canonical = {str(Path(r).resolve()): paths for r, paths in primary.items()}
+        require(len(canonical) == len(primary) and set(canonical) == set(assignment['repos']),
+                'primary repos must exactly match assignment repos')
+        for repo, paths in canonical.items():
+            require(isinstance(paths, list) and all(isinstance(p, str) for p in paths),
+                    'primary paths must be lists of exact subject file names')
+            require(len(set(paths)) == len(paths) and set(paths) <= set(subjects[repo]),
+                    'primary has duplicate or out-of-subject paths')
+            units = {(repo, p) for p in paths}
+            require(not owned & units, 'primary ownership overlaps another assignment')
+            owned.update(units)
+        assignment['primary'] = canonical
+    require(owned == {(repo, p) for repo, paths in subjects.items() for p in paths},
+            'primary partition omits subject files')
+    return normalized
+
+
+def packets_fresh(pending):
+    for entry in pending['packets']:
+        packet = read(entry['path'])
+        require(digest(packet) == entry['sha256'], 'review packet drift')
+        # Old in-flight packets retain their original protocol, never rewritten.
+        if 'brief_sha256' in packet:
+            require(hashlib.sha256(Path(packet['brief']).read_bytes()).hexdigest() == packet['brief_sha256'],
+                    'reviewer brief input drift')
+
+
 def admit(state, args):
     require(args.reason in ('initial', 'repair', 'second'), 'invalid dispatch reason')
     fresh(state)
@@ -298,18 +357,7 @@ def admit(state, args):
     assignments = read(args.assignments)
     require(isinstance(assignments, list) and assignments, 'assignments must be a nonempty list')
     require(policy['route'] != 'ordinary' or len(assignments) == 1, 'ordinary uses exactly one reviewer')
-    repos = {s['repo'] for s in state['scopes']}
-    covered, ids = set(), set()
-    for assignment in assignments:
-        require(set(assignment) == {'id', 'repos', 'concern'}, 'assignment fields: id, repos, concern')
-        assignment['repos'] = [str(Path(p).resolve()) for p in assignment['repos']]
-        require(isinstance(assignment['id'], str) and assignment['id'] and assignment['id'] not in ids,
-                'assignment IDs must be distinct nonempty strings')
-        require(isinstance(assignment['concern'], str) and assignment['concern'].strip(), 'missing concern')
-        require(assignment['repos'] and set(assignment['repos']) <= repos, 'assignment has unknown or empty repos')
-        ids.add(assignment['id'])
-        covered.update(assignment['repos'])
-    require(covered == repos, 'partition omits a confirmed repository')
+    assignments = primary_assignments(state['scopes'], assignments)
     ticket = uuid.uuid4().hex
     mode = (policy['followup'] if args.reason == 'repair' else
             state.get('next_initial_mode', 'blind') if args.reason == 'initial' else 'blind')
@@ -321,13 +369,17 @@ def admit(state, args):
     # Persist consumption before rendering or launching; renderer failure cannot refund.
     event(state, 'reserved', ticket=ticket, mode=mode)
     for assignment in assignments:
-        selected = [s for s in state['scopes'] if s['repo'] in assignment['repos']]
-        packet = {'brief': str(SCRIPTS.parent / 'references/portable-reviewer-brief.md'),
-                  'instruction': ('Read the brief completely. Review these subjects independently; stay read-only. '
+        brief = SCRIPTS.parent / 'references/portable-reviewer-brief.md'
+        packet = {'brief': str(brief), 'brief_sha256': hashlib.sha256(brief.read_bytes()).hexdigest(),
+                  'instruction': ('First read only the complete brief and this packet in a separate tool call; '
+                                  'do not batch those initial reads with target inspection. Then independently '
+                                  'review primary_scope and necessary '
+                                  'semantic dependents; scope is the aggregate immutable context. Stay read-only. '
                                   'When working_tree_included is true, inspect staged, unstaged and untracked content '
                                   'against base, even when base equals head. Otherwise compare only the committed endpoints.'),
                   'scope': [{k: s[k] for k in ('repo', 'mode', 'base', 'head', 'paths', 'guidance',
-                                              'subject_files', 'working_tree_included', 'fingerprint')} for s in selected],
+                                              'subject_files', 'working_tree_included', 'fingerprint')} for s in state['scopes']],
+                  'primary_scope': [{'repo': r, 'subject_files': paths} for r, paths in assignment['primary'].items()],
                   'concern': assignment['concern'], 'language': args.language}
         if mode == 'focused':
             packet['repair'] = state.get('repair_packet', {'original_findings': [f['raw'] for f in state['findings']]})
@@ -342,7 +394,7 @@ def dispatch(state, args):
     p = state['pending']
     require(p and p['ticket'] == args.ticket and p['phase'] == 'reserved', 'ticket is absent, spent or not reserved')
     require(current(state) == p['scope'], 'ticket scope drift')
-    require(all(digest(read(x['path'])) == x['sha256'] for x in p['packets']), 'review packet drift')
+    packets_fresh(p)
     p['phase'] = 'dispatched'
     state['reviewer_count'] += len(p['assignments'])
     event(state, 'dispatched', ticket=p['ticket'])
@@ -366,7 +418,7 @@ def finish(state, args):
     # Invalid/partial results close the attempt as BLOCKED and retain original evidence.
     try:
         require(current(state) == p['scope'], 'result scope drift')
-        require(all(digest(read(x['path'])) == x['sha256'] for x in p['packets']), 'review packet drift')
+        packets_fresh(p)
         reports = read(args.input)
         require(isinstance(reports, list), 'results must be a list')
         if p.get('native_required'):
@@ -430,6 +482,7 @@ def finish(state, args):
         state['receipt'] = {'scope': p['scope'], 'ticket': p['ticket']}
         event(state, 'result', ticket=p['ticket'])
     except (Blocked, OSError, ValueError, KeyError, TypeError) as error:
+        state.setdefault('failed_sets', []).append({**p, 'error': str(error)})
         state['pending'] = None
         state['verdict'] = 'BLOCKED'
         state.pop('receipt', None)

@@ -39,9 +39,27 @@ Write assignment JSON outside targets:
 [{"id":"source","repos":["/absolute/repo"],"concern":"changed behavior and affected contracts"}]
 ```
 
-Use neutral IDs/concerns. Cover all confirmed repos; full-route partitioning and
-cross-repo responsibilities still follow the workflow. The controller validates
-repo coverage, not the semantic completeness of a concern description.
+Use neutral IDs/concerns. A single reviewer or disjoint whole-repository assignments
+may use the compact form above. Multiple assignments sharing a repository require
+`primary`, mapping their absolute repository roots to exact manifest subject file
+names (read `subjects.nul` from the captured manifests):
+
+```json
+[{"id":"source","repos":["/absolute/repo"],"concern":"changed source behavior","primary":{"/absolute/repo":["src/a.py"]}},
+ {"id":"contracts","repos":["/absolute/repo"],"concern":"changed contracts","primary":{"/absolute/repo":["tests/test_a.py"]}}]
+```
+
+The controller validates a complete, non-overlapping primary path union across
+all confirmed repos before spending an attempt. Each primary map's roots must match
+its assignment repos; paths must be exact subjects, not globs or inferred concern
+text. Ordinary's sole reviewer still owns the complete subject. For a cross-repo
+interface responsibility, assign its primary files from both repos and leave those
+files out of other primary assignments. Relevant dependencies remain readable across
+assignments. The controller does not grade the semantic completeness of a concern.
+
+Each packet keeps the full aggregate immutable `scope` and separately projects its
+`primary_scope`. Completion and readonly evidence follow the canonical reviewer
+brief; aggregate context is not a demand that each reviewer inspect every assignment.
 
 ```text
 review-control.py admit --state <file> --assignments <json> --reason <initial|repair|second> --language <language>
@@ -70,7 +88,7 @@ review-control.py finish --state <file> --ticket <ticket> --input <results-json>
 ```
 
 Use `result: incomplete` for incomplete work, not `complete` with empty findings.
-Malformed/partial sets, reused identities, packet mutation or subject drift yield
+Malformed/partial sets, reused identities, packet/brief input mutation or subject drift yield
 BLOCKED and no valid receipt. Original report text and raw severities are retained;
 structured extraction must faithfully match them. The helper cannot certify a
 model's claim that it inspected a file or reported every finding.
@@ -79,7 +97,10 @@ For a dispatch bound to active Codex turbo, use `native-review --state <file>
 --ticket <already-dispatched-ticket>` instead of author-assembled `finish` results.
 This transport launches real fresh read-only Codex processes, retains raw JSONL,
 native thread IDs and report hashes, and admits only their complete current set.
-Failure or cancellation retains the spent attempt. `--review-model` may carry an
+Failure or cancellation retains the spent attempt, original reports (including
+incomplete structured reports), raw logs and a failed-set record. An explicit native
+launch always requires its process proof, including when turbo is off.
+`--review-model` may carry an
 explicit reviewer model choice; otherwise use the native default. Off-mode review
 retains its ordinary collection protocol. Active Claude turbo keeps fresh native
 Agents; its synchronous `SubagentStop` collector saves each complete final report

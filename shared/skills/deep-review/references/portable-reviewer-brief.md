@@ -1,6 +1,6 @@
 # Independent reviewer brief
 
-Review only the scope supplied by the orchestrator. Stay read-only and form your
+Review the responsibility supplied by the orchestrator. Stay read-only and form your
 own judgment from repository evidence. Initial discovery and a requested second
 blind opinion exclude author reasoning, earlier findings and repair summaries.
 An explicitly scoped repair-verification packet may contain original findings,
@@ -12,6 +12,21 @@ Read the target repository's governing `AGENTS.md`／`CLAUDE.md` and nearer
 path-specific contracts before evaluating the change. Treat generated or derived
 documentation as descriptive when the repository identifies a stronger
 authority.
+
+## Primary responsibility and aggregate subject
+
+In a controller packet, `scope` is the complete immutable aggregate subject:
+repository roots, endpoints, selected paths, dirty inclusion, guidance and fingerprints.
+`primary_scope` names this reviewer's primary subject files. Complete those files
+and the semantic dependents necessary to evaluate their behavior and affected
+contracts; other aggregate files are available as context. Dependencies can cross
+primary assignments and repository boundaries. Record what you inspected and why.
+
+`complete` means this bounded responsibility is complete. Unreviewed unrelated
+primary files belonging to other assignments do not make your review incomplete.
+A missing fact required for your own responsibility, including an affected interface
+or necessary execution fact, does. For a legacy packet without `primary_scope`,
+the complete supplied `scope` remains the responsibility.
 
 ## Review for concrete impact
 
@@ -30,8 +45,9 @@ consumers, configuration, schemas, and documentation to evaluate:
 Report only issues with a concrete trigger and consequence. Do not manufacture a
 finding quota. A clean review is a valid result.
 
-For each suspected root cause, search the entire supplied scope for same-class
-occurrences and semantic dependents. Distinguish a closed finite set that can be
+For each suspected root cause, search the primary responsibility and its relevant
+same-class occurrences and semantic dependents across the aggregate context.
+Distinguish a closed finite set that can be
 enumerated from an externally extensible input space that requires an invariant
 or validation boundary.
 
@@ -60,6 +76,26 @@ or the issue appeared late.
 
 ## Evidence and output
 
+Use diagnostics that preserve target files and Git metadata. Set
+`GIT_OPTIONAL_LOCKS=0` for every Git inspection, including the first status or diff
+discovery: default `git status` can refresh index timestamps even when bytes stay
+unchanged. Commands needing
+cache writes, temporary test fixtures or a Docker socket may be unavailable in a
+read-only runtime; preserve actual commands, exit status and permission errors.
+Do not broaden permissions, modify targets, or suppress errors to obtain a verdict.
+Use write-free probes where meaningful. Static evidence and original execution
+artifacts are also valid evidence when independently checked against the relevant
+inputs, environment and required facts; an author's test summary is not your own
+execution. A denied command is not automatically a code defect or a missing fact:
+state what it prevented you from establishing. If a necessary execution fact remains
+unresolved, return incomplete; otherwise state the static or artifact evidence and
+its boundary without claiming the denied test passed.
+
+For Python probes that load repository modules, pass `-B` explicitly or compile
+source in memory. `-I` ignores `PYTHONDONTWRITEBYTECODE`; an environment-only
+setting can still write ignored `__pycache__` files. Ignored files are target files
+too, so preserve them rather than treating a clean Git status as proof of no writes.
+
 For each finding provide:
 
 - stable ID and severity;
@@ -71,8 +107,9 @@ For each finding provide:
 - same-class and dependency coverage;
 - repair direction without editing the repository.
 
-Separate blocking findings from non-blocking items. State the exact reviewed
-repositories, paths, and immutable endpoints, plus which dirty or untracked work
+Separate blocking findings from non-blocking items. State the assigned primary
+responsibility, inspected semantic dependents, exact reviewed repositories, paths,
+and immutable endpoints, plus which dirty or untracked work
 was visible. List commands actually run and their exit status. If a required fact
 cannot be established, say what is unresolved; never invent a finding or claim a
 test ran when it did not.
