@@ -6,7 +6,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 # STATUS.md
 
-個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-10-08)
+個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-10-09)
 
 ---
 
@@ -57,8 +57,8 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
   5. 以受影響案例量測流程／reference 讀取與證據準備的操作次數、必要性及改善前後耗時；相同 goal／輸入的重複操作可以消除，必要契約、authority／scope 與 fresh shipping gates 仍有效。若修改共用 agent／skill 行為，依既有 authoring route 在 Claude Code／Codex 的實際 production targets 驗普通腳本、文件收尾與證據正反例，不只增加 prose。
   6. 改善前後覆蓋與失敗攔截能力維持，實測時間與預估分開記錄；保留完整 suite 入口、macOS／Ubuntu required CI，以及合併前 non-watch required-check 與 PR identity／mergeability 重查。成果按觀察到的行為與分階段耗時驗收，不先承諾未量測的速度。
 - **Constraints**：2026-10-08 使用者以「開工」授權 #285 本地診斷、修正與驗證，續以 `$project --merge` 授權本次 invocation 將這批候選 commit／push／開 PR／merge；部署仍不在本批範圍。先改善 #285 的有界流程成本；#279 的 CI 依賴 selector、完整依賴圖、永久測試快取或新治理 store 不納入本項。沿用既有 helpers 與權威契約；不得從「少行數」「單人 repo」或速度目標推導可移除安全檢查。使用者已確認本批必要 tests/ 與 testing contract 寫入歸 #285，原 Runtime writer 保持停止；只修改本項必要範圍，不接手原 Runtime 遷移。
-- **進度**：本地候選已驗收：18d 共用獨立入口保留 34 個原斷言與舊行為 5 FAIL；compact check 保留判定與完整變更路徑；普通腳本改用一次完整驗證、當時保存 dirty 來源，結果補記沿用有效證據。兩 production runtimes 的 ordinary／docs-closeout／reuse／changed／unknown controls 通過，v1 Opus 重跑失敗原跡保留。完整 serial／parallel 各 1578 PASS／0 FAIL、exit 0，453.544／137.809 秒，695 個來源與環境前後一致；原 runtime 669 個斷言不減少。本地機械收益與 native wall-time 限制見 M-20261008-workflow-verification-economy-local 與本項 plan；尚未交付，保留 active assignment。
-- **下一步**：本批已取得具名 merge 授權；原 code-input 結果經 helper 核對 REUSE，環境一致，僅三份結果文件變動，补 fresh 治理／xref 後完成 required CI 與 merge。保存真實開 PR 前、CI、合併與同步回報耗時；尚無 endpoint 證據，不宣稱已交付或整段 latency 已下降。必要 reference 的固定成本與 native wall-time 未改善仍須依實測驗收，不先關閉 #285。#279 selector 與原 Runtime 遷移不續作。
+- **進度**：第一批已由 PR #287 rebase merge 至 origin/main（112d37de7bdc2854f6a7d49e6e20a17bb4be3f57），本機與 inventory 14 台 dotsync 全成功。18d 共用入口、compact check、一次完整驗證與來源保存已通過兩 production runtimes；完整 serial／parallel 各 1578 PASS／0 FAIL、runtime 669 不減少，交付未重跑本地全套、雙 OS required CI 一次通過。原始 session 補足完整時間：merge 指令到回報 1218.397 秒，其中 ContextCompaction 386.375 秒、恢復到 PR 400.165 秒；單項收益成立，總耗時尚未改善。見 M-20261008-workflow-verification-economy-delivery-measured 與本項 plan。
+- **下一步**：2026-10-09 已補原 merge 恢復段的工具區間量測：400.165 秒中，30 次 call-return 區間合計 13.324 秒，納入可見背景命令後 union 21.235 秒，378.930 秒位於可見區間外；不能全算成模型思考或可刪成本。兩次輸出截斷與額外修正往返可核對，見 M-20261009-workflow-verification-economy-call-timeline。既有小型 before／after 控制仍僅證明正常沿用與 preflight，未證明生產交付 latency 改善；驗收條件 1 保持未完成。使用者已明示新的 `$project --merge`，本批只交付這三份結果文件；核對原測試環境與已驗空白修正，補 fresh 治理／xref，待新 PR required CI 後合併並分段量測。Endpoint 尚未達成，不預寫完成；不同 scope 的交付樣本仍不能冒充同規模改善，不接續 #279 selector／Runtime 遷移。
 - **關聯**：[本項診斷與驗證計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285（https://github.com/jjshen-eland/dotfiles/issues/285）; #279; PR #286; B-20260924-workflow-verification-economy; D-20261003-project-test-evidence-reuse; D-20261004-project-reuse-mechanical-check; D-20261004-project-reuse-mechanical-adoption; D-20261004-project-stage-routing; M-20261008-brewup-bun-global-update-local
 
 ## 暫停中

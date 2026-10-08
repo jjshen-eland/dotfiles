@@ -583,3 +583,23 @@
   - 放棄:減少斷言或略過全套換速度；普通腳本自動套 runner parity；測後補造過去來源；一律排除 ignored 檔；永久 cache／新治理 store；以 fixture 結果估真實 merge 耗時
   - 重議:本批交付後再量測固定流程與證據準備成本；來源、fixture、必要 link target 或環境漂移時補受影響檢查。#279 hosted selector 另做，不擴大本項或接續 Runtime。
   - 關聯:GitHub #285;docs/plans/2026-10-08-workflow-verification-economy.md;shared/skills/project/references/pressure-tests.md;AGENTS.md;docs/testing-contract.md;tests/brewup-tests.sh;tests/test_brewup_entry.py;shared/skills/project/scripts/test-evidence.py
+
+- **M-20261008-workflow-verification-economy-delivery-measured · 2026-10-08 #285 第一批交付及完整時間核對**：PR #287 已 rebase merge 到 origin/main，commit 112d37de7bdc2854f6a7d49e6e20a17bb4be3f57；本地 main 同步與本支清理完成，續 dotsync 本機及 inventory 14 台全成功、exit 0。不是 actor retirement，#285 與 Runtime 的既有 stewardship 保留。
+  - 日期來源:direct
+  - 驗證:原始成功證據與環境核對沿用，交付沒有新跑本地全套；尾端空白修正另驗 bash syntax／ShellCheck／18d 34 PASS，前後 inputs 一致。Ubuntu required CI 116 秒、macOS 197 秒，均一次通過，CI 修復提交 0 次；merge 前 non-watch required checks exit 0、exact PR HEAD／identity 與 CLEAN 狀態重查。
+  - 量測:原始 user timestamp 18:03:11.481 到 final 18:23:29.878（Asia/Taipei），1218.397 秒；host ContextCompaction 386.375 秒，恢復到 PR 400.165 秒，PR 到 merge 256 秒，merge 到同步 25 秒，同步後紀錄與回報 75.878 秒。先前 1113 秒為首筆 clock 到同步的下界，完整邊界現已補足，不能拿下界比較完整交付。直接扣 compaction 的 832.022 秒是算術分解，非無 compaction 對照。
+  - 接續:使用者同意診斷固定成本、同案例驗收與回填既有 issue／STATUS。恢復段含必要 ref 重讀、證據查證、staged check 非零後仍 commit 的修正、dependent HEAD／gate 錯誤平行與非 Git 輸出 OID 的重查。後兩者屬既有紀律偏離；只有新的 frozen native RED 才改 workflow，不為一次失誤追加規範。#285 仍 in-progress，總 latency 未改善，不移除 active 或未解決 backlog。
+  - 證據:docs/plans/2026-10-08-workflow-verification-economy.md；/tmp/workflow-285-final-verification/shipping-session-measurement.json；原始 rollout-2026-10-08T15-08-21-01a11a57-75bb-7da1-b85e-9714aaa2952f.jsonl；PR #287／Actions run 37762509491
+  - 接續控制:固定 92dc1b9／112d37d 的 gpt-6.1-sol 本地 README 收尾各沿用真實證據、0 新測試、1 feature commit、working tree clean、remote refs 未变、source hashes 穩定；preflight 均修正空白並通過後才提交。Before 130.384 秒／22 次工具呼叫，after 103.022 秒／19 次；各 12 reader calls、七份 refs 完整。只有一組小 fixture 且同機並行，未含 production PR／CI／compaction，不外推 latency 收益。失效的 .git 寫入隔離樣本與 stdin 污染樣本保留、不計正式比較。Normalized grade：/tmp/workflow-285-final-verification/prepared-closeout-grade.json。
+  - 結果:GitHub #285 驗收條件 2–6 已回填，1 仍未完成、issue 保持 open。Production 執行紀律偏離已確認，正常控制未重現需新增規則的缺口；本輪只補記實測，無 skill／runner 改動。本地結果文件未 commit，未新增 push／PR／merge／部署。
+  - 放棄:以 ignored 身分排除真實 inputs；以扣除 platform compaction 宣稱實測改善；削弱 authority／required CI 或追加無 RED 的規範
+  - 重議:固定 source／同案例的操作與 wall time 驗收完成後判定下一個有證據的最小修正；新批 push／PR／merge／部署另需授權
+  - 關聯:GitHub #285;PR #287;M-20261008-workflow-verification-economy-local;docs/plans/2026-10-08-workflow-verification-economy.md;STATUS.md
+
+- **M-20261009-workflow-verification-economy-call-timeline · 2026-10-09 #285 開 PR 前工具區間量測**：使用者「繼續」後，沿原始 session 補完恢復到 PR 的 400.165 秒操作時間線；沒有新增修補或規範。
+  - 日期來源:direct
+  - 量測:30 次 call-return 區間合計 13.324 秒，納入可見背景命令且合併重疊後 21.235 秒；378.930 秒在可見區間外。Entry／refs 42.822 秒、盤點到初次 commit 169.738 秒、空白修正與第二次 commit 111.412 秒、HEAD／authority 修正及 PR 準備 43.311 秒、push／PR 32.882 秒，總和 400.165 秒。
+  - 證據:原 session custom_tool_call／output、CommandExecution、GitHub PR #287 createdAt；/tmp/workflow-285-20261009-call-timeline/timeline.json 保存 source SHA、命令／exit、精確區間與 output bytes／截斷標記。Call 11 盤點與 call 17 staged diff 兩次截斷後局部重讀可核對。
+  - 限制:區間外不是純模型思考，零寬 command record 不是完整 subprocess 計時；PR 時戳為秒級。操作區段不是可刪成本，三份結果文件的後續交付不等於原 15-file 實作的同規模對照。UNCONFIRMED，驗收條件 1 保持未完成。
+  - 下一步:三份本地結果文件準備交付；新批 push／PR／merge 另需具名授權，舊 PR #287 merge endpoint 已完成，不從「繼續」推導 outward 權限。不擴至 #279／Runtime。
+  - 關聯:GitHub #285;PR #287;M-20261008-workflow-verification-economy-delivery-measured;docs/plans/2026-10-08-workflow-verification-economy.md;STATUS.md
