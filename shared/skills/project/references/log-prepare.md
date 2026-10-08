@@ -283,7 +283,7 @@ Prompt-bound decision 與 normalized invocation arguments 分開，不寫入 mem
 ## Step 3：Adaptive 提交
 
 **先沿用可用的測試證據，再補驗**：所有 Log 路徑（含無需新增 commit）都核對既有結果。
-**Run `python3 <skill-dir>/scripts/test-evidence.py check --root <repo> --evidence <record.json> --compact`
+**Run `python3 <skill-dir>/scripts/test-evidence.py check --root <repo> --evidence <record.json>`
 for each result considered for reuse. Do not replace the helper with a prose verdict.**
 既有 JSON 直接交給 helper；實際 tool trace／log／CI 的結果可暫時正規化後用 `--evidence -` 傳 stdin，
 不要求永久 receipt／cache。欄位為 `command`、整數 `exit`、`output`（或 `stdout`＋`stderr`）、完整 `inputs` 路徑清單，

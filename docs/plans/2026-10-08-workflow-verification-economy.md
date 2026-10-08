@@ -213,3 +213,24 @@ tests/lib/assertions.sh 檔尾一個 newline，原 affected record 的 34 PASS �
 environment matched，舊 full 結果不冒稱來源完全相同。前批 required CI run 37762509491 在
 557bae361df6275686674f8d0d57e599b7c95cbc 已雙 OS success；本批仍需自身 PR HEAD 的 required CI。
 結果補記只補 fresh 治理／xref；當前 endpoint pending、不宣稱已 merge 或 latency 已改善。
+
+## 完整退版（2026-10-09）
+
+使用者明示：「退版吧，有做比沒做還糟。所謂有收益的部分，為了僅留下他，又要跑一大串測試，沒什麼意義」。
+本批完整撤回 PR #287 的實作與後續空白修正，不再切分保留局部功能。
+固定還原基線為 `92dc1b9c6e6a836146606d3cee12edd2505ecef6`；十二個非紀錄路徑逐一比對內容與 mode，
+其中三個新增測試檔應消失。保留 `bun update -g`、#279 與已提交的所有 history／量測。
+退版驗收是完整還原及必要測試通過，不宣稱已證明生產端到端耗時改善。
+
+原新增流程的普通腳本控制 Codex 86.313 → 190.082 秒、Opus 34.961 → 67.141 秒；
+局部測試／输出收益不能取代總耗時驗收。最新 PR #288 只交付三份結果文件，
+merge 指令到同步清理觀測為 1244.449 秒（20 分 44 秒，未含最後回報），建立 PR 前 593.629 秒且沒有 compaction；
+詳見 PR #288 的已核對量測，保留不同 scope 與非因果控制的限制。
+
+本輪只獲本地退版授權，新的 push／PR／merge／dotsync 未獲授權；active assignment 保留到具名交付。
+本地退版驗收完成：十二個路徑內容／mode 與固定基線完全一致，三個新增測試檔 absent，brewup 未變。
+`./tests/run.sh` 與 `./tests/run-parallel.sh` 各 exit 0、1577 PASS／0 FAIL；core 還原為 174，runtime 保留 669。
+兩 runner 同機並行，wall time 各 414.585／126.955 秒，不相加也不當作效能改善對照。
+原 command／exit／完整 logs 與測前 patch 保存在 `/tmp/workflow-285-revert-o4xlch4g/`，測試前後 patch／status 一致。
+已通過治理／xref 與 Codex validator；結果補記後只補文件檢查，不重跑未變的程式測試。
+尚未 push／PR／merge／dotsync，不先記為已退到 origin/main。

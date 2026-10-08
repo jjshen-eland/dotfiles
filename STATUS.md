@@ -47,19 +47,16 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **Workspace**：`branch=perf/workflow-verification-economy`
 - **Write Scope**：tests/, shared/skills/project/, AGENTS.md, docs/testing-contract.md
 - **Dossier Steward**：`codex:brewup-bun-global-update`
-- **Context**：brewup bun 全域更新的本地處理耗時 879.746 秒，已驗證後的 merge 到最終回報另耗 919.976 秒；merge 開 PR 前為 586.375 秒，PR 到合併 264 秒，合併後回報 69.601 秒。後一階段沒有重跑本地完整 suite、CI 一次通過，顯示需同時檢查重複驗證與交付固定成本；子步驟尚未獨立計時，不預先歸因。原始量測與 PR／Actions 證據見 GitHub #285、PR #286。
-- **Goal**：使範圍明確的一般變更，從實作、驗證、文件收尾到 Project 交付能沿用可核對的成功證據，按實際影響補驗並消除不必要的重複操作；以同類案例的分階段 wall time 與行為證據證明收益，維持骨幹 repo 的安全與品質。
+- **Context**：#285 原以縮短一般小改動的驗證與交付時間為目標。PR #287 的局部機制通過驗證，但普通腳本 native 案例 Codex 86.313 → 190.082 秒、Opus 34.961 → 67.141 秒；整段交付收益未證明。2026-10-09 使用者明示完整退版，不為保留局部收益再拆分修改。
+- **Goal**：完整撤回 #285 的流程與測試實作，還原至 `92dc1b9c6e6a836146606d3cee12edd2505ecef6` 的對應內容；保留 bun 全域更新、#279、原始量測及退版原因。
 - **Acceptance Criteria**：
-  1. 固定本次一般腳本變更與已驗證後交付的重現案例，保存實際命令、exit、受測來源／測試／fixture／環境與必要 link topology 證據；列出驗證次數及實作、驗證、文件收尾、開 PR 前、hosted CI、合併和同步回報各階段 wall time。對本次尚未逐項計時的前段補量測，不以 issue 摘要代替原始 trace。
-  2. 一般腳本變更維持成功／失敗／缺 CLI 的隔離驗證，選定一次有充分覆蓋的完整本地驗證；額外全套執行必須有具名的相關輸入變更或獨立驗證目的。runner／shard／測試框架變更依既有契約保留必要 serial／parallel 完整性與失敗／cleanup controls。
-  3. unchanged／changed／unknown 原始證據 controls 可重現：有效成功結果在實作、文件收尾和 Log 沿用；程式、測試、fixture、必要 link target 或相關環境改變時補驗；摘要、缺少真實 exit 或未知受測內容不可誤判為沿用。來源證據在實際執行時保存，不以後來的 snapshot 補造過去成功。
-  4. 純驗收結果補記保留必要治理與 xref gates，避免無條件執行無關 controller／全套，以及「更新紀錄 → 昂貴驗證 → 再更新紀錄」循環。生成物是否屬輸入由可核對的依賴與執行證據判定，不以 ignored 身分一律排除。
-  5. 以受影響案例量測流程／reference 讀取與證據準備的操作次數、必要性及改善前後耗時；相同 goal／輸入的重複操作可以消除，必要契約、authority／scope 與 fresh shipping gates 仍有效。若修改共用 agent／skill 行為，依既有 authoring route 在 Claude Code／Codex 的實際 production targets 驗普通腳本、文件收尾與證據正反例，不只增加 prose。
-  6. 改善前後覆蓋與失敗攔截能力維持，實測時間與預估分開記錄；保留完整 suite 入口、macOS／Ubuntu required CI，以及合併前 non-watch required-check 與 PR identity／mergeability 重查。成果按觀察到的行為與分階段耗時驗收，不先承諾未量測的速度。
-- **Constraints**：2026-10-08 使用者以「開工」授權 #285 本地診斷、修正與驗證，續以 `$project --merge` 授權本次 invocation 將這批候選 commit／push／開 PR／merge；部署仍不在本批範圍。先改善 #285 的有界流程成本；#279 的 CI 依賴 selector、完整依賴圖、永久測試快取或新治理 store 不納入本項。沿用既有 helpers 與權威契約；不得從「少行數」「單人 repo」或速度目標推導可移除安全檢查。使用者已確認本批必要 tests/ 與 testing contract 寫入歸 #285，原 Runtime writer 保持停止；只修改本項必要範圍，不接手原 Runtime 遷移。
-- **進度**：第一批已由 PR #287 rebase merge 至 origin/main（112d37de7bdc2854f6a7d49e6e20a17bb4be3f57），本機與 inventory 14 台 dotsync 全成功。18d 共用入口、compact check、一次完整驗證與來源保存已通過兩 production runtimes；完整 serial／parallel 各 1578 PASS／0 FAIL、runtime 669 不減少，交付未重跑本地全套、雙 OS required CI 一次通過。原始 session 補足完整時間：merge 指令到回報 1218.397 秒，其中 ContextCompaction 386.375 秒、恢復到 PR 400.165 秒；單項收益成立，總耗時尚未改善。見 M-20261008-workflow-verification-economy-delivery-measured 與本項 plan。
-- **下一步**：2026-10-09 已補原 merge 恢復段的工具區間量測：400.165 秒中，30 次 call-return 區間合計 13.324 秒，納入可見背景命令後 union 21.235 秒，378.930 秒位於可見區間外；不能全算成模型思考或可刪成本。兩次輸出截斷與額外修正往返可核對，見 M-20261009-workflow-verification-economy-call-timeline。既有小型 before／after 控制仍僅證明正常沿用與 preflight，未證明生產交付 latency 改善；驗收條件 1 保持未完成。使用者已明示新的 `$project --merge`，本批只交付這三份結果文件；核對原測試環境與已驗空白修正，補 fresh 治理／xref，待新 PR required CI 後合併並分段量測。Endpoint 尚未達成，不預寫完成；不同 scope 的交付樣本仍不能冒充同規模改善，不接續 #279 selector／Runtime 遷移。
-- **關聯**：[本項診斷與驗證計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285（https://github.com/jjshen-eland/dotfiles/issues/285）; #279; PR #286; B-20260924-workflow-verification-economy; D-20261003-project-test-evidence-reuse; D-20261004-project-reuse-mechanical-check; D-20261004-project-reuse-mechanical-adoption; D-20261004-project-stage-routing; M-20261008-brewup-bun-global-update-local
+  1. PR #287 的十二個非紀錄路徑與固定基線一致，新增的三個測試檔消失；不保留 compact、新測試入口或新增快照要求。
+  2. 原本 brewup bun 全域更新與 #279 改動不受影響；既有完整測試、分片聚合與必要治理／xref 驗證通過。
+  3. 保留原有 history 與量測，追加退版原因；不宣稱原效能目標已達成，亦不從過去已完成的 merge／dotsync 授權推導本批送出或部署授權。
+- **Constraints**：使用者本輪「退版吧，有做比沒做還糟」授權完整本地退版。既有 Runtime writer 保持停止，原工作不接續；不修改 CI、branch protection 或採用新流程。新批 push／PR／merge 與 dotsync 仍依具名授權處理。
+- **進度**：整批本地退版候選已完成驗收：十二個路徑的內容與 mode 和固定基線一致，新增三個測試檔已移除；serial／parallel 各 1577 PASS／0 FAIL、exit 0，測試期間來源未變。治理／xref 與 Codex validator 通過；尚未 push／PR／merge／部署。見 M-20261009-workflow-verification-economy-revert-local。
+- **下一步**：取得本批新的具名送出／合併授權後交付退版；dotsync 仍須另行授權。保留 active assignment，不自行重啟原優化或 #279。
+- **關聯**：[本項診斷與驗證計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285（https://github.com/jjshen-eland/dotfiles/issues/285）; PR #287; PR #288; X-20261009-workflow-verification-economy-revert; B-20260924-workflow-verification-economy
 
 ## 暫停中
 

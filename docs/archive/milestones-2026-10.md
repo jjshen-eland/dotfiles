@@ -603,3 +603,8 @@
   - 限制:區間外不是純模型思考，零寬 command record 不是完整 subprocess 計時；PR 時戳為秒級。操作區段不是可刪成本，三份結果文件的後續交付不等於原 15-file 實作的同規模對照。UNCONFIRMED，驗收條件 1 保持未完成。
   - 下一步:三份本地結果文件準備交付；新批 push／PR／merge 另需具名授權，舊 PR #287 merge endpoint 已完成，不從「繼續」推導 outward 權限。不擴至 #279／Runtime。
   - 關聯:GitHub #285;PR #287;M-20261008-workflow-verification-economy-delivery-measured;docs/plans/2026-10-08-workflow-verification-economy.md;STATUS.md
+
+- **M-20261009-workflow-verification-economy-revert-local · 2026-10-09 #285 整批退版本地候選通過驗收**：依使用者明示完整撤回 PR #287 的流程／測試實作及後續空白修正，十二個非紀錄路徑內容與 mode 均還原至 92dc1b9c6e6a836146606d3cee12edd2505ecef6，三個新增測試檔移除；bun 全域更新與 #279 保留。serial／parallel 各 exit 0、1577 PASS／0 FAIL（core 174、runtime 669），測試前後 source patch／status 未變；治理／xref 與 Codex validator 通過。原量測、plan 與 history 保留，追加退版決定；不宣稱總耗時目標已達成。此為本地候選驗收，尚未 push／PR／merge／dotsync，active assignment 保留到具名交付。
+  - 日期來源:direct
+  - 證據:/tmp/workflow-285-revert-o4xlch4g/{serial.log,parallel.log,results.json,tested.patch,source-check.json}；兩 runner 同機並行，wall time 414.585／126.955 秒不作前後效能結論
+  - 關聯:X-20261009-workflow-verification-economy-revert;docs/plans/2026-10-08-workflow-verification-economy.md;Issue#285;PR#287;PR#288

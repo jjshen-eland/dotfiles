@@ -245,3 +245,9 @@
   - 放棄:直接搬 block 後只看完整 suite 總數；刪除 integration 相容入口；重複兩份 controller body
   - 重議:legacy integration 被明確淘汰時才可移除相容呼叫；其他分片移位也須驗證每個受支援入口
   - 關聯:#279;D-20261008-ci-controller-shard-trials;M-20261008-ci-critical-path-baseline;tests/run.sh
+
+- **X-20261009-workflow-verification-economy-revert · 2026-10-09 #285 未達總耗時目標，使用者選擇完整退版**：普通腳本 native 控制由 Codex 86.313 增至 190.082 秒、Opus 34.961 增至 67.141 秒；第一批與後續真實交付仍未證明端到端改善。先前以減少完整測試次數、來源保存與輸出縮小作為交付理由，沒有完成使用者要的時間收益判斷。使用者明示完整撤回，不再為局部收益拆分保留；原量測與已提交歷史保留，追加本次逆轉，不改寫原事件。退版準備與驗證尚未完成，不宣稱 main 或 fleet 已還原。
+  - 日期來源:direct
+  - 放棄:PR #287 的整批流程／測試實作；以局部機制收益代替總耗時驗收後建議原樣合併
+  - 重議:使用者重新授權，且同類真實工作證明完整操作成本降低時；不自動重新採用或追加規則
+  - 關聯:supersedes:M-20261008-workflow-verification-economy-local;M-20261008-workflow-verification-economy-delivery-measured;M-20261009-workflow-verification-economy-call-timeline;docs/plans/2026-10-08-workflow-verification-economy.md;Issue#285;PR#287;PR#288
