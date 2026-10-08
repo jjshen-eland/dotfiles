@@ -238,3 +238,10 @@
   - 後續:f3 orchestrator 首次 inspection 已載入 brief 並停用 optional locks，但 part-0 reviewer 把 brief 與 target Git commands 放在同一個初始 tool call，當時仍沒有機會使用返回的規則，造成 metadata RED。Renderer packet 與 native launcher 的初始要求改為先獨立讀完整 brief／packet，再開始 target inspection；規則本身仍在 canonical brief，不注入期望 verdict。原 f3 的 reviewer、commands、counter、report 與 drift 保留，下一個 fresh fixture 驗 loading barrier。
   - 後續:fresh f4 與修後 c6/a6 已通過；f4 parent 的 pre-first-call 全 target／Git entries content／mode／size／mtime_ns 與 frozen source 逐項保持，actual original reports 與 journal 為 complete／complete、attempt=1、valid_sets=1、PASS。f0–f3 的 metadata RED 原狀保存；不以 f4 推翻它們。f4 parent-preservation.json SHA256 f0dce3064f1da98b90916bb9ce84d9a46f58edaec7d7cef232d303b7fef9bf9a。
   - 關聯:#274;D-20261007-deep-review-primary-responsibility;X-20261007-review-python-isolated-bytecode;shared/skills/deep-review/references/workflow.md;shared/skills/deep-review/references/portable-reviewer-brief.md
+
+- **X-20261008-ci-shard-move-integration-coverage · 2026-10-08 controller 直接移位漏掉 legacy integration，總 PASS 相同不足以驗收**：初版 core／ship_state 移位候選的完整 serial／parallel 仍為 1576、assertion 多重集合與基線一致；但 integration 只啟用 plan／review／runtime，移到其他分片就會漏跑 controller。實際執行初版 core 的 integration，exit 0、1163 PASS，對基線 serial 的原 integration 區段投影（1164）恰少一個 controller assertion，沒有其他遺失或新增。正式 repo code 未改；保留原始失敗證據後，隔離候選改為單一 helper，正常入口在新分片呼叫，integration 在原 review 位置呼叫。這是同兩個候選的相容修正，不增加第三個候選；修正版另凍結來源重跑對照。
+  - 日期來源:direct
+  - 證據:/tmp/dotfiles-ci-profile.a7iOFZ/integration-v1-omission/{raw.log,result.json}、integration-v1-omission-coverage.json；check_integration.py 比較具名 assertions 多重集合。初版 serial 與 integration 的末段曾重疊執行，serial 只用於覆蓋驗證，不當效能對照。舊 benchmark wrapper 暫停後的終止 handler 曾 re-enter Popen.wait；子測試正常完成後只終止該 wrapper，非 runner 失敗；新 wrapper 由 main wait 單點收子程序。
+  - 放棄:直接搬 block 後只看完整 suite 總數；刪除 integration 相容入口；重複兩份 controller body
+  - 重議:legacy integration 被明確淘汰時才可移除相容呼叫；其他分片移位也須驗證每個受支援入口
+  - 關聯:#279;D-20261008-ci-controller-shard-trials;M-20261008-ci-critical-path-baseline;tests/run.sh
