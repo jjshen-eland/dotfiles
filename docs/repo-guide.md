@@ -109,14 +109,12 @@ glog=git log --oneline --graph --decorate
 
 ### 系統更新與同步
 
-- macOS: `brewup`（brew update/upgrade + dotfiles pull + **ensure helper 部署** + Claude plugins + known_hosts 同步 + **bun 全域套件落後提示**）
+- macOS: `brewup`（brew update/upgrade + dotfiles pull + **ensure helper 部署** + Claude plugins + known_hosts 同步 + **bun 全域套件更新**）
 - Linux: `brewup`（同 macOS）+ `sysup`（apt update/upgrade）
 
-> **`brewup` 對 bun 只提示、不自動升。** `bun` 本體是 brew formula、跟著 `brew upgrade` 走；
-> 但 `bun install -g` 裝的（如 `wrangler`）**不升**——那類套件會改變部署行為，而 `brewup` 由
-> `allup` 在整個機隊同時跑，不該靜默升版。要升自己跑 `bun update -g`。
-> 判準是 **Current != Update**：只有 `Latest` 不同的（major 被 semver range 擋住）刻意不提示，
-> 否則每次 brewup 都會亮一個 `bun update -g` 升不動的東西。
+> `bun` 本體跟著 `brew upgrade` 更新；已安裝 bun 時，尾段另執行 `bun update -g` 更新全域套件，
+> 保留原生命令輸出與 package.json 的版本範圍。無 bun 時略過；更新失敗時顯示警告，維持既有 exit 0。
+> `allup` 呼叫 `brewup` 時同樣包含此步驟。
 - macOS: `brewfix`（cask 升版被 Gatekeeper 卡死時的診斷與復原；**預設唯讀**，`brewfix --fix` 才動手。病灶與鑑別法見 `claude/known-hazards.md`「cask 升版卡死」）
 
 > `brewup` / `sysup` 原為兩個 setup 腳本各自定義的 rc alias（`brewup` 兩份完全相同的複本），現已抽成

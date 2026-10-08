@@ -659,6 +659,8 @@ lib 缺席與 merge-base 失敗皆降級 UNKNOWN。
 
 Deployment wiring 守共用 `ensure-runtime.sh`；舊 Codex helper 的獨立行為 oracle 保留。
 brewup fixture 執行真實 entry／layout／guidance／config，以隔離 ln／yq 失敗驗證傳遞，套件更新仍繼續且警告可見。
+bun fixture 只允許一次 `update -g`，核對成功輸出、失敗診斷與警告、無 bun 的靜默略過及既有 exit 0；
+各臂先備妥 bun stub，避免其他 helper 測試意外更新真實全域套件。
 
 ## 18e. ensure-ssh-config.sh 幂等重生 ~/.ssh/config
 

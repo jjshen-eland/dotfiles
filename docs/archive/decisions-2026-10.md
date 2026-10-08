@@ -243,3 +243,9 @@
   - 放棄:擴大接手整個 Runtime item；以測量證據取代正式 repo 的完整驗證；把此選項當作 shipping 授權
   - 重議:來源 bytes 不同、未知 working-tree 修改或 active writer 恢復並行時停止該寫入並重新協調
   - 關聯:#279;D-20261008-ci-core-controller-recommendation;M-20261008-ci-critical-path-measurement-complete;tests/run.sh;tests/shard-manifest.tsv;docs/testing-contract.md
+
+- **D-20261008-brewup-bun-global-update · 2026-10-08 brewup 納入 bun 全域套件自動更新**：使用者明確要求加入 `bun update -g`，取代 2026-08-11 的只提示設計。已安裝 bun 時直接執行一次、保留 stdout／stderr；無 bun 時略過；失敗另外警告並保留 brewup 既有 exit 0。依本機 bun CLI help 保留 package.json 版本範圍，不加 `--latest`。`allup` 呼叫同一 brewup 腳本，後續採用也會涵蓋此步驟。舊 legacy milestone 沒有 stable ID，本筆以檔案與日期明確取代其 bun 提示政策，保留原歷史。
+  - 日期來源:direct
+  - 放棄:保留 outdated 表格解析作為更新前置；附加 --latest 跨越原生版本範圍；吞掉更新失敗診斷
+  - 重議:使用者另指定版本策略或 brewup 失敗 exit 契約時，以當批需求調整；本批只完成本地來源，不執行真實套件更新或部署
+  - 關聯:docs/archive/milestones-2026-08.md（2026-08-11 brewup bun 提示）;scripts/brewup.sh;docs/repo-guide.md;docs/testing-contract.md;tests/run.sh
