@@ -564,3 +564,12 @@
   - 放棄:重新改 controller 測試或 timeout；在程式 bytes 相同時重跑整輪效能對照；以完整 all 取代 legacy integration 的集合與原順序證據；把本地完成冒稱已交付或 hosted 同幅加速
   - 重議:取得本批具名 shipping 授權後觀察 macOS／Ubuntu 完整 suite／job；hosted 未改善或回退時恢復原分配，不擴為選測器。程式、fixture、來源或環境 drift 時重驗受影響 controls；Runtime 後續寫入仍依原 ownership／reassignment 規則。
   - 關聯:#279;D-20261008-ci-controller-adoption-local;D-20261008-ci-core-controller-recommendation;M-20261008-ci-critical-path-measurement-complete;X-20261008-ci-shard-move-integration-coverage;tests/run.sh;tests/shard-manifest.tsv;docs/testing-contract.md
+
+- **M-20261008-brewup-bun-global-update-local · 2026-10-08 brewup bun 全域更新完成本地驗收**：尾段以一次 `bun update -g` 取代 outdated 查詢與表格提示；已安裝 bun 時保留原生命令輸出，無 bun 靜默略過，失敗顯示警告並維持 exit 0。README／repo guide／test contract 與 shard manifest 已同步，原只提示 milestone 保留，由新 decision 明確取代對應政策。
+  - 日期來源:direct
+  - 契約保全:工作項為「brewup 自動更新 bun 全域套件」；Writer／Dossier Steward codex:brewup-bun-global-update，branch=feat/brewup-bun-global-update。使用者選擇 1 確認原 writer／steward 停止並交接本批；Write Scope 為 scripts/brewup.sh、tests/run.sh、tests/shard-manifest.tsv、README.md、docs/repo-guide.md、docs/testing-contract.md，加 STATUS 與本月 decision／milestone 維護。Goal 為已安裝 bun 時納入原生全域更新；驗收為每次只執行一次 update -g、成功輸出可見、無 bun 略過、失敗診斷／警告與 exit 0、fixtures 全隔離、文件／history 同步、完整 serial／parallel 及 audit／diff 通過後本地提交。只授權本批本地修改、驗證與 commit，不執行真實套件更新／fleet 部署，不含 push／PR／merge，不加 --latest，也不接續 Runtime 遷移。
+  - 驗證:先更新隔離 oracle，舊碼 runtime shard 為 664 PASS／5 FAIL、exit 1；失敗集中在命令未執行、成功輸出、失敗診斷與警告，無 bun control 仍通過。修後 10 個 bun 斷言全綠；完整 ./tests/run.sh 為 1577 PASS／0 FAIL、exit 0，完整 ./tests/run-parallel.sh 合計同為 1577／0、exit 0（runtime 669，manifest 同步）。Bash 語法、標準 suite 的 ShellCheck 與文件 gates 均通過；受測 patch 在兩套測試期間保持一致。結案後僅移除本 active item 並保存紀錄，程式與測試 bytes 不再修改；文件收尾 core 分片再驗 174 PASS／0 FAIL、exit 0，final doc-governance audit 與 diff 檢查通過。
+  - 證據與重建:同機暫存 /tmp/brewup-bun-red.log、/tmp/brewup-bun-serial.log、/tmp/brewup-bun-parallel.log、/tmp/brewup-bun-core-final.log 與 /tmp/brewup-bun-tested.patch。以 27fc2ad3cb769b2344a0277aecb87c6ba5c28e43 建 feature branch、套用該 patch，再執行兩個完整 runner 可重建受測候選；patch 含結案前 active spec，不冒稱包含測後紀錄。
+  - 放棄:以 outdated 表格作更新前置；新增跨範圍 --latest；更新真實環境作測試；以本地驗收宣稱來源已合併或已部署
+  - 重議:另取得當批具名來源交付或部署授權後，依 repo shipping／origin/main 散佈規則處理；版本策略或 exit 契約改變時依新需求調整
+  - 關聯:D-20261008-brewup-bun-global-update;scripts/brewup.sh;tests/run.sh;tests/shard-manifest.tsv;docs/repo-guide.md;docs/testing-contract.md;STATUS.md

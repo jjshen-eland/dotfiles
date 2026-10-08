@@ -144,7 +144,7 @@ gp    # git push
 gl    # git pull
 
 # 系統更新
-brewup  # macOS/Linux: brew update && upgrade + dotfiles pull + Claude plugins
+brewup  # macOS/Linux: brew update && upgrade + dotfiles pull + Claude plugins + bun update -g
 sysup   # Linux: apt update && upgrade && autoremove
 ```
 
