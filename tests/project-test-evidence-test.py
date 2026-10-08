@@ -136,6 +136,47 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual(p.returncode, 2)
         self.assertEqual(json.loads(p.stdout)["verdict"], "ERROR")
 
+    def test_compact_large_scope_preserves_decisions_and_all_changes(self):
+        names = ["src/input-{:04d}".format(n) for n in range(500)]
+        for name in names:
+            (self.root / name).write_text("input\n")
+        self.git("add", *names)
+        self.git("commit", "-qm", "large scope")
+        self.record.update(inputs=names, tested_commit=self.git("rev-parse", "HEAD").strip())
+        for changed in [False, True]:
+            with self.subTest(changed=changed):
+                if changed:
+                    for name in names:
+                        (self.root / name).write_text("changed\n")
+                full_rc, full = self.invoke()
+                compact_rc, compact = self.invoke("check", None, "--compact")
+                self.assertEqual(compact_rc, full_rc)
+                self.assertEqual(compact, dict(
+                    {key: value for key, value in full.items() if key != "inputs"},
+                    input_count=len(names)))
+                if not changed:
+                    self.assertLess(len(json.dumps(compact)), len(json.dumps(full)) // 10)
+                else:
+                    self.assertEqual(compact["changed_inputs"], names)
+
+    def test_compact_unknown_error_and_snapshot_boundary(self):
+        unknown = {"author_summary": "Tests passed"}
+        full = self.invoke("check", unknown)
+        compact = self.invoke("check", unknown, "--compact")
+        self.assertEqual(compact, full)
+        self.assertEqual(compact[0], 1)
+        malformed = subprocess.run(
+            [sys.executable, str(SCRIPT), "check", "--root", str(self.root),
+             "--evidence", "-", "--compact"], input="{", text=True, capture_output=True)
+        self.assertEqual(malformed.returncode, 2)
+        self.assertEqual(json.loads(malformed.stdout)["verdict"], "ERROR")
+        rc, result = self.invoke("snapshot", None, "--input", "src/", "--compact")
+        self.assertEqual(rc, 2)
+        self.assertEqual(result["verdict"], "ERROR")
+        rc, result = self.invoke("snapshot", None, "--input", "src/")
+        self.assertEqual(rc, 0)
+        self.assertIn("src/app", result["input_snapshot"])
+
 
 if __name__ == "__main__":
     unittest.main()
