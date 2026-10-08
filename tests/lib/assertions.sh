@@ -15,4 +15,3 @@ assert_eq() {
 assert_rc() {
     if [ "$2" -eq "$3" ]; then ok "$1"; else bad "$1（期望 exit=$2，實際 exit=$3）"; fi
 }
-
