@@ -147,6 +147,15 @@ assert_rc() {
     if [ "$2" -eq "$3" ]; then ok "$1"; else bad "$1（期望 exit=$2，實際 exit=$3）"; fi
 }
 
+run_review_controller() {
+    if python3 "$ROOT/tests/review-repair-controller.py" "$ROOT" >"$TMP/review-repair-controller.out" 2>&1; then
+        ok "review controller：有界派遣、修復驗證、有效 coverage receipt 與唯讀保護"
+    else
+        cat "$TMP/review-repair-controller.out"
+        bad "review controller behavior regression"
+    fi
+}
+
 if shard_enabled core; then
 echo "▶ 1. shellcheck gate（背景執行，結尾彙總）"
 shellcheck_out="$TMP/shellcheck.out"
@@ -1487,6 +1496,9 @@ assert_rc "多 repo：CLEAN 排最後仍 exit 1（overall 不被最後一個覆�
 mrepo_out="$(GIT_HYGIENE_GH=/usr/bin/false "$GH_SCRIPT" "$TMP/mrepo-clean" "$TMP/mrepo-clean" 2>/dev/null)"
 mrepo_rc=$?
 assert_rc "多 repo：全部 CLEAN → exit 0" 0 "$mrepo_rc"
+
+echo "▶ independent review controller regression"
+run_review_controller
 
 fi
 if shard_enabled ship_state; then
@@ -3981,11 +3993,8 @@ if grep -qx 'base=legacy-compatible' "$drs_anchor" && grep -q '^terminal_reason=
 else bad "deep-review terminal helper 破壞 legacy anchor 或清掉未知 coverage"; fi
 drs_show="$("$DRS_CLAUDE"/scripts/review-terminal.sh show --repo "$drs_tmp/repo")"
 assert_eq "deep-review 拒絕 ancestry-only clear 後 signal 保持原樣" "$drs_before_show" "$(cat "$drs_anchor")"
-if python3 "$ROOT/tests/review-repair-controller.py" "$ROOT" >"$TMP/review-repair-controller.out" 2>&1; then
-    ok "review controller：有界派遣、修復驗證、有效 coverage receipt 與唯讀保護"
-else
-    cat "$TMP/review-repair-controller.out"
-    bad "review controller behavior regression"
+if [ "$TEST_SHARD" = integration ]; then
+    run_review_controller
 fi
 if python3 -B "$ROOT/tests/review-primary-scope.py" "$ROOT" >"$TMP/review-primary-scope.out" 2>&1; then
     ok "review primary scope：path partitions、aggregate receipt、drift 與 incomplete 原始證據"

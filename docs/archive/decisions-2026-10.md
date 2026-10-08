@@ -217,3 +217,29 @@
   - 放棄:以 COPYFILE_DISABLE= 空值當成恢復 metadata；以 Git ignore 或 tar -tf 證明 tar 產物乾淨；新增 bash 非互動初始化機制；對 live preferences、setup 或主機執行部署
   - 重議:需要預設移除所有 xattr 或其他打包工具產生 metadata 時，先重現該工具再調整範圍；Linux 實際 tar control 保留於既有 Ubuntu CI，不用 macOS stub 冒稱已在 Linux 執行
   - 關聯:setup-mac-env.sh;git/gitignore_global;write-mac-defaults.sh;claude/CLAUDE.md;claude/known-hazards.md;tests/test_mac_metadata.py
+
+- **D-20261008-ci-critical-path-before-selection · 2026-10-08 #279 先量測最慢分片，延後完整依賴選測**：使用者認可成本評估並以 `$project spec` 建立較小的工作契約。近期 20 個已合併 PR 按 #279 的 runner／部署／全域設定 fallback 規則估算，至少 14 個仍須全跑；此為累積 PR diff 的抽樣推論，不是 selector 執行結果或所有 CI 輪次的比例。PR #283 macOS run 37625167880 的 core／review elapsed 分別為 269／459s，顯示必跑 core 與最慢分片均須先定位；不能直接把原始耗時當成選測後的下限或效能承諾。PR #278 最後一顆只改結案文件，但累積 PR diff 仍包含 runner，普通 PR 差異選測無法直接省掉這輪。先以有界量測與隔離試驗判斷保留完整覆蓋的縮時機會，具體驗收以 active contract 為準；未有穩定收益時維持現狀。
+  - 日期來源:direct
+  - 放棄:立即實作完整依賴選測並持續維護跨 skill 圖；把最後一顆 commit 的文件差異當成整個 PR 的影響範圍；把 core 當成幾秒鐘的全域 gate；以刪除安全反例換取省時
+  - 重議:小範圍、可獨立選測的實際 CI 輪次比例提高，且保守原型在多輪同環境對照中有穩定收益、維護成本可接受時，再評估依賴選測
+  - 關聯:#279;#278;#283;M-20261007-ci-section-profile;M-20261007-ci-shards-local-validated;M-20261007-ci-required-accepted;https://github.com/jjshen-eland/dotfiles/actions/runs/37625167880/job/112804967002
+
+- **D-20261008-ci-controller-shard-trials · 2026-10-08 以同一獨立 controller suite 的兩種分片位置試驗縮時**：完整基線確認本機 parallel 的 review 156s，其他 shards 為 core 41／ship_state 55／plan 101／runtime 109s；serial 的 review-repair-controller.py 單獨占 77.183s。該 suite 自建 TemporaryDirectory、Git 與 state，只讀 ROOT 的 shared scripts，不使用 shell runner 的其他 fixture。選擇兩個獨立候選：初版將原執行 block 原封移至 ship_state 或 core，同步各自 manifest 的一個 assertion 及 testing contract 描述；不改 controller／測試案例／timeout，不新增分片或依賴選測。Block SHA256 e4fb0404c419efd17d55ceaf134770dfd85b645d8f94ec86edb959cc2bc529de 兩候選相同。初版漏掉 legacy integration，已先取得實際 RED，見 X-20261008-ci-shard-move-integration-coverage；修正版以同一 helper 保留 integration 原呼叫位置，body 去除函式縮排後與原 block 的 SHA 相同。這是使用者「開工」範圍內的 repo 外試驗，正式 repo code 保持唯讀；改善仍待交錯對照，不能以估計的分片加總當實測。
+  - 日期來源:direct
+  - 放棄:先拆 controller 本體／更改安全等待或刪測試；增加新 background worker 與清理責任；靠 skill 名稱建立新的選測圖
+  - 重議:候選無穩定收益、fixture 或環境受移位影響、assertions 不完整，或 hosted 分片成本與本機不同時，保留原分配；不新增第三個候選
+  - 關聯:#279;M-20261008-ci-critical-path-baseline;D-20261008-ci-critical-path-before-selection;tests/review-repair-controller.py;tests/run.sh;tests/shard-manifest.tsv;X-20261008-ci-shard-move-integration-coverage
+
+- **D-20261008-ci-core-controller-recommendation · 2026-10-08 #279 推薦 core 靜態重分配，仍不建立依賴選測**：修正版三組固定來源、交錯順序對照為 baseline/core 164.3495/116.8221、core/baseline 118.0903/181.6935、baseline/core 190.4371/117.6620s。基線中位數 181.6935s（範圍 164.3495–190.4371），候選 117.6620s（116.8221–118.0903），中位數差 64.0315s／35.241%；配對分別省 47.5274／63.6032／72.7751s，最小收益大於基線範圍差 26.0876s。六次 captured environment 相同、來源前後一致、1576 個具名 assertions 多重集合相同。已確認本機 review 長工作集中是可改善的關鍵路徑，推薦 controller 在 core 呼叫的候選；正式採用仍須 serial／integration／失敗控制及後續 hosted 雙 OS 驗收。ship_state 初版 pilot 137.9383s 比 core 初版 121.9351s 慢，兩者均完整覆蓋但 legacy integration 不完整，僅作初選資料；不推薦 ship，不混入修正版穩定性數據，也不增加第三候選。
+  - 日期來源:direct
+  - 成本:本次由首輪完整基線到最後正式 repo suite 共 89.47 分鐘（含自動等待與分析，不等同人工作業時間，未含前置 spec／準備），屬一次性量測；原始時間與定義見暫存 measurement-elapsed.json。正式候選只涉及 tests/run.sh、tests/shard-manifest.tsv、docs/testing-contract.md；controller body／cases／supervisor／聚合器不改，不新增 worker、selector、skill 內容或日常 benchmark。預估本地採用加既有驗證需 30–60 分鐘，不含 PR review／排隊；後續維護仍是既有 manifest 漂移檢查及 integration 相容呼叫。若 hosted 每輪也至少省本機最小值 47.5s，約 38–76 輪有等價等待時間回收；此回收估計只計後續採用成本，未含上述既有量測投入；若合計量測與預估採用，約 151–189 輪。這是有條件的量級估計，並非已證明的 hosted 收益。使用頻率低或 hosted 不改善時應保留／回復原分配，停止擴張調查。
+  - 證據:/tmp/dotfiles-ci-profile.a7iOFZ/paired-v2-{1,2,3}-{baseline,core}/{raw.log,result.json}、paired-v2-summary.json；trial-core-v2.patch SHA256 13e923525d9061dda376fa3c1f327356bbc068e8b324059fb8919dd1e4c65a14。由 baseline-overlay.patch 的 frozen baseline 重建：原 controller block 抽成單一 run_review_controller helper，在 core 尾端呼叫；review 原位置只在 integration 呼叫；manifest core 173→174、review 384→383；testing contract 說明歸屬與相容性。不要以不同版本／環境的 hosted logs 宣稱加速已落地。
+  - 放棄:建立完整依賴圖以跳測；只以較快單次或估算分片加總決策；將一次性 benchmark 加入平常 CI
+  - 重議:hosted 雙 OS 出現回退／未改善、測試負載後續顯著變動，或受支援入口覆蓋不一致時，重新核對實際最慢分片；未有新證據不擴成選測系統
+  - 關聯:#279;D-20261008-ci-critical-path-before-selection;D-20261008-ci-controller-shard-trials;X-20261008-ci-shard-move-integration-coverage;M-20261008-ci-critical-path-baseline
+
+- **D-20261008-ci-controller-adoption-local · 2026-10-08 #279 使用者授權三檔候選正式採用與本地 commit**：使用者選擇上一輪選項 1「正式採用，完成本地修改、驗證與 commit」。本批由 codex:macos-archive-metadata 接手 tests/run.sh、tests/shard-manifest.tsv、docs/testing-contract.md，原 Runtime writer 已停止的事實沿 STATUS；其他 Runtime 工作不續作，四份自有量測文件一併保存。採用既有 checksum 的 core 候選，不重新量測三組 benchmark；相同 runner／manifest 及 controller／supervisor bytes 使先前 integration／失敗控制證據仍適用，正式 checkout 與 clean clone 全套驗證另做。Testing contract 將 all 的順序明確寫成 runner 分片順序，避免搬移後仍稱 testcase 原位置。Endpoint 僅本地 commit；push／PR／merge／部署及 hosted 效能驗收另待具名授權。
+  - 日期來源:direct
+  - 放棄:擴大接手整個 Runtime item；以測量證據取代正式 repo 的完整驗證；把此選項當作 shipping 授權
+  - 重議:來源 bytes 不同、未知 working-tree 修改或 active writer 恢復並行時停止該寫入並重新協調
+  - 關聯:#279;D-20261008-ci-core-controller-recommendation;M-20261008-ci-critical-path-measurement-complete;tests/run.sh;tests/shard-manifest.tsv;docs/testing-contract.md
