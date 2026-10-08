@@ -662,11 +662,6 @@ brewup fixture 執行真實 entry／layout／guidance／config，以隔離 ln／
 bun fixture 只允許一次 `update -g`，核對成功輸出、失敗診斷與警告、無 bun 的靜默略過及既有 exit 0；
 各臂先備妥 bun stub，避免其他 helper 測試意外更新真實全域套件。
 
-18d 的 canonical fixture／34 個斷言位於 `tests/brewup-tests.sh`，完整 runtime 以 source 呼叫同一份；
-本地可用 `bash tests/brewup-tests.sh` 有界取得相同行為的 RED／GREEN。它不代表全套驗收。
-`tests/test_brewup_entry.py` 從 repo 外執行獨立入口，驗現行 34 PASS 與 disposable 舊行為 control 的
-29 PASS／5 FAIL；core 的一個 aggregate assertion 守入口初始化與原退化檢出，runtime 的 34 個原斷言不減少。
-
 ## 18e. ensure-ssh-config.sh 幂等重生 ~/.ssh/config
 
 原子寫入 + 完整性驗證。
@@ -879,15 +874,6 @@ README commit 不使程式測試失效，tracked／dirty／mode／ignored／untr
 涵蓋 dirty／untracked 與 symlink target，environment map 有提供時精確比對。Git anchor 不能單獨證明
 symlink target／submodule 的受測內容。此 helper 不證明原紀錄真實性、相依範圍完整或未記錄的環境穩定，
 也不執行測試、不建立 cache；native oracle 另驗模型真的呼叫 helper 並按 verdict 行動。
-
-`check --compact` 只把重複的 inputs 清單換成 input_count，完整 changed_inputs、verdict 與 exit 語意不變；
-預設完整輸出相容，snapshot 禁止 compact，避免裁掉用來核對的來源。500 個 inputs 的正常／全變更、
-缺證據／JSON error 與 snapshot 邊界由真 Git fixture 守住。
-
-`tests/project-reference-eval.py` 的 opt-in `ordinary-script`／`docs-closeout` 使用當次 root AGENTS 的測試段落，
-固定 interpreter、隔離 bun 與獨立 execution log；分別觀察普通脚本實作的完整驗證次數／當時來源保存，
-以及只補既有驗收結果時的沿用與文件 checks。Fixture 只提供相依事實與本地授權，受測 frozen source 排除
-pressure oracle；runner parity 規則在 fixture 契約中保留，不把 stub suite 的耗時當真 repo 或 hosted CI 收益。
 
 ## Session skills native eval（2026-10-02）
 

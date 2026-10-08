@@ -4,7 +4,6 @@
 check reads an existing JSON result (or temporary normalization of tool evidence):
 command, exit, output (or stdout + stderr), inputs, and tested_commit or input_snapshot.
 snapshot emits inputs/input_snapshot for an actual test's before/after comparison.
-check --compact omits the repeated input list; all changes and decisions remain.
 Optional environment maps are compared with --environment (current JSON facts).
 The caller owns provenance, complete input selection and environment applicability.
 Python 3.9+; standard library and Git only.
@@ -124,16 +123,12 @@ def main():
     parser.add_argument("--evidence", help="existing JSON result, or - for normalized tool evidence on stdin")
     parser.add_argument("--input", action="append", help="literal path; repeat for snapshot scope")
     parser.add_argument("--environment", help="current environment facts as a JSON object")
-    parser.add_argument("--compact", action="store_true",
-                        help="check only: report input_count instead of repeating inputs")
     args = parser.parse_args()
     try:
         root = Path(args.root).resolve(strict=True)
         if Path(os.fsdecode(git(root, "rev-parse", "--show-toplevel")).strip()).resolve() != root:
             raise ValueError("--root must be the repository root")
         if args.action == "snapshot":
-            if args.compact:
-                raise ValueError("--compact applies only to check; snapshots require complete inputs")
             scope = inputs(args.input)
             result = {"inputs": scope, "input_snapshot": snapshot(root, scope)}
         else:
@@ -144,8 +139,6 @@ def main():
             if environment is not None and not isinstance(environment, dict):
                 raise ValueError("--environment must be a JSON object")
             result = check(root, json.loads(raw), environment)
-            if args.compact:
-                result["input_count"] = len(result.pop("inputs"))
         status = 1 if result.get("verdict") == "NEED_TEST" else 0
     except Unusable as exc:
         result, status = {"verdict": "NEED_TEST", "reason": str(exc)}, 1

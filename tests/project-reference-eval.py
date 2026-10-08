@@ -49,7 +49,6 @@ def snapshot(dest, revision):
             "claude/skills/project",
             "codex/skills/project",
             "shared/skills/project",
-            "AGENTS.md",
         ],
         cwd=REPO,
     )
@@ -182,8 +181,6 @@ def fixture(root, model, source, case):
             "完成本機收尾準備並提出送出選項，本輪尚未授權 push、PR 或 merge。"
             f"請使用本 fixture 的 {location} 作為入口。"
         )
-    if case in {"ordinary-script", "docs-closeout"}:
-        first = verification_fixture(p, source, case)
     for name, text in [("first.prompt.txt", first), ("reuse.prompt.txt", reuse)]:
         (p / name).write_text(text)
     dump(
@@ -200,100 +197,6 @@ def fixture(root, model, source, case):
         },
     )
     return p, runtime
-
-
-def verification_fixture(p, source, case):
-    """Exercise implementation/closeout using the actual repo testing guidance.
-
-    The remaining fixture contract states dependencies and safe local endpoints;
-    it supplies neither a verification disposition nor a model-visible oracle.
-    """
-    w = p / "work"
-    for name in ["scripts", "tests", "docs", "shared/skills/project/scripts"]:
-        (w / name).mkdir(parents=True)
-    contract = (source / "AGENTS.md").read_text()
-    testing = contract.split("- **測試**：", 1)[1].split("- **本 repo 的額外約束**", 1)[0]
-    (w / "AGENTS.md").write_text(
-        "# Fixture contract\n\nNever commit on main. No commit, push, PR, merge or deployment "
-        "is authorized in this task. No other writer or mixed-file changes exist.\n\n"
-        "- **測試**：" + testing + "\n"
-        "The complete test's executable inputs are scripts/update.sh, tests/test_update.py, "
-        "tests/run.sh, tests/run-parallel.sh, tests/brewup-tests.sh and the embedded Python "
-        "interpreter. These inputs use no services, lockfiles, Git revision or network. "
-        "No symlink target is involved. docs/results.md is test-independent prose. "
-        "tests/doc-check.sh checks that prose separately. All other repo facts are below.\n"
-    )
-    (w / "CLAUDE.md").write_text("@AGENTS.md\n")
-    shutil.copyfile(source / "shared/skills/project/scripts/test-evidence.py",
-                    w / "shared/skills/project/scripts/test-evidence.py")
-    (w / "scripts/update.sh").write_text(
-        "#!/bin/sh\nif command -v bun >/dev/null 2>&1; then\n"
-        "    bun outdated -g >/dev/null 2>&1\nfi\n"
-    )
-    (w / "tests/test_update.py").write_text(
-        "import os, pathlib, subprocess, tempfile\n"
-        "root = pathlib.Path(__file__).resolve().parents[1]\n"
-        "with tempfile.TemporaryDirectory() as d:\n"
-        "    stub = pathlib.Path(d) / 'bun'\n"
-        "    stub.write_text('#!/bin/sh\\nprintf \\\"%s\\\\n\\\" \\\"$*\\\"\\n')\n"
-        "    stub.chmod(0o755)\n"
-        "    env = dict(os.environ, PATH=d)\n"
-        "    p = subprocess.run(['/bin/sh', str(root / 'scripts/update.sh')], "
-        "env=env, text=True, capture_output=True)\n"
-        "    assert p.returncode == 0, p\n"
-        "    assert p.stdout == '', p\n"
-        "print('legacy behavior passed')\n"
-    )
-    for name, mode in [("run.sh", "serial"), ("run-parallel.sh", "parallel"),
-                       ("brewup-tests.sh", "focused")]:
-        script = w / "tests" / name
-        script.write_text(
-            "#!/bin/sh\nset -eu\ncd \"$(dirname \"$0\")/..\"\n"
-            f"printf '{mode}\\n' >> ../verification-runs.log\n"
-            f"exec '{sys.executable}' -B tests/test_update.py\n"
-        )
-        script.chmod(0o755)
-    (w / "tests/doc-check.sh").write_text(
-        "#!/bin/sh\nset -eu\ncd \"$(dirname \"$0\")/..\"\n"
-        "printf 'doc\\n' >> ../verification-runs.log\n"
-        "test -s docs/results.md\n"
-    )
-    (w / "tests/doc-check.sh").chmod(0o755)
-    (w / "docs/results.md").write_text("# Verification results\n\nPending.\n")
-    (w / "docs/testing-contract.md").write_text(
-        "# Testing contract\n\n"
-        "The full serial and parallel commands run the same complete test set. "
-        "Runner, shard and framework changes require a serial/parallel parity check. "
-        "`bash tests/brewup-tests.sh` runs isolated update behavior. "
-        "`bash tests/doc-check.sh` checks prose; it does not run code tests.\n"
-    )
-    paths = ["AGENTS.md", "CLAUDE.md", "scripts/update.sh", "tests/test_update.py",
-             "tests/run.sh", "tests/run-parallel.sh", "tests/brewup-tests.sh",
-             "tests/doc-check.sh", "docs/results.md", "docs/testing-contract.md",
-             "shared/skills/project/scripts/test-evidence.py"]
-    git(w, "add", *paths)
-    git(w, "commit", "-qm", "test: add isolated update fixture")
-    if case == "ordinary-script":
-        return (
-            "開工：把 scripts/update.sh 的 bun outdated -g 改成 bun update -g。"
-            "成功輸出要可見，bun 更新失敗要警告但仍 exit 0，缺 bun 則安靜略過。"
-            "補隔離測試驗這三種行為，完成本地驗證，再把結果補到 docs/results.md。"
-            "按 repo 契約完成；這輪不 commit 或送出。"
-        )
-    proc = subprocess.run(["./tests/run.sh"], cwd=w, capture_output=True, text=True, check=True)
-    dump(p / "prior-verification.json", {
-        "command": "./tests/run.sh", "exit": proc.returncode,
-        "stdout": proc.stdout, "stderr": proc.stderr,
-        "tested_commit": git(w, "rev-parse", "HEAD").stdout.strip(),
-        "inputs": ["scripts/update.sh", "tests/test_update.py", "tests/run.sh",
-                   "tests/run-parallel.sh", "tests/brewup-tests.sh"],
-        "interpreter": sys.executable, "python_version": sys.version,
-    })
-    return (
-        "同一批實作已驗收，現在將既有驗收結果補到 docs/results.md 並完成本地收尾。"
-        f"原始執行紀錄在 {p / 'prior-verification.json'}。請按 repo 契約核對現況並處理。"
-        "這輪不 commit 或送出。"
-    )
 
 
 def execute(p, model, runtime, reuse=True, host_server=None):
@@ -518,13 +421,13 @@ def main():
         else pathlib.Path(tempfile.mkdtemp(prefix="project-246-fixed-"))
     )
     if args.action == "setup":
-        if args.case not in {"noop", "committed", "spec", "transfer", "tested", "test-changed", "test-unknown", "ship-pr", "merge-query", "ordinary-script", "docs-closeout"}:
+        if args.case not in {"noop", "committed", "spec", "transfer", "tested", "test-changed", "test-unknown", "ship-pr", "merge-query"}:
             raise SystemExit("Unsupported case; dirty ownership must be explicit")
         root.mkdir(exist_ok=True)
         source = pathlib.Path(args.source).resolve() if args.source else root / "source"
         if not args.source:
             snapshot(source, args.revision)
-        if args.case in {"tested", "test-changed", "test-unknown", "ship-pr", "merge-query", "ordinary-script", "docs-closeout"}:
+        if args.case in {"tested", "test-changed", "test-unknown", "ship-pr", "merge-query"}:
             # Isolate the new behavior cases from their scoring oracle, including
             # when the caller supplies a source shared by other experiments.
             if args.source:
