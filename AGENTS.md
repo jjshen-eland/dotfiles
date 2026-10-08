@@ -97,6 +97,13 @@ this pattern. Everything else points.
 - **測試**：`./tests/run.sh`，**以 exit code 判綠紅**（接 pipeline 會吃掉失敗）。
   改動 `scripts/`、setup 腳本、skill 腳本後必跑；改動任何 `.md` 的節名或搬動權威內容後同樣要跑
   （交叉引用 gate 掃全 repo 的 md）。
+  一般腳本變更先用受影響的隔離測試驗 RED／GREEN，再選 `./tests/run.sh` 或 `./tests/run-parallel.sh`
+  完整驗證一次；runner／shard／測試框架改動才需 serial／parallel 對照。額外全套必須有具名的輸入變更或驗證目的。
+  完整驗證當時保存原 command／exit／output、完整 inputs 與環境事實；dirty inputs 用
+  `shared/skills/project/scripts/test-evidence.py snapshot` 在測前／測後核對一致，再綁定結果，不能測後補造測前來源。
+  測前 snapshot 必須 exit 0 且為有效 JSON，失敗先修正保存命令再開始測試；不得帶著失敗快照跑全套再重跑補證據。
+  收尾與 Log 先用該 helper 的 `check --compact` 核對可沿用證據；程式／測試／fixture／環境未變時沿用，
+  純結果補記只補相關治理／xref，不因更新紀錄重跑 core 或全套。未知輸入、必要規範與 required CI 仍按各自 gate 補驗。
   Root `CLAUDE.md` 以原生 import 載入本檔，不再複製這三行；G1c clean-room 守 import 行為。
   各 gate 的判準、反例與設計理由（**放寬判準前必讀**）見 `docs/testing-contract.md`。
 - **本 repo 的額外約束**：`~/.dotfiles` 同時是多台機器的部署來源，`scripts/` 底下的改動會經
