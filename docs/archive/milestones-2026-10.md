@@ -709,3 +709,13 @@
   - 放棄:更新整棵未使用 build dependency tree；全面升級個人工具；直接部署未合併修正；將 PR merge 視為後續新 PR 的授權；代為接受未授權 Xcode license
   - 重議:macmini 完成 Xcode 授權處理後，fresh inventory／預演再續部署。post-merge 紀錄未另送出；後續依新批 endpoint 指令處理。temporary evidence 不是跨主機 authority，主機備份與本事件紀錄為後續核對入口。
   - 關聯:D-20261010-setup-bottle-dependency-guard;M-20261010-setup-fleet-partial;M-20261010-setup-fleet-first-batch;STATUS.md;PR#297
+
+- **M-20261010-setup-fleet-complete · 2026-10-10 macmini 續部署完成、Setup fleet 14／14 驗收**：使用者完成 Xcode 授權處理後，fresh SSH 核對 macmini 選用 `/Applications/Xcode.app/Contents/Developer`、Homebrew list exit 0。全新 inventory 確認 main 112d37d、工作樹乾淨、92 個既有 Homebrew 套件；預檢與執行前 snapshot 一致後，fast-forward 至已合併 `792f1541775eba9b35693a16868a98c82b86f461`，plan 僅缺 actionlint／ast-grep，無移除或衝突。
+  - 日期來源:direct
+  - 部署:apply／check／apply／check 全部 exit 0，各次工具 traversal 掃足 22 項；新增 actionlint 1.7.12、ast-grep 0.50.0，第二次 installed=0 且完整 snapshot 與首次完成後相同。兩端 native guidance symlink 解析至本機 repo 並與來源一致；合併前十三台驗收，本批 source／core 環境達 14／14。
+  - 保全:92 個既有 Homebrew 套件版本逐項相同，ca-certificates 保持 2026-08-13；未追加該台憑證或個人工具更新。ledger 僅記 core profile 與新裝兩工具；原 .zshenv 內容／mode 保留並加 managed block，備份為 `~/.zshenv.dotfiles-backup-hrkm6_27`，原不存在的 .bashrc 僅建立 managed block；settings hash／Git status 保持。
+  - 驗證:Bash／Zsh 各自經 dev-env 執行 Python 3.14.7／tomllib、uv 0.12.13、Bun 1.4.2、Codex CLI 0.154.0、Claude Code 2.1.269 版本探測，以及 ast-grep stdin 語法查詢，全部成功。保留既有 CLI 版本，工具宣告對齊不代表全機隊套件版本相同；沒有 model turn／登入授權／代表專案功能測試。
+  - 證據:同機 `/tmp/setup-fleet.SttZEo/resume/macmini-*` 保存 before／preapply／before-install／after／final snapshots、plan／apply／rerun／probes 日誌與 result JSON，`deploy-macmini.py` 保存不含憑證升級的保全斷言。需要回復時先核對後續修改，再使用主機原 shell 備份；本批未執行回滾或刪除工具。
+  - 放棄:為統一版本升級既有 Codex／Claude Code；自動更新 macmini 憑證；以可用性驗收冒充舊工具 ownership／退役完成
+  - 重議:歷史 setup 工具歸屬與用途仍待核對，未確認不 adopt／移除；部署事後紀錄為本地 docs/setup-fleet-results，後續 push／PR／merge 須當批具名指令。
+  - 關聯:M-20261010-setup-fleet-resumed;D-20261010-setup-bottle-dependency-guard;STATUS.md;PR#297
