@@ -673,3 +673,11 @@
   - 放棄:以 brewup 全面升級；憑命令可用就接管舊工具；以 CLI --version 冒充模型回合或既有專案整合測試
   - 重議:macs 待 probe 修正合併；其餘 12 台未 apply。既有工具納管／退役需使用者核對用途，本紀錄不宣稱 14 台全面對齊或專案功能驗收完成。
   - 關聯:M-20261010-setup-canary-probe-fix;D-20261009-setup-tool-ownership;STATUS.md;README.md
+
+- **M-20261010-macs-setup-canary · 2026-10-10 macOS macs 完成增量工具與 shell 試跑**：使用者以 `$project --merge` 授權修正交付並接續 macOS canary，PR #295 rebase merge 至 `bbf4f98f26908652e237fc62ce5cee0558e0ac1e`；必要 CI macOS 3m11s／Ubuntu 1m43s 全綠。main 已 fast-forward，合併前的 `e8954b6` 未改寫。macs 在合併來源執行 plan／apply／check／apply／check，五次 exit 0；只安裝 ast-grep 0.45.3，ledger 只納管該新工具。第二次 apply installed=0、shell unchanged。
+  - 日期來源:direct
+  - 驗證:174 個既有 formula 與 9 個 cask 的名稱及版本逐行保持相同。原 .zshenv 內容扣除新增區塊與分隔換行後 SHA-256 仍為 82adc4070540534b3bacfb05b0404e716e3dbe6acac332df3650c9edf90ed6f0、mode 0644；備份 `/Users/jjshen/.zshenv.dotfiles-backup-4uxo1koz` 內容 hash 相同。新 .bashrc 只有管理區塊。settings.json runtime drift 的 SHA-256 維持 08429aaa01140190a8e97227800548504060cfba948da7d26edc81ed1e1fd890。以最小 system PATH 啟動 Zsh／Bash 共用 wrapper，兩者均找到 Codex 0.162.0、Claude Code 2.1.295、Python 3.14.8／tomllib、uv／Bun／新工具，ast-grep stdin 查詢通過。
+  - 證據:同機 setup-rollout-btcgui2i 暫存目錄的 macs-before.json／macs-canary.json／macs-after.json／macs-cli-probes.json；完整路徑見 M-20261010-setup-canary-probe-fix。最初 CLI probe 的 Python 字串 shell quoting 錯誤已修正驗證程式後重跑，未改產品程式；不把 probe 本身錯誤算成環境缺陷。回復時先確認現檔無後續修改，再還原 zshenv 備份；新 bashrc 需確認仍只有管理區塊才能移除，ast-grep 須具名移除才回滾，本批未執行回復。
+  - 放棄:將未合併腳本散佈到主機；把舊工具自動接管或移除；把 CLI 啟動成功稱為模型回合／專案功能驗收；為 post-merge 紀錄再推新 PR 而沿用舊 endpoint
+  - 重議:macs／agent01 canary 的增量安裝與 shell 驗收完成，其餘 12 台未 apply，舊工具 ownership 與退役清單仍待用途核對。此事後紀錄保留本地 docs 分支，後續交付需新批授權。
+  - 關聯:PR#295;M-20261010-setup-canary-probe-fix;M-20261010-agent01-setup-canary;D-20261009-setup-tool-ownership;STATUS.md;README.md
