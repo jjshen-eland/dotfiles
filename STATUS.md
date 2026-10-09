@@ -64,16 +64,20 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 ### 4. Setup 工具與 agent shell 環境對齊
 
 - **Writer**：`codex:brewup-bun-global-update`
-- **Workspace**：`branch=docs/setup-canary-results`
+- **Workspace**：`branch=chore/setup-fleet-rollout`
 - **Write Scope**：setup-mac-env.sh, setup-linux-env.sh, scripts/dev-tools.sh, scripts/dev-tools.tsv, scripts/dev-env.sh, scripts/align-dev-environment.sh, scripts/ensure-shell-env.py, scripts/dotfiles-sync.sh, scripts/brewup.sh, shell/, tests/, README.md, docs/repo-guide.md, docs/testing-contract.md, claude/CLAUDE.md, codex/AGENTS.md
 - **Dossier Steward**：`codex:brewup-bun-global-update`
 - **Context**：現有 setup 混合必要與互動便利工具，brew 失敗被吞掉；環境依賴各平台生成的 shell 設定。使用者要求按 Codex／Claude Code 需求改版，統一 npm 措辭，提供 14 台既有主機免重跑 setup 的對齊方式。
 - **Goal**：新裝與增量更新共用工具宣告及受管理 shell 環境，必要工具失敗可見，保留個人設定與既有額外工具；使用者追加要求明確區分 setup 納管與主機自行安裝，只有前者依新定義新增／移除，後者不升級、不移除、不接管。
 - **Acceptance Criteria**：core／workstation 分層、新增 actionlint／ast-grep；plan／apply／check 可觀察且重跑收斂；必要安裝及驗證失敗回非零；雙 shell 無互動命令可讀相同環境，保留專案／個人 PATH 優先權與覆寫；npm／bun 以專案 lockfile 為準；隔離新裝／升級／失敗／重跑測試與完整 suite 通過；14 台 rollout 有逐台預演、revision、驗收與回復路徑。2026-10-10 使用者接受兩端全域工具指引精簡化：只保留高價值工具與適用任務、可用性與按需安裝原則，不複製完整安裝清單；兩端短段落需機檢一致。
-- **Constraints**：本批來源已由 PR #294 rebase merge 至 origin/main `4f9d8c2`。2026-10-10 使用者在雙平台試跑建議後以「繼續」授權本批 macOS／Linux canary 對齊；選本機 macs 與 agent01。既有工具歸屬未確認前不 adopt／移除／升級，只補 core 缺項與接上 shell 環境；其餘 12 台保持盤點範圍。主目錄 settings.json runtime drift 保留。#285 與原 Runtime writer 無並行寫入；不安裝全機隊 mise／語言套件／瀏覽器，不自動卸載未納管／本機保留工具或放行 direnv trust，不執行新 setup 覆寫既有主機 rc。
+- **Constraints**：2026-10-10 使用者選擇部署其餘 12 台及同步 agent01；本批來源固定已合併 PR #296 的 origin/main `33552a4`，現任 writer／steward 接續。既有工具歸屬未確認前不 adopt／移除／升級，只補 core 缺項與接上 shell 環境；settings runtime drift 保留。#285 與原 Runtime writer 無並行寫入；不安裝全機隊 mise／語言套件／瀏覽器，不自動卸載未納管／本機保留工具或放行 direnv trust，不執行新 setup 覆寫既有主機 rc。新發現的 stdin 修正可在本地完成，push／PR／merge 需當批授權；未進 origin/main 不散佈。
 - **進度**：共用清單、ownership ledger、plan／apply／check 與 shell helper 已實作；原 setup 吞失敗已重現並修正。29 項隔離行為測試與 30 模組完整 suite 通過（114.485 秒）；macOS 系統 Python 3.9 的 tomllib 缺項已重現，共用 PATH 改用本機 Homebrew Python 3.14.8。PR #294 已合併；agent01 canary 已新增 actionlint 1.7.12／ast-grep 0.45.3，兩次 apply／check 全部 exit 0，85 個既有 Homebrew 套件版本與個人 bashrc 原內容不變。
-- **下一步**：PR #295 已 rebase merge 至 `bbf4f98`，必要 macOS／Ubuntu CI 3m11s／1m43s 全綠。macs 已新增 ast-grep 0.45.3，原 183 個 Homebrew 套件版本、shell 內容及 settings runtime drift 保留；apply／check 重跑通過。雙平台 canary 安裝與 shell 驗收完成，Codex／Claude Code 版本命令可用，未跑模型回合或代表專案測試。其餘 12 台僅 inventory，仍在 `112d37d`；下批部署與舊工具納管／退役須核對用途後進行。本輪 macs 事後驗收紀錄與兩端全域 CLI preferences 精簡指引留本地 docs 分支，尚未送出；工具提示採同一 46 個英文單字短段，由 content gate 檢查一致性。見 M-20261010-macs-setup-canary、M-20261010-agent01-setup-canary。
+- **下一步**：目前環境驗收 6／14：macs、agent01、eagle06／07／08／09。除 macmini 外 13 台來源與兩端全域指引已同步 `33552a4`；macmini 因 Xcode license 未接受，仍在 `112d37d`、未改動。eagle03／db01／ap01／ap02／m4mini／fe01／be01 被既有 ca-certificates 更新需求阻擋，shell 未改；後四台已補 Codex 0.162.0，m4mini／be01 仍缺 Claude Code。先交付本地 stdin 修正，再由使用者核定既有依賴更新與 Xcode license 處置後續跑。舊工具納管／退役仍待用途核對；不宣稱模型回合或代表專案功能驗收。詳見 M-20261010-setup-fleet-first-batch 與 M-20261010-setup-fleet-partial。
 - **關聯**：item 2 Runtime 目錄收斂；item 3 #285；[環境使用說明](docs/repo-guide.md)
+
+- **Fleet 接續（2026-10-10）**：使用者選擇部署其餘 12 台並同步 agent01；現任 writer／steward 接續，來源固定為已合併 origin/main `33552a4`。逐台先核對 Git／工具／shell／全域指引，再 fast-forward、plan、apply／check、重跑與保全比對；遇衝突停止該台。只補 core 缺項及受管理 shell，無 adoption、卸載或全面升級；保留個人工具、設定與 settings runtime drift。驗收需逐台 revision、原套件版本與 shell 原內容保持、雙端 CLI 能力及第二次 apply unchanged 證據；舊工具歸屬與退役不納入本批。
+- **Fleet 發現與修復驗收**：真實 Codex 安裝讀走 manifest 後續行，apply selected=20（預期 22）；本地 installer／version probe stdin 兩個反例已各自 RED，後者證明可漏掉缺項並錯回 exit 0。修復必須隔離 manifest reader 與子程序 stdin，讓兩反例轉綠並通過整批選測；未合併修正不得散佈，現行部署結果逐台保留，不冒稱完成。
+
 
 ## 暫停中
 

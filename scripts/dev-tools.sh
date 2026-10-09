@@ -165,7 +165,9 @@ install_tool() {
         *) return 1 ;;
     esac
 }
-while IFS=$'\t' read -r group platform provider package exe flag; do
+# Keep manifest input separate from installers and capability probes: either may
+# consume stdin, which would otherwise skip subsequent tools and report success.
+while IFS=$'\t' read -r group platform provider package exe flag <&3; do
     case "$group" in ''|'#'*) continue ;; core|workstation|legacy) ;; *) exit 2 ;; esac
     [ "$platform" = all ] || [ "$platform" = "$os" ] || continue
     if contains "$package" "${adopt[@]}" && ! contains "$package" "${owned[@]}"; then
@@ -221,7 +223,7 @@ while IFS=$'\t' read -r group platform provider package exe flag; do
     else
         failed=$((failed + 1))
     fi
-done < "$ROOT/scripts/dev-tools.tsv"
+done 3< "$ROOT/scripts/dev-tools.tsv" </dev/null
 # Only ledger-owned packages absent from the desired definition may be removed.
 # --keep releases ownership and preserves a locally needed tool.
 for ((n=0; n<${#owned[@]}; n++)); do

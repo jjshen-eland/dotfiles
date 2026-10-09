@@ -681,3 +681,21 @@
   - 放棄:將未合併腳本散佈到主機；把舊工具自動接管或移除；把 CLI 啟動成功稱為模型回合／專案功能驗收；為 post-merge 紀錄再推新 PR 而沿用舊 endpoint
   - 重議:macs／agent01 canary 的增量安裝與 shell 驗收完成，其餘 12 台未 apply，舊工具 ownership 與退役清單仍待用途核對。此事後紀錄保留本地 docs 分支，後續交付需新批授權。
   - 關聯:PR#295;M-20261010-setup-canary-probe-fix;M-20261010-agent01-setup-canary;D-20261009-setup-tool-ownership;STATUS.md;README.md
+
+- **M-20261010-setup-fleet-first-batch · 2026-10-10 Setup fleet 首批四台完成、三台依賴保護停止**：使用者選擇部署其餘 12 台及同步 agent01；來源固定 origin/main `33552a4fd27eebd9b5c9ae7a24957d78809d9815`。eagle06／eagle07／eagle08／eagle09 均完成 plan、apply／check、第二次 apply／check 與可用 Bash 的 CLI probes（這四台未安裝 Zsh）；只新增 actionlint 1.7.12／ast-grep 0.45.3，原 95／93／94／93 個 Homebrew 套件版本不變。兩端全域指引 symlink 指向當前 source；shell 原內容及 mode、settings hash 保持，重跑 snapshot 相同。
+  - 日期來源:direct
+  - 證據:同機 `/tmp/setup-fleet.SttZEo/` 保存逐台 before／after／final JSON、plan／apply／rerun／probes 日誌與 result JSON。shell 備份位於各主機 home，apply 日誌列出確切位置；回復前核對後續修改，再依備份及新增項目範圍處理。
+  - 阻擋:eagle03／db01／ap01 已 fast-forward 來源，但 apply 因 ca-certificates 2026-08-13→2026-09-25 的既有依賴更新需求而停止；原 94／99／126 個套件、shell 與 settings 完全未改，只新增 profile=core 空 ownership ledger。macmini 在預檢即因 Xcode license 未接受停止，來源仍 112d37d，未 apply。驗收 harness 最初在 apply 非零後先比預期 shell，誤標 shell drift；直接核對 before／after 證明 shell unchanged，result 已修正為真實依賴阻擋，未重跑失敗安裝。
+  - 放棄:全面 brew upgrade、跳過依賴保護、代為接受未授權的 Xcode 條款、將來源已更新視為環境已驗收
+  - 重議:其餘目標續作；三台依賴更新及 macmini license 需使用者另定處置。未執行模型回合或代表專案功能測試，舊工具 ownership／退役仍不在本批。
+  - 關聯:M-20261010-macs-setup-canary;M-20261010-agent01-setup-canary;STATUS.md
+
+- **M-20261010-setup-fleet-partial · 2026-10-10 Setup fleet 6／14 驗收、stdin 修正本地完成**：本批逐台來源／工具／shell 操作結束。macs 當前來源與 check 通過；agent01 同步 33552a4 後 apply／check／apply／check 全部 0、87 個原套件與 shell／settings 不變。合併首批四台結果，目前環境驗收 6／14；來源／兩端全域指引除 macmini 外已到 33552a4（13／14），不得將這個數字當作環境完成率。
+  - 日期來源:direct
+  - 未完成:eagle03、db01、ap01、ap02、m4mini、fe01、be01 的依賴保護均因 ca-certificates 2026-08-13→2026-09-25 擋住 actionlint／ast-grep。前述七台原 94／99／126／83／73／84／84 個套件版本、shell 與 settings 保持；ap02／m4mini／fe01／be01 各新增並只納管 Codex cask 0.162.0，其他三台只有 profile ledger。獨立 check 均非零且掃足 22 項；m4mini／be01 另缺 Claude Code。macmini 預檢 Xcode license 阻擋、main 仍 112d37d，未部署。
+  - 根因:四台 Codex 安裝的真實日誌印出 manifest 後續行，當次 apply selected=20 而非 22；while read 與 installer／capability probe 共用 stdin，子程序可消耗尚未讀取的列。本地獨立 installer drain／version probe drain 兩個反例先 RED，後者還會掩蓋缺項並錯回 0。改用 fd 3 讀 manifest、loop body stdin 接 /dev/null，兩反例轉綠；未修改依賴保護或套件版本政策。
+  - 驗證:`scripts/dev-env.sh ./tests/run.sh --base 33552a4` 因 scripts/dev-tools.sh unmapped 回全套 30 模組，全部 exit 0、122.714 秒；兩個因果回歸另驗通過。最終紀錄更新另跑當前文件檢查；尚無此修正的 hosted CI／實機部署結果。
+  - 證據:同機 `/tmp/setup-fleet.SttZEo/` 的逐台 snapshots、plan／apply／rerun／probes、blocked-check、outdated-ca、result JSON 與 repair-tests.log。套件新裝由 ownership ledger 記錄，shell 備份位於各主機 home；回復前比對後續修改。本機 macs settings drift SHA-256 仍 08429aaa01140190a8e97227800548504060cfba948da7d26edc81ed1e1fd890。
+  - 放棄:遇阻擋反覆 apply、全面更新個人工具、略過未完成主機、用來源同步或 CLI --version 冒稱模型／專案功能驗收；未將本地修正直接散佈
+  - 重議:stdin 修正需新批 push／PR／merge 授權並進 origin/main；七台 ca-certificates 更新另需核定，macmini Xcode license 需使用者處置。其後可在原部署目標續驗；舊工具納管／退役仍未處理，本 work item 保持 active。
+  - 關聯:M-20261010-setup-fleet-first-batch;M-20261010-macs-setup-canary;M-20261010-agent01-setup-canary;STATUS.md;docs/testing-contract.md
