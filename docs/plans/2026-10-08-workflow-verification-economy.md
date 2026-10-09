@@ -5,8 +5,8 @@
 - 狀態：in-progress
 - 種類：implementation
 - Writer／Dossier Steward：`codex:brewup-bun-global-update`
-- Workspace：`branch=docs/workflow-delivery-spec`
-- 當前基線：`d0a4624820b9c462d9a9bb14764164c22cdb3384`（PR #289 完整退版後）；原始基線 `92dc1b9c6e6a836146606d3cee12edd2505ecef6` 僅供歷史重現。
+- Workspace：`branch=perf/delivery-cause-diagnosis`
+- 當前工作基線：`1f0d96729dc7d9769b9f356245408393b0e4e649`（PR #290 合併後）；重啟 spec 基線為 `d0a4624`（PR #289 完整退版後），原始基線 `92dc1b9c6e6a836146606d3cee12edd2505ecef6` 僅供歷史重現。
 - 需求來源：[GitHub #285](https://github.com/jjshen-eland/dotfiles/issues/285)、[GitHub #279](https://github.com/jjshen-eland/dotfiles/issues/279)。2026-10-09 使用者重新要求診斷並明示 `$project spec`，確認前任停止，由本 session 接續 `codex:brewup-bun-global-update`；本輪只寫 spec，過去交付授權不沿用。
 
 **目前有效規格（2026-10-09）**：以下本節定義重新開工的順序與驗收；後面的既有診斷、
@@ -89,6 +89,51 @@ controls 通過。完整來源、環境、raw logs 與失敗樣本邊界見 M-20
 selector tests 的 hosted 成本尚待觀察。使用者續選 `$project --pr`，本批開 PR 驗雙 OS；
 merge 與後續同類真實交付仍另待當批授權與證據。
 不宣稱 #285 的完整交付耗時已改善，work item 保持 in-progress。
+
+2026-10-09 接續診斷：PR #290 已以 rebase 合併至 `1f0d96729dc7d9769b9f356245408393b0e4e649`，
+雙 OS 全套各 1577／0。使用者懷疑 10 月初 skill 變更造成非線性延遲，並以「go」授權固定
+案例的隔離對照。驗收是辨認新增成本與適用範圍，不以歷史時間相關宣稱因果或正式修復。
+Project 固定同一已驗證實作＋README 補記案例，比對 evidence helper 前、加入後及分階段載入後；
+CI 固定本機環境，量新增 controller 測試與相鄰版本全套 critical path。保留原始來源、命令、
+exit、完整 log／native trace、模型與測試環境；一輪判斷方向，有明確收益才有限重複。
+本輪不改正式 skill／runner，不開空 PR、不送出或部署；runtime drift 保留。
+
+本輪歷史對照初步結果（2026-10-09）：固定 `tested` fixture、Opus `claude-opus-5-5[1m]`、
+high／standard，三個來源依序為 `cbd4dd2`（helper 前）、`3d675bf`（helper 後）、`4048952`
+（分階段載入後），完整本地 Log 120.149／103.385／85.077 秒。原始 trace 與機械核對顯示
+必要 EOF 無缺漏、來源 hashes／fixture HEAD／工作樹不變、額外測試皆 0；reader calls
+14／15／12，bytes 145047／147407／99302。單組順序樣本不證明穩定加速；只能說這個正常
+沿用案例未重現退化，不能外推成 Codex xhigh 的 PR #288、真實 provider shipping 或治理 repo
+的全部收尾成本。原事故仍有大段可見工具區間外耗時，不能稱為純模型思考。
+
+同機 Python 3.14.8 的原樣歷史 controller 測試以 unittest result observer 計時，全部 exit 0、
+來源 checkout 前後乾淨。deep-plan 的 `03b79e1`：20 cases／10.801 秒；`9bd2397`：36 cases／
+64.454 秒；`b1abf9b`：41 cases／122.996 秒。最後一版的 Routing 約 11.966 秒，
+DocumentRepair 109.569 秒，NativeDocumentFixture 1.350 秒；主程序直接啟動 8386 個
+subprocess（不含子程序再派生者），其中 DocumentRepair 占 7532。最大單一方法為
+`test_review_history_checkpoint_to_launcher_and_admission`，12 個 policy×restart×Git state
+組合、44.65 秒／2608 個直接 subprocess。review controller 的 `df6086a`：67.356 秒；
+`b1abf9b`：94.890 秒。這些整組 unittest 各只占外層 suite 一個 PASS，不能用外層 assertion
+數量推論工作量。完整 parallel 對照：`f8c87c46c5c19f50fdfc65d97b40b562a7f66962` 為 117.905 秒、
+1564／0；`b1abf9b4abfd83b1fdd9887274ab4ab5b3f9c92d` 為 409.247 秒、1570／0，皆 exit 0。
+三分片 core／ship_state／integration 分別為 45／64／116 秒與 49／62／409 秒；增幅集中在
+integration。這是歷史版本比較，不能當作目前五分片 main 的速度；兩端之間還有其他變更，
+不能把完整 291.342 秒差額全歸給 controller，也不能相加獨立 profile 秒數當作 parallel 的歸因。
+同一新版以原入口只選 Routing 的控制為 12.287 秒、20 cases PASS、exit 0、checkout 乾淨，
+支持主要 deep-plan 增量來自新增的 DocumentRepair 群組，而非原 routing 全面退化。
+
+診斷終態分開記錄：CI 新增工作量來源為 ROOT CAUSE CONFIRMED（限定上述具名測試群組）；
+PR #288 完整交付的所有額外成本仍 UNCONFIRMED。各 gate 的錯誤攔截目的存在，不代表
+每個小改動都必須付出相同讀取／真 Git 組合成本。下一個有根據的候選是驗證同一次
+`document_snapshot` 的 Git 查詢能否合併，保留所有現有案例與 mode／stage／scope 反例；
+先不刪測試或直接退版 skill。此項會觸及 deep-plan implementation，屬後續 scope，沒有在本輪
+正式 source 實作或宣稱修好。沒有對本輪未重現的 Project 正常分支追加新規則。
+
+原始 artifacts 位於同機暫存 `/tmp` 對應的 `delivery-cause-20261009-icnwhwm_` 目錄；
+`manifest.json`／各 native raw/timed trace／`native-grade.json`／`ci-results.json`／各
+`*-profile.json` 保存來源與命令。歷史原來源透過 clean no-local clones 固定；instrumentation
+僅存在暫存 observer，不修改 skill 原碼。暫存遺失時須明示原 trace 無法重查；不能以本文摘要
+補造受測結果。本輪不追加全面 native 矩陣或以 benchmark 代替真實交付驗收。
 
 ## 診斷與證據邊界
 
