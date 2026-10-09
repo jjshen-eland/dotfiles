@@ -1,0 +1,43 @@
+{
+  "always": ["content"],
+  "modules": {
+    "deep-plan": {"command": ["bash", "tests/module-shell.sh", "deep-plan"], "shell": true},
+    "review-controller": {"command": ["{python}", "-B", "tests/review-repair-controller.py", "."]},
+    "turbo": {"command": ["{python}", "-B", "tests/turbo-mode.py"]},
+    "ship-state": {"command": ["bash", "tests/module-shell.sh", "ship-state"], "shell": true},
+    "review-skill": {"command": ["bash", "tests/module-shell.sh", "review-skill"], "shell": true},
+    "project": {"command": ["bash", "tests/module-shell.sh", "project"], "shell": true},
+    "document-regression": {"command": ["{python}", "-B", "tests/test_doc_governance.py", "--synthetic"]},
+    "review-runtime": {"command": ["bash", "tests/module-shell.sh", "review-runtime"], "shell": true},
+    "content": {"command": ["{python}", "-B", "tests/content-checks.py"]},
+    "deployment": {"command": ["bash", "tests/module-shell.sh", "deployment"], "shell": true},
+    "git-hygiene": {"command": ["bash", "tests/module-shell.sh", "git-hygiene"], "shell": true},
+    "session": {"command": ["bash", "tests/module-shell.sh", "session"], "shell": true},
+    "lint": {"command": ["bash", "tests/module-shell.sh", "lint"], "shell": true},
+    "crawl-quality": {"command": ["bash", "tests/module-shell.sh", "crawl-quality"], "shell": true},
+    "document-contract": {"command": ["bash", "tests/module-shell.sh", "document-contract"], "shell": true},
+    "guidance": {"command": ["bash", "tests/module-shell.sh", "guidance"], "shell": true},
+    "handoff": {"command": ["bash", "tests/module-shell.sh", "handoff"], "shell": true},
+    "hooks": {"command": ["bash", "tests/module-shell.sh", "hooks"], "shell": true},
+    "inventory": {"command": ["bash", "tests/module-shell.sh", "inventory"], "shell": true},
+    "network": {"command": ["bash", "tests/module-shell.sh", "network"], "shell": true},
+    "platform": {"command": ["bash", "tests/module-shell.sh", "platform"], "shell": true},
+    "review-scope": {"command": ["bash", "tests/module-shell.sh", "review-scope"], "shell": true},
+    "shell-contract": {"command": ["bash", "tests/module-shell.sh", "shell-contract"], "shell": true},
+    "runtime-layout": {"command": ["{python}", "-B", "tests/runtime-layout.py"]},
+    "mac-metadata": {"command": ["{python}", "-B", "tests/test_mac_metadata.py"]},
+    "fleet-contract": {"command": ["{python}", "-B", "tests/test_ci_confidence.py", "HostsTests", "AllUpTests", "SigningTests"]},
+    "ci-regression": {"command": ["{python}", "-B", "tests/test_ci_confidence.py", "GateTests"]},
+    "selection": {"command": ["{python}", "-B", "tests/test_ci_selection.py"]},
+    "runner": {"command": ["{python}", "-B", "tests/test_suite.py"]}
+  },
+  "routes": [
+    {"paths": ["README.md", "STATUS.md", "docs/backlog.md", "docs/archive/*.md", "docs/plans/*.md"], "modules": ["content"]},
+    {"paths": ["scripts/brewup.sh", "scripts/brewfix.sh", "scripts/sysup.sh"], "modules": ["deployment", "fleet-contract"]},
+    {"paths": ["scripts/all-up.sh", "scripts/sign-host-keys.sh", "scripts/sign-user-key.sh"], "modules": ["fleet-contract"]},
+    {"paths": ["scripts/lib/inventory.sh", "scripts/inventory.conf", "scripts/render-etc-hosts.sh", "scripts/render-ssh-config.sh", "scripts/add-new-host.sh"], "modules": ["inventory", "fleet-contract", "deployment"]},
+    {"paths": ["shared/skills/check-crawl-quality/*", "claude/skills/check-crawl-quality/*", "codex/skills/check-crawl-quality/*"], "modules": ["crawl-quality", "guidance"]},
+    {"paths": ["shared/skills/deep-plan/*", "claude/skills/deep-plan/*", "codex/skills/deep-plan/*", "shared/skills/deep-review/*", "claude/skills/deep-review/*", "codex/skills/repo-review/*", "shared/skills/project/*", "claude/skills/project/*", "codex/skills/project/*", "shared/skills/handoff/*", "claude/skills/handoff/*", "codex/skills/handoff/*", "shared/skills/ready4quit/*", "claude/skills/ready4quit/*", "codex/skills/ready4quit/*"], "modules": ["deep-plan", "review-controller", "review-skill", "review-scope", "review-runtime", "project", "ship-state", "handoff", "git-hygiene", "turbo", "hooks", "guidance", "deployment", "runtime-layout", "document-contract", "document-regression"]},
+    {"paths": ["scripts/check-network-isolation-collisions.py"], "modules": ["network"]}
+  ]
+}

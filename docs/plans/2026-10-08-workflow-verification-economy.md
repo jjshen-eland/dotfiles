@@ -9,14 +9,16 @@
 - 當前工作基線：`1f0d96729dc7d9769b9f356245408393b0e4e649`（PR #290 合併後）；重啟 spec 基線為 `d0a4624`（PR #289 完整退版後），原始基線 `92dc1b9c6e6a836146606d3cee12edd2505ecef6` 僅供歷史重現。
 - 需求來源：[GitHub #285](https://github.com/jjshen-eland/dotfiles/issues/285)、[GitHub #279](https://github.com/jjshen-eland/dotfiles/issues/279)。2026-10-09 使用者重新要求診斷並明示 `$project spec`，確認前任停止，由本 session 接續 `codex:brewup-bun-global-update`；本輪只寫 spec，過去交付授權不沿用。
 
-**目前有效規格（2026-10-09）**：以下本節定義重新開工的順序與驗收；後面的既有診斷、
-最小修正順序及驗證段落保留為已退版方案的歷史重現，不是本輪執行指令。Active contract 見 STATUS；
-決策為 D-20261009-small-change-delivery-spec。原 checkout 的 claude/settings.json 為使用者確認的
-runtime drift，保持原樣；本輪在獨立 worktree，spec 階段僅修改本項 STATUS、既有 plan 與 decision record。
+**目前有效規格（2026-10-09，整體重構）**：使用者要求把本項當成重構或重寫，
+不預設逐年累積的測試、gate、分片、觸發條件或驗證流程不可改。本節與 STATUS 的新契約
+取代先前「保留所有現有案例、只做單一有界候選」的實作限制；下方歷史對照與已退版實作
+只供追溯，不限制新設計。決策見 D-20261009-ci-system-redesign。原 checkout 的
+claude/settings.json 為確認的 runtime drift，保持原樣；Runtime 遷移產品工作不接續。
 
-目標是小幅脚本／純紀錄變更從交付指令到最終回報的實際耗時下降，含測試證據準備、
-讀取流程、必要檢查、CI、合併、同步清理及回報。先改善 #285 的可歸因流程成本，再評估
-#279 的紀錄文件 CI 路徑；兩項可分別驗證，局部收益不能代表整體完成。
+目標是以 repo 實際需要的保障，重新設計從本地驗證到 PR gate 的最小合理流程，
+降低小幅腳本／純紀錄變更從交付指令到最終回報的實際耗時。CI、測試實作與交付流程
+一起檢視；測試數量、既有檔案結構、全量執行或每項雙 OS 執行都不是驗收目標。
+授權、資料保全與正確失敗回報仍是必要結果；達成它們的機制可重設。
 
 固定證據與未確認部分：
 
@@ -36,30 +38,82 @@ PR #288 的原始 trace 顯示重建舊環境／snapshot、核對已修正的 EO
 Hosted core 子項與資源競爭仍未知；runner 先緩衝各 shard log 再輸出，不能用輸出時間戳
 推算子項執行時間。歷史不同來源／環境的快慢不是固定條件的因果對照。
 
-實作授權後的候選順序與邊界：
+重構順序與驗收：
 
-1. 固定純紀錄交付與普通腳本的代表 fixture、原證據、模型／工具環境與階段時間戳。
-   #285 先選一個已觀察、可機械處理的重建／查證／收尾步驟，確認來源語意後用既有入口
-   提供明確結果；每次只改一個因果點。Reference 載入及安全規範若要改，須另有 observed RED
-   與相應行為證據，不能因檔案長或工具呼叫多就刪規則。保存證據的新成本必須一起計時。
-2. #279 先評估紀錄文件能否安全縮小測試集合；按內容角色與實際依賴分類，不用 `.md` 副檔名
-   一刀切。必要文件／xref／topology 等 checks 與治理工具、review controller 自身回歸分開判定；
-   不預設 core 全部必跑或全部可省。以整個 PR 的變更為範圍；新增、刪除、rename、symlink、
-   混合變更、缺差異資料及分類錯誤均有具名 controls。無法證明獨立者全套 fallback，
-   保留雙 OS required check 名稱、正確失敗／取消語意及完整 suite 入口。
-3. 分別比較改前／改後相同 scope 的完整操作，先一組判斷方向，有收益再補必要重複控制，
-   初輪至多三組交錯對照；不以不同 scope 的 PR 差額或斷言數下降驗收。記錄各組及中位數／範圍，
-   波動蓋過收益時標未確認；兩個有界候選仍無淨收益時停止追加機制，回報因果缺口。
-   不透過反覆重跑至較快樣本挑選結果，也不把一次性 benchmark 變成日常交付前置。
-4. 本地證據只證明本地收益；hosted 選測先對照完整集合與故障攔截，再於當批具名 PR／merge
-   授權內觀察真實交付，量到最終回報。慢平台／compaction 保留在原始總時間，另作分項，
-   不任意扣除後宣稱達標。不為量測自動建立／合併空 PR，缺真實交付證據時本項保持未完成。
+1. **由失敗風險建立測試清單。** 以具體錯誤與對外行為分類現有 tests，逐組決定保留、合併、
+   下移到單元層、改寫或移除，列出理由及新承接位置。歷史事故是需求證據，不能自動變成
+   永久全域 gate；只檢查實作字樣、重複覆蓋或已退役功能的測試須重新證明價值。
+2. **定義一套一致的測試架構。** 模組各有可獨立執行的入口；廉價靜態檢查、純邏輯行為、
+   Git／程序／檔案系統整合、原生模型 eval 分層。大量狀態組合優先在低成本層驗證，
+   真實邊界保留代表流程及各自獨立的失敗 controls，不讓每個組合重建整條整合鏈。
+   全套是這些模組的組合，不再以 monolithic shell 的歷史節號或固定 PASS 數定義完整性。
+3. **重新安排觸發及平台。** 依實際依賴建立可理解的模組對應，同一份宣告服務本地與 CI。
+   內容檢查與檢查工具自身回歸分開；平台敏感路徑在各適用 OS 驗，平台無關邏輯評估單平台。
+   決定 full regression 的必要觸發，不預設每個 PR 全套，也不把必要的合併前保障移到事後
+   才發現。未知影響／選擇器錯誤不得空集合成功；fallback 與 required checks 接線以新設計
+   一起驗證。遠端 protection 調整仍須當批具名授權。
+4. **依新架構分段替換。** 先選成本高且有明確邊界的模組驗證設計，再遷移其餘群組；
+   不把第一段的局部收益冒充整體完成。舊 runner／分片／selector 若無必要即退役，
+   不在舊架構外永久疊另一層。測試規範與 agent 的本地驗證指引同步更新，避免 CI
+   已變快但每次交付仍重跑舊全套。需要修改產品 helper 才能建立測試邊界時，再具體
+   核對其 writer／scope 與行為契約，不把 skill 產品功能全部順帶重寫。
+5. **以有效攔截及實際時間驗收。** 代表純紀錄、普通單模組腳本、共用依賴及 CI 自身修改，
+   核對選到的 checks、失敗注入、未知輸入、程序取消與必要平台反例；不能靠少報測試數
+   或放行錯誤取得 GREEN。凍結來源與環境，記錄各模組時間與總 wall time；先一組判斷
+   方向，有收益再做有限交錯對照，總計納入選測及證據準備成本。真實 hosted job 與
+   指令至最終回報分開驗；本地收益不外推成 20 分鐘交付問題已解決。
 
-正確性驗收保留有效沿用、changed／unknown／失敗、必要來源與環境／link topology 核對，
-以及授權、ownership、Git discipline、fresh required checks。若修改共用 skill，先依 AGENTS.md
-authoring route 做相關 Claude Code／Codex native behavior controls；若修改 runner，驗必要的
-集合完整性、受支援入口、失敗聚合與中斷清理。普通變更不自行加 runner 改版才需要的矩陣。
-不自動恢復 #285 已退版功能、不修改 branch protection、不先建立完整依賴圖、永久快取或新治理層。
+初始架構盤點（按當前來源，處置仍需行為驗證）：
+
+| 現有群組 | 重構方向 | 必須說明的保障 |
+|---|---|---|
+| shell／kernel／xref／當前文件 corpus | 獨立內容檢查，與 scanner synthetic regressions 分開 | 真實壞檔與工具失敗都會阻止通過 |
+| deep-plan／review controller | 分開狀態決策、snapshot adapter 與端到端生命週期 | 授權、restart、dirty／stage／commit、mode／衝突各在哪層驗 |
+| ship-state／Project／handoff | 依功能邊界獨立入口，合併重複 Git/provider fixture | scope、ownership、來源失效及外部失敗不能被沿用證據遮蔽 |
+| runtime／setup／brewup／同步 | 模組測試與部署邊界測試分層，按平台選擇 | 使用者資料保全、冪等、失敗傳播及真實 entry 接線 |
+| skill prose／packaging／native eval | 區分安裝接線、機械契約與模型行為；淘汰無獨立價值字樣 gate | 文字匹配不得被當成模型遵從；昂貴 native eval 維持有目的執行 |
+| runner／CI／shard accounting | 重新設計集合選擇與完成證據，舊分片可取消 | 漏跑、重複、失敗、取消與錯誤接線可被識別，名稱相同不等於真的執行 |
+
+2026-10-09 使用者「開始」後實作：先以獨立功能模組取代 shell 歷史分片，將內容掃描、
+scanner regression 與 controller suites 拆開，以單一宣告提供本地／CI 選測、執行與逐組計時。
+執行器按選定模組的完成及 exit 判定，不再維護固定 assertion 計數；舊分片聚合器隨替換退役。
+第一段保留仍有效的行為 oracle 作搬移對照，這不是永久保留全部測試的限制；高成本整合矩陣
+再按獨立風險拆層。平台敏感 shell／Git 模組先保留雙 OS，未取得平台獨立證據前不直接刪平台。
+本次先在隔離 worktree 完成本地實作與驗證，不改遠端設定。
+
+本輪具體處置：原 9,644 行 shell 入口拆為功能模組與共用 fixture harness；獨立 Python
+suites 由同一 catalog 直接編排。舊 core／ship_state／plan／review／runtime 分片、固定斷言數
+manifest、分片 supervisor／aggregate 及只服務它們的測試退役；取消與啟動 race 改由新 runner
+實際程序 controls 承接。真實文件 corpus 只在 content 跑一次，document-regression 排除該類；
+heading 變更由當前 xref／corpus 守，不再觸發無關 scanner regression。
+共用 skill 相依尚未能可靠縮到單一 workflow，因此採全部 workflow consumers 的保守聯集；
+少數已盤點的運維腳本與 crawl-quality 可獨立選測，未知路徑全套。這是具體的已知相依表，
+不把任意同副檔名視為獨立。每模組 wall time 直接回報；普通交付只跑一次相同 runner。
+
+本地實作沿用使用者的開工方向；新批次 push／PR／merge／部署仍無授權。
+
+本段本地驗收完成（2026-10-09）：29 個模組在凍結來源串行、並行各 exit 0；串行
+465.552 秒僅作一次遷移獨立性檢查，並行 wall 127.666 秒。相同 brewup 註解修改透過
+真實 `run-ci.py` 入口，以舊→新、新→舊交錯比較：舊 120.332／119.028 秒，新
+14.701／14.725 秒；平均 119.680 → 14.713 秒（87.71%），含 scope 選擇與所有
+所選模組。純紀錄 13.406 秒。每輪 exit 0，測前／測後來源 hash 一致；Python 3.14.8、
+同機循序執行，不混用開發中被修改來源的無效樣本。完整 suite 未宣稱加速。
+
+選測保留整批 committed／staged／unstaged 範圍、symlink consumers、未知及 topology
+變動全套 fallback；腳本＋所屬 shell 測試＋README 可維持有界集合。13 個 runner controls
+及 15 個 PR scope controls 通過，含非空完成訊號、失敗 exit、漏跑、取消 descendants、
+Popen 啟動 signal race 與已結束 group 不重複發訊號。後者先有 RED 才修正 ownership
+移除時機。完整並行驗證後只加 README route 與 shell completion control，定向 13 tests
+另通過；17 個新 shell 模組只修檔尾空行並驗語法，結果文件另跑當前內容檢查。
+
+原始 before／after clean clones、fixture patches、完整 logs、measurements.json 在
+`/private/var/folders/t5/4b3mtjj52fvdplz5f15mf_ym0000gp/T/ci-redesign-7aqkqpkv`；
+來源基線 `ab9efedcdb97a3c3e1f976749081d0ace2ed485c`。暫存遺失時不得補造原始證據。
+本段完成測試編排與已知路徑選測；controller 內部真 Git 矩陣尚未下移、共同 workflow
+仍選保守 consumer 聯集、平台仍雙 OS。GitHub 實跑及完整交付尚未量到，總 work item
+保持 in-progress，不以局部收益關閉 #285。下一步先讓本批 PR 提供雙平台模組計時，
+再以真實小修改交付驗整段結果。
+
 
 量測來源：PR #288 body、Actions runs 37824528246／37874093903；同機原始 session
 `/Users/jjshen/.codex/sessions/2026/10/08/rollout-2026-10-08T15-08-21-01a11a57-75bb-7da1-b85e-9714aaa2952f.jsonl`，

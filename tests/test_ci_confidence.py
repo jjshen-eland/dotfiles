@@ -9,7 +9,7 @@ import tempfile
 import time
 import unittest
 
-from test_ci_selection import SelectionTests  # Included by unittest.main in the existing CI gate.
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -186,12 +186,13 @@ fi
 
 class GateTests(Sandbox):
     def test_lint_inputs_cover_original_files_once(self):
-        source = (ROOT/'tests/run.sh').read_text()
+        source = (ROOT/'tests/module-shell.sh').read_text()
         prefix = source[source.index('ROOT="$(cd'):source.index('FIX="$ROOT/tests/fixtures"')]
-        command = source[source.index('shellcheck -x '):source.index('shellcheck_pid=$!')]
+        command = (ROOT/'tests/modules/lint.sh').read_text().split('assert_rc')[0]
+        command = command[command.index('shellcheck -x '):]
         capture = self.base/'argv.json'
         self.stub("shellcheck", "exec python3 -c 'import json,os,sys; open(os.environ[\"CAPTURE\"],\"w\").write(json.dumps(sys.argv[1:]))' \"$@\"\n")
-        r = subprocess.run(['bash','-c',prefix+'\nTMP="$1"; shellcheck_out="$TMP/lint.out"\n'+command+'wait\n',str(ROOT/'tests/run.sh'),str(self.base)],
+        r = subprocess.run(['bash','-c',prefix+'\nTMP="$1"; shellcheck_out="$TMP/lint.out"\n'+command+'wait\n',str(ROOT/'tests/module-shell.sh'),'lint'],
                            env={**self.env,'CAPTURE':str(capture)},capture_output=True,text=True)
         self.assertEqual(r.returncode,0,r.stderr)
         args = json.loads(capture.read_text())[3:]
@@ -200,7 +201,7 @@ class GateTests(Sandbox):
                     'shared/skills/*/scripts/*.sh','shared/skills/*/scripts/lib/*.sh',
                     'claude/skills/*/scripts/*.sh','claude/skills/*/scripts/lib/*.sh',
                     'codex/skills/*/scripts/*.sh','.githooks/dispatcher','shell/functions.sh',
-                    'setup-mac-env.sh','setup-linux-env.sh','write-mac-defaults.sh','claude/evals/*.sh','tests/*.sh']
+                    'setup-mac-env.sh','setup-linux-env.sh','write-mac-defaults.sh','claude/evals/*.sh','tests/*.sh','tests/modules/*.sh']
         expected = {str(p.resolve()) for pattern in patterns for p in ROOT.glob(pattern)}
         self.assertEqual(set(actual),expected,'dedup dropped a script or a runtime-specific wrapper')
         self.assertEqual(len(actual),len(set(actual)),'same canonical script scanned repeatedly')
@@ -210,7 +211,7 @@ class GateTests(Sandbox):
         for name in ['run-parallel.sh','ci-contract.py']:
             if (ROOT/'tests'/name).exists(): shutil.copy(ROOT/'tests'/name,repo/'tests'/name)
         yaml=(ROOT/'.github/workflows/test.yml').read_text()
-        source=(ROOT/'tests/run.sh').read_text()
+        source=(ROOT/'tests/modules/platform.sh').read_text()
         block=source[source.index('CI_FILE="$ROOT/.github/workflows/test.yml"'):source.index('# GitHub runners', source.index('CI_FILE="$ROOT/.github/workflows/test.yml"'))]
         for mutation, invalid in [(yaml,False),(yaml.replace('run: python3 -B tests/run-ci.py','shell: bash\n        run: python3 -B tests/run-ci.py'),False),
                 (yaml.replace('run: python3 -B tests/run-ci.py','shell: echo {0}\n        run: python3 -B tests/run-ci.py'),True),
@@ -233,7 +234,7 @@ class GateTests(Sandbox):
     def test_heredoc_scanner_failure_fails_gate(self):
         actual=shutil.which('awk')
         self.stub('awk', 'for arg in "$@"; do case "$arg" in "$CI_ROOT"/scripts/*) exit 2;; esac; done\nexec "'+actual+'" "$@"\n')
-        source=(ROOT/'tests/run.sh').read_text()
+        source=(ROOT/'tests/modules/shell-contract.sh').read_text()
         block=source[source.index('HD_GATE="$ROOT/tests/heredoc-gate.awk"'):source.index('echo "▶ 1cc.')]
         r=subprocess.run(['bash','-c','shopt -s nullglob\nROOT="$1"; TMP="$2"\nok(){ echo PASS; }; bad(){ echo FAIL; };\n'+block,'probe',str(ROOT),str(self.base)],env={**self.env,'CI_ROOT':str(ROOT)},capture_output=True,text=True)
         self.assertIn('FAIL',r.stdout,r.stdout+r.stderr)
@@ -248,79 +249,6 @@ class GateTests(Sandbox):
                 r=subprocess.run(['awk','-f',str(ROOT/'tests/heredoc-gate.awk'),str(p)],capture_output=True,text=True)
                 self.assertEqual(r.returncode,0,r.stderr)
                 self.assertEqual(bool(r.stdout),finding,r.stdout)
-
-
-class ParallelTests(Sandbox):
-    def alive(self,pid):
-        r=subprocess.run(['ps','-o','stat=','-p',str(pid)],capture_output=True,text=True)
-        return r.returncode==0 and bool(r.stdout.strip()) and not r.stdout.strip().startswith('Z')
-
-    def test_supervisor_signal_during_spawn_does_not_orphan_shard(self):
-        fixture = self.base/'startup'; (fixture/'tests').mkdir(parents=True)
-        results = fixture/'results'; results.mkdir()
-        script = fixture/'tests/run.sh'; script.write_text('#!/bin/bash\nexec sleep 30\n'); script.chmod(0o755)
-        pidfile = fixture/'pid'
-        # Deliver TERM after the OS creates the child, before Popen returns to its caller.
-        probe = """import os,runpy,signal,subprocess
-from pathlib import Path
-real = subprocess.Popen
-def spawn(*args,**kwargs):
-    process = real(*args,**kwargs)
-    Path(os.environ['PIDFILE']).write_text(str(process.pid))
-    os.kill(os.getpid(),signal.SIGTERM)
-    return process
-subprocess.Popen = spawn
-runpy.run_path(os.environ['SUPERVISOR'],run_name='__main__')
-"""
-        try:
-            r = subprocess.run(['python3','-c',probe,str(fixture),str(results),'core'],
-                env={**self.env,'PIDFILE':str(pidfile),'SUPERVISOR':str(ROOT/'tests/shard-supervisor.py')},
-                capture_output=True,text=True,timeout=4)
-            self.assertNotEqual(r.returncode,0)
-            self.assertFalse(self.alive(int(pidfile.read_text())),'signal during spawn orphaned shard')
-        finally:
-            if pidfile.exists():
-                try: os.killpg(int(pidfile.read_text()),signal.SIGKILL)
-                except ProcessLookupError: pass
-
-    def test_actual_runner_cleans_process_trees(self):
-        shards = {line.split('\t')[0] for line in (ROOT/'tests/shard-manifest.tsv').read_text().splitlines()
-                  if line.strip() and not line.startswith('#')}
-        for trigger in [signal.SIGTERM,signal.SIGINT,'child', 'ci-term']:
-            with self.subTest(trigger=trigger):
-                fixture=self.base/str(trigger); (fixture/'tests').mkdir(parents=True)
-                for name in ['run-ci.py','run-parallel.sh','shard-supervisor.py','shard-aggregate.py','shard-manifest.tsv']:
-                    if (ROOT/'tests'/name).exists(): shutil.copy(ROOT/'tests'/name,fixture/'tests'/name)
-                script=fixture/'tests/run.sh'
-                script.write_text('''#!/bin/bash
-python3 -c 'import os,signal,time; signal.signal(signal.SIGTERM,signal.SIG_IGN); open(os.environ["PID_DIR"]+"/"+os.environ["DOTFILES_TEST_SHARD"],"w").write(str(os.getpid())); time.sleep(30)' &
-if [ "$TRIGGER" = child ] && [ "$DOTFILES_TEST_SHARD" = core ]; then
-  while [ "$(ls "$PID_DIR" | wc -l | tr -d ' ')" -lt "$EXPECTED_SHARDS" ]; do sleep 0.02; done
-  kill -TERM "$$"
-fi
-wait
-'''); script.chmod(0o755)
-                pids=fixture/'pids'; pids.mkdir()
-                command = ['python3', '-B', str(fixture/'tests/run-ci.py')] if trigger == 'ci-term' else ['bash',str(fixture/'tests/run-parallel.sh')]
-                proc=subprocess.Popen(command,env={**self.env,'GITHUB_EVENT_NAME':'local-control','PID_DIR':str(pids),'TRIGGER':str(trigger),'EXPECTED_SHARDS':str(len(shards))},stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,start_new_session=True)
-                try:
-                    deadline=time.monotonic()+8
-                    while len(list(pids.iterdir()))<len(shards) and time.monotonic()<deadline: time.sleep(.02)
-                    self.assertEqual({p.name for p in pids.iterdir()},shards)
-                    if trigger!='child': os.kill(proc.pid,signal.SIGTERM if trigger == 'ci-term' else trigger)
-                    proc.wait(timeout=6)
-                    self.assertNotEqual(proc.returncode,0)
-                    live=[int(p.read_text()) for p in pids.iterdir() if self.alive(int(p.read_text()))]
-                    self.assertEqual(live,[],'runner left live descendants')
-                finally:
-                    # Only fixture-owned pids/groups are touched, even on the RED baseline.
-                    if proc.poll() is None: proc.kill(); proc.wait()
-                    for p in pids.iterdir():
-                        pid=int(p.read_text())
-                        try: os.kill(pid,signal.SIGKILL)
-                        except ProcessLookupError: pass
-                    try: os.killpg(proc.pid,signal.SIGKILL)
-                    except ProcessLookupError: pass
 
 
 if __name__=='__main__':

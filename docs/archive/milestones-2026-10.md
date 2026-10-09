@@ -622,3 +622,13 @@
   - 放棄:把時間相關當成某個 skill 的全部因果；用外層 PASS 數量推論 suite 成本；因正常 native 單組較快就宣稱穩定加速；相加 standalone 秒數當 parallel 歸因；把歷史三分片數值當目前 main 的速度；未定位就退版或增寫 Project 指引
   - 重議:CI 新增測試成本已定位，但完整 PR #288 延遲仍未全歸因。下一個有根據的候選是同次 document snapshot 合併 Git 查詢，保留現有案例與失敗 controls；先協調 deep-plan source scope，再以相同整組測試及適用原生流程驗證。正式 source 尚未採用候選，也沒有 latency 修復完成的主張。
   - 關聯:Issue#285;Issue#279;PR#290;D-20261009-small-change-delivery-spec;docs/plans/2026-10-08-workflow-verification-economy.md;X-20261009-log-scope-latency
+
+- **M-20261009-ci-modular-redesign-local · 2026-10-09 CI 模組化與已知路徑選測完成本地驗收**：依使用者重構／重寫方向及「開始」授權，原 9,644 行入口拆為 29 個可獨立執行模組，本地與 CI 共用 tests/suites.json／suite.py。舊五個歷史分片、固定 assertion manifest、supervisor／aggregate 及專屬測試退役；完成／失敗／取消保障由新 runner controls 承接。真實文件 corpus 與 scanner regression 分離；普通腳本可按整批差異選測，未知 input 回全套。
+  - 日期來源:direct
+  - 契約保全:issue-285-workflow-verification-economy；Writer／Dossier Steward codex:brewup-bun-global-update；branch=perf/delivery-cause-diagnosis；基線 ab9efedcdb97a3c3e1f976749081d0ace2ed485c。Runtime 原 writer 保持停止，產品遷移不接續；主 checkout 的 settings runtime drift 原樣保留。只完成本地實作與提交準備，未 push／PR／merge／部署。
+  - 驗證:凍結來源完整串行 29 模組 exit 0、465.552 秒；最終並行 exit 0、wall 127.666 秒。串行只驗遷移獨立性，不列為日常第二套驗收。PR scope 15 tests、runner 最終 13 tests 通過，涵蓋整批歷史、dirty／mode／alias／synthetic merge、未知 fallback、空集合／漏完成／非零 exit、取消及啟動 race。完整並行後新增 README route 與 shell completion control 已定向驗證；17 個模組僅去除檔尾空行並驗語法，收尾紀錄另驗當前內容。
+  - 量測:同機 Python 3.14.8、獨立 no-local clones、相同 brewup 註解變更及真實 run-ci.py 入口；舊→新為 120.332→14.701 秒，反向新→舊為 14.725→119.028 秒，平均 119.680→14.713 秒、縮短 87.71%。純紀錄 13.406 秒。各輪 exit 0、來源 hash 前後一致，含選測及所選 checks，未含 hosted checkout／安裝／模型／provider／merge／回報。完整 suite 不宣稱加速。
+  - 證據:同機 /private/var/folders/t5/4b3mtjj52fvdplz5f15mf_ym0000gp/T/ci-redesign-7aqkqpkv 保存 before／after clones、fixture patches、logs、measurements.json；/tmp/ci-cleanup-red.log 與 /tmp/ci-cleanup-green.log 保存已完成 process group 重複發訊號的 RED／修復，/tmp/ci-readme-green.log 保存最終 runner controls。開發初次 run 期間誤改正在執行的 shell source，造成偏移／重複執行，該無效 log 排除；後續正式驗證改凍結 clones。暫存遺失則明示無法重查，不補造 evidence。
+  - 放棄:以固定 PASS 數當覆蓋；在舊歷史分片外永久加包裝；每次小修改執行無關 controller；以本地快約 88% 宣稱完整 20 分鐘交付問題已解；無依據刪平台或大幅縮減行為 oracle
+  - 重議:controller 內部整合矩陣仍待拆層，共用 workflow 仍是保守 consumer 聯集；本批 GitHub 雙 OS 與真實小修改交付尚待具名授權及量測。整體 active／backlog 保留。
+  - 關聯:Issue#285;Issue#279;D-20261009-ci-system-redesign;docs/plans/2026-10-08-workflow-verification-economy.md;docs/testing-contract.md;STATUS.md;tests/suite.py;tests/suites.json

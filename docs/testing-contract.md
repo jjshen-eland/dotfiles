@@ -1,6 +1,6 @@
 # 測試契約（testing contract）
 
-`./tests/run.sh` 各 gate 的**判準、反例與設計理由**。改 gate、看不懂某條斷言為什麼那樣寫、
+`tests/suites.json` 所列測試模組的**判準、反例與設計理由**。改 gate、看不懂某條斷言為什麼那樣寫、
 或想放寬某個判準時看這裡。
 
 ## 權威分工
@@ -27,7 +27,7 @@ root `CLAUDE.md` 與全域 `claude/CLAUDE.md` 合計 58,681B 恆常載入。
 ## 通則
 
 - **exit 0/2 契約**（凡獨立掃描器皆適用）：內容問題走 stdout、掃描器自身失敗走 **exit 2**。
-  `tests/run.sh` 是 `set -uo pipefail`、**無 `set -e`**，掃描器死掉的空 stdout 會被判成「乾淨」，
+  `tests/module-shell.sh` 是 `set -uo pipefail`、**無 `set -e`**，若只判空 stdout，掃描器死掉會被當成「乾淨」，
   gate 於是靜默變成永遠綠。兩者不可混用。
 - **布林 validator**（如 CI contract）使用 exit 0 通過／1 契約不符／2 執行錯誤；
   call site 必須核對 exit，不能套用 finding scanner 的「零 stdout」判準。
@@ -36,17 +36,24 @@ root `CLAUDE.md` 與全域 `claude/CLAUDE.md` 合計 58,681B 恆常載入。
 - **gate 誤報的代價是逼人改壞寫法以求過測**，所以收窄判準時寧可放掉 false negative，
   也不要製造 false positive。
 
-本次 CI 審查的必要性判準：保留能攔截獨立失敗的 gate；只有同一實體腳本重複送進
-ShellCheck／bash -n 已取得可刪除的等價覆蓋證據。頂層 assertion 數是 shard 完整性帳目，不能作為品質分數。
+CI 重構以實際失敗風險決定測試處置。舊節號只供歷史對照，不是排程／完整性的權威。
+`tests/suites.json` 是可執行模組與已確認相依的單一清單；`suite.py` 供本地與 CI 共用。
+不以固定 PASS 數衡量覆蓋；新增測試須放進所屬模組，新增 shell 模組未登錄會報錯。
+已登錄 shell 測試檔自動選其所屬模組；README 與紀錄文件選當前內容檢查，
+混合修改取相依聯集，任一未知輸入仍回全套。
 
-| Gate 範圍 | 風險與 oracle | 本次處置與證據邊界 |
-|---|---|---|
-| 1、1b、1c、1cc、2 | ShellCheck、Bash parser、字元／heredoc fixtures 與 printf-to-grep-q gate 攔截語法、展開與 pipefail 假判 | 保留不同 oracle；canonical 輸入去重；heredoc 另驗 scanner error |
-| 1d、1e、1g、2b | xref、kernel 複本與治理 scanner／synthetic repo，防權威接線與檢索退化 | 保留；內容／接線一致不等於模型遵從 |
-| 1f、1h、12 系列、28 | 同型處置與跨 runtime packaging／契約文句完整性 | 保留 wiring 檢查；native/model 行為另由 opt-in eval 驗收 |
-| 3–7、15–16、18 系列、22–23、25 平台 fixture | 隔離檔案與 PATH／SSH 替身，核對內容、exit、冪等與平台分支 | 保留；補齊 hosts 資料保全、all-up 與兩支 signing scripts 的失敗傳遞 |
-| 8–11、13–14、17、19–21、24、26–27、29 | 真 git fixture、stubbed provider 與程序／檔案輸出，防授權、生命週期與清理錯誤 | 保留；替身成功不代表真實 provider／模型已驗證 |
-| 25 CI／shards | YAML 結構、manifest／completion artifacts、實際 runner signal fixture | 保留雙 OS 與完整集合；驗 active step，並確認 descendant 終止 |
+| 範圍 | 執行方式與處置 |
+|---|---|
+| 當前內容 | `content` 驗 kernel、xref 及真實文件 corpus；scanner findings 與程式失敗都非零 |
+| Shell | `lint` 與 `shell-contract`，canonical input 去重，包含獨立 shell modules |
+| 文件工具 | `document-contract`／`document-regression` 守 synthetic 反例；與每次當前文件內容分開，不重跑 corpus |
+| 功能行為 | inventory、deployment、Project、handoff、review 等獨立入口，每份自建 fixture，沒有前一模組的隱性狀態 |
+| Controller | 真 Git／程序反例保留在具名模組；獨立計時，不再藏成 core 的一個 assertion |
+| Runner | 依選定模組的 exit 與完成記錄判定；shell 須完整返回且有具名非空 summary；舊固定 assertion manifest、分片聚合器與自檢退役 |
+| 原生模型 | 維持明示 opt-in；機械文字／接線檢查不能冒充模型遵從 |
+
+平台敏感的 shell、Git、檔案系統邊界保留雙 OS；目前沒有平台獨立證據的整合模組不省略
+其中一端。這不是禁止後續改平台，而是不能把替身成功當跨平台實證。
 
 ---
 
@@ -765,40 +772,26 @@ local 覆寫 global）。同樣明列、不假裝擋得住。
 - Ubuntu preflight 必須在任何 package mutation 前執行；非 Ubuntu 或低於 24.04 都回 exit 2。
 - Claude plugin 提示由同一 helper 讀 `enabledPlugins`，只輸出值為 `true` 的項目並穩定排序；
   macOS、Linux setup 不得各自再實作一份解析邏輯。
-- 完整 suite 可把彼此獨立且唯讀 repo 的 slow gates（目前為 ShellCheck 與 doc-governance deterministic
-  suite）和 fixture-heavy 主流程並行，但必須逐 pid 收 exit code、彙總原始失敗輸出，且 EXIT cleanup
-  終止未收斂的 child；並行只縮短 critical path，不得縮小掃描檔案或測試集合。
-- `tests/run-ci.py` 只為整個 PR 相對 merge-base 的變更皆為既有一般檔案 STATUS、backlog、日期命名的
-  history／plan 且 heading 未變時選 `records`。不是一般 Markdown 選測：instructions、其他文件、
-  新增／刪除／rename／mode／symlink、未知 event／差異、dirty checkout 全部 fallback 到完整 suite。
-  Checkout 必須對應 event 的 head 或 exact base＋head synthetic merge；merge tree 額外變更／不同內容
-  也 fallback。Tracked symlink 若別名引用改動的紀錄或其目錄，同樣不能套用 records。
-  選擇理由、實際 checks 與省略集合印在 CI_SELECTION；沒有空集合成功。Record checks 為真正的
-  kernel／xref 掃描（兩者 stdout findings 也失敗）及 RealRetrievalCorpusTests 全部七例，後者包含當前 repo
-  audit --ship、檢索 corpus／召回／canonical title controls；不重跑治理工具的 synthetic fixtures 或
-  無關 controller。GitHub checkout 保留完整 history，不改 required job 名稱或 protection。
-  `tests/test_ci_selection.py` 隨既有 CI confidence gate 執行，驗整批 scope、fallback、merge tree 及故障傳播；
-  紀錄 checks 自有 process group，取消後清除 descendants 且停止後續 checks；full fallback 以 exec
-  保留既有 runner 的 process ownership。縮排／空 ATX 與 Setext heading 變動同樣 fallback。
-  本地沒有 pull_request event 時直接跑全套，`--select-only` 僅輸出判定、不執行任何 checks。
-- 完整 CI fallback 以 `tests/run-parallel.sh` 在每個 OS job 內同時跑 `core`、`ship_state`、`plan`（9b–12b）、
-  `review`（12bb–16）、`runtime`（turbo–結尾）；五者是 `tests/run.sh` 中互斥且聯集完整的連續
-  assertion 區段，各自建立 temp/state/output。`plan` 自建 section 9b／10 的 local-only Git fixture，
-  `runtime` 自建 section 19 所需的 ship-state baseline；review-state script 路徑由共同前置定義，
-  不依賴其他 shard 的執行副作用。開發者仍可直接執行 `./tests/run.sh`，其預設 `all` 依 runner 的分片順序跑完全套；
-  `DOTFILES_TEST_SHARD=integration` 保留為依序執行 `plan`＋`review`＋`runtime` 的相容入口，不列入 parallel manifest。
-- 獨立的 `tests/review-repair-controller.py` suite 編排在 `core` 分片，完整保留所有測試；
-  它自建 temp Git／state fixtures，只讀 shared scripts，不依賴其他分片的 shell fixture；
-  legacy `integration` 仍在原 review 位置呼叫同一 helper，保留原覆蓋與順序。
-- `tests/shard-manifest.tsv` 固定每個 shard 的成功 assertion 數；聚合器要求每個 child rc 為零、每份 log
-  恰有一條身分相符的 `SHARD_RESULT`、計數與 manifest 相符，且不接受缺件或額外 result artifact。任何
-  signal、漏寫 completion artifact、重複 summary、計數漂移或聚合器錯誤都使 OS job 非零；shard log 以
-  身分前綴完整輸出，不用縮減診斷換速度。
-- `tests/shard-supervisor.py` 為每個 shard 建立專屬 process group。SIGINT／SIGTERM 或任一
-  child 非零時終止其餘 group，bounded TERM grace 後 KILL，reap leader；正常完成也清理殘留
-  descendant。signal handler 只記中斷旗標，讓剛建立的 child 先完成 ownership 登記，再清理；
-  fixture 在 Popen 回傳前送 TERM，確認啟動邊界也不留下 orphan。實際 runner fixture 以忽略 TERM
-  的 descendant 驗停止與非零，不能只驗目錄刪除。
+- CI 使用整個 PR 相對 merge-base 的差異，核對 immutable event endpoints、實際 checkout
+  與 synthetic merge tree。已宣告相依的既有 regular file 修改選模組；新增／刪除／rename／mode
+  變動、未知路徑、dirty CI checkout 或無法取得 scope 時跑全套。Record heading 變更由當前 xref／corpus 驗證，
+  不因此重跑 scanner 實作的合成回歸。
+  tracked symlink 的別名消費路徑一併納入相依判定，未知 consumer 不能省略。
+- 本地 `./tests/run.sh --base REF` 包含本批 commits、index、worktree；untracked／unmerged
+  或拓樸變動回全套。沒有 base 預設全套。`--module NAME` 只作定向檢查，`--list` 顯示決策。
+  同一份 `tests/suites.json` 為 local／CI 供應模組、命令與路徑相依；不另維護兩套排程。
+  共用 workflow 的相依先取保守聯集；新增已知路徑映射須核對全部 consumer 與失敗反例。
+- `tests/suite.py` 預設至多四個模組並行，可用 `--jobs 1` 序列執行。`tests/run-parallel.sh`
+  僅為同一入口的相容命令；不再保留 DOTFILES_TEST_SHARD 或按歷史節號切片。
+  每個模組輸出 TEST_MODULE（名稱、exit、passed、wall time），全體 TEST_RESULT 列出選定與完成集合。
+  空集合、重複／未知模組、未登錄 shell 檔與缺失 shell completion 都不得成功。
+- 每個模組有獨立 process group。SIGINT／SIGTERM／SIGHUP 先記旗標，Popen 返回後完成 ownership
+  登錄再處置；清理有界 TERM grace 後 KILL 並 reap。正常 leader exit 也清理殘留 descendants。
+  跨程序的行為測試覆蓋 signal、startup race、非零 exit、正常 exit 留下忽略 TERM 的 child；
+  不以刪除結果目錄或 source 字樣判斷清理成功。
+- 完整集合換架構時作一次序列／並行與原集合處置核對；這不是日常交付的雙跑要求。
+  全量 regression、選測及其回歸分開計時，不能只減少日誌行數就宣稱縮短交付。
+
 
 
 ## 26. outward-action gate
@@ -834,7 +827,7 @@ parent alias、第三方與個人資料保全、兩個 handoff stores 的生命�
 只以相同 created 日期不能宣稱同 provenance；不同 slugs 的可合併 control 與 anchor 衝突分別驗證。
 DOTFILES_RUNTIME_TEST_FAIL 僅為隔離 fault injection，不繞過任何 guard。
 Entry fixture 的 SSH 替身執行實際遠端 shell／共用 entry，不只回顯 OK；config failure 同時納入 local／remote 終判。
-新增 assertion 同步 shard manifest，serial 與 parallel 都須以實際 exit 驗證。
+新增案例由所屬模組收集，模組與完整 runner 都以實際 exit 驗證。
 
 共用 entry 的輸出回歸走真實 layout／entry：unchanged 成功僅一行、有遷移列出 receipt 與 retained backups、
 重跑不新增交易或改動資料；部分成功／ownership 阻擋、writer／process inventory 失敗保留完整 JSON 與非零。
@@ -844,8 +837,8 @@ guidance／config 的失敗與缺 CLI 不因摘要消失，直接 layout CLI 的
 
 `dotfiles-sync` 遠端回報段（ssh 失敗與無告知時都不可吞掉主機結果）已有測試但無獨立節號。
 
-`tests/run.sh` 的節號是唯一權威——本檔若少了某節，代表**該節的設計理由尚未記錄**，
-不代表該節不存在。補記時請對照節號。
+本檔保留舊節號供既有記錄定位；當前執行集合以 `tests/suites.json` 為準。缺設計理由時補在
+對應功能，而不是延續按新增順序決定分片。
 
 ## Project reference native eval（#246）
 

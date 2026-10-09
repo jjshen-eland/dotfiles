@@ -48,16 +48,16 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **Write Scope**：tests/, shared/skills/project/, AGENTS.md, docs/testing-contract.md, .github/workflows/test.yml
 - **Dossier Steward**：`codex:brewup-bun-global-update`
 - **Context**：#285 第一批由 PR #289 完整退版；#279 紀錄 CI 選測再由 PR #290 合併為 `1f0d967`，雙 OS required checks 通過。使用者懷疑 10 月初 skill 改動造成交付耗時跳升，授權以固定歷史版本分開量 Project 收尾與 CI。PR #288 的 1244.449 秒事故仍是完整交付未驗收的證據，不以本地局部收益結案。
-- **Goal**：降低小幅腳本與純紀錄變更從交付指令到最終回報的完整操作成本。先處理 #285 的證據重建與工具往返，再評估 #279 的純紀錄 CI 路徑；以同範圍端到端耗時及失敗攔截能力驗收，不以測試次數或輸出量下降代替收益。
+- **Goal**：以整體重構或重寫重新設計 repo 的本地驗證與 CI，讓測試成本對應實際變更風險，降低交付指令到最終回報的完整耗時；既有測試、分片、觸發規則與驗證流程都可重設，不以保留既有數量或架構為前提。
 - **Acceptance Criteria**：
-  1. 固定純紀錄與普通腳本兩類案例的來源、scope、原驗證結果及計時邊界；重建 PR #288 的階段量測，明示最終回報未包含，工具外區間不冒稱純模型思考。補齊下一個候選所需的因果證據後才實作。
-  2. #285 候選減少已觀察的臨時證據重建與流程往返，包含保存／核對的新成本一起計時；有效證據可沿用，changed／unknown／failure 仍正確補驗或停止。既有安全與 fresh shipping checks 保持，不加入未證明必要的新規則或治理層。
-  3. #279 候選先限定為可證明不影響執行行為的紀錄變更：保留必要文件／xref／全域 checks，分開判定當次文件驗證與工具自身回歸測試；不把整個 core 視為廉價必跑 gate。共用程式、skill instructions、runner、workflow、未知範圍及分類錯誤全套 fallback；雙 OS required check 名稱與失敗語意保留。
-  4. 固定條件的小規模 before／after 對照顯示完整流程穩定縮短，新增操作成本不抵銷收益；本地、hosted 與真實交付分開報告。取得當批送出授權後，以同類真實交付驗至最終回報；資料不足、scope 不同或僅局部變快時維持未驗收。
-  5. 與變更相關的失敗注入、未知輸入與必要跨 runtime／OS controls 通過；驗證次數依實際變更與可沿用證據決定。新 skill 行為依 authoring route 取得 native eval；改 runner 才做相應完整性／cleanup 對照，不把 benchmark 變成每次交付前置。
-- **Constraints**：2026-10-09 使用者以 `$project spec` 及選項 1 確認前任停止，由本 session 接續 exact workline 與文件維護；前批經開工、PR、merge 授權完成 #290。本輪「go」只接續隔離因果診斷，不改正式 skill／runner、branch protection 或部署，不自動恢復退版功能。原 checkout 的 claude/settings.json 是使用者確認的 runtime drift，保持原樣；Runtime 項目不接續。deep-plan 原碼的候選修正屬後續 scope；本批沒有新的 push／PR／merge 授權。
-- **進度**：#279 本地 records suite 的 88.93% 收益與全套 fallback 已保存於 M-20261009-ci-record-selection-local。新歷史對照重現 CI 完整 parallel 117.905 → 409.247 秒（兩版 exit 0），增幅集中在 integration；deep-plan 新增 DocumentRepair 群組 109.569 秒，原 Routing 同來源控制仍為 12.287 秒。Project 固定 Opus 正常收尾三版 120.149／103.385／85.077 秒，皆零重跑、來源／HEAD 保留，未重現退化；不外推為 Codex xhigh 或完整交付已修好。詳見 M-20261009-delivery-cost-historical-controls。
-- **下一步**：以已定位的 controller Git 查詢成本評估單一有界候選，保留既有測試與失敗攔截；若要修改 deep-plan implementation，先更新本項 write scope。Project 正常分支未見 RED，不再堆疊流程指引；完整 Codex 交付與 hosted records 收益仍須後續同範圍真實證據。
+  1. 依實際失敗風險盤點測試群組，對保留／合併／分層／改寫／移除給出理由與新承接位置；不把歷史存在當必要性的證明。
+  2. 模組有獨立入口，本地與 CI 使用一致的測試宣告；靜態內容、單元行為、真實整合與原生模型 eval 分層，消除重複 fixture 與無必要的跨模組全套成本。
+  3. 按整批差異與實際相依選測，平台矩陣及 full regression 觸發重新設計。未知範圍、工具失敗、漏跑／假成功、取消清理及必要 OS 反例有行為驗證；不靠降低錯誤攔截取得 GREEN。
+  4. 純紀錄、普通腳本、共用依賴及 CI 自身修改均有代表案例；固定來源／環境比較完整耗時，選測與證據成本納入。local、hosted、真實交付分開報告，未量到指令至最終回報不宣稱整體完成。
+  5. 舊 runner／重複規則隨新架構退出；testing contract 與 agent 驗證指引一致，不永久疊新包裝。產品 helper 的必要改動另核對 scope／ownership，skill authoring 依既有規則。
+- **Constraints**：2026-10-09 使用者要求本項以重構或重寫處理，解除前輪僅診斷、單一有界候選、保留所有既有測試／分片的限制。沿用同一 writer／steward 與 worktree；原 Runtime 項目不接續，claude/settings.json runtime drift 保留。本批沒有新的 push／PR／merge／部署或遠端 protection 修改授權。
+- **進度**：模組化與選測重構已完成本地驗收：29 個獨立模組、本地／CI 共用 catalog 與 executor，舊歷史分片及固定計數聚合退役。凍結來源全套 exit 0、127.666 秒；相同 brewup 小修改的兩輪 CI 入口對照平均 119.680 → 14.713 秒（87.71%），純紀錄 13.406 秒。選測／失敗／取消 controls 通過，詳細來源與限制見 M-20261009-ci-modular-redesign-local。高成本 controller 內部矩陣尚未拆層；本機收益不代表雙 OS 或完整交付已驗收。
+- **下一步**：本批完成本地提交後，取得具名 PR 授權再驗 GitHub 雙 OS 與模組時間；真實普通腳本交付另量指令到最終回報。以新模組時間定位仍需下移的 controller 矩陣，不追加無 RED 的 Project 指引。整體項目保持 in-progress。
 - **關聯**：[本項診斷與驗證計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285（https://github.com/jjshen-eland/dotfiles/issues/285）; GitHub #279（https://github.com/jjshen-eland/dotfiles/issues/279）; PR #288; PR #289; D-20261009-small-change-delivery-spec; D-20261008-ci-critical-path-before-selection; D-20261008-ci-core-controller-recommendation; X-20261009-workflow-verification-economy-revert; B-20260924-workflow-verification-economy
 
 ## 暫停中

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run record checks for a proven narrow PR; otherwise run the complete suite.
+"""Select declared test modules for a proven PR scope, otherwise run the full suite.
 
 Uses the pull_request event's immutable endpoints and the actual checkout.
 No network calls, persistent cache, path-only workflow filtering, or empty success.
@@ -9,32 +9,21 @@ import json
 import os
 from pathlib import Path
 import re
-import signal
 import subprocess
 import sys
+
+from suite import load_manifest, select_paths, expand_aliases, execute as run_modules
 
 
 RECORD = re.compile(r'(?:STATUS\.md|docs/backlog\.md|'
                     r'docs/archive/(?:decisions|dead-ends|milestones)-\d{4}-\d{2}\.md|'
                     r'docs/plans/\d{4}-\d{2}-\d{2}-[^/]+\.md)\Z')
 OID = re.compile(r'(?:[0-9a-f]{40}|[0-9a-f]{64})\Z')
-CHECKS = ('kernel', 'xref', 'document-corpus')
 
 
 def git(root, *args):
     return subprocess.check_output(['git', '--no-replace-objects', '-C', str(root), *args],
                                    stderr=subprocess.PIPE)
-
-
-def headings(blob):
-    lines = blob.decode('utf-8').splitlines()
-    result = []
-    for i, line in enumerate(lines):
-        if re.match(r'^ {0,3}#{1,6}(?:\s|$)', line):
-            result.append(line)
-        elif i and re.fullmatch(r' {0,3}(?:=+|-+)\s*', line):
-            result.append((lines[i - 1], line))
-    return result
 
 
 def select(root, environment):
@@ -69,11 +58,11 @@ def select(root, environment):
             fields = meta.decode().split()
             name = path.decode('utf-8')
             plan['changed_paths'].append(name)
-            if (len(fields) != 5 or fields[0] != ':100644' or fields[1] != '100644'
-                    or fields[4] != 'M' or not RECORD.fullmatch(name)):
+            if (len(fields) != 5 or fields[0] not in (':100644', ':100755') or fields[1] != fields[0][1:]
+                    or fields[4] != 'M'):
                 return fallback('non-record, new/deleted/renamed file, or mode change: ' + name)
-            if headings(git(root, 'show', ancestor + ':' + name)) != headings(git(root, 'show', head + ':' + name)):
-                return fallback('document headings changed: ' + name)
+            if RECORD.fullmatch(name) and fields[0] != ':100644':
+                return fallback('executable record: ' + name)
         if checkout != head:
             # The tested merge tree must not contain additional changes or a
             # conflict resolution outside the proven record patch.
@@ -84,83 +73,21 @@ def select(root, environment):
             for name in names:
                 if git(root, 'ls-tree', checkout, '--', name).split(b'\t')[0] != git(root, 'ls-tree', head, '--', name).split(b'\t')[0]:
                     return fallback('synthetic merge record differs from PR head: ' + name)
-        # A record used through another tracked path may be an executable input.
-        changed = [(root / name).resolve(strict=True) for name in plan['changed_paths']]
-        for entry in git(root, 'ls-files', '-s', '-z').split(b'\0'):
-            if entry.startswith(b'120000 '):
-                link = root / os.fsdecode(entry.split(b'\t', 1)[1])
-                target = link.resolve(strict=True)
-                if any(p == target or target in p.parents for p in changed):
-                    return fallback('tracked symlink aliases a changed record: ' + str(link.relative_to(root)))
-        return dict(plan, mode='records', reason='only existing regular records; headings unchanged',
-                    checks=list(CHECKS), omitted=['complete-suite'], base=base, head=head)
+        paths = expand_aliases(root, plan['changed_paths'])
+        manifest = load_manifest(root)
+        names, reason = select_paths(manifest, sorted(paths))
+        if set(names) == set(manifest['modules']):
+            return fallback(reason)
+        return dict(plan, mode='records' if names == ['content'] else 'modules', reason=reason,
+                    checks=names, base=base, head=head)
     except (OSError, ValueError, KeyError, TypeError, RuntimeError, subprocess.CalledProcessError) as error:
         return fallback('scope unavailable; full suite: ' + str(error))
 
 
-def run_check(command, root):
-    """Capture one check and own its descendants, including on cancellation."""
-    interrupted = 0
-
-    def interrupt(signum, _frame):
-        nonlocal interrupted
-        interrupted = 128 + signum
-
-    previous = {s: signal.signal(s, interrupt) for s in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)}
-    process = None
-    try:
-        process = subprocess.Popen(command, cwd=root, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                   text=True, stdin=subprocess.DEVNULL, start_new_session=True)
-        while not interrupted:
-            try:
-                stdout, stderr = process.communicate(timeout=.1)
-                return interrupted or process.returncode, stdout, stderr
-            except subprocess.TimeoutExpired:
-                pass
-        try:
-            os.killpg(process.pid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
-        try:
-            stdout, stderr = process.communicate(timeout=.2)
-        except subprocess.TimeoutExpired:
-            os.killpg(process.pid, signal.SIGKILL)
-            stdout, stderr = process.communicate()
-        return interrupted, stdout, stderr
-    finally:
-        if process is not None:
-            try:
-                os.killpg(process.pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
-            process.wait()
-        for signum, handler in previous.items():
-            signal.signal(signum, handler)
-
-
 def execute(root, plan):
-    if plan['mode'] == 'full':
-        # Preserve the complete runner's existing signal/process-group ownership.
-        os.chdir(root)
-        os.execvp('bash', ['bash', str(root / 'tests/run-parallel.sh')])
-    commands = [
-        ('kernel', [sys.executable, '-B', str(root / 'tests/kernel-gate.py'), '--root', str(root)]),
-        ('xref', [sys.executable, '-B', str(root / 'tests/xref-gate.py'), '--root', str(root)]),
-        ('document-corpus', [sys.executable, '-B', str(root / 'tests/test_doc_governance.py'),
-                             'RealRetrievalCorpusTests']),
-    ]
-    failed = False
-    for name, command in commands:
-        code, stdout, stderr = run_check(command, root)
-        print(stdout, end='')
-        print(stderr, end='', file=sys.stderr)
-        # Both scanners report findings on stdout with exit 0.
-        passed = code == 0 and (name not in ('kernel', 'xref') or not stdout.strip())
-        print('CI_CHECK ' + json.dumps({'name': name, 'exit': code, 'passed': passed}), flush=True)
-        failed |= not passed
-        if code >= 128 or code < 0:
-            return code if code > 0 else 128 - code
-    return int(failed)
+    manifest = load_manifest(root)
+    names = list(manifest['modules']) if plan['mode'] == 'full' else plan['checks']
+    return run_modules(root, manifest, names)
 
 
 def main():
@@ -175,7 +102,7 @@ def main():
         return 0
     try:
         return execute(root, plan)
-    except OSError as error:
+    except (OSError, ValueError, KeyError, TypeError) as error:
         print('CI_EXECUTION_ERROR: ' + str(error), file=sys.stderr)
         return 2
 

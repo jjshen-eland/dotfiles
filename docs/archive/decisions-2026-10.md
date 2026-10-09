@@ -261,3 +261,10 @@
   - 放棄:一般 Markdown 一律略過全套；只看最新 commit；整個 core 必跑；新依賴圖或持久 cache；修改 required check 名稱；把本地結果當 hosted／完整交付驗收
   - 重議:必要 gate 漏失、scope 誤分類、取消清理失敗或固定條件無時間收益時撤回／修正候選；hosted 與真實交付仍待當批具名授權
   - 關聯:Issue#279;Issue#285;D-20261009-small-change-delivery-spec;X-20261009-log-scope-latency;tests/run-ci.py;tests/test_ci_selection.py;docs/testing-contract.md
+
+
+- **D-20261009-ci-system-redesign · 2026-10-09 #285／#279 改以整體 CI 與驗證流程重構**：使用者明示把本項當成重構或重寫，既有項目逐漸堆積，不能預設不能動。新有效規格 supersedes:D-20261009-small-change-delivery-spec 的有界候選限制，以及 supersedes:D-20261009-ci-record-selection-candidate 作為後續設計上限的限制；已合併來源及歷史證據保持可追溯。驗收改以失敗攔截、測試分層、變更影響、平台必要性與完整交付成本，不要求保留既有測試數、分片或逐項雙 OS 全套。可合併、下移、重寫或移除測試，但須說明原保障的承接或退役理由。先作整體設計、分段驗證與替換；同一次 snapshot 的 Git 查詢批次化不再預定為主方案。更新同一 STATUS／plan，不建立另一份平行工作契約；本次只修改規格，執行中的 CI 尚未變更。
+  - 日期來源:direct
+  - 放棄:把既有測試與分片當不可改的前提；用不斷增加 wrapper／gate 處理架構問題；只以測試數下降、局部 wall time 或歷史相關性宣稱整體修好
+  - 重議:新架構以具名反例、模組／整合行為與固定條件耗時驗證後採用；不得為速度遮蔽必要的合併前失敗。遠端設定、送出及部署仍依當批具名授權
+  - 關聯:Issue#285;Issue#279;D-20261009-small-change-delivery-spec;D-20261009-ci-record-selection-candidate;M-20261009-delivery-cost-historical-controls;docs/plans/2026-10-08-workflow-verification-economy.md

@@ -9,7 +9,7 @@ PATTERNS = (
     'claude/skills/*/scripts/*.sh', 'claude/skills/*/scripts/lib/*.sh',
     'codex/skills/*/scripts/*.sh', '.githooks/dispatcher', 'shell/functions.sh',
     'setup-mac-env.sh', 'setup-linux-env.sh', 'write-mac-defaults.sh',
-    'claude/evals/*.sh', 'tests/*.sh',
+    'claude/evals/*.sh', 'tests/*.sh', 'tests/modules/*.sh',
 )
 
 
