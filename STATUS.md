@@ -64,15 +64,15 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 ### 4. Setup 工具與 agent shell 環境對齊
 
 - **Writer**：`codex:brewup-bun-global-update`
-- **Workspace**：`branch=feat/setup-agent-tools`
+- **Workspace**：`branch=chore/setup-canary-rollout`
 - **Write Scope**：setup-mac-env.sh, setup-linux-env.sh, scripts/dev-tools.sh, scripts/dev-tools.tsv, scripts/dev-env.sh, scripts/align-dev-environment.sh, scripts/ensure-shell-env.py, scripts/dotfiles-sync.sh, scripts/brewup.sh, shell/, tests/, README.md, docs/repo-guide.md, docs/testing-contract.md, claude/CLAUDE.md, codex/AGENTS.md
 - **Dossier Steward**：`codex:brewup-bun-global-update`
 - **Context**：現有 setup 混合必要與互動便利工具，brew 失敗被吞掉；環境依賴各平台生成的 shell 設定。使用者要求按 Codex／Claude Code 需求改版，統一 npm 措辭，提供 14 台既有主機免重跑 setup 的對齊方式。
 - **Goal**：新裝與增量更新共用工具宣告及受管理 shell 環境，必要工具失敗可見，保留個人設定與既有額外工具；使用者追加要求明確區分 setup 納管與主機自行安裝，只有前者依新定義新增／移除，後者不升級、不移除、不接管。
 - **Acceptance Criteria**：core／workstation 分層、新增 actionlint／ast-grep；plan／apply／check 可觀察且重跑收斂；必要安裝及驗證失敗回非零；雙 shell 無互動命令可讀相同環境，保留專案／個人 PATH 優先權與覆寫；npm／bun 以專案 lockfile 為準；隔離新裝／升級／失敗／重跑測試與完整 suite 通過；14 台 rollout 有逐台預演、revision、驗收與回復路徑。
-- **Constraints**：本批本地實作與驗證已完成；2026-10-10 使用者以 `$project --pr` 授權 push feature branch 與建立 PR，未授權 merge／live fleet apply。主目錄 settings.json runtime drift 保留。#285 與原 Runtime writer 無並行寫入；不安裝全機隊 mise／語言套件／瀏覽器，不自動卸載未納管／本機保留工具或放行 direnv trust，不執行新 setup 覆寫既有主機 rc。
-- **進度**：共用清單、ownership ledger、plan／apply／check 與 shell helper 已實作；原 setup 吞失敗已重現並修正。29 項隔離行為測試與 30 模組完整 suite 通過（114.485 秒）；macOS 系統 Python 3.9 的 tomllib 缺項已重現，共用 PATH 改用本機 Homebrew Python 3.14.8。未執行主機安裝或 fleet apply。
-- **下一步**：本地候選已完成，見 M-20261009-setup-agent-tools-local；本輪依 `$project --pr` 交付，停在 PR。來源進 origin/main 且有本批部署授權後，逐台確認 ownership 與 plan，再做雙平台試跑。
+- **Constraints**：本批來源已由 PR #294 rebase merge 至 origin/main `4f9d8c2`。2026-10-10 使用者在雙平台試跑建議後以「繼續」授權本批 macOS／Linux canary 對齊；選本機 macs 與 agent01。既有工具歸屬未確認前不 adopt／移除／升級，只補 core 缺項與接上 shell 環境；其餘 12 台保持盤點範圍。主目錄 settings.json runtime drift 保留。#285 與原 Runtime writer 無並行寫入；不安裝全機隊 mise／語言套件／瀏覽器，不自動卸載未納管／本機保留工具或放行 direnv trust，不執行新 setup 覆寫既有主機 rc。
+- **進度**：共用清單、ownership ledger、plan／apply／check 與 shell helper 已實作；原 setup 吞失敗已重現並修正。29 項隔離行為測試與 30 模組完整 suite 通過（114.485 秒）；macOS 系統 Python 3.9 的 tomllib 缺項已重現，共用 PATH 改用本機 Homebrew Python 3.14.8。PR #294 已合併；agent01 canary 已新增 actionlint 1.7.12／ast-grep 0.45.3，兩次 apply／check 全部 exit 0，85 個既有 Homebrew 套件版本與個人 bashrc 原內容不變。
+- **下一步**：macs plan 發現未選用 agy --version 阻塞；已在本批分支補六格 RED 並修正，只對選用工具執行能力驗證，30 項隔離測試通過。修正交付 origin/main 後續跑 macs apply／check；agent01 已完成增量安裝與重跑，shell 非互動解析與 Codex／Claude Code CLI 版本命令通過，未執行模型回合或代表專案測試。另 12 台僅完成 inventory，仍在 `112d37d`；舊工具歸屬均未擅自推論。見 M-20261010-setup-canary-probe-fix、M-20261010-agent01-setup-canary。
 - **關聯**：item 2 Runtime 目錄收斂；item 3 #285；[環境使用說明](docs/repo-guide.md)
 
 ## 暫停中
