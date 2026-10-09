@@ -430,6 +430,13 @@ class DocumentRepair(unittest.TestCase):
                             self.assertEqual(ticket["mode"], policy)
                             artifact = ticket["packet"] if policy == "focused" else ticket["document_delta"]
                             data = json.loads(Path(artifact).read_text())
+                            # This single matrix also owns the document-state/restart
+                            # oracle formerly rebuilt by a second six-cell matrix.
+                            delta = json.dumps(data["document_diffs"])
+                            for path in (case.plan, case.spec, case.state):
+                                self.assertIn(str(path), delta)
+                            self.assertIn("Keep items; include count.", delta)
+                            self.assertEqual(len(case.m.status(case.plan)["rounds"]), 1 if restart else 2)
                             doc = next(d for d in data["document_diffs"] if d["path"] == str(case.state))
                             self.assertIn("第一輪", doc["worktree"])
                             if kind == "staged":
@@ -438,17 +445,25 @@ class DocumentRepair(unittest.TestCase):
                                 self.assertIn("第一輪", doc["head"])
                             if policy == "blind":
                                 self.assertNotIn("findings_and_evidence", data)
-                            manifest = subprocess.run([sys.executable, "-B", str(LAUNCHER),
-                                "--ticket", ticket["ticket"], "--plan", str(case.plan),
-                                "--repo", str(case.repo), "--count", "2",
-                                "--brief", str(LAUNCHER.parent.parent / "references/planner-brief.md"),
-                                "--schema", str(LAUNCHER.parent.parent / "assets/reviewer-output.schema.json"),
-                                "--codex-bin", str(case.stub)], capture_output=True, text=True,
-                                env=dict(os.environ, DISPATCH_LOG=str(case.root / "dispatch.jsonl")))
-                            self.assertEqual(manifest.returncode, 0, manifest.stdout + manifest.stderr)
-                            result = json.loads(manifest.stdout)
-                            self.assertTrue(result["ok"])
-                            self.assertTrue(result["admission"]["review_valid"])
+                            if (policy, restart, kind) in {
+                                    ("focused", True, "committed"), ("blind", False, "unstaged")}:
+                                manifest = subprocess.run([sys.executable, "-B", str(LAUNCHER),
+                                    "--ticket", ticket["ticket"], "--plan", str(case.plan),
+                                    "--repo", str(case.repo), "--count", "2",
+                                    "--brief", str(LAUNCHER.parent.parent / "references/planner-brief.md"),
+                                    "--schema", str(LAUNCHER.parent.parent / "assets/reviewer-output.schema.json"),
+                                    "--codex-bin", str(case.stub)], capture_output=True, text=True,
+                                    env=dict(os.environ, DISPATCH_LOG=str(case.root / "dispatch.jsonl")))
+                                self.assertEqual(manifest.returncode, 0, manifest.stdout + manifest.stderr)
+                                result = json.loads(manifest.stdout)
+                                self.assertTrue(result["ok"])
+                                self.assertTrue(result["admission"]["review_valid"])
+                            else:
+                                # State combinations exercise the same admission/finish
+                                # code directly. Public launcher transport and both runtime
+                                # CLI entries have separate integration cases below.
+                                case.m.claim(Path(ticket["ticket"]))
+                                case.m.finish(Path(ticket["ticket"]), records(ticket["token"]))
                             old_ids = {r["id"] for rd in previous["rounds"] for r in rd["results"]}
                             current = case.m.status(case.plan)
                             new_ids = {r["id"] for r in current["rounds"][-1]["results"]}
@@ -510,35 +525,6 @@ class DocumentRepair(unittest.TestCase):
         self.assertEqual(ticket["mode"], "focused")
         self.assertEqual(len(self.m.status(self.plan)["rounds"]), 2)
 
-    def test_document_states_same_batch_and_authorized_restart(self):
-        # Every matrix cell has its own repository and journal.
-        for restart in (False, True):
-            for kind in ("unstaged", "staged", "committed"):
-                with self.subTest(restart=restart, kind=kind):
-                    case = DocumentRepair("test_canonical_plan_staged_checkpoint_is_admitted")
-                    case.setUp()
-                    try:
-                        (case.repo / "api.py").write_text("def response(rows): return {'items': rows, 'dirty': True}\n")
-                        case.start([case.spec, case.state])
-                        packet = case.packet()
-                        if restart:
-                            case.complete("repair", packet)
-                            packet = case.packet()
-                        case.repair([case.plan, case.spec, case.state], kind)
-                        if restart:
-                            old = case.m.status(case.plan)
-                            case.restart()
-                            self.assertEqual(case.m.status(case.plan)["previous_batches"][-1]["rounds"], old["rounds"])
-                        ticket = case.m.prepare(case.plan, "repair", packet)
-                        self.assertEqual(ticket["mode"], "focused")
-                        evidence = json.loads(Path(ticket["packet"]).read_text())
-                        delta = json.dumps(evidence["document_diffs"])
-                        for path in (case.plan, case.spec, case.state):
-                            self.assertIn(str(path), delta)
-                        self.assertIn("Keep items; include count.", delta)
-                        self.assertEqual(len(case.m.status(case.plan)["rounds"]), 1 if restart else 2)
-                    finally:
-                        case.tearDown()
 
     def test_worktree_index_and_head_deltas_are_all_visible(self):
         self.start([self.spec])

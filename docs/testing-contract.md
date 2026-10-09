@@ -423,6 +423,14 @@ shared helper 回傳，ownership 仍由 workflow 依可觀察來源判定。
 這是實際合成反例支持的收緊，不以更新舊 assertion 當行為證據；controller test 另驗可清除的正向路徑。
 它不自動判斷自然語言處置的真實性，也不證明 native agent 實際使用 gate；後者以 frozen native trace 驗收。
 
+Controller 的 scope 漂移、跨程序重開、Git metadata、terminal receipt 等 15 個案例保留真實 CLI／Git
+整合。另 8 個 Policy 案例在已驗證 scope adapter 的前提下直接呼叫 production main，
+保留原 parser、state transitions、locks、journal、repair snapshots 與 check subprocess；只替換
+scope_check，避免每個額度／finding 判定重跑外部 scope 驗證。Policy 不宣稱驗過 scope
+新鮮度，該責任由前一層及 review-scope 模組承接；23 個案例的原斷言保持不變。
+另有真實 verifier 反例守每次 fresh 的每份 scope 只驗一次，以及內容漂移／scope 身分偽造
+仍拒絕；fresh 透過 load_scope 的既有驗證取得身分，不在外層重複呼叫同一 verifier。
+
 ## 12. repo-review thin-adapter packaging
 
 Codex 只保留 `$repo-review` 公開入口；workflow、reviewer brief 與 scope／terminal helpers 必須和
@@ -465,8 +473,11 @@ collab wait，且兩份 reviewer output 都能命中 fixture oracle。Headless p
 
 #271 的 `tests/deep-plan-routing.py` 另守來源資料／caller 控制輸入的區別：合法文件歷史與原始 finding
 保留；current plan 或三層 document delta 必須由 exact canonical snapshot 核對；caller 的 evidence／contracts
-壓力仍拒絕。合法歷史矩陣真走 public ticket → launcher → finish，涵蓋同批／新批、focused／blind 與
-unstaged／staged／committed，仍是 synthetic 狀態證據，不代表原生 reviewer 能辨識語意。
+壓力仍拒絕。合法歷史矩陣以真 Git 驗同批／新批、focused／blind 與 unstaged／staged／committed
+共 12 種組合，承接原來另建六格 fixture 的文件集合／delta／輪次斷言。每格都走真實
+prepare／claim／finish；focused 新批 committed 與 blind 同批 unstaged 兩格另跨 public launcher
+CLI。其餘 launcher transport、雙 runtime CLI 與壞 ticket controls 仍獨立保留，不在每個
+狀態組合重複啟動 reviewer。這是 synthetic 狀態證據，不代表原生 reviewer 能辨識語意。
 
 `tests/deep-plan-document-eval.py` 是 opt-in native runner：`setup <new-root>` 凍結當前雙入口／neutral core
 的 bytes 與 links，排除 eval oracle／field log，建立隔離 feature fixtures；`run <root> --phase baseline`、

@@ -92,7 +92,49 @@ heading 變更由當前 xref／corpus 守，不再觸發無關 scanner regressio
 
 本地實作沿用使用者的開工方向；新批次 push／PR／merge／部署仍無授權。
 
-本段本地驗收完成（2026-10-09）：29 個模組在凍結來源串行、並行各 exit 0；串行
+2026-10-09 PR #291 已完成 rebase merge（c2e0a0f），hosted 全套 Ubuntu 72.180 秒、macOS
+238.847 秒（job 99／255 秒）。使用者回報 macOS 仍慢並要求繼續；本段驗收改追各
+controller 的實際重複程序成本，再以 state-policy 與真實 Git／CLI 邊界分層減少重複。
+保留所有獨立錯誤攔截、以相同來源環境量 before／after；不預設並行數或刪 OS 是修法。
+macOS 歷史 job 的不同來源／runner 只作定位，不當成受控因果比較；新批送出另需授權。
+
+同機 profile 先重現第二意見額度單例 4.198 秒，其中 28 次 scope verify 3.209 秒（巢狀
+時間不相加）。Review controller 分為 15 個 CLI／Git 整合與 8 個 scope 已驗證的 Policy
+案例；所有 23 個原測試 body AST 相同，只有呼叫邊界改變。完整該檔 before 69.617 秒、
+after 46.239 秒；故意放行 reserved capacity、recurrence diagnosis、partial result 三個
+缺陷時，三個新 Policy cases 均以 assertion failure 攔下。最初 partial-result 注入改在
+未被該錯誤分支呼叫的 result_verdict，屬無效 mutation，改成移除確切 result-set guard
+後才列入證據。
+
+Deep-plan 合併重疊的 6 格文件狀態矩陣至 12 格歷史矩陣，保留原 delta／輪次／歷史／
+髒 code 保全斷言；所有 12 格仍走真 Git 的 prepare／claim／finish，2 格另走真 launcher，
+既有 public launcher 與雙 runtime CLI cases 保留。全檔 41→40 個方法，唯一移除方法
+的斷言已併入矩陣；before 70.660 秒、after 56.400 秒，均 exit 0。舊 history 矩陣
+25.727 秒＋重複矩陣 8.177 秒，合併後 19.757 秒。此段只改測試組織與文件，未改
+產品 controller、平台、selector 或並行數；後續全套及 hosted 結果分開記錄。
+原始逐案例時間／log：/tmp/ci-controller-{before,after}.log、/tmp/ci-deep-plan-{before,after}.log；
+程序 trace 與 mutation logs：/tmp/ci-controller-profile。暫存失效時不可補造。
+
+續查整套：同一個乾淨 clone 先跑基線 c2e0a0f，再套用上述測試分層，完整 wall
+128.207→122.680 秒，29 模組均 exit 0、測後 clean；只有 4.3% 收益，不作整體已解。
+接著定位 production fresh 先 scope_check，再 load_scope 內重做 scope_check；兩次之間
+沒有 mutation，移除外層一次仍保留 load_scope 的外部 verifier 與完整 identity 比較。
+新增真 verifier control 先以 2 != 1 得 RED；去重後每 scope 一次、實際檔案漂移與偽造
+identity 都有 GREEN。測試曾嘗試還原檔案 bytes 後沿用舊 manifest，但 capture 的狀態仍
+判 drift；改為重新 capture 建立有效基準才驗 identity 分支，不放寬 verifier。
+這是共享 skill script 的有界實作去重，雙 runtime adapter topology、prompt、policy 未變；
+兩入口 quick_validate 通過，不宣稱新增 native model eval。
+同 clone 最終候選 fixture da656df9a75dabb54241222297cc777812491760 全套 29 模組 exit 0、
+測後 clean，wall 118.704 秒；對基線 128.207 秒縮短 7.4%，對分層候選 122.680 秒再省
+3.2%。同次全套 review-controller 82.269→45.884 秒、turbo 48.278→39.525 秒，最終
+deep-plan 77.570 秒仍最長。模組時間受同時執行的其他模組影響，不把逐項差額加總作
+wall-time 因果；單輪循序比較尚非統計穩定性或 hosted macOS 承諾。原始三輪 log、
+JSON、fixture patches 在 /tmp/ci-controller-layers-final；baseline-full、candidate-clone-full、
+fresh-clone-full 分別對應基線／分層／去重，不與工作樹開發中的樣本混用。
+本批程式／測試到此凍結，收尾只驗當前文件；hosted 與完整交付待新 endpoint 授權。
+使用者隨後明示 `$project --pr`，本輪送出候選至 PR；不合併，hosted 實測未完成前不追加效能結論。
+
+上一批模組化本地驗收（2026-10-09）：29 個模組在凍結來源串行、並行各 exit 0；串行
 465.552 秒僅作一次遷移獨立性檢查，並行 wall 127.666 秒。相同 brewup 註解修改透過
 真實 `run-ci.py` 入口，以舊→新、新→舊交錯比較：舊 120.332／119.028 秒，新
 14.701／14.725 秒；平均 119.680 → 14.713 秒（87.71%），含 scope 選擇與所有

@@ -1,5 +1,8 @@
 """Behavioral contracts for bounded review and repair; no prose matching."""
+import contextlib
 import hashlib
+import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -7,12 +10,13 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = Path(sys.argv.pop(1)).resolve()
 SCRIPTS = ROOT / 'shared/skills/deep-review/scripts'
 
 
-class Controller(unittest.TestCase):
+class Fixture(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory(prefix='review-controller-')
         self.addCleanup(self.tmp.cleanup)
@@ -92,16 +96,6 @@ class Controller(unittest.TestCase):
              'dependents': 'division callers inspected'} for f in findings if f['open']]}
         return self.ctl('repair-finish', '--state', state, '--input', self.data('proof.json', proof))
 
-    def test_legacy_ancestry_does_not_prove_coverage(self):
-        self.run_cmd(['bash', str(SCRIPTS / 'review-terminal.sh'), 'record', '--repo',
-                      str(self.repo), '--reason', 'blocking-findings', '--head', self.head])
-        (self.repo / 'a.py').write_text('value = 0\n')
-        self.capture('--path', 'b.py')
-        r = self.run_cmd(['bash', str(SCRIPTS / 'review-terminal.sh'), 'clear', '--repo',
-                          str(self.repo), '--base', self.head, '--head', self.head], ok=False)
-        self.assertNotEqual(r.returncode, 0, 'ancestry alone cleared an unreviewed dirty finding')
-        self.assertIn('terminal_reason=', (self.repo / '.git/deep-review/anchor').read_text())
-
     def legacy_signal(self):
         self.run_cmd(['git', 'init', '--bare', '-q', str(self.root / 'origin.git')])
         self.git('remote', 'add', 'origin', str(self.root / 'origin.git'))
@@ -131,6 +125,35 @@ class Controller(unittest.TestCase):
                                        'no shipping authorization is granted.'}
         request.update(overrides)
         return self.data('disposition.json', request)
+
+
+
+class Controller(Fixture):
+    def test_fresh_validates_each_scope_once_and_rejects_drift(self):
+        spec = importlib.util.spec_from_file_location('fresh_controller', SCRIPTS / 'review-control.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        scope = module.load_scope(self.capture())
+        state = {'scopes': [scope]}
+        with mock.patch.object(module, 'scope_check', wraps=module.scope_check) as verify:
+            module.fresh(state)
+            self.assertEqual(verify.call_count, 1, 'same scope repeatedly crosses the external verifier')
+        (self.repo / 'a.py').write_text('value = 0\n')
+        with self.assertRaises(module.Blocked):
+            module.fresh(state)
+        scope = module.load_scope(self.capture())
+        with self.assertRaisesRegex(module.Blocked, 'manifest identity changed'):
+            module.fresh({'scopes': [{**scope, 'fingerprint': 'forged'}]})
+
+    def test_legacy_ancestry_does_not_prove_coverage(self):
+        self.run_cmd(['bash', str(SCRIPTS / 'review-terminal.sh'), 'record', '--repo',
+                      str(self.repo), '--reason', 'blocking-findings', '--head', self.head])
+        (self.repo / 'a.py').write_text('value = 0\n')
+        self.capture('--path', 'b.py')
+        r = self.run_cmd(['bash', str(SCRIPTS / 'review-terminal.sh'), 'clear', '--repo',
+                          str(self.repo), '--base', self.head, '--head', self.head], ok=False)
+        self.assertNotEqual(r.returncode, 0, 'ancestry alone cleared an unreviewed dirty finding')
+        self.assertIn('terminal_reason=', (self.repo / '.git/deep-review/anchor').read_text())
 
     def test_disposed_legacy_ancestor_stops_reblocking_later_batches(self):
         anchor = self.legacy_signal()
@@ -269,16 +292,6 @@ class Controller(unittest.TestCase):
         self.assertNotEqual(self.ctl('admit', '--state', state, '--assignments', self.assignments(), ok=False).returncode, 0)
         self.assertEqual(self.ctl('status', '--state', state)['attempts'], 1)
 
-    def test_partial_result_spends_slot_and_cannot_pass(self):
-        state = self.open('--route', 'ordinary')
-        a = self.ctl('admit', '--state', state, '--assignments', self.assignments())
-        self.ctl('dispatch', '--state', state, '--ticket', a['ticket'])
-        r = self.ctl('finish', '--state', state, '--ticket', a['ticket'],
-                     '--input', self.data('partial.json', []), ok=False)
-        self.assertNotEqual(r.returncode, 0)
-        self.assertEqual(self.ctl('status', '--state', state)['verdict'], 'BLOCKED')
-        self.assertNotEqual(self.ctl('admit', '--state', state, '--assignments', self.assignments(), ok=False).returncode, 0)
-
     def test_scope_shrink_and_drift_do_not_reopen(self):
         state = self.open()
         self.assertNotEqual(self.ctl('open', '--manifest', self.capture('--path', 'a.py'), ok=False).returncode, 0)
@@ -314,20 +327,6 @@ class Controller(unittest.TestCase):
         self.ctl('terminal-clear', '--state', state, '--repo', self.repo)
         self.assertFalse((self.repo / '.git/deep-review/anchor').exists())
 
-    def test_failed_check_blocks_review_and_repair_has_limit(self):
-        state = self.open('--route', 'full', '--autofix', '--repair-limit', '1')
-        self.review(state, [self.finding()])
-        self.assess(state)
-        self.ctl('repair-start', '--state', state)
-        bad = self.ctl('check', '--state', state, '--repo', self.repo,
-                      '--input', self.data('bad.json', [sys.executable, '-c', 'raise SystemExit(1)']), ok=False)
-        self.assertNotEqual(bad.returncode, 0)
-        self.assertNotEqual(self.ctl('admit', '--state', state, '--assignments', self.assignments(), '--reason', 'repair', ok=False).returncode, 0)
-        self.assertNotEqual(self.ctl('repair-start', '--state', state, ok=False).returncode, 0)
-        self.assertEqual(self.ctl('status', '--state', state)['repairs'], 1)
-        self.assertNotEqual(self.ctl('check', '--state', state, '--repo', self.repo,
-                                    '--input', self.data('pass.json', [sys.executable, '-c', 'pass']), ok=False).returncode, 0)
-
     def test_failed_edited_repair_can_persist_terminal(self):
         state = self.open('--autofix', '--repair-limit', '1')
         self.review(state, [self.finding()])
@@ -345,34 +344,6 @@ class Controller(unittest.TestCase):
         self.assertTrue(next_batch['findings'][0]['open'])
         self.assertTrue(json.loads(Path(state).read_text())['history'])
 
-    def test_recurrence_requires_diagnosis_and_never_lowers_raw_severity(self):
-        state = self.open('--route', 'full', '--autofix', '--repair-limit', '1')
-        self.review(state, [self.finding()])
-        self.assess(state)
-        self.repair(state)
-        self.review(state, [self.finding()], reason='repair', reviewer='fresh')
-        findings = self.ctl('status', '--state', state)['findings']
-        claim = {'id': findings[-1]['id'], 'status': 'true-positive', 'evidence': 'b.py still zero',
-                 'relation': 'unresolved-original', 'parent': findings[0]['id']}
-        self.assertNotEqual(self.ctl('assess', '--state', state, '--input', self.data('recurrence.json', [claim]), ok=False).returncode, 0)
-        claim['diagnosis'] = 'The previous local patch omitted b.py and its division consumer; fix the shared invariant.'
-        self.ctl('assess', '--state', state, '--input', self.data('recurrence.json', [claim]))
-        self.assertNotEqual(self.ctl('repair-start', '--state', state, ok=False).returncode, 0)
-        status = self.ctl('status', '--state', state)
-        self.assertEqual(status['verdict'], 'FAIL')
-        self.assertEqual([f['raw']['severity'] for f in status['findings']], ['medium', 'medium'])
-
-    def test_focused_renderer_does_not_copy_arbitrary_report_metadata(self):
-        state = self.open('--route', 'full', '--autofix', '--followup', 'focused')
-        self.review(state, [{**self.finding(), 'remaining_budget': 'last chance'}])
-        self.assess(state)
-        self.repair(state)
-        a = self.ctl('admit', '--state', state, '--assignments', self.assignments(), '--reason', 'repair')
-        packet = Path(a['packets'][0]).read_text()
-        self.assertNotIn('remaining_budget', packet)
-        self.assertNotIn('last chance', packet)
-        self.assertEqual(self.ctl('status', '--state', state)['findings'][0]['raw']['remaining_budget'], 'last chance')
-
     def test_explicit_new_scope_retains_prior_finding_for_revalidation(self):
         state = self.open()
         self.review(state, [self.finding()])
@@ -387,47 +358,6 @@ class Controller(unittest.TestCase):
         claim = {'id': status['findings'][0]['id'], 'status': 'resolved', 'evidence': 'new source now has nonzero value', 'relation': 'independent'}
         self.ctl('assess', '--state', state, '--input', self.data('new-source-assessment.json', [claim]))
         self.assertEqual(self.ctl('status', '--state', state)['verdict'], 'PASS')
-
-    def test_reused_identity_invalidates_result(self):
-        state = self.open('--second-opinion')
-        self.review(state)
-        self.assertEqual(self.ctl('status', '--state', state)['verdict'], 'BLOCKED')
-        a = self.ctl('admit', '--state', state, '--assignments', self.assignments(), '--reason', 'second')
-        self.ctl('dispatch', '--state', state, '--ticket', a['ticket'])
-        r = self.ctl('finish', '--state', state, '--ticket', a['ticket'],
-                     '--input', self.root / 'results.json', ok=False)
-        self.assertNotEqual(r.returncode, 0)
-        self.assertEqual(self.ctl('status', '--state', state)['attempts'], 2)
-
-    def test_primary_cannot_spend_the_reserved_second_opinion(self):
-        state = self.open('--route', 'full', '--autofix', '--repair-limit', '1', '--second-opinion')
-        a = self.ctl('admit', '--state', state, '--assignments', self.assignments())
-        self.ctl('dispatch', '--state', state, '--ticket', a['ticket'])
-        self.ctl('finish', '--state', state, '--ticket', a['ticket'], '--input', self.data('partial.json', []), ok=False)
-        self.review(state, [self.finding()])
-        self.assess(state)
-        self.assertNotEqual(self.ctl('repair-start', '--state', state, ok=False).returncode, 0,
-                            'repair would require stealing the second-opinion slot')
-        self.review(state, reason='second', reviewer='second-native')
-        self.assertEqual(self.ctl('status', '--state', state)['attempts'], 3)
-
-    def test_second_opinion_of_old_content_does_not_cover_repair(self):
-        state = self.open('--route', 'full', '--autofix', '--repair-limit', '1', '--second-opinion')
-        self.review(state, [self.finding()])
-        self.assess(state)
-        self.review(state, reason='second', reviewer='old-second')
-        self.repair(state)
-        self.review(state, reason='repair', reviewer='repaired-primary')
-        self.assertEqual(self.ctl('status', '--state', state)['verdict'], 'BLOCKED')
-
-    def test_ordinary_author_verification_and_fresh_ids(self):
-        state = self.open('--autofix')
-        self.review(state, [self.finding()])
-        self.assess(state)
-        self.repair(state)
-        self.assertEqual(self.ctl('status', '--state', state)['verdict'], 'PASS')
-        self.assertNotEqual(self.ctl('admit', '--state', state, '--assignments', self.assignments(), '--reason', 'repair', ok=False).returncode, 0)
-        self.assertEqual(self.ctl('status', '--state', state)['attempts'], 1)
 
     def test_readonly_all_git_metadata_unchanged(self):
         before = {str(p): p.read_bytes() for p in self.repo.rglob('*') if p.is_file()}
@@ -486,6 +416,132 @@ class Controller(unittest.TestCase):
         self.assertNotEqual(self.ctl('terminal-record', '--state', state, '--repo', other,
                                     '--reason', 'blocked-review', ok=False).returncode, 0)
         self.assertEqual(before, {str(p): p.read_bytes() for p in other.rglob('*') if p.is_file()})
+
+
+
+class Policy(Fixture):
+    """State/slot policy with an already validated scope adapter.
+
+    Real scope freshness, Git metadata, terminal receipts and runtime subprocess
+    persistence remain in Controller. Policy still uses production parsing,
+    transitions, locks, on-disk journals, Git snapshots and check subprocesses.
+    """
+
+    def setUp(self):
+        super().setUp()
+        spec = importlib.util.spec_from_file_location('policy_controller', SCRIPTS / 'review-control.py')
+        self.controller = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.controller)
+
+    def ctl(self, *args, ok=True):
+        argv = [str(SCRIPTS / 'review-control.py'), *map(str, args)]
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch.dict(os.environ, self.env, clear=True), \
+                mock.patch.object(sys, 'argv', argv), \
+                mock.patch.object(self.controller, 'ENV', dict(self.env, GIT_OPTIONAL_LOCKS='0', PYTHONDONTWRITEBYTECODE='1')), \
+                mock.patch.object(self.controller, 'scope_check'), \
+                contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = self.controller.main()
+        result = subprocess.CompletedProcess(argv, code, out.getvalue(), err.getvalue())
+        if ok:
+            self.assertEqual(code, 0, result.stdout + result.stderr)
+            return json.loads(result.stdout)
+        return result
+
+    def test_partial_result_spends_slot_and_cannot_pass(self):
+        state = self.open('--route', 'ordinary')
+        a = self.ctl('admit', '--state', state, '--assignments', self.assignments())
+        self.ctl('dispatch', '--state', state, '--ticket', a['ticket'])
+        r = self.ctl('finish', '--state', state, '--ticket', a['ticket'],
+                     '--input', self.data('partial.json', []), ok=False)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertEqual(self.ctl('status', '--state', state)['verdict'], 'BLOCKED')
+        self.assertNotEqual(self.ctl('admit', '--state', state, '--assignments', self.assignments(), ok=False).returncode, 0)
+
+    def test_failed_check_blocks_review_and_repair_has_limit(self):
+        state = self.open('--route', 'full', '--autofix', '--repair-limit', '1')
+        self.review(state, [self.finding()])
+        self.assess(state)
+        self.ctl('repair-start', '--state', state)
+        bad = self.ctl('check', '--state', state, '--repo', self.repo,
+                      '--input', self.data('bad.json', [sys.executable, '-c', 'raise SystemExit(1)']), ok=False)
+        self.assertNotEqual(bad.returncode, 0)
+        self.assertNotEqual(self.ctl('admit', '--state', state, '--assignments', self.assignments(), '--reason', 'repair', ok=False).returncode, 0)
+        self.assertNotEqual(self.ctl('repair-start', '--state', state, ok=False).returncode, 0)
+        self.assertEqual(self.ctl('status', '--state', state)['repairs'], 1)
+        self.assertNotEqual(self.ctl('check', '--state', state, '--repo', self.repo,
+                                    '--input', self.data('pass.json', [sys.executable, '-c', 'pass']), ok=False).returncode, 0)
+
+    def test_recurrence_requires_diagnosis_and_never_lowers_raw_severity(self):
+        state = self.open('--route', 'full', '--autofix', '--repair-limit', '1')
+        self.review(state, [self.finding()])
+        self.assess(state)
+        self.repair(state)
+        self.review(state, [self.finding()], reason='repair', reviewer='fresh')
+        findings = self.ctl('status', '--state', state)['findings']
+        claim = {'id': findings[-1]['id'], 'status': 'true-positive', 'evidence': 'b.py still zero',
+                 'relation': 'unresolved-original', 'parent': findings[0]['id']}
+        self.assertNotEqual(self.ctl('assess', '--state', state, '--input', self.data('recurrence.json', [claim]), ok=False).returncode, 0)
+        claim['diagnosis'] = 'The previous local patch omitted b.py and its division consumer; fix the shared invariant.'
+        self.ctl('assess', '--state', state, '--input', self.data('recurrence.json', [claim]))
+        self.assertNotEqual(self.ctl('repair-start', '--state', state, ok=False).returncode, 0)
+        status = self.ctl('status', '--state', state)
+        self.assertEqual(status['verdict'], 'FAIL')
+        self.assertEqual([f['raw']['severity'] for f in status['findings']], ['medium', 'medium'])
+
+    def test_focused_renderer_does_not_copy_arbitrary_report_metadata(self):
+        state = self.open('--route', 'full', '--autofix', '--followup', 'focused')
+        self.review(state, [{**self.finding(), 'remaining_budget': 'last chance'}])
+        self.assess(state)
+        self.repair(state)
+        a = self.ctl('admit', '--state', state, '--assignments', self.assignments(), '--reason', 'repair')
+        packet = Path(a['packets'][0]).read_text()
+        self.assertNotIn('remaining_budget', packet)
+        self.assertNotIn('last chance', packet)
+        self.assertEqual(self.ctl('status', '--state', state)['findings'][0]['raw']['remaining_budget'], 'last chance')
+
+    def test_reused_identity_invalidates_result(self):
+        state = self.open('--second-opinion')
+        self.review(state)
+        self.assertEqual(self.ctl('status', '--state', state)['verdict'], 'BLOCKED')
+        a = self.ctl('admit', '--state', state, '--assignments', self.assignments(), '--reason', 'second')
+        self.ctl('dispatch', '--state', state, '--ticket', a['ticket'])
+        r = self.ctl('finish', '--state', state, '--ticket', a['ticket'],
+                     '--input', self.root / 'results.json', ok=False)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertEqual(self.ctl('status', '--state', state)['attempts'], 2)
+
+    def test_primary_cannot_spend_the_reserved_second_opinion(self):
+        state = self.open('--route', 'full', '--autofix', '--repair-limit', '1', '--second-opinion')
+        a = self.ctl('admit', '--state', state, '--assignments', self.assignments())
+        self.ctl('dispatch', '--state', state, '--ticket', a['ticket'])
+        self.ctl('finish', '--state', state, '--ticket', a['ticket'], '--input', self.data('partial.json', []), ok=False)
+        self.review(state, [self.finding()])
+        self.assess(state)
+        self.assertNotEqual(self.ctl('repair-start', '--state', state, ok=False).returncode, 0,
+                            'repair would require stealing the second-opinion slot')
+        self.review(state, reason='second', reviewer='second-native')
+        self.assertEqual(self.ctl('status', '--state', state)['attempts'], 3)
+
+    def test_second_opinion_of_old_content_does_not_cover_repair(self):
+        state = self.open('--route', 'full', '--autofix', '--repair-limit', '1', '--second-opinion')
+        self.review(state, [self.finding()])
+        self.assess(state)
+        self.review(state, reason='second', reviewer='old-second')
+        self.repair(state)
+        self.review(state, reason='repair', reviewer='repaired-primary')
+        self.assertEqual(self.ctl('status', '--state', state)['verdict'], 'BLOCKED')
+
+    def test_ordinary_author_verification_and_fresh_ids(self):
+        state = self.open('--autofix')
+        self.review(state, [self.finding()])
+        self.assess(state)
+        self.repair(state)
+        self.assertEqual(self.ctl('status', '--state', state)['verdict'], 'PASS')
+        self.assertNotEqual(self.ctl('admit', '--state', state, '--assignments', self.assignments(), '--reason', 'repair', ok=False).returncode, 0)
+        self.assertEqual(self.ctl('status', '--state', state)['attempts'], 1)
+
+
 
 
 if __name__ == '__main__':
