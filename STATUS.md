@@ -77,6 +77,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 - **Fleet 接續（2026-10-10）**：使用者選擇部署其餘 12 台並同步 agent01；現任 writer／steward 接續，來源固定為已合併 origin/main `33552a4`。逐台先核對 Git／工具／shell／全域指引，再 fast-forward、plan、apply／check、重跑與保全比對；遇衝突停止該台。只補 core 缺項及受管理 shell，無 adoption、卸載或全面升級；保留個人工具、設定與 settings runtime drift。驗收需逐台 revision、原套件版本與 shell 原內容保持、雙端 CLI 能力及第二次 apply unchanged 證據；舊工具歸屬與退役不納入本批。
 - **Fleet 發現與修復驗收**：真實 Codex 安裝讀走 manifest 後續行，apply selected=20（預期 22）；本地 installer／version probe stdin 兩個反例已各自 RED，後者證明可漏掉缺項並錯回 exit 0。修復必須隔離 manifest reader 與子程序 stdin，讓兩反例轉綠並通過整批選測；未合併修正不得散佈，現行部署結果逐台保留，不冒稱完成。
+- **本批接續**：使用者選擇 `$project --merge` 交付本批修正並允許七台僅更新 ca-certificates 後續部署；macmini 授權條款仍待處理。PR #297 首版 CI 通過但尚未 merge；重新預檢發現 --include-build 導致未使用的編譯依賴也阻擋 bottle 安裝。依同 repo／同 PR／同目標追加修復：僅在配方提供 bottle 且執行期依賴皆已安裝時強制 bottle，無 bottle 則拒絕 source fallback，其他依賴保護保留。39 個隔離測試通過，整批驗證與更新 PR 續作；見 D-20261010-setup-bottle-dependency-guard。
 
 
 ## 暫停中

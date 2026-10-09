@@ -34,16 +34,22 @@ class Tools(unittest.TestCase):
         self.env = dict(os.environ, HOME=str(self.home), PATH=str(self.bin) + ':/usr/bin:/bin:/usr/sbin:/sbin',
                         TEST_BIN=str(self.bin), TEST_LOG=str(self.root / 'log'))
         self.brew = self.bin / 'brew'
-        self.brew.write_text('#!' + sys.executable + '\n' + '''import os, sys
+        self.brew.write_text('#!' + sys.executable + '\n' + '''import os, sys, json
 from pathlib import Path
 args=sys.argv[1:]
 with open(os.environ['TEST_LOG'],'a') as f: f.write(' '.join(args)+'\\n')
 bin=Path(os.environ['TEST_BIN'])
-package=args[-1]
+package=next(arg for arg in reversed(args) if not arg.startswith('-'))
+if args[0]=='info':
+ print(json.dumps({'formulae':[{'versions':{'bottle':os.environ.get('TEST_BOTTLE_METADATA','1')=='1'}}]})); sys.exit(0)
 if args[0]=='list': sys.exit(0 if (bin/('tool-'+package)).exists() else 1)
-if args[0]=='deps': print(os.environ.get('TEST_DEPS','')); sys.exit(0)
+if args[0]=='deps':
+ print(os.environ.get('TEST_DEPS',''))
+ if '--include-build' in args: print(os.environ.get('TEST_BUILD_DEPS',''))
+ sys.exit(0)
 if args[0]=='outdated': print(os.environ.get('TEST_OUTDATED','')); sys.exit(0)
 if args[0] in ('install','upgrade'):
+ if '--force-bottle' in args and os.environ.get('TEST_NO_BOTTLE')=='1': sys.exit(43)
  if os.environ.get('TEST_READ_STDIN')=='1': sys.stdin.read()
  if os.environ.get('TEST_FAIL')=='1': sys.exit(42)
  p=bin/os.environ.get('TEST_INSTALL_EXE','tool-'+package); p.write_text('#!/bin/sh\\necho version-1\\n'); p.chmod(0o755)
@@ -172,11 +178,60 @@ sys.exit(2)
         self.assertEqual(self.run_tools('apply', '--profile', 'core').returncode, 1)
         self.assertIn('beta', self.ledger())
         self.assertTrue((self.bin / 'tool-beta').exists())
-        self.assertNotIn('--force', self.log())
+        self.assertFalse(any('--force' in line.split() for line in self.log().splitlines()))
 
     def test_outdated_dependency_blocks_before_install(self):
         self.env.update(TEST_DEPS='personal', TEST_OUTDATED='personal')
         self.assertEqual(self.run_tools('apply').returncode, 1)
+        self.assertNotIn('install ', self.log())
+
+    def test_dependency_free_bottle_ignores_unused_build_dependencies(self):
+        personal = self.tool('personal')
+        before = personal.read_bytes()
+        self.env.update(TEST_BUILD_DEPS='personal', TEST_OUTDATED='personal')
+        result = self.run_tools('apply')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('install --formula alpha --force-bottle', self.log())
+        self.assertEqual(personal.read_bytes(), before)
+        self.assertNotIn('upgrade ', self.log())
+
+    def test_dependency_free_formula_without_bottle_cannot_build_from_source(self):
+        self.env['TEST_NO_BOTTLE'] = '1'
+        result = self.run_tools('apply')
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertFalse((self.bin / 'tool-alpha').exists())
+        self.assertEqual(self.ledger(), '')
+
+    def test_bottle_with_installed_runtime_dependency_ignores_unused_compiler(self):
+        self.tool('runtime')
+        self.env.update(TEST_DEPS='runtime', TEST_BUILD_DEPS='compiler', TEST_OUTDATED='compiler')
+        result = self.run_tools('apply')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('install --formula alpha --force-bottle', self.log())
+
+    def test_bottle_still_blocks_outdated_installed_runtime_dependency(self):
+        self.tool('runtime')
+        self.env.update(TEST_DEPS='runtime', TEST_OUTDATED='runtime')
+        result = self.run_tools('apply')
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertNotIn('install ', self.log())
+
+    def test_missing_runtime_dependency_retains_full_build_dependency_guard(self):
+        self.env.update(TEST_DEPS='runtime', TEST_BUILD_DEPS='compiler', TEST_OUTDATED='compiler')
+        result = self.run_tools('apply')
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertNotIn('install ', self.log())
+
+    def test_formula_without_bottle_metadata_keeps_original_install_path(self):
+        self.env['TEST_BOTTLE_METADATA'] = '0'
+        result = self.run_tools('apply')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotIn('--force-bottle', self.log())
+
+    def test_formula_without_bottle_metadata_retains_build_dependency_guard(self):
+        self.env.update(TEST_BOTTLE_METADATA='0', TEST_BUILD_DEPS='compiler', TEST_OUTDATED='compiler')
+        result = self.run_tools('apply')
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertNotIn('install ', self.log())
 
     def test_profile_persists_without_accidental_removal(self):
@@ -248,7 +303,10 @@ sys.exit(2)
 }
 python3() {
     if [ "$1" = --version ]; then echo Python-3.9; return 0; fi
-    [ -f "$TEST_BIN/tool-python" ]
+    case "$*" in
+        *tomllib*) [ -f "$TEST_BIN/tool-python" ] ;;
+        *) builtin command python3 "$@" ;;
+    esac
 }
 ''')
         self.env['BASH_ENV'] = str(startup)

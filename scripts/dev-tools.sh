@@ -136,8 +136,28 @@ install_tool() {
             fi
             # Reject dependency upgrades before install: independently installed
             # tools/dependencies must not be changed as a side effect.
-            local deps outdated dep
-            deps="$(brew deps --include-build --include-implicit "--$provider" "$package")" || return 1
+            local deps outdated dep runtime_deps runtime_present=1 has_bottle=0
+            local bottle_args=()
+            runtime_deps="$(brew deps "--$provider" "$package")" || return 1
+            while IFS= read -r dep; do
+                [ -n "$dep" ] || continue
+                brew list --formula --versions "$dep" >/dev/null 2>&1 || runtime_present=0
+            done <<< "$runtime_deps"
+            if [ "$provider" = formula ] && [ "$runtime_present" -eq 1 ]; then
+                has_bottle="$(brew info --json=v2 --formula "$package" | python3 -c '
+import json, sys
+value = json.load(sys.stdin)["formulae"][0]["versions"]["bottle"]
+assert type(value) is bool
+print(int(value))')" || return 1
+            fi
+            if [ "$has_bottle" -eq 1 ]; then
+                # With runtime dependencies already installed, only their updates
+                # matter. Force the target bottle so unused build tools stay unused.
+                bottle_args=(--force-bottle)
+                deps="$runtime_deps"
+            else
+                deps="$(brew deps --include-build --include-implicit "--$provider" "$package")" || return 1
+            fi
             outdated="$(brew outdated --quiet --formula)" || return 1
             while IFS= read -r dep; do
                 [ -n "$dep" ] || continue
@@ -148,9 +168,9 @@ install_tool() {
             done <<< "$deps"
             if contains "$package" "${owned[@]}" && brew list "--$provider" --versions "$package" >/dev/null 2>&1; then
                 # Only an owned tool that failed its capability check may upgrade.
-                brew upgrade "--$provider" "$package"
+                brew upgrade "--$provider" "$package" "${bottle_args[@]}"
             else
-                brew install "--$provider" "$package"
+                brew install "--$provider" "$package" "${bottle_args[@]}"
             fi
             ;;
         native)
