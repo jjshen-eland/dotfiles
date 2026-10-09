@@ -78,6 +78,24 @@ sys.exit(2)
         self.assertEqual(self.run_tools('check').returncode, 1)
         self.assertEqual(self.log(), '')
 
+    def test_unselected_tools_are_not_executed_by_any_mode(self):
+        self.tool('alpha')
+        marker = self.root / 'unselected-executed'
+        for group in ('workstation', 'legacy'):
+            (self.repo / 'scripts/dev-tools.tsv').write_text(
+                'core\tall\tformula\talpha\ttool-alpha\t--version\n'
+                + group + '\tall\tformula\tbeta\ttool-beta\t--version\n')
+            extra = self.tool('beta')
+            extra.write_text('#!/bin/sh\nprintf called > "' + str(marker) + '"\nexit 1\n')
+            for mode in ('plan', 'apply', 'check'):
+                with self.subTest(group=group, mode=mode):
+                    marker.unlink(missing_ok=True)
+                    result = self.run_tools(mode)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertFalse(marker.exists(), 'unselected executable was invoked')
+                    if mode == 'plan':
+                        self.assertIn('UNMANAGED\tbeta\t', result.stdout)
+
     def test_install_failure_is_not_success(self):
         self.env['TEST_FAIL'] = '1'
         p = self.run_tools('apply')

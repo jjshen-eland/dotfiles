@@ -186,7 +186,9 @@ while IFS=$'\t' read -r group platform provider package exe flag; do
         fi
         continue
     fi
-    if ! contains "$package" "${owned[@]}" && tool_ok && [ "$mode" = plan ]; then
+    # Inventory presence only; unselected executables may launch apps or hang.
+    # Capability checks belong to the selected profile below.
+    if [ "$mode" = plan ] && ! contains "$package" "${owned[@]}" && command -v "$exe" >/dev/null 2>&1; then
         printf 'UNMANAGED\t%s\t%s\n' "$package" "$(command -v "$exe")"
     fi
     [ "$group" = core ] || { [ "$group" = workstation ] && [ "$profile" = workstation ]; } || continue

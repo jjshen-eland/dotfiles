@@ -657,3 +657,19 @@
   - 放棄:在缺少歷史安裝收據時直接清理全機隊；用全面 brewup 當工具集合遷移；改寫 Apple 系統 Python；以新版全域 Python 覆蓋專案版本；因紀錄收尾再重跑未變程式的全套
   - 重議:來源合併與當批部署授權後，14 台先盤點 adoption／keep，macOS／Linux 各一台試跑再分批；本紀錄只結束本地實作驗收，不表示已 push、PR、merge 或 fleet apply
   - 關聯:D-20261009-setup-tool-ownership;scripts/dev-tools.sh;scripts/dev-tools.tsv;scripts/align-dev-environment.sh;scripts/ensure-shell-env.py;shell/environment.sh;tests/test_dev_environment.py;README.md;STATUS.md
+
+- **M-20261010-setup-canary-probe-fix · 2026-10-10 Setup 雙平台預演定位未選用工具執行缺陷**：PR #294 rebase merge 至 `4f9d8c2`，必要 macOS／Ubuntu CI 分別 2m24s／2m02s 通過，本機 main 同步且 settings runtime drift 保留。使用者續授權雙平台試跑；14 台盤點可連線、無 ownership ledger，13 台遠端在 `112d37d`。選 macs／agent01；只補 core 缺項與 shell 共用入口，未確認歸屬不接管、升級或移除舊工具。agent01 clean main 已 fast-forward 到來源版本。
+  - 日期來源:direct
+  - 根因:macs plan 執行未選用的 agy --version 超過 60 秒未返回；原 helper 在 profile 篩選前執行 tool_ok，且 mode=plan 判斷在其後，apply／check 也受影響。以寫 marker 的替身重現 workstation／legacy × 三種 mode 全部六格失敗；終止僅本次啟動的兩個 agy 子程序。修正為盤點只解析路徑，保留選用工具能力驗證；30 個隔離測試通過，真實 macs 唯讀 plan exit 0、0.373 秒。完整 30 模組 suite exit 0、120.921 秒；所有 tracked 輸入含執行權限與 symlink target 的前後 snapshot 一致，原始結果保存於同目錄 test-evidence.json／full-suite.log。
+  - 證據:同機暫存 `/var/folders/t5/4b3mtjj52fvdplz5f15mf_ym0000gp/T/setup-rollout-btcgui2i` 保存逐台 inventory、原 plan 與修後 plan。暫存遺失不補造。macs 缺 ast-grep；agent01 缺 actionlint／ast-grep。原版 plan 經中止卡住的子程序才結束，不算修前正常成功。
+  - 放棄:執行與 core 無關的所有工具版本命令；以移除 agy 規避探測範圍錯誤；將本地修正直接散佈到主機
+  - 重議:修正尚未進 origin/main，macs live apply 待修正交付；Linux 試跑結果另記。舊工具歸屬、其餘 12 台部署及代表專案功能驗證仍待完成。
+  - 關聯:M-20261009-setup-agent-tools-local;D-20261009-setup-tool-ownership;scripts/dev-tools.sh;tests/test_dev_environment.py;STATUS.md
+
+- **M-20261010-agent01-setup-canary · 2026-10-10 Linux agent01 完成增量工具與 shell 試跑**：來源 `4f9d8c2`、core profile、沒有 adoption／keep 推論。apply／check／apply／check 四次均 exit 0；只新增 actionlint 1.7.12、ast-grep 0.45.3，ledger 僅記錄這兩項，85 個既有 Homebrew 套件版本逐行比對相同。第二次 apply installed=0、shell unchanged。
+  - 日期來源:direct
+  - 驗證:原 bashrc 扣除新增管理區塊後 SHA-256 仍為 5a0857682d9d00e01602bde4d4f823b5a31f2d0089386880160503a435525a9e，mode 保持 0644；備份 `/home/jjshen/.bashrc.dotfiles-backup-fdcewwrz` 內容 hash 相同。新 .zshenv 只有管理區塊。SSH 非互動 shell 直接找到兩個新工具、Python 3.14.7／tomllib、Codex 0.154.0／Claude Code 2.1.269；ast-grep 真實 stdin 查詢通過。個人 uv 0.10.0／Bun 1.3.8 路徑仍優先於 Homebrew，不升級、不覆蓋；來源 working tree clean。
+  - 證據:同機 setup-rollout-btcgui2i 暫存目錄的 agent01-canary.sh／agent01-canary.txt 保存安裝前後清單及四個 exit code，目錄詳見同日 M-20261010-setup-canary-probe-fix。備份存在主機；回復前須先核對後續修改。可回復 bashrc 備份，新增 .zshenv 在確認仍只有管理區塊後移除；新工具需要具名移除才回滾，本批未執行。
+  - 放棄:以 brewup 全面升級；憑命令可用就接管舊工具；以 CLI --version 冒充模型回合或既有專案整合測試
+  - 重議:macs 待 probe 修正合併；其餘 12 台未 apply。既有工具納管／退役需使用者核對用途，本紀錄不宣稱 14 台全面對齊或專案功能驗收完成。
+  - 關聯:M-20261010-setup-canary-probe-fix;D-20261009-setup-tool-ownership;STATUS.md;README.md
