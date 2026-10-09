@@ -161,10 +161,9 @@ When the user pastes third-party review findings, read the source code and verif
 
 # 環境配置
 
-## 可用工具
+## CLI preferences
 
-bun, node, uv, eza, bat, fd, rg, fzf, zoxide, jq, yq, delta, lazygit, dust, gh, httpie, lftp, shellcheck, sd, hyperfine, tokei, tldr, tmux, direnv, just, watchexec
-
-## 工具安裝原則
-
-需要 CLI 工具時，先 `command -v <tool>` 檢查，沒有就 `brew install`，直接使用。不要因為工具不在就繞路。僅限標準 CLI 工具，專案依賴走 uv/bun 管理。
+Prefer rg/fd for search, jq/yq for structured data, ast-grep for syntax-aware code search,
+gh for GitHub, and shellcheck/actionlint for shell/GitHub Actions validation.
+Check availability when uncertain. Prefer noninteractive output; avoid pagers.
+If unavailable, use an existing equivalent; install only when the task needs the missing capability.

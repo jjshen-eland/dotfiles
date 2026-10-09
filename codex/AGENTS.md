@@ -69,3 +69,10 @@ conventions, never its safety floor; stricter rules stack. Without a repo contra
 ## Project toolchains
 
 新專案 JavaScript/TypeScript 預設 Bun、Python 預設 uv。既有專案依其 lockfile、packageManager 與 runtime 版本宣告；保留 npm／pnpm／yarn／Node 相容性，不另造第二種 lockfile。全域工具僅為 fallback，專案環境與 repo 指令優先。
+
+## CLI preferences
+
+Prefer rg/fd for search, jq/yq for structured data, ast-grep for syntax-aware code search,
+gh for GitHub, and shellcheck/actionlint for shell/GitHub Actions validation.
+Check availability when uncertain. Prefer noninteractive output; avoid pagers.
+If unavailable, use an existing equivalent; install only when the task needs the missing capability.

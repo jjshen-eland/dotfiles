@@ -274,3 +274,10 @@
   - 放棄:依舊清單一律接管並刪除；以 brewup 全面升級達成有界對齊；重跑整份 setup；自動清掉相依套件；將本地 fixture 當 14 台已完成證據
   - 重議:新來源進 origin/main 且獲當批部署授權後，逐台核對 adoption／keep，再 macOS 與 Linux 各一台試跑；需要共享相依升級或解除本機保留時另行核對，不擴大本次 apply 邊界
   - 關聯:scripts/dev-tools.tsv;scripts/dev-tools.sh;scripts/align-dev-environment.sh;shell/environment.sh;tests/test_dev_environment.py;README.md
+
+- **D-20261010-global-cli-preferences · 2026-10-10 全域工具提示採短任務映射**：使用者確認完整工具清單在 always-on 的成本與兩端可見性問題，接受以 rg／fd、jq／yq、ast-grep、gh、shellcheck／actionlint 的任務映射取代 Claude 舊清單，同段加入 Codex 全域入口。只在不確定時查可用性，偏好非互動輸出，缺工具先考慮既有等效工具，只有任務需要缺少的能力才安裝。移除「缺了就 brew install」；不改專案套件管理原則與 Homebrew ownership 邊界。
+  - 日期來源:direct
+  - 驗證:完整 suite 120.970 秒，29 模組通過、selection 因縮小 fixture 缺兩端文件而失敗；已以 FileNotFoundError 重現提前退出，補齊 fixture 並新增 missing／empty／duplicate／drift 拒絕控制，selection 定向重驗 exit 0、11.006 秒，原失敗傳播與取消清理案例均恢復通過。文件 audit 通過；完整首次執行證據保存在同機 `/tmp/global-cli-guidance-evidence`，不把失敗結果稱為全套單次全綠。
+  - 放棄:在全域逐一列全部安裝／選配工具；每次強制讀 manifest；為簡短提示引入新共用載入檔；把安裝清單等同每台工具現況
+  - 重議:兩端原生入口各保留同一短段，既有 content gate 比對缺失／重複／漂移。完整安裝定義仍在 scripts/dev-tools.tsv，人用工具表仍在 docs/repo-guide.md；未做模型行為 eval，不宣稱提示一定改變選用率。新增工具只有可證明需要常駐提醒時才加入，本批尚未 push／部署。
+  - 關聯:D-20261009-setup-tool-ownership;claude/CLAUDE.md;codex/AGENTS.md;tests/content-checks.py;STATUS.md
