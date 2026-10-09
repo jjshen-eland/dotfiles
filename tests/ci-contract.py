@@ -34,10 +34,16 @@ def validate(doc):
     shell = defaults.get('shell', workflow_shell)
     dependencies = None
     complete = None
+    checkout = None
     for i, step in enumerate(job.get('steps', [])):
         if (not isinstance(step, dict) or 'if' in step
                 or step.get('shell', shell) not in ('bash', 'sh')):
             continue
+        if (str(step.get('uses', '')).startswith('actions/checkout@')
+                and step.get('with', {}).get('fetch-depth') == 0
+                and 'ref' not in step.get('with', {})
+                and step.get('continue-on-error', False) is False):
+            checkout = i
         run = step.get('run')
         if not isinstance(run, str):
             continue
@@ -50,10 +56,11 @@ def validate(doc):
         if (argv[:2] == ['brew', 'install'] and set(argv[2:]) == {'shellcheck', 'ripgrep', 'yq', 'zsh'}
                 and step.get('continue-on-error', False) is False):
             dependencies = i
-        if argv == ['./tests/run-parallel.sh'] and step.get('continue-on-error', False) is False:
+        if argv == ['python3', '-B', 'tests/run-ci.py'] and step.get('continue-on-error', False) is False:
             complete = i
-    if dependencies is None or complete is None or dependencies >= complete:
-        errors.append('unconditional dependency install must precede the complete suite step')
+    if (checkout is None or dependencies is None or complete is None
+            or not checkout < dependencies < complete):
+        errors.append('full-history checkout and dependency install must precede the required CI entry')
     if job.get('continue-on-error', False) is not False:
         errors.append('suite failure must propagate')
     return errors

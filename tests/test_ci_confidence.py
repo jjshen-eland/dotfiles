@@ -9,6 +9,8 @@ import tempfile
 import time
 import unittest
 
+from test_ci_selection import SelectionTests  # Included by unittest.main in the existing CI gate.
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -210,14 +212,16 @@ class GateTests(Sandbox):
         yaml=(ROOT/'.github/workflows/test.yml').read_text()
         source=(ROOT/'tests/run.sh').read_text()
         block=source[source.index('CI_FILE="$ROOT/.github/workflows/test.yml"'):source.index('# GitHub runners', source.index('CI_FILE="$ROOT/.github/workflows/test.yml"'))]
-        for mutation, invalid in [(yaml,False),(yaml.replace('run: ./tests/run-parallel.sh','shell: bash\n        run: ./tests/run-parallel.sh'),False),
-                (yaml.replace('run: ./tests/run-parallel.sh','shell: echo {0}\n        run: ./tests/run-parallel.sh'),True),
+        for mutation, invalid in [(yaml,False),(yaml.replace('run: python3 -B tests/run-ci.py','shell: bash\n        run: python3 -B tests/run-ci.py'),False),
+                (yaml.replace('run: python3 -B tests/run-ci.py','shell: echo {0}\n        run: python3 -B tests/run-ci.py'),True),
                 (yaml.replace('  suite:\n','  suite:\n    defaults:\n      run:\n        shell: echo {0}\n'),True),
                 (yaml.replace('jobs:\n','defaults:\n  run:\n    shell: echo {0}\njobs:\n'),True),
                 (yaml.replace('jobs:\n','defaults:\n  run:\n    shell: echo {0}\njobs:\n').replace('  suite:\n','  suite:\n    defaults:\n      run:\n        shell: bash\n'),False),
                 (yaml.replace('os: [macos-15, ubuntu-24.04]','os: [ubuntu-24.04, macos-15]'),False),
                 (yaml.replace('os: [macos-15, ubuntu-24.04]','os: [ubuntu-24.04] # macos-15'),True),
-                (yaml.replace('run: ./tests/run-parallel.sh','if: false\n        run: ./tests/run-parallel.sh'),True),
+                (yaml.replace('run: python3 -B tests/run-ci.py','if: false\n        run: python3 -B tests/run-ci.py'),True),
+                (yaml.replace('fetch-depth: 0','fetch-depth: 1'),True),
+                (yaml.replace('fetch-depth: 0','fetch-depth: 0\n          ref: main'),True),
                 (yaml.replace('contents: read','contents: write # contents: read'),True),
                 (yaml.replace('run: brew install shellcheck ripgrep yq zsh','run: echo "brew install shellcheck ripgrep yq zsh"'),True),
                 (yaml.replace('run: brew install shellcheck ripgrep yq zsh','continue-on-error: true\n        run: brew install shellcheck ripgrep yq zsh'),True)]:
@@ -282,10 +286,10 @@ runpy.run_path(os.environ['SUPERVISOR'],run_name='__main__')
     def test_actual_runner_cleans_process_trees(self):
         shards = {line.split('\t')[0] for line in (ROOT/'tests/shard-manifest.tsv').read_text().splitlines()
                   if line.strip() and not line.startswith('#')}
-        for trigger in [signal.SIGTERM,signal.SIGINT,'child']:
+        for trigger in [signal.SIGTERM,signal.SIGINT,'child', 'ci-term']:
             with self.subTest(trigger=trigger):
                 fixture=self.base/str(trigger); (fixture/'tests').mkdir(parents=True)
-                for name in ['run-parallel.sh','shard-supervisor.py','shard-aggregate.py','shard-manifest.tsv']:
+                for name in ['run-ci.py','run-parallel.sh','shard-supervisor.py','shard-aggregate.py','shard-manifest.tsv']:
                     if (ROOT/'tests'/name).exists(): shutil.copy(ROOT/'tests'/name,fixture/'tests'/name)
                 script=fixture/'tests/run.sh'
                 script.write_text('''#!/bin/bash
@@ -297,12 +301,13 @@ fi
 wait
 '''); script.chmod(0o755)
                 pids=fixture/'pids'; pids.mkdir()
-                proc=subprocess.Popen(['bash',str(fixture/'tests/run-parallel.sh')],env={**self.env,'PID_DIR':str(pids),'TRIGGER':str(trigger),'EXPECTED_SHARDS':str(len(shards))},stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,start_new_session=True)
+                command = ['python3', '-B', str(fixture/'tests/run-ci.py')] if trigger == 'ci-term' else ['bash',str(fixture/'tests/run-parallel.sh')]
+                proc=subprocess.Popen(command,env={**self.env,'GITHUB_EVENT_NAME':'local-control','PID_DIR':str(pids),'TRIGGER':str(trigger),'EXPECTED_SHARDS':str(len(shards))},stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,start_new_session=True)
                 try:
                     deadline=time.monotonic()+8
                     while len(list(pids.iterdir()))<len(shards) and time.monotonic()<deadline: time.sleep(.02)
                     self.assertEqual({p.name for p in pids.iterdir()},shards)
-                    if trigger!='child': os.kill(proc.pid,trigger)
+                    if trigger!='child': os.kill(proc.pid,signal.SIGTERM if trigger == 'ci-term' else trigger)
                     proc.wait(timeout=6)
                     self.assertNotEqual(proc.returncode,0)
                     live=[int(p.read_text()) for p in pids.iterdir() if self.alive(int(p.read_text()))]

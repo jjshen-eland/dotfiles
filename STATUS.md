@@ -44,19 +44,21 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 ### 3. 小幅變更的驗證與交付成本改善（#285）
 
 - **Writer**：`codex:brewup-bun-global-update`
-- **Workspace**：`branch=perf/workflow-verification-economy`
-- **Write Scope**：tests/, shared/skills/project/, AGENTS.md, docs/testing-contract.md
+- **Workspace**：`branch=docs/workflow-delivery-spec`
+- **Write Scope**：tests/, shared/skills/project/, AGENTS.md, docs/testing-contract.md, .github/workflows/test.yml
 - **Dossier Steward**：`codex:brewup-bun-global-update`
-- **Context**：#285 原以縮短一般小改動的驗證與交付時間為目標。PR #287 的局部機制通過驗證，但普通腳本 native 案例 Codex 86.313 → 190.082 秒、Opus 34.961 → 67.141 秒；整段交付收益未證明。2026-10-09 使用者明示完整退版，不為保留局部收益再拆分修改。
-- **Goal**：完整撤回 #285 的流程與測試實作，還原至 `92dc1b9c6e6a836146606d3cee12edd2505ecef6` 的對應內容；保留 bun 全域更新、#279、原始量測及退版原因。
+- **Context**：#285 第一批已由 PR #289 完整退版，當前來源為 `d0a4624820b9c462d9a9bb14764164c22cdb3384`。使用者重新要求診斷 #285／#279 並建立 spec：PR #288 純紀錄交付無 compaction、無新本地全套，仍耗 1244.449 秒至同步清理觀測；最慢 CI job 329 秒，其餘成本主要在開 PR 前及收尾。CI 對全部 PR 跑雙 OS 全套，最新 macOS core 294 秒；core 的 hosted 子項與 host／模型排程占比仍未完整歸因。
+- **Goal**：降低小幅腳本與純紀錄變更從交付指令到最終回報的完整操作成本。先處理 #285 的證據重建與工具往返，再評估 #279 的純紀錄 CI 路徑；以同範圍端到端耗時及失敗攔截能力驗收，不以測試次數或輸出量下降代替收益。
 - **Acceptance Criteria**：
-  1. PR #287 的十二個非紀錄路徑與固定基線一致，新增的三個測試檔消失；不保留 compact、新測試入口或新增快照要求。
-  2. 原本 brewup bun 全域更新與 #279 改動不受影響；既有完整測試、分片聚合與必要治理／xref 驗證通過。
-  3. 保留原有 history 與量測，追加退版原因；不宣稱原效能目標已達成，亦不從過去已完成的 merge／dotsync 授權推導本批送出或部署授權。
-- **Constraints**：使用者本輪「退版吧，有做比沒做還糟」授權完整本地退版。既有 Runtime writer 保持停止，原工作不接續；不修改 CI、branch protection 或採用新流程。新批 push／PR／merge 與 dotsync 仍依具名授權處理。
-- **進度**：整批本地退版候選已完成驗收：十二個路徑的內容與 mode 和固定基線一致，新增三個測試檔已移除；serial／parallel 各 1577 PASS／0 FAIL、exit 0，測試期間來源未變。治理／xref 與 Codex validator 通過；尚未 push／PR／merge／部署。見 M-20261009-workflow-verification-economy-revert-local。
-- **下一步**：取得本批新的具名送出／合併授權後交付退版；dotsync 仍須另行授權。保留 active assignment，不自行重啟原優化或 #279。
-- **關聯**：[本項診斷與驗證計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285（https://github.com/jjshen-eland/dotfiles/issues/285）; PR #287; PR #288; X-20261009-workflow-verification-economy-revert; B-20260924-workflow-verification-economy
+  1. 固定純紀錄與普通腳本兩類案例的來源、scope、原驗證結果及計時邊界；重建 PR #288 的階段量測，明示最終回報未包含，工具外區間不冒稱純模型思考。補齊下一個候選所需的因果證據後才實作。
+  2. #285 候選減少已觀察的臨時證據重建與流程往返，包含保存／核對的新成本一起計時；有效證據可沿用，changed／unknown／failure 仍正確補驗或停止。既有安全與 fresh shipping checks 保持，不加入未證明必要的新規則或治理層。
+  3. #279 候選先限定為可證明不影響執行行為的紀錄變更：保留必要文件／xref／全域 checks，分開判定當次文件驗證與工具自身回歸測試；不把整個 core 視為廉價必跑 gate。共用程式、skill instructions、runner、workflow、未知範圍及分類錯誤全套 fallback；雙 OS required check 名稱與失敗語意保留。
+  4. 固定條件的小規模 before／after 對照顯示完整流程穩定縮短，新增操作成本不抵銷收益；本地、hosted 與真實交付分開報告。取得當批送出授權後，以同類真實交付驗至最終回報；資料不足、scope 不同或僅局部變快時維持未驗收。
+  5. 與變更相關的失敗注入、未知輸入與必要跨 runtime／OS controls 通過；驗證次數依實際變更與可沿用證據決定。新 skill 行為依 authoring route 取得 native eval；改 runner 才做相應完整性／cleanup 對照，不把 benchmark 變成每次交付前置。
+- **Constraints**：2026-10-09 使用者以 `$project spec` 及選項 1 確認前任停止，由本 session 接續 exact workline 與文件維護；續以「開工」授權本地實作與驗證，再選擇 `$project --pr`，本批提交並開 PR 驗 GitHub 雙 OS，終點停在 PR；merge／部署未授權。原 checkout 的 claude/settings.json 是使用者確認的 runtime drift，不納入本批；本工作在獨立 worktree，Runtime 項目不接續。不修改 branch protection、不先建完整依賴圖或永久快取，不自動恢復已退版功能。
+- **進度**：首個 #285 Log 指引候選的 Opus 對照 73.9496／74.2011 秒，無淨收益而撤回；Codex 工具連線失敗不計有效樣本。#279 有界紀錄 CI 候選保留 kernel／xref／當前文件 corpus 與全套 fallback；scope、故障與取消控制及真實文件故障均通過。Clean clone 的完整 serial／兩次 parallel 全為 1577 PASS／0 FAIL；同來源兩組交錯對照，全套中位數 118.553 秒、records 13.123 秒，縮短 88.93%。只證明本地 suite 收益，完整交付未驗收；詳見 M-20261009-ci-record-selection-local，work item 保持 in-progress。
+- **下一步**：依本批 `$project --pr` 交付並觀察 hosted 雙 OS；本 PR 含程式／workflow，應走全套。後續同類純紀錄交付與 merge 至最終回報仍須另有當批授權及證據；#285 流程成本仍未改善，不以文件 CI 收益結案。若 scope 或 active writer 有變先協調，不延續原 Runtime 工作。
+- **關聯**：[本項診斷與驗證計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285（https://github.com/jjshen-eland/dotfiles/issues/285）; GitHub #279（https://github.com/jjshen-eland/dotfiles/issues/279）; PR #288; PR #289; D-20261009-small-change-delivery-spec; D-20261008-ci-critical-path-before-selection; D-20261008-ci-core-controller-recommendation; X-20261009-workflow-verification-economy-revert; B-20260924-workflow-verification-economy
 
 ## 暫停中
 

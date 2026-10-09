@@ -750,7 +750,7 @@ local 覆寫 global）。同樣明列、不假裝擋得住。
 ## 25. cross-platform contract
 
 - GitHub Actions 必須以唯讀 repository 權限，在 pull request 上以 `macos-15` 與 `ubuntu-24.04`
-  跑完整 suite；同一 workflow 不得再由 `push: main` 重跑相同 suite。main 的防壞責任由 required PR
+  跑 `tests/run-ci.py` 決定的必要 checks；同一 workflow 不得再由 `push: main` 重跑相同 suite。main 的防壞責任由 required PR
   checks 承擔，而不是在壞 commit 已合入後才重驗。
 - CI 不得把 runner image 的任意預裝版本當成 dependency contract；`shellcheck`、`ripgrep`、`yq` 必須由同一個
   明示的 Homebrew install step 收斂，避免 OS image 版本差異改變 gate verdict 或因缺 `rg` 造成連鎖假紅。
@@ -768,7 +768,20 @@ local 覆寫 global）。同樣明列、不假裝擋得住。
 - 完整 suite 可把彼此獨立且唯讀 repo 的 slow gates（目前為 ShellCheck 與 doc-governance deterministic
   suite）和 fixture-heavy 主流程並行，但必須逐 pid 收 exit code、彙總原始失敗輸出，且 EXIT cleanup
   終止未收斂的 child；並行只縮短 critical path，不得縮小掃描檔案或測試集合。
-- CI 以 `tests/run-parallel.sh` 在每個 OS job 內同時跑 `core`、`ship_state`、`plan`（9b–12b）、
+- `tests/run-ci.py` 只為整個 PR 相對 merge-base 的變更皆為既有一般檔案 STATUS、backlog、日期命名的
+  history／plan 且 heading 未變時選 `records`。不是一般 Markdown 選測：instructions、其他文件、
+  新增／刪除／rename／mode／symlink、未知 event／差異、dirty checkout 全部 fallback 到完整 suite。
+  Checkout 必須對應 event 的 head 或 exact base＋head synthetic merge；merge tree 額外變更／不同內容
+  也 fallback。Tracked symlink 若別名引用改動的紀錄或其目錄，同樣不能套用 records。
+  選擇理由、實際 checks 與省略集合印在 CI_SELECTION；沒有空集合成功。Record checks 為真正的
+  kernel／xref 掃描（兩者 stdout findings 也失敗）及 RealRetrievalCorpusTests 全部七例，後者包含當前 repo
+  audit --ship、檢索 corpus／召回／canonical title controls；不重跑治理工具的 synthetic fixtures 或
+  無關 controller。GitHub checkout 保留完整 history，不改 required job 名稱或 protection。
+  `tests/test_ci_selection.py` 隨既有 CI confidence gate 執行，驗整批 scope、fallback、merge tree 及故障傳播；
+  紀錄 checks 自有 process group，取消後清除 descendants 且停止後續 checks；full fallback 以 exec
+  保留既有 runner 的 process ownership。縮排／空 ATX 與 Setext heading 變動同樣 fallback。
+  本地沒有 pull_request event 時直接跑全套，`--select-only` 僅輸出判定、不執行任何 checks。
+- 完整 CI fallback 以 `tests/run-parallel.sh` 在每個 OS job 內同時跑 `core`、`ship_state`、`plan`（9b–12b）、
   `review`（12bb–16）、`runtime`（turbo–結尾）；五者是 `tests/run.sh` 中互斥且聯集完整的連續
   assertion 區段，各自建立 temp/state/output。`plan` 自建 section 9b／10 的 local-only Git fixture，
   `runtime` 自建 section 19 所需的 ship-state baseline；review-state script 路徑由共同前置定義，
@@ -867,6 +880,12 @@ setup 先實跑固定 interpreter 的真測試，保存原 command／exit／outp
 模型階段新增執行次數須與原始 tool trace 交叉核對（直接執行 test file 也算，不可漏計）。
 這些 case 用 `--once`，受測 frozen source 排除 pressure oracle；僅做到標準 Log 的送出確認，
 不宣稱驗過 provider CI 或 merge。完整行為判準見 Project `pressure-tests.md` Scenario 38。
+
+`docs-merged`／`docs-mixed` 是同一 runner 的 opt-in 範圍對照：前者在已接受 base 留下與舊測試不同的
+程式內容、本批僅有文件；後者在最後文件 commit 之前還有 pending code。Fixture contract 明示整批
+diff 決定文件／程式檢查，setup 保存原測試結果；分別核對實際 code／docs 執行與完整 Log 時間。
+2026-10-09 的指引候選未顯示淨收益而撤回，案例保留為重現入口，不代表新 skill 規則已採用。
+Codex 在任何 skill 讀取前的 host negotiation timeout 是能力缺項，不計入行為或效能比較。
 
 `tests/project-test-evidence-test.py` 對真 Git fixture 驗唯讀判定器：summary-only／失敗或缺欄位拒用，
 接受原工具的合併 output 或分離 stdout／stderr，不捏造缺失 stream；
