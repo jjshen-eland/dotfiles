@@ -94,11 +94,13 @@ this pattern. Everything else points.
 
 - **Skill authoring route**：建立或修改 any repo-local skill 前，先讀當前 runtime 的 authoring guide 與
   `docs/skill-portability.md`；規則不因 canonical source 位於哪個 runtime tree 而失效。
-- **測試**：`./tests/run.sh`，**以 exit code 判綠紅**（接 pipeline 會吃掉失敗）。
-  改動 `scripts/`、setup 腳本、skill 腳本後必跑；改動任何 `.md` 的節名或搬動權威內容後同樣要跑
-  （交叉引用 gate 掃全 repo 的 md）。
-  Root `CLAUDE.md` 以原生 import 載入本檔，不再複製這三行；G1c clean-room 守 import 行為。
-  各 gate 的判準、反例與設計理由（**放寬判準前必讀**）見 `docs/testing-contract.md`。
+- **測試**：以 `./tests/run.sh --base <本批基線>` 驗整批 committed／staged／unstaged 差異；
+  基線必須涵蓋本批全部變更，不能只取最後一顆 commit。未知影響、新增／刪除、mode／link 變動
+  或無法證明範圍時 runner 自動回全套；沒有可用基線就跑 `./tests/run.sh`。
+  `--module <name>` 是開發時的定向檢查，不冒充整批驗收。以 exit code 判綠紅；必要模組與
+  執行理由由 runner 列出。同一份程式／測試輸入已驗過，不因收尾紀錄文字變更再重跑程式全套；
+  文件仍驗當前內容。`run-parallel.sh` 與 `run.sh` 共用同一執行器，不是兩份須依序重跑的驗收。
+  改 runner／選測規則時驗全套、漏跑／失敗／取消 controls；改測試判準前讀 `docs/testing-contract.md`。
 - **本 repo 的額外約束**：`~/.dotfiles` 同時是多台機器的部署來源，`scripts/` 底下的改動會經
   `dotsync` / `brewup` 散佈出去。散佈類變更的前提是**變更已進 `origin/main`**——本地 branch 未 push
   時散佈等於空轉。

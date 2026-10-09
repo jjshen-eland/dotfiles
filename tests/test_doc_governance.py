@@ -2702,4 +2702,10 @@ class RealRetrievalCorpusTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    if "--synthetic" in sys.argv:
+        sys.argv.remove("--synthetic")
+        suite = unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromTestCase(value)
+            for value in list(globals().values()) if isinstance(value, type)
+            and issubclass(value, unittest.TestCase) and value is not RealRetrievalCorpusTests)
+        raise SystemExit(not unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful())
     unittest.main(verbosity=2)

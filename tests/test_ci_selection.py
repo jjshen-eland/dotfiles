@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import signal
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -26,7 +27,15 @@ class SelectionTests(unittest.TestCase):
             p = self.root / name
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text('# Original\n\nOriginal text.\n')
-        self.git('add', 'STATUS.md', 'docs', 'AGENTS.md', 'app.py')
+        tests = self.root / 'tests'; tests.mkdir(exist_ok=True)
+        for name in ('suite.py', 'content-checks.py'):
+            shutil.copy(SCRIPT.with_name(name), tests / name)
+        (tests/'suites.json').write_text(json.dumps({'always':['content'], 'modules': {
+            'content': {'command':['{python}', '-B', 'tests/content-checks.py']},
+            'full': {'command':['{python}', '-c', 'raise SystemExit(9)']}},
+            'routes':[{'paths':['STATUS.md','docs/backlog.md','docs/archive/*.md','docs/plans/*.md'],
+                       'modules':['content']}]}))
+        self.git('add', 'STATUS.md', 'docs', 'AGENTS.md', 'app.py', 'tests')
         self.git('commit', '-qm', 'fixture base')
         self.base = self.git('rev-parse', 'HEAD').strip()
         self.git('switch', '-qc', 'fixture-pr')
@@ -55,6 +64,24 @@ class SelectionTests(unittest.TestCase):
         p.write_text(p.read_text() + '\nUpdated observation.\n')
         self.commit(name)
 
+    def test_known_executable_script_selects_module_across_whole_pr(self):
+        catalog=self.root/'tests/suites.json'
+        data=json.loads(catalog.read_text())
+        for name in ('deployment','lint','shell-contract'):
+            data['modules'][name]={'command':['{python}','-c','print("executed")']}
+        data['routes'].append({'paths':['scripts/brewup.sh'],'modules':['deployment']})
+        catalog.write_text(json.dumps(data))
+        script=self.root/'scripts/brewup.sh';script.parent.mkdir()
+        script.write_text('#!/bin/sh\nexit 0\n');script.chmod(0o755)
+        self.commit('scripts','tests');self.base=self.git('rev-parse','HEAD').strip()
+        script.write_text('#!/bin/sh\nexit 1\n');self.commit('scripts')
+        self.change_record()
+        result,plan=self.select(execute=True)
+        self.assertEqual(plan['mode'],'modules',result.stdout+result.stderr)
+        self.assertIn('deployment',plan['checks'])
+        self.assertNotIn('full',plan['checks'])
+        self.assertNotEqual(result.returncode,0)  # missing content scanners must not pass
+
     def test_existing_record_prose_uses_document_checks(self):
         for name in ('STATUS.md', 'docs/backlog.md', 'docs/archive/milestones-2026-10.md',
                      'docs/plans/2026-10-09-work.md'):
@@ -74,19 +101,19 @@ class SelectionTests(unittest.TestCase):
         self.change_record('AGENTS.md')
         self.assertEqual(self.select()[1]['mode'], 'full')
 
-    def test_heading_change_falls_back(self):
+    def test_heading_change_uses_current_content_checks(self):
         (self.root / 'STATUS.md').write_text('# Different\n')
         self.commit('STATUS.md')
-        self.assertEqual(self.select()[1]['mode'], 'full')
+        self.assertEqual(self.select()[1]['mode'], 'records')
 
-    def test_indented_or_empty_markdown_heading_falls_back(self):
+    def test_heading_syntax_does_not_trigger_tool_implementation_tests(self):
         for heading in ('   ## Added heading', '##', '  Setext heading\n  ---'):
             with self.subTest(heading=heading):
                 self.setUp()
                 p = self.root / 'STATUS.md'
                 p.write_text(p.read_text() + '\n' + heading + '\n')
                 self.commit('STATUS.md')
-                self.assertEqual(self.select()[1]['mode'], 'full')
+                self.assertEqual(self.select()[1]['mode'], 'records')
 
     def test_new_deleted_renamed_and_mode_changed_records_fall_back(self):
         for mutation in ('new', 'delete', 'rename', 'executable', 'symlink'):
@@ -145,7 +172,7 @@ class SelectionTests(unittest.TestCase):
         self.assertEqual(self.select(pull_request=event)[1]['mode'], 'full')
 
     def test_selected_check_failures_and_kernel_findings_propagate(self):
-        tests = self.root / 'tests'; tests.mkdir()
+        tests = self.root / 'tests'; tests.mkdir(exist_ok=True)
         for name in ('kernel-gate.py', 'xref-gate.py', 'test_doc_governance.py'):
             (tests / name).write_text('print("" , end="")\n')
         self.commit('tests')
@@ -158,7 +185,8 @@ class SelectionTests(unittest.TestCase):
         for name, body in [('xref-gate.py', 'raise SystemExit(7)\n'),
                            ('xref-gate.py', 'print("[FINDING] fixture")\n'),
                            ('kernel-gate.py', 'print("[FINDING] fixture")\n')]:
-            for p in tests.iterdir(): p.write_text('pass\n')
+            for gate in ('kernel-gate.py','xref-gate.py','test_doc_governance.py'):
+                (tests/gate).write_text('pass\n')
             (tests / name).write_text(body)
             self.commit('tests'); self.base = self.git('rev-parse', 'HEAD').strip()
             self.change_record()
@@ -167,15 +195,15 @@ class SelectionTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0, result.stdout)
 
     def test_fallback_executes_full_suite_and_preserves_failure(self):
-        tests = self.root / 'tests'; tests.mkdir()
+        tests = self.root / 'tests'; tests.mkdir(exist_ok=True)
         (tests / 'run-parallel.sh').write_text('#!/bin/sh\necho full-suite-executed\nexit 9\n')
         result, plan = self.select(execute=True)
         self.assertEqual(plan['mode'], 'full')
-        self.assertIn('full-suite-executed', result.stdout)
-        self.assertEqual(result.returncode, 9)
+        self.assertIn('"name": "full"', result.stdout)
+        self.assertNotEqual(result.returncode, 0)
 
     def test_record_cancellation_cleans_check_descendants(self):
-        tests = self.root / 'tests'; tests.mkdir()
+        tests = self.root / 'tests'; tests.mkdir(exist_ok=True)
         (tests / 'kernel-gate.py').write_text(
             'import os,subprocess,sys,time\n'
             'from pathlib import Path\n'
@@ -219,7 +247,7 @@ class SelectionTests(unittest.TestCase):
             check_pid = self.root / '.git/check-pid'
             if check_pid.exists():
                 pid = int(check_pid.read_text())
-                try: os.killpg(pid, signal.SIGKILL)
+                try: os.kill(pid, signal.SIGKILL)
                 except ProcessLookupError:
                     try: os.kill(pid, signal.SIGKILL)
                     except ProcessLookupError: pass
