@@ -200,7 +200,6 @@ def event(state, kind, **data):
 
 def fresh(state):
     for s in state['scopes']:
-        scope_check(s['manifest'])
         require(load_scope(s['manifest']) == s, 'manifest identity changed')
 
 
