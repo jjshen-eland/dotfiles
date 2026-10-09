@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "shared/skills/deep-plan/scripts/review-state.py"
@@ -525,6 +526,64 @@ class DocumentRepair(unittest.TestCase):
         self.assertEqual(ticket["mode"], "focused")
         self.assertEqual(len(self.m.status(self.plan)["rounds"]), 2)
 
+
+    def test_document_snapshot_batches_objects_without_changing_layers(self):
+        # Every snapshot is fresh, but its process count must not grow per document.
+        extra = []
+        for count in (0, 8):
+            for n in range(count):
+                p = self.repo / f"literal [file]{n}.md"
+                p.write_bytes("same blob\r\nUnicode: \u4e2d\n\x00tail\n".encode() if n else b"")
+                extra.append(p)
+            if extra:
+                self.checkpoint(extra)
+            self.spec.write_text("index version\n")
+            self.git("add", "--", "SPEC.md")
+            self.spec.write_text("working version\n")
+            new = self.repo / "new untracked.md"
+            new.write_text("no HEAD or index entry\n")
+            docs = [self.spec, self.state, new, *extra]
+            head = self.git("rev-parse", "HEAD").decode().strip()
+            paths = sorted([self.plan, *docs])
+            expected = {"path": str(self.repo), "head": head,
+                        "protected_sha256": self.m.repo_content(self.plan, self.repo, paths),
+                        "files": {str(p): {"head": self.m.git_document(self.repo, p, head),
+                            "index": self.m.git_document(self.repo, p),
+                            "worktree": {"mode": p.stat().st_mode, "text": p.read_bytes().decode("utf-8")}}
+                            for p in paths}}
+            with mock.patch.object(self.m, "git", wraps=self.m.git) as calls:
+                actual = self.m.document_snapshot(self.plan, [self.repo], docs)
+            self.assertEqual(actual, expected)
+            self.assertLessEqual(calls.call_count, 5, "snapshot starts per-document Git processes")
+            self.spec.write_text("changed after previous snapshot\n")
+            self.assertNotEqual(actual, self.m.document_snapshot(self.plan, [self.repo], docs))
+            self.spec.write_text("# Contract\nReturn orders.\n")
+            self.git("add", "--", "SPEC.md")
+
+    def test_document_snapshot_rejects_nonregular_and_unmerged_index(self):
+        oid = self.git("rev-parse", "HEAD:SPEC.md").strip()
+        for mode, stages in ((b"120000", (0,)), (b"100644", (1, 2, 3))):
+            with self.subTest(mode=mode, stages=stages):
+                self.git("update-index", "--force-remove", "SPEC.md")
+                rows = b"".join(mode + b" " + oid + b" " + str(stage).encode() + b"\tSPEC.md\n"
+                                for stage in stages)
+                subprocess.run(["git", "-C", str(self.repo), "update-index", "--index-info"],
+                               input=rows, check=True)
+                with self.assertRaisesRegex(ValueError, "regular-unconflicted-blob-required"):
+                    self.m.document_snapshot(self.plan, [self.repo], [self.spec])
+
+    def test_document_snapshot_rejects_incomplete_batch_output(self):
+        original = self.m.git
+        for corruption in ("missing", "truncated", "trailing"):
+            def read_git(repo, *args, **kwargs):
+                data = original(repo, *args, **kwargs)
+                if args[:2] == ("cat-file", "--batch"):
+                    return {"missing": b"unknown missing\n", "truncated": data[:-2],
+                            "trailing": data + b"unexpected"}[corruption]
+                return data
+            with self.subTest(corruption=corruption), mock.patch.object(self.m, "git", read_git):
+                with self.assertRaisesRegex(ValueError, "document-blob-batch"):
+                    self.m.document_snapshot(self.plan, [self.repo], [self.spec, self.state])
 
     def test_worktree_index_and_head_deltas_are_all_visible(self):
         self.start([self.spec])

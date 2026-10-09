@@ -134,6 +134,43 @@ fresh-clone-full 分別對應基線／分層／去重，不與工作樹開發中
 本批程式／測試到此凍結，收尾只驗當前文件；hosted 與完整交付待新 endpoint 授權。
 使用者隨後明示 `$project --pr`，本輪送出候選至 PR；不合併，hosted 實測未完成前不追加效能結論。
 
+2026-10-09 PR #292 合併 17efb21204576b13ba0725ca2be1a3a0a6545f21 後，使用者授權接續
+處理 deep-plan：hosted macOS suite 167.092 秒（deep-plan 117.131），Ubuntu 85.024 秒；
+不同 run 的時間只是觀察，不能當受控因果。這批先固定該基線，量 controller 每個操作的 Git
+查詢與文件快照成本；成功條件是相同三層資料、錯誤拒絕、journal 相容與跨操作 freshness
+保持，降低已定位的重複程序成本，並在完整 suite 取得 before／after。只做本地驗證；
+沒有新 commit／push／PR／merge／部署授權。必要產品範圍新增 exact review-state.py，
+其餘 Runtime writer 保持停止，未接續原工作。
+已量得 routing 40 tests 57.943 秒；十二格歷史矩陣 20.189 秒，直接 controller Git
+2859 次／14.351 秒，其中 git_document 1788 次／9.156 秒（894 cat-file、456 ls-tree、
+438 ls-files）。146 次 document_snapshot 分布於 open／prepare／render／check_ticket；
+函式 inclusive 計時不相加，launcher child 未納入該程序 trace。根因是單次 snapshot 按
+每份文件分別查 metadata／blob；先以相同三層資料與固定程序上限建立 RED，再合併單次
+snapshot 的查詢，保留操作間 freshness 與前後核對。Canonical copy 仍為 neutral shared
+review-state.py，雙 runtime 連結相同，既有 #264／#271 oracle 與 prompts 保留。
+原始 profile／固定 clone 全套證據放 /tmp/deep-plan-snapshot-perf，暫存遺失不得補造。
+新反例先以 17 > 5 Git 程序 RED；一次 snapshot 改為整份 index、選定 HEAD entries 與一個
+cat-file --batch，OID 在該次去重，以長度 framing 解碼並驗 object 身分、型別及完整回應。
+索引 listing 同時作 protected fingerprint；操作前後與下一次 snapshot 全部照常重讀。
+三個新測試 GREEN，雙入口 validator 通過；批次 framing 的缺漏／截斷／額外 bytes 明確拒絕。
+原先 prototype RED 的三個 batch corruption failures 是舊程式未使用 batch，僅程序數反例
+證明既有重複成本；不能把預先新增的 protocol guard 測試宣稱成舊版安全缺陷。
+依 authoring guide 做 fresh-context public CLI forward check，evaluator 未讀 implementation diff。
+主 writer 已核對 /private/tmp/deep-plan-forward.DlrGUD/commands.jsonl、summary.json：雙端
+controller 交接完成合法三層文件修正且既存 dirty code 保留；prepare 後 code／document drift
+在 claim 拒絕，claim 後 drift 在 finish 拒絕並保留 invalid round，無效 UTF-8 拒絕。
+評估中 synthetic result schema／ID 重用錯誤亦被拒絕，另建獨立 fixture 後才列正向結果；
+不清舊 journal 洗綠。這是 synthetic CLI 行為驗證，不是 native reviewer 品質或新模型 eval。
+最終相同 clone／Python 3.14.8／PATH 的完整 29 模組皆 exit 0；基線 wall 120.051 秒，
+候選 111.604 秒（縮短 7.0%），deep-plan 74.459→58.304 秒（21.7%）。新增 3 個 routing
+測試，原 40 個保留；整套受測前後 full input_snapshot 一致，包含 symlink targets。
+最終程式／測試 bytes 與 active worktree 相同；收尾文件只補當前 content／governance，
+不為文件重跑同份程式全套。這是一輪受控順序比較，hosted macOS、Ubuntu 與指令到 merge
+全程未量，不承諾相同降幅，也不關閉 #285。原始 baseline-full／candidate-full-evidence.json
+記錄 command、exit、stdout、inputs、快照與環境，可供後續 Project 核對沿用。
+使用者隨後以 `$project --pr` 授權本批提交與 PR 交付；保留既有完整程式驗收證據，
+收尾只補當前文件檢查，hosted 結果以本批 PR CI 為準，終點不含 merge／部署。
+
 上一批模組化本地驗收（2026-10-09）：29 個模組在凍結來源串行、並行各 exit 0；串行
 465.552 秒僅作一次遷移獨立性檢查，並行 wall 127.666 秒。相同 brewup 註解修改透過
 真實 `run-ci.py` 入口，以舊→新、新→舊交錯比較：舊 120.332／119.028 秒，新
