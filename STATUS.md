@@ -64,21 +64,16 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 ### 4. Setup 工具與 agent shell 環境對齊
 
 - **Writer**：`codex:brewup-bun-global-update`
-- **Workspace**：`branch=chore/setup-fleet-rollout`
+- **Workspace**：`branch=docs/setup-fleet-results`
 - **Write Scope**：setup-mac-env.sh, setup-linux-env.sh, scripts/dev-tools.sh, scripts/dev-tools.tsv, scripts/dev-env.sh, scripts/align-dev-environment.sh, scripts/ensure-shell-env.py, scripts/dotfiles-sync.sh, scripts/brewup.sh, shell/, tests/, README.md, docs/repo-guide.md, docs/testing-contract.md, claude/CLAUDE.md, codex/AGENTS.md
 - **Dossier Steward**：`codex:brewup-bun-global-update`
 - **Context**：現有 setup 混合必要與互動便利工具，brew 失敗被吞掉；環境依賴各平台生成的 shell 設定。使用者要求按 Codex／Claude Code 需求改版，統一 npm 措辭，提供 14 台既有主機免重跑 setup 的對齊方式。
 - **Goal**：新裝與增量更新共用工具宣告及受管理 shell 環境，必要工具失敗可見，保留個人設定與既有額外工具；使用者追加要求明確區分 setup 納管與主機自行安裝，只有前者依新定義新增／移除，後者不升級、不移除、不接管。
 - **Acceptance Criteria**：core／workstation 分層、新增 actionlint／ast-grep；plan／apply／check 可觀察且重跑收斂；必要安裝及驗證失敗回非零；雙 shell 無互動命令可讀相同環境，保留專案／個人 PATH 優先權與覆寫；npm／bun 以專案 lockfile 為準；隔離新裝／升級／失敗／重跑測試與完整 suite 通過；14 台 rollout 有逐台預演、revision、驗收與回復路徑。2026-10-10 使用者接受兩端全域工具指引精簡化：只保留高價值工具與適用任務、可用性與按需安裝原則，不複製完整安裝清單；兩端短段落需機檢一致。
-- **Constraints**：2026-10-10 使用者選擇部署其餘 12 台及同步 agent01；本批來源固定已合併 PR #296 的 origin/main `33552a4`，現任 writer／steward 接續。既有工具歸屬未確認前不 adopt／移除／升級，只補 core 缺項與接上 shell 環境；settings runtime drift 保留。#285 與原 Runtime writer 無並行寫入；不安裝全機隊 mise／語言套件／瀏覽器，不自動卸載未納管／本機保留工具或放行 direnv trust，不執行新 setup 覆寫既有主機 rc。新發現的 stdin 修正可在本地完成，push／PR／merge 需當批授權；未進 origin/main 不散佈。
-- **進度**：共用清單、ownership ledger、plan／apply／check 與 shell helper 已實作；原 setup 吞失敗已重現並修正。29 項隔離行為測試與 30 模組完整 suite 通過（114.485 秒）；macOS 系統 Python 3.9 的 tomllib 缺項已重現，共用 PATH 改用本機 Homebrew Python 3.14.8。PR #294 已合併；agent01 canary 已新增 actionlint 1.7.12／ast-grep 0.45.3，兩次 apply／check 全部 exit 0，85 個既有 Homebrew 套件版本與個人 bashrc 原內容不變。
-- **下一步**：目前環境驗收 6／14：macs、agent01、eagle06／07／08／09。除 macmini 外 13 台來源與兩端全域指引已同步 `33552a4`；macmini 因 Xcode license 未接受，仍在 `112d37d`、未改動。eagle03／db01／ap01／ap02／m4mini／fe01／be01 被既有 ca-certificates 更新需求阻擋，shell 未改；後四台已補 Codex 0.162.0，m4mini／be01 仍缺 Claude Code。先交付本地 stdin 修正，再由使用者核定既有依賴更新與 Xcode license 處置後續跑。舊工具納管／退役仍待用途核對；不宣稱模型回合或代表專案功能驗收。詳見 M-20261010-setup-fleet-first-batch 與 M-20261010-setup-fleet-partial。
+- **Constraints**：本批使用者選擇 `$project --merge` 交付修正、七台僅更新 ca-certificates 並續部署；已依此完成 PR #297 與下列驗收。既有工具未經確認不 adopt／移除／升級，除本批具名憑證更新外保持原版本；settings runtime drift 保留，不重跑 setup 覆寫 rc，不放行 direnv trust。macmini Xcode license 尚未接受，該台未部署；後續外向動作依新批指令，歷史紀錄不是授權來源。
+- **進度**：PR #297 已 rebase merge 至 `792f154`（修復 manifest stdin 消耗與未使用的 build dependencies 誤擋）；新 HEAD macOS／Ubuntu CI 3m29s／2m04s 全綠，39 個工具／shell 隔離測試通過。除 macmini 外的 13 台 source 與雙端全域指引均同步此版本，core check 掃足 22 項全過。eagle03／db01／ap01／ap02／m4mini／fe01／be01 已完成 plan、限定憑證更新、apply／check／apply／check、原內容保全及 CLI probes；m4mini／be01 新增 Claude Code 2.1.295。七台 ca-certificates 活躍 opt target 均為 2026-09-25，其餘既有套件版本不變、舊憑證 keg 留存；shell 原內容／mode 與 settings hash 保留。
+- **下一步**：環境驗收 13／14；唯一未部署的 macmini 仍為 main 112d37d，需使用者處理 Xcode license 後重做 fresh 預演、apply／check／rerun，不沿用舊 snapshot。舊工具歷史歸屬與退役仍待用途核對。部署事後紀錄提交於本地 docs/setup-fleet-results，尚未另送出；不宣稱模型回合或代表專案功能驗收。詳見 M-20261010-setup-fleet-resumed。
 - **關聯**：item 2 Runtime 目錄收斂；item 3 #285；[環境使用說明](docs/repo-guide.md)
-
-- **Fleet 接續（2026-10-10）**：使用者選擇部署其餘 12 台並同步 agent01；現任 writer／steward 接續，來源固定為已合併 origin/main `33552a4`。逐台先核對 Git／工具／shell／全域指引，再 fast-forward、plan、apply／check、重跑與保全比對；遇衝突停止該台。只補 core 缺項及受管理 shell，無 adoption、卸載或全面升級；保留個人工具、設定與 settings runtime drift。驗收需逐台 revision、原套件版本與 shell 原內容保持、雙端 CLI 能力及第二次 apply unchanged 證據；舊工具歸屬與退役不納入本批。
-- **Fleet 發現與修復驗收**：真實 Codex 安裝讀走 manifest 後續行，apply selected=20（預期 22）；本地 installer／version probe stdin 兩個反例已各自 RED，後者證明可漏掉缺項並錯回 exit 0。修復必須隔離 manifest reader 與子程序 stdin，讓兩反例轉綠並通過整批選測；未合併修正不得散佈，現行部署結果逐台保留，不冒稱完成。
-- **本批接續**：使用者選擇 `$project --merge` 交付本批修正並允許七台僅更新 ca-certificates 後續部署；macmini 授權條款仍待處理。PR #297 首版 CI 通過但尚未 merge；重新預檢發現 --include-build 導致未使用的編譯依賴也阻擋 bottle 安裝。依同 repo／同 PR／同目標追加修復：僅在配方提供 bottle 且執行期依賴皆已安裝時強制 bottle，無 bottle 則拒絕 source fallback，其他依賴保護保留。39 個隔離測試通過，整批驗證與更新 PR 續作；見 D-20261010-setup-bottle-dependency-guard。
-
 
 ## 暫停中
 

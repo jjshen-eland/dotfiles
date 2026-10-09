@@ -699,3 +699,13 @@
   - 放棄:遇阻擋反覆 apply、全面更新個人工具、略過未完成主機、用來源同步或 CLI --version 冒稱模型／專案功能驗收；未將本地修正直接散佈
   - 重議:stdin 修正需新批 push／PR／merge 授權並進 origin/main；七台 ca-certificates 更新另需核定，macmini Xcode license 需使用者處置。其後可在原部署目標續驗；舊工具納管／退役仍未處理，本 work item 保持 active。
   - 關聯:M-20261010-setup-fleet-first-batch;M-20261010-macs-setup-canary;M-20261010-agent01-setup-canary;STATUS.md;docs/testing-contract.md
+
+- **M-20261010-setup-fleet-resumed · 2026-10-10 Setup fleet 13／14 完成、macmini 等待 Xcode license**：PR #297 的新 HEAD 9332f8f 必要 CI macOS 3m29s／Ubuntu 2m04s 通過，authoritative non-watch checks exit 0、CLEAN／MERGEABLE 後 rebase merge 至 `792f1541775eba9b35693a16868a98c82b86f461`。本地 main 已同步，原 PR branch／worktree 清理；事後紀錄在同一工作路徑的新 docs/setup-fleet-results 分支續作，未另 push。
+  - 日期來源:direct
+  - 部署:eagle03／db01／ap01／ap02／m4mini／fe01／be01 逐台固定 merged source，plan、僅 ca-certificates 升級、apply／check／apply／check 全部成功；兩次工具 traversal 都掃足 22 項、第二次 installed=0 且整份 snapshot 相同。每台新增 actionlint 1.7.12／ast-grep 0.45.3，m4mini／be01 另新增 native Claude Code 2.1.295；之前補入的 Codex 0.162.0 保留。eagle06／07／08／09 與 agent01 隨後同步 792f154，22 項 check 與原 package／shell／settings／ledger 保全通過；macs 同版本 check 通過、184 個套件及 settings drift hash 不變。
+  - 保全:七台 ca-certificates 由 2026-08-13 更新至 2026-09-25，均核對 opt symlink 指向新 keg，旧 keg 因未 cleanup 保留。其餘 93／98／125／83／73／84／84 個既有 Homebrew 套件版本逐項不變；ledger 僅納管本 helper 新安裝工具，不接管 ca-certificates 或原個人工具。shell SHA 比對預期 managed block 插入及原 mode，settings hash 保持。各適用 shell 的 Python／tomllib、Codex／Claude Code 版本命令與 ast-grep stdin 查詢通過；m4mini 同驗 Bash／Zsh，Linux 未安裝 Zsh 者只驗 Bash。
+  - 證據:同機 `/tmp/setup-fleet.SttZEo/resume/` 保存每台 before／preapply／after-ca／after／final JSON、plan／ca-upgrade／apply／rerun／probes／result、ca-active 與先完成五台的 before-sync／after-sync／sync 日誌。39 個環境測試、首版全套 30 模組 116.726 秒與最終相關四模組 14.997 秒；最終輸入快照前後相同、test-evidence REUSE。shell 備份路徑見 apply 日誌，回復先核對後續修改；未執行任何回滾或刪除舊工具。
+  - 未完成:macmini 在未接受 Xcode license 的預檢即停止，main 仍 112d37d、未部署；來源與 core 環境驗收均為 13／14，不記全機隊完成。沒有 model turn／登入授權／代表專案功能測試；歷史 setup 工具 ownership 與 legacy 退役仍未處理。
+  - 放棄:更新整棵未使用 build dependency tree；全面升級個人工具；直接部署未合併修正；將 PR merge 視為後續新 PR 的授權；代為接受未授權 Xcode license
+  - 重議:macmini 完成 Xcode 授權處理後，fresh inventory／預演再續部署。post-merge 紀錄未另送出；後續依新批 endpoint 指令處理。temporary evidence 不是跨主機 authority，主機備份與本事件紀錄為後續核對入口。
+  - 關聯:D-20261010-setup-bottle-dependency-guard;M-20261010-setup-fleet-partial;M-20261010-setup-fleet-first-batch;STATUS.md;PR#297
