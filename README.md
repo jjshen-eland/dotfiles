@@ -11,9 +11,9 @@ config/
 ├── bootstrap.sh           # 雙平台一鍵 bootstrap（macOS + Ubuntu 24.04+）
 ├── claude/                # Claude Code 共用設定與 skills
 ├── codex/                 # Codex 共用設定、rules、skills
-├── setup-mac-env.sh       # macOS 開發環境安裝腳本 (v3.1)
+├── setup-mac-env.sh       # macOS 開發環境安裝腳本 (v5.0)
 ├── write-mac-defaults.sh  # macOS 系統偏好設定腳本 (v1.0)
-└── setup-linux-env.sh     # Linux Ubuntu 安裝腳本 (v4.0, Homebrew)
+└── setup-linux-env.sh     # Linux Ubuntu 安裝腳本 (v5.0, Homebrew)
 ```
 
 ## 快速開始
@@ -66,10 +66,10 @@ chmod +x setup-linux-env.sh
 
 ## 功能特色
 
-- **33+ 現代化工具**：eza, bat, fd, ripgrep, fzf, zoxide, git-delta, lazygit, dust, direnv, just, watchexec 等
-- **Homebrew 統一管理**：macOS 和 Linux 都透過 Homebrew 安裝工具，版本一致、更新方便
+- **工具分層**：預設 core 支援 Codex／Claude Code；`-p workstation` 加裝互動式便利工具
+- **Homebrew 統一管理**：macOS 和 Linux 都透過 Homebrew 安裝工具，來源一致；版本依主機與專案需求管理
 - **智能 PATH 管理**：自動統合、去重、依優先級排序
-- **冪等性**：重複執行不會破壞使用者設定
+- **既有主機對齊**：有工具歸屬紀錄、預演與檢查；不必重跑完整 setup
 - **跨平台一致**：macOS (zsh) 和 Linux (bash) 使用相同工具和別名
 
 ## 使用者自訂設定
@@ -85,47 +85,74 @@ chmod +x setup-linux-env.sh
 
 ## PATH 優先級
 
-從高到低：
-1. `~/.local/bin` - 使用者本地程式
-2. `~/.bun/bin` - Bun（主要 JS runtime）
-3. `~/.npm-global/bin` - npm 全域套件（相容性備用）
-4. `~/.cargo/bin` - Cargo (Rust)
-5. `~/go/bin` - Go
-6. conda/nvm/pyenv 路徑
-7. Homebrew 路徑
-8. 系統路徑
+`shell/environment.sh` 共用於 Bash／Zsh：保留既有非系統 PATH 的順序（包括啟用中的
+venv、mise、nvm 等），再補 `~/.local/bin`、`~/.bun/bin`、`~/.npm-global/bin`、
+`~/.cargo/bin`、`~/go/bin`、Homebrew 與可用的 CUDA，最後是系統目錄；移除重複與空項。
+不在每次 shell 啟動呼叫 brew，也不在非互動 shell 載入 prompt／fzf／direnv hook。
+
+Bash 的普通 `bash -c` 不讀 `.bashrc`；Codex／Claude Code 可明示使用
+`~/.dotfiles/scripts/dev-env.sh <command> [args...]` 取得相同 fallback。
+專案環境仍依 repo 指令啟用，例如 `uv run`、`mise exec --` 或已授權的 `direnv exec .`；
+不設定全域 `BASH_ENV`，不自動信任 `.envrc`。個人 startup 設定仍可覆寫 PATH。
 
 ## 安裝的工具
 
-### 核心工具
-git, gh, wget, htop, tree, tmux, bun, node, python3, uv, jq, yq
+唯一清單是 [dev-tools.tsv](scripts/dev-tools.tsv)。setup 預設 `core`；加上 `-p workstation`
+會包含 core 與 workstation。已有健康可用的同名能力不強制換安裝來源。
 
-### 現代化 CLI
-| 工具 | 用途 | 取代 |
-|------|------|------|
-| eza | 彩色檔案列表 | ls |
-| bat | 語法高亮檔案查看 | cat |
-| fd | 快速檔案搜尋 | find |
-| rg (ripgrep) | 快速內容搜尋 | grep |
-| fzf | 模糊搜尋 | - |
-| zoxide | 智能目錄跳轉 | cd |
-| delta | Git diff 美化 | - |
-| lazygit | Git TUI 介面 | - |
-| dust | 磁碟空間分析 | du |
-| direnv | 目錄環境變數自動載入 | - |
-| just | 任務執行器 | make |
-| watchexec | 檔案變更監控執行 | - |
-| lftp | SFTP 傳檔（續傳／mirror／並行） | sftp |
+| 分層 | 工具與用途 |
+|------|------------|
+| core | git、gh、Node、Bun、Python 3.11+、uv、jq、Mike Farah yq、ripgrep、fd、ShellCheck、actionlint、ast-grep、hyperfine、direnv、just、tmux、lftp、rsync、git-delta、Codex、Claude Code |
+| workstation | wget、htop、tree、HTTPie、bat、fzf、eza、zoxide、tlrc、tokei、sd、lazygit、dust、watchexec、shfmt |
+| 專案選用 | SwiftLint、xcbeautify、Antigravity CLI、mise；Ruff／Playwright 依專案安裝及鎖版 |
 
-### AI CLI
+新增 actionlint 檢查 workflow、ast-grep 做結構化搜尋；使用完整 `ast-grep` 命令，避免 Linux 的
+`sg` 同名問題。git-delta 保留 core，因共用 Git 設定會呼叫它。
+Claude Code 使用官方原生 installer，Codex 使用 Homebrew cask。
+macOS 若僅有過舊的系統 Python，setup 會另裝 Homebrew `python` 並讓 fallback PATH 使用新版；
+不修改 Apple 的 `/usr/bin/python3`。3.11 是本 repo 使用標準庫 `tomllib` 的最低門檻，
+安裝目標仍是 Homebrew 提供的當前 `python`，不是鎖定 3.11。自行管理的 Python／專案 venv
+保留優先權，版本不符則回報，不自動升級。
 
-| 工具 | 安裝方式 | 更新方式 |
-|------|----------|----------|
-| claude (Claude Code) | 官方安裝腳本 → `~/.local/bin` | `claude update`（`brewup` 已涵蓋） |
-| codex (OpenAI Codex) | `brew install --cask codex`（macOS/Linux 皆支援） | `brew upgrade`（`brewup` 已涵蓋） |
-| agy (Google Antigravity CLI) | `brew install --cask antigravity-cli`（macOS） | cask 標記 `auto_updates`；`brewup` 不強制 `--greedy` |
+JavaScript／TypeScript 新專案預設 Bun，Python 新專案預設 uv。既有專案遵守其 lockfile、
+`packageManager` 與 runtime 版本；npm／pnpm／yarn／Node 都是有效選項，不另外產生第二種 lockfile。
 
-`agy` 首次執行需在 Mac console 完成系統核可；遠端或無人值守 setup 不會代替這個互動步驟。
+## 既有主機工具對齊
+
+更新邊界是「setup 納管」與「本機自行管理」；工具集合對齊不等於全面升級版本。
+來源合併至 `origin/main`、同步到目標主機後，在該主機執行：
+
+```bash
+~/.dotfiles/scripts/align-dev-environment.sh plan
+# 確認列出的安裝／移除／shell 變更後，使用相同參數 apply
+~/.dotfiles/scripts/align-dev-environment.sh apply
+~/.dotfiles/scripts/align-dev-environment.sh check
+```
+
+- `plan` 不寫設定、不安裝／移除；列出 `UNMANAGED`、缺項與 `REMOVE_MANAGED`。
+  `check` 遇到缺項、失效工具或待移除納管項目回傳非零。安裝失敗也必須非零。
+- 新安裝的直接工具記錄在 `~/.local/state/dotfiles/tools.tsv`，保存 profile 與本機保留項目。
+  預設沿用已存 profile；只有明示 `--profile core|workstation` 才切換。
+- **舊 setup 沒有可靠的逐台歸屬紀錄**。既有工具預設不接管；首次須核對 `plan` 與本機用途，
+  用重複的 `--adopt <package>` 明示接管原 setup 工具；`--keep <package>` 永久保留為本機工具。
+  名稱用清單中的 package 欄，例如 `ripgrep`、`git-delta`、`oven-sh/bun/bun`。
+  未確認歸屬的工具保留，不宣稱舊清單已完全收斂。
+- 例如 `plan --profile core --adopt tree --keep fzf` 會預告移除已確認屬於舊 setup 的 tree，
+  並保留主機工作需要的 fzf；檢視後以相同參數 `apply`，再無參數 `check`。
+  setup 工具若也被個人工作依賴，先 `--keep`；無法自動推論 shell script 的依賴。
+- 只移除已記錄且不在選定清單的直接套件，不用 `--force`、`--ignore-dependencies`、
+  `autoremove` 或 `bundle cleanup`。Homebrew 依賴阻擋移除時保留並回報。
+  不做全面 upgrade；僅已納管且能力檢查失敗的工具可具名升級。
+  若安裝／具名升級需要改動既有 Homebrew 相依套件則停止該項。
+  套件安裝可能部分完成；修正原因後可重跑，紀錄成功項目，沒有全機交易回滾。
+- shell 對齊只在 `.zshenv`／`.bashrc` 接上共用環境，保留個人內容並留下
+  `.bashrc.dotfiles-backup-*`／`.zshenv.dotfiles-backup-*` 備份；修改過的管理區塊、symlink 或語法錯誤會阻擋。
+  需要回復時先檢視對應備份與現檔差異，再還原該檔；工具移除不會自動回滾。
+
+14 台採先盤點、核對歸屬，再各選一台 macOS／Linux 試跑，驗證 Codex／Claude Code 子命令
+可找到工具且本機專案照常執行，最後分批處理其餘主機。每台保存 revision、plan、apply／check
+exit code；未連線或未確認歸屬者標記待完成。本批不透過 `dotsync` 自動安裝或移除套件。
+`brewup` 仍是原有的全面版本更新命令，會升級自行安裝的套件；**不要用它執行這次有界對齊**。
 
 ### 便捷別名
 
@@ -215,7 +242,7 @@ Desktop／IDE／web 的 hook 與權限接點需另外驗證。
 
 ## 版本資訊
 
-- **版本**：v4.0
-- **更新日期**：2026-07-07
+- **版本**：v5.0
+- **更新日期**：2026-10-09
 - **支援系統**：macOS (zsh), Ubuntu 24.04+ (bash)
 - **套件管理**：Homebrew（兩平台統一）

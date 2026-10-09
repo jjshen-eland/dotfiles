@@ -16,11 +16,12 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 - **Writer**：`codex:runtime-deployment-output`
 - **Workspace**：`branch=fix/runtime-deployment-output`
-- **Write Scope**：scripts/, setup-mac-env.sh, setup-linux-env.sh, claude/settings.json, codex/config.toml, shared/skills/handoff/, claude/skills/handoff/, codex/skills/handoff/, README.md, codex/README.md, docs/repo-guide.md, docs/add-new-host.md, docs/skill-portability.md
+- **Write Scope**：scripts/ensure-runtime-layout.py, scripts/ensure-runtime.sh, scripts/ensure-codex-config.py, scripts/ensure-codex-guidance.sh, claude/settings.json, codex/config.toml, shared/skills/handoff/, claude/skills/handoff/, codex/skills/handoff/, codex/README.md, docs/add-new-host.md, docs/skill-portability.md
 - **Dossier Steward**：`codex:brewup-bun-global-update`
 - **寫入協調**：2026-10-07 使用者確認原 writer 已停止，將 macOS 打包預設這一批的重疊檔案寫入權與 dossier 維護交由 `codex:macos-archive-metadata`。本項原 runtime 遷移工作不在本批續作；打包預設的本地驗收已完成，見 M-20261007-macos-archive-metadata-local，後續 runtime 寫入仍依原範圍與 reassignment 規則。2026-10-08 使用者將 CI 候選三檔 tests/run.sh、tests/shard-manifest.tsv、docs/testing-contract.md 的本批寫入交由同一 steward，已完成本地採用驗收，見 M-20261008-ci-controller-core-local；Runtime 其餘實作不接續，後續寫入仍須依 reassignment 規則。
 - **本批寫入交接**：2026-10-08 使用者確認原 writer／steward 已停止，將 brewup bun 全域更新這一批的 scripts/brewup.sh、tests/run.sh、tests/shard-manifest.tsv、README.md、docs/repo-guide.md、docs/testing-contract.md 與 dossier／history 維護交由 `codex:brewup-bun-global-update`。本批本地修改與完整驗收已完成，見 M-20261008-brewup-bun-global-update-local。原 Runtime 工作不接續；原 writer／workspace 僅保留既有項目的歷史 assignment，後續另依 reassignment 規則。
 - **#285 寫入交接**：2026-10-08 使用者確認原 Runtime writer 保持停止，將本批必要 tests/ 與 docs/testing-contract.md 寫入交由 #285 的 `codex:brewup-bun-global-update`。本項 Write Scope 暫移除這兩個共享範圍；原 Runtime writer／workspace 與產品目標保留，原遷移不續作，後續需要這些路徑時另依 assignment 規則協調。
+- **Setup 本批協調**：2026-10-09 使用者將 setup 工具分層、shell 環境、npm 措辭與既有主機對齊實作交由現任 steward；原 Runtime writer 仍停止。本項暫收窄 Write Scope，setup／一般部署清單與相關文件由下方 item 4 接續；其餘 Runtime 目標不變，恢復寫入前重新協調。
 - **Context**：同一版 dotfiles 的新裝與既有主機升級尚未收斂：setup 與 dotsync 的 runtime 部署涵蓋不同，本機 Claude skills 曾需手動補入口；Codex rules 有整目錄連結與保留本機授權紀錄的共存形式；handoff 仍依 canonical／legacy 目錄存在情況選擇 store。使用者要求把歷史差異集中遷移，減少各腳本與 skill 的永久相容分支。
 - **Goal**：同一版 dotfiles 在 macOS／Linux 的乾淨新裝、既有環境升級與重跑部署後，得到相同的受管理 runtime 結構、資料位置與可觀察行為；保留原生／第三方內容與明示 override，完成納管主機遷移後清理本項可移除的 legacy 執行分支。
 - **Acceptance Criteria**：
@@ -59,6 +60,20 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **進度**：模組化與選測重構已完成本地驗收：29 個獨立模組、本地／CI 共用 catalog 與 executor，舊歷史分片及固定計數聚合退役。凍結來源全套 exit 0、127.666 秒；相同 brewup 小修改的兩輪 CI 入口對照平均 119.680 → 14.713 秒（87.71%），純紀錄 13.406 秒。選測／失敗／取消 controls 通過，詳細來源與限制見 M-20261009-ci-modular-redesign-local。後續 controller 分層與重複驗證去重已完成本地全套，見下一步及 M-20261009-ci-controller-test-layers-local；本機收益不代表雙 OS 或完整交付已驗收。
 - **下一步**：PR #292 已合併至 17efb21，macOS／Ubuntu 全套 167.092／85.024 秒，兩邊通過。本批 deep-plan 單次文件 snapshot 改批次 metadata／blob 讀取，保留原三層資料與跨操作漂移拒絕；同 clone 全套 120.051→111.604 秒（7.0%），deep-plan 74.459→58.304 秒（21.7%），29 模組通過，雙端獨立 CLI 行為驗證通過。本批依 `$project --pr` 交付候選，hosted 結果待 PR CI；完整交付與其他模組成本仍 active。詳見 M-20261009-deep-plan-batched-snapshot-local。
 - **關聯**：[本項診斷與驗證計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285（https://github.com/jjshen-eland/dotfiles/issues/285）; GitHub #279（https://github.com/jjshen-eland/dotfiles/issues/279）; PR #288; PR #289; D-20261009-small-change-delivery-spec; D-20261008-ci-critical-path-before-selection; D-20261008-ci-core-controller-recommendation; X-20261009-workflow-verification-economy-revert; B-20260924-workflow-verification-economy
+
+### 4. Setup 工具與 agent shell 環境對齊
+
+- **Writer**：`codex:brewup-bun-global-update`
+- **Workspace**：`branch=feat/setup-agent-tools`
+- **Write Scope**：setup-mac-env.sh, setup-linux-env.sh, scripts/dev-tools.sh, scripts/dev-tools.tsv, scripts/dev-env.sh, scripts/align-dev-environment.sh, scripts/ensure-shell-env.py, scripts/dotfiles-sync.sh, scripts/brewup.sh, shell/, tests/, README.md, docs/repo-guide.md, docs/testing-contract.md, claude/CLAUDE.md, codex/AGENTS.md
+- **Dossier Steward**：`codex:brewup-bun-global-update`
+- **Context**：現有 setup 混合必要與互動便利工具，brew 失敗被吞掉；環境依賴各平台生成的 shell 設定。使用者要求按 Codex／Claude Code 需求改版，統一 npm 措辭，提供 14 台既有主機免重跑 setup 的對齊方式。
+- **Goal**：新裝與增量更新共用工具宣告及受管理 shell 環境，必要工具失敗可見，保留個人設定與既有額外工具；使用者追加要求明確區分 setup 納管與主機自行安裝，只有前者依新定義新增／移除，後者不升級、不移除、不接管。
+- **Acceptance Criteria**：core／workstation 分層、新增 actionlint／ast-grep；plan／apply／check 可觀察且重跑收斂；必要安裝及驗證失敗回非零；雙 shell 無互動命令可讀相同環境，保留專案／個人 PATH 優先權與覆寫；npm／bun 以專案 lockfile 為準；隔離新裝／升級／失敗／重跑測試與完整 suite 通過；14 台 rollout 有逐台預演、revision、驗收與回復路徑。
+- **Constraints**：本批授權本地實作與驗證；未授權 push／PR／merge／live fleet apply。主目錄 settings.json runtime drift 保留。#285 與原 Runtime writer 無並行寫入；不安裝全機隊 mise／語言套件／瀏覽器，不自動卸載未納管／本機保留工具或放行 direnv trust，不執行新 setup 覆寫既有主機 rc。
+- **進度**：共用清單、ownership ledger、plan／apply／check 與 shell helper 已實作；原 setup 吞失敗已重現並修正。29 項隔離行為測試與 30 模組完整 suite 通過（114.485 秒）；macOS 系統 Python 3.9 的 tomllib 缺項已重現，共用 PATH 改用本機 Homebrew Python 3.14.8。未執行主機安裝或 fleet apply。
+- **下一步**：本地候選已完成，見 M-20261009-setup-agent-tools-local；待當批交付指示。來源進 origin/main 且有本批部署授權後，逐台確認 ownership 與 plan，再做雙平台試跑。
+- **關聯**：item 2 Runtime 目錄收斂；item 3 #285；[環境使用說明](docs/repo-guide.md)
 
 ## 暫停中
 

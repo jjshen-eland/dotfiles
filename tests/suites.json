@@ -24,6 +24,7 @@
     "platform": {"command": ["bash", "tests/module-shell.sh", "platform"], "shell": true},
     "review-scope": {"command": ["bash", "tests/module-shell.sh", "review-scope"], "shell": true},
     "shell-contract": {"command": ["bash", "tests/module-shell.sh", "shell-contract"], "shell": true},
+    "dev-environment": {"command": ["{python}", "-B", "tests/test_dev_environment.py"]},
     "runtime-layout": {"command": ["{python}", "-B", "tests/runtime-layout.py"]},
     "mac-metadata": {"command": ["{python}", "-B", "tests/test_mac_metadata.py"]},
     "fleet-contract": {"command": ["{python}", "-B", "tests/test_ci_confidence.py", "HostsTests", "AllUpTests", "SigningTests"]},

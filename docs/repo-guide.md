@@ -77,6 +77,9 @@ sibling（discovery root 外）。備份不自動刪除。中斷後依報告 id 
 
 ### 優先使用這些現代化工具
 
+以下包含 workstation 選配工具；先確認命令可用。agent 的非互動流程優先使用 rg／fd／jq 等可預測輸出，
+不依賴 alias、TUI 或 pager。實際安裝定義見 `scripts/dev-tools.tsv`。
+
 | 任務 | 使用 | 取代 |
 |------|------|------|
 | 列出檔案 | `eza` 或 `ll`/`la`/`lt`/`llt` | ls |
@@ -303,8 +306,15 @@ scripts/dotfiles-sync.sh     # 同步 dotfiles 到所有主機
 
 ## 開發環境
 
-- **Bun**: `bun`（主要 JS runtime，取代 npm/npx）
-- **uv**: `uv`（主要 Python 套件管理，取代 pip/venv）
-- **Node.js**: `node`（相容性備用，不使用 npm）
+- **Bun**: `bun`（新專案預設；既有專案依 lockfile／packageManager）
+- **uv**: `uv`（新 Python 專案預設；專案版本與 lockfile 優先）
+- **Node.js**: `node`（既有 Node 專案與 npm／pnpm／yarn 相容；不強制改用 Bun）
 - **Python**: `python`（兩平台都指向 python3）
 - **GitHub CLI**: `gh`
+
+## Setup 工具與既有主機對齊
+
+工具集合的唯一來源是 `scripts/dev-tools.tsv`；新機 setup 與既有主機共用 `scripts/dev-tools.sh`。
+profile、ownership、預演／執行／驗證及 14 台分批流程見 [README](../README.md#既有主機工具對齊)。
+一般 shell fallback 在 `shell/environment.sh`；非互動命令可用 `scripts/dev-env.sh`。
+對齊入口不隱含執行 brewup，也不代替 Runtime layout 遷移。

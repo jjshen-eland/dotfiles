@@ -268,3 +268,9 @@
   - 放棄:把既有測試與分片當不可改的前提；用不斷增加 wrapper／gate 處理架構問題；只以測試數下降、局部 wall time 或歷史相關性宣稱整體修好
   - 重議:新架構以具名反例、模組／整合行為與固定條件耗時驗證後採用；不得為速度遮蔽必要的合併前失敗。遠端設定、送出及部署仍依當批具名授權
   - 關聯:Issue#285;Issue#279;D-20261009-small-change-delivery-spec;D-20261009-ci-record-selection-candidate;M-20261009-delivery-cost-historical-controls;docs/plans/2026-10-08-workflow-verification-economy.md
+
+- **D-20261009-setup-tool-ownership · 2026-10-09 Setup 共用工具清單與逐台歸屬對齊**：使用者授權 setup 改版、shell 環境與 npm 措辭一致，續指定只調整 setup 定義工具，不更動每台自行安裝工具。採 core／workstation 共用清單；新增 actionlint、ast-grep，shfmt 選配；git-delta 因 Git 設定依賴保留 core。Antigravity 改專案選配，supersedes:M-20260918-antigravity-cli-provisioning 的新機必裝契約，既有安裝依 ownership 保留；舊必裝測試退役，Codex cask 控制由新模組承接。新安裝與明示 adoption 留逐台 ownership ledger，沒有舊安裝收據時一律不由 command 存在推定歸屬；--keep 保存本機用途。只對已納管且不再選用的直接套件做移除，停用自動清理／全面升級；僅納管且能力不足者可具名升級，過期相依項目阻擋安裝／升級。原 setup 的 brew exit 42 被 pipeline 吞掉已用隔離替身重現；新入口傳播失敗。shell fallback 共用 Bash／Zsh，不設定全域 BASH_ENV；既有 shell 只加入管理區塊並保留原內容。既有專案依 lockfile／packageManager／runtime，不禁止 npm 或強制 Bun。
+  - 日期來源:direct
+  - 放棄:依舊清單一律接管並刪除；以 brewup 全面升級達成有界對齊；重跑整份 setup；自動清掉相依套件；將本地 fixture 當 14 台已完成證據
+  - 重議:新來源進 origin/main 且獲當批部署授權後，逐台核對 adoption／keep，再 macOS 與 Linux 各一台試跑；需要共享相依升級或解除本機保留時另行核對，不擴大本次 apply 邊界
+  - 關聯:scripts/dev-tools.tsv;scripts/dev-tools.sh;scripts/align-dev-environment.sh;shell/environment.sh;tests/test_dev_environment.py;README.md

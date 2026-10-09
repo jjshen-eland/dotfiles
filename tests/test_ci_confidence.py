@@ -200,7 +200,7 @@ class GateTests(Sandbox):
         patterns = ['scripts/*.sh','scripts/lib/inventory.sh','claude/scripts/*.sh',
                     'shared/skills/*/scripts/*.sh','shared/skills/*/scripts/lib/*.sh',
                     'claude/skills/*/scripts/*.sh','claude/skills/*/scripts/lib/*.sh',
-                    'codex/skills/*/scripts/*.sh','.githooks/dispatcher','shell/functions.sh',
+                    'codex/skills/*/scripts/*.sh','.githooks/dispatcher','shell/*.sh',
                     'setup-mac-env.sh','setup-linux-env.sh','write-mac-defaults.sh','claude/evals/*.sh','tests/*.sh','tests/modules/*.sh']
         expected = {str(p.resolve()) for pattern in patterns for p in ROOT.glob(pattern)}
         self.assertEqual(set(actual),expected,'dedup dropped a script or a runtime-specific wrapper')
