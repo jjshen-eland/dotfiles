@@ -6,7 +6,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 # STATUS.md
 
-個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-10-09)
+個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-10-10)
 
 ---
 
@@ -70,9 +70,9 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **Context**：現有 setup 混合必要與互動便利工具，brew 失敗被吞掉；環境依賴各平台生成的 shell 設定。使用者要求按 Codex／Claude Code 需求改版，統一 npm 措辭，提供 14 台既有主機免重跑 setup 的對齊方式。
 - **Goal**：新裝與增量更新共用工具宣告及受管理 shell 環境，必要工具失敗可見，保留個人設定與既有額外工具；使用者追加要求明確區分 setup 納管與主機自行安裝，只有前者依新定義新增／移除，後者不升級、不移除、不接管。
 - **Acceptance Criteria**：core／workstation 分層、新增 actionlint／ast-grep；plan／apply／check 可觀察且重跑收斂；必要安裝及驗證失敗回非零；雙 shell 無互動命令可讀相同環境，保留專案／個人 PATH 優先權與覆寫；npm／bun 以專案 lockfile 為準；隔離新裝／升級／失敗／重跑測試與完整 suite 通過；14 台 rollout 有逐台預演、revision、驗收與回復路徑。
-- **Constraints**：本批授權本地實作與驗證；未授權 push／PR／merge／live fleet apply。主目錄 settings.json runtime drift 保留。#285 與原 Runtime writer 無並行寫入；不安裝全機隊 mise／語言套件／瀏覽器，不自動卸載未納管／本機保留工具或放行 direnv trust，不執行新 setup 覆寫既有主機 rc。
+- **Constraints**：本批本地實作與驗證已完成；2026-10-10 使用者以 `$project --pr` 授權 push feature branch 與建立 PR，未授權 merge／live fleet apply。主目錄 settings.json runtime drift 保留。#285 與原 Runtime writer 無並行寫入；不安裝全機隊 mise／語言套件／瀏覽器，不自動卸載未納管／本機保留工具或放行 direnv trust，不執行新 setup 覆寫既有主機 rc。
 - **進度**：共用清單、ownership ledger、plan／apply／check 與 shell helper 已實作；原 setup 吞失敗已重現並修正。29 項隔離行為測試與 30 模組完整 suite 通過（114.485 秒）；macOS 系統 Python 3.9 的 tomllib 缺項已重現，共用 PATH 改用本機 Homebrew Python 3.14.8。未執行主機安裝或 fleet apply。
-- **下一步**：本地候選已完成，見 M-20261009-setup-agent-tools-local；待當批交付指示。來源進 origin/main 且有本批部署授權後，逐台確認 ownership 與 plan，再做雙平台試跑。
+- **下一步**：本地候選已完成，見 M-20261009-setup-agent-tools-local；本輪依 `$project --pr` 交付，停在 PR。來源進 origin/main 且有本批部署授權後，逐台確認 ownership 與 plan，再做雙平台試跑。
 - **關聯**：item 2 Runtime 目錄收斂；item 3 #285；[環境使用說明](docs/repo-guide.md)
 
 ## 暫停中
