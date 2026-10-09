@@ -479,6 +479,13 @@ prepare／claim／finish；focused 新批 committed 與 blind 同批 unstaged �
 CLI。其餘 launcher transport、雙 runtime CLI 與壞 ticket controls 仍獨立保留，不在每個
 狀態組合重複啟動 reviewer。這是 synthetic 狀態證據，不代表原生 reviewer 能辨識語意。
 
+文件快照一次批次讀 HEAD／index metadata 與 immutable blobs，對同次 snapshot 去重 object IDs，
+並以同份 index listing 建 protected fingerprint；每次新 snapshot 仍重讀，沒有跨操作 cache。
+`tests/deep-plan-routing.py` 對小／大文件集合要求固定 Git 程序上限，並與原單檔讀取結果逐層
+比對；literal 路徑、重複 blob、未追蹤文件、不同 index／worktree 與下一次 snapshot 變動均納入。
+非 regular／unmerged index 以及批次回應缺 object、截斷、額外資料皆拒絕，既有 ticket drift、
+checkpoint 與 v1 journal import controls 保留。此項驗資料取得方式，不改 reviewer 判準。
+
 `tests/deep-plan-document-eval.py` 是 opt-in native runner：`setup <new-root>` 凍結當前雙入口／neutral core
 的 bytes 與 links，排除 eval oracle／field log，建立隔離 feature fixtures；`run <root> --phase baseline`、
 `--phase repair`、`--phase blind` 依序使用真實 native complete sets。Fixture author 在兩次審查間只改

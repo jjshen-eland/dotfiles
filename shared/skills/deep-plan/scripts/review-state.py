@@ -85,9 +85,9 @@ def read(path):
     return json.loads(Path(path).read_text())
 
 
-def git(repo, *args):
+def git(repo, *args, input=None):
     return subprocess.check_output(["git", "-C", str(repo), *args],
-                                   env=dict(os.environ, GIT_OPTIONAL_LOCKS="0"))
+                                   input=input, env=dict(os.environ, GIT_OPTIONAL_LOCKS="0"))
 
 
 def repo_content(plan, root, ignored=(), index=None, overrides=None):
@@ -179,10 +179,55 @@ def document_snapshot(plan, repos, documents):
     if root is None:
         return None
     head = git(root, "rev-parse", "HEAD").decode().strip()
-    files = {str(p): {"head": git_document(root, p, head), "index": git_document(root, p),
+    # Read metadata once per layer and immutable blobs once per snapshot. Nothing
+    # survives this call: prepare/claim/finish still take their own fresh snapshots.
+    names = {os.fsencode(p.relative_to(root)): p for p in paths}
+    index = git(root, "ls-files", "--stage", "-z")
+    tree = git(root, "--literal-pathspecs", "ls-tree", "-z", head, "--", *map(os.fsdecode, names))
+    layers = {}
+    for layer, listing in (("head", tree), ("index", index)):
+        entries = {}
+        for row in listing.split(b"\0"):
+            if not row:
+                continue
+            metadata, name = row.split(b"\t", 1)
+            if name not in names:
+                continue
+            if layer == "head":
+                mode, kind, oid = metadata.split()
+                stage = b"0" if kind == b"blob" else b"invalid"
+            else:
+                mode, oid, stage = metadata.split()
+            if name in entries or mode not in {b"100644", b"100755"} or stage != b"0":
+                raise ValueError("repair-document-regular-unconflicted-blob-required")
+            entries[name] = (mode, oid)
+        layers[layer] = entries
+    oids = sorted({oid for entries in layers.values() for _, oid in entries.values()})
+    blobs = {}
+    if oids:
+        raw = git(root, "cat-file", "--batch", input=b"".join(oid + b"\n" for oid in oids))
+        offset = 0
+        for oid in oids:
+            end = raw.find(b"\n", offset)
+            header = raw[offset:end].split() if end >= 0 else []
+            if len(header) != 3 or header[:2] != [oid, b"blob"] or not header[2].isdigit():
+                raise ValueError("document-blob-batch: invalid object header")
+            start = end + 1
+            offset = start + int(header[2])
+            if raw[offset:offset + 1] != b"\n":
+                raise ValueError("document-blob-batch: incomplete object")
+            blobs[oid] = raw[start:offset].decode("utf-8")
+            offset += 1
+        if offset != len(raw):
+            raise ValueError("document-blob-batch: unexpected trailing data")
+    values = {layer: {str(names[name]): {"mode": mode.decode(), "text": blobs[oid]}
+                      for name, (mode, oid) in entries.items()}
+              for layer, entries in layers.items()}
+    files = {str(p): {"head": values["head"].get(str(p)), "index": values["index"].get(str(p)),
                      "worktree": {"mode": p.stat().st_mode, "text": p.read_bytes().decode("utf-8")}}
              for p in paths}
-    return {"path": str(root), "head": head, "protected_sha256": repo_content(plan, root, paths), "files": files}
+    return {"path": str(root), "head": head,
+            "protected_sha256": repo_content(plan, root, paths, index=index), "files": files}
 
 
 def verify_checkpoints(root, old, new, paths):

@@ -641,3 +641,13 @@
   - 放棄:只增加並行數；移除 macOS；讓 scope mock 冒充 drift／Git 整合；保留兩套相同狀態矩陣；以 hosted 前後不同來源差額宣稱本批效果
   - 重議:尚未有本批 hosted 數字；產品 controller 只移除同次 fresh 的重複驗證，平台與 selector 未改，native prompt／policy 未變且不宣稱重跑模型 eval。後續新 PR 檢驗 macOS 全套及逐模組時間，完整交付與其他重型模組仍保留 active，不提前關閉 #285。實作完成當時沒有新的外向授權；使用者隨後以 `$project --pr` 指定本批 PR 終點，尚未達成前維持 endpoint pending，不含 merge／部署。
   - 關聯:Issue#285;Issue#279;PR#291;D-20261009-ci-system-redesign;M-20261009-ci-modular-redesign-local;docs/plans/2026-10-08-workflow-verification-economy.md;tests/review-repair-controller.py;tests/deep-plan-routing.py
+
+- **M-20261009-deep-plan-batched-snapshot-local · 2026-10-09 Deep-plan 文件快照批次讀取完成本地驗證**：PR #292 合併後使用者授權接續 deep-plan 耗時診斷與本地實作。十二格歷史矩陣 20.189 秒，controller 直接 Git 2859 次／14.351 秒，其中逐檔 git_document 1788 次／9.156 秒；profile inclusive 時間不相加。確認同次文件快照的 metadata／blob 程序隨文件數重複，保留檢查點與前後 freshness，改為單次批次取得。
+  - 日期來源:direct
+  - 實作:整份 index listing、選定 HEAD entries、單次 cat-file --batch；同 snapshot 的 OID 去重，依 bytes 長度解析並驗 identity／blob type／完整性。該 index listing 同時產生 protected fingerprint，無跨操作 cache，journal／prompts／policy／runtime linkage 不改。舊單檔 helper 保留供 checkpoint／v1 import 使用。
+  - 驗證:Git 程序上限先以 17 > 5 RED，修後小／大文件集合最多 5 次且逐層等於舊單檔資料；空 blob、CRLF／UTF-8／NUL、literal 路徑、未追蹤文件與跨快照變動涵蓋。非 regular／unmerged index、batch missing／truncated／trailing output 均拒絕。新增 3 個 routing tests，原 40 個保留，雙入口 quick_validate 與完整 29 模組通過。
+  - 獨立證據:fresh-context evaluator 不讀 implementation diff，透過雙端公開 CLI 完成三層合法修正、保留原 dirty code；code／document claim drift、finish drift、非 UTF-8 均拒絕。主 writer 已核對 /private/tmp/deep-plan-forward.DlrGUD 的 commands.jsonl／summary.json。Synthetic schema／ID 重用錯誤保留，另建新 fixture 才列正向；沒有重置 journal 或 native model 品質宣稱。
+  - 量測:同一 no-local clone、Python 3.14.8、相同 PATH、循序執行，完整 wall 120.051→111.604 秒（7.0%），deep-plan 74.459→58.304 秒（21.7%）。兩輪 exit 0、完整來源 snapshot 前後一致；原始 log／patch／evidence JSON 位於 /tmp/deep-plan-snapshot-perf，基線 17efb21204576b13ba0725ca2be1a3a0a6545f21。暫存遺失不補造；單輪結果不作 hosted 或統計穩定性承諾。
+  - 放棄:刪除前後漂移檢查；跨 controller 操作快取 evidence；改模型／reviewer 判準；以定向節省代替全套收益；把為新 batch 介面預先建立的故障注入當成舊版安全缺陷
+  - 重議:尚未送出或量 hosted；全套仍受其他模組成本影響，完整交付保持 active。新批次 commit／push／PR／merge／部署需另依使用者具名授權。
+  - 關聯:Issue#285;Issue#279;PR#292;D-20261005-deep-plan-document-repair-baseline;M-20261009-ci-controller-test-layers-local;docs/plans/2026-10-08-workflow-verification-economy.md;docs/testing-contract.md;tests/deep-plan-routing.py;shared/skills/deep-plan/scripts/review-state.py
