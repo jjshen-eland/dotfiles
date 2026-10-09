@@ -65,3 +65,7 @@ conventions, never its safety floor; stricter rules stack. Without a repo contra
 - Project lifecycle and shipping are explicit-only: use `$project spec` for an active contract, `$project transfer` for owner handoff, and `$project --pr` or `$project --merge` only when the user explicitly invokes that skill and endpoint.
 - An explicit current-goal turbo delivery delegation follows the sole authorization table in `~/.agents/skills/project/references/ship-policy.md`; on alone grants no delivery action.
 - Session-exit evidence is explicit-only: use `$ready4quit` only when the user explicitly invokes it. It audits readiness but does not ship repository changes.
+
+## Project toolchains
+
+新專案 JavaScript/TypeScript 預設 Bun、Python 預設 uv。既有專案依其 lockfile、packageManager 與 runtime 版本宣告；保留 npm／pnpm／yarn／Node 相容性，不另造第二種 lockfile。全域工具僅為 fallback，專案環境與 repo 指令優先。

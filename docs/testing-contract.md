@@ -61,7 +61,7 @@ CI 重構以實際失敗風險決定測試處置。舊節號只供歷史對照�
 
 ## 1. shellcheck gate
 
-涵蓋 `scripts/`、setup 腳本、`claude/skills/*/scripts/` 與其 `lib/`、`shell/functions.sh`、
+涵蓋 `scripts/`、setup 腳本、`claude/skills/*/scripts/` 與其 `lib/`、`shell/*.sh`、
 以及 **`claude/evals/*.sh`**。
 
 `tests/shell-gate-files.py` 以 realpath 去重，ShellCheck 與 bash -n 共用同一份清單；
@@ -939,3 +939,18 @@ Opt-in native replay 經 `tests/review-skills-model-eval.py` 的 `t-request`／`
 正常 suite 不使用模型。供應的 PASS 不冒充完整 review；兩端 production 模型的實際 tool trace、
 fixture 全樹／Git metadata、local origin refs 與 journal 才能證明授權分流。原始 oracle 在
 `shared/skills/deep-review/evals.md`「P22 — Explicit legacy terminal disposition preserves the review boundary」。
+
+## Setup 工具歸屬與 shell 環境
+
+`dev-environment` 模組用隔離 HOME、假 Homebrew 與真 Bash／Zsh 驗證：安裝失敗非零、
+plan 唯讀、profile 保存、個人工具不接管／升級／移除、明示 adoption 與本機保留、
+依賴阻擋與重跑；shell 保留原內容、備份、symlink／管理區塊衝突拒絕、非互動 PATH 與冪等。
+替身不證明 Homebrew registry 或 native installer 的線上可用性；實機 rollout 須另驗。
+原 setup 的安裝 pipeline 在 brew exit 42 時仍印成功並 exit 0 的重現，要求兩份 setup
+改用同一會傳播失敗的 helper。不能以 command 存在推定歷史安裝歸屬。
+
+舊 deployment 18d2「每台新 Mac 必裝 Antigravity」與新選配規格衝突，依
+D-20261009-setup-tool-ownership 退役；Codex 真實 manifest 的 cask 安裝及 Bash／Zsh
+call-site 失敗傳播改由 dev-environment 承接。brewup 不強制 `--greedy` 的控制仍保留。
+macOS 舊系統 Python fixture 驗證平行安裝 Homebrew 版本，自行安裝的舊 Python fixture
+則必須阻擋、不覆寫；3.11 是 tomllib 能力門檻，不是固定安裝版本。

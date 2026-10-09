@@ -651,3 +651,9 @@
   - 放棄:刪除前後漂移檢查；跨 controller 操作快取 evidence；改模型／reviewer 判準；以定向節省代替全套收益；把為新 batch 介面預先建立的故障注入當成舊版安全缺陷
   - 重議:尚未送出或量 hosted；全套仍受其他模組成本影響，完整交付保持 active。新批次 commit／push／PR／merge／部署需另依使用者具名授權。
   - 關聯:Issue#285;Issue#279;PR#292;D-20261005-deep-plan-document-repair-baseline;M-20261009-ci-controller-test-layers-local;docs/plans/2026-10-08-workflow-verification-economy.md;docs/testing-contract.md;tests/deep-plan-routing.py;shared/skills/deep-plan/scripts/review-state.py
+
+- **M-20261009-setup-agent-tools-local · 2026-10-09 Setup v5 工具歸屬與 agent shell 本地驗收完成**：以 main 61afb0d 為基線、branch feat/setup-agent-tools 隔離實作。兩平台 setup 共用 core／workstation 清單與安裝驗證；既有主機獨立 plan／apply／check，逐台保存 profile、直接工具 ownership 與本機保留項目，未納管內容不接管。新共用 Bash／Zsh fallback 保留專案／個人優先權；macOS 系統 Python 3.9 缺 tomllib 已實測，setup 可平行安裝 Homebrew python（最低能力 3.11，不固定版本），本機共用入口實際選到既有 3.14.8。29 項隔離反例通過；凍結非 Markdown 程式／測試輸入，scripts/dev-env.sh ./tests/run.sh 完整 30 模組 exit 0、114.485 秒，包含 runner 失敗／取消與選測 controls。ShellCheck、兩 shell 行為、文件 audit 與 diff check 通過。Antigravity 必裝舊控制依新規格退役，保留 Codex 真實 cask 宣告與 setup 失敗傳播驗證；未拿替身證據冒充 registry／native installer 實機成功。原工作樹 claude/settings.json runtime drift 的 SHA-256 保持 08429aaa01140190a8e97227800548504060cfba948da7d26edc81ed1e1fd890。
+  - 日期來源:direct
+  - 放棄:在缺少歷史安裝收據時直接清理全機隊；用全面 brewup 當工具集合遷移；改寫 Apple 系統 Python；以新版全域 Python 覆蓋專案版本；因紀錄收尾再重跑未變程式的全套
+  - 重議:來源合併與當批部署授權後，14 台先盤點 adoption／keep，macOS／Linux 各一台試跑再分批；本紀錄只結束本地實作驗收，不表示已 push、PR、merge 或 fleet apply
+  - 關聯:D-20261009-setup-tool-ownership;scripts/dev-tools.sh;scripts/dev-tools.tsv;scripts/align-dev-environment.sh;scripts/ensure-shell-env.py;shell/environment.sh;tests/test_dev_environment.py;README.md;STATUS.md

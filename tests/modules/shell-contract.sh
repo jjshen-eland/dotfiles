@@ -17,7 +17,7 @@ fullwidth_hits="$(LC_ALL=C grep -nE '\$[A-Za-z_][A-Za-z0-9_]*[^[:print:][:space:
     "$ROOT"/claude/skills/*/scripts/*.sh "$ROOT"/claude/skills/*/scripts/lib/*.sh \
     "$ROOT"/codex/skills/*/scripts/*.sh \
     "$ROOT/.githooks/dispatcher" \
-    "$ROOT/shell/functions.sh" \
+    "$ROOT"/shell/*.sh \
     "$ROOT"/claude/evals/*.sh \
     "$ROOT"/tests/*.sh)"
 fullwidth_rc=$?
@@ -79,7 +79,7 @@ hd_hits="$(awk -f "$HD_GATE" \
     "$ROOT"/claude/skills/*/scripts/*.sh "$ROOT"/claude/skills/*/scripts/lib/*.sh \
     "$ROOT"/codex/skills/*/scripts/*.sh \
     "$ROOT/.githooks/dispatcher" \
-    "$ROOT/shell/functions.sh" \
+    "$ROOT"/shell/*.sh \
     "$ROOT/setup-mac-env.sh" "$ROOT/setup-linux-env.sh" "$ROOT/write-mac-defaults.sh" \
     "$ROOT"/claude/evals/*.sh \
     "$ROOT"/tests/*.sh)"

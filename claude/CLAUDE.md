@@ -106,8 +106,8 @@ When the user pastes third-party review findings, read the source code and verif
 
 ## Package Management
 
-- **JavaScript/TypeScript**: ALWAYS use `bun` (replaces `npm`/`npx`/`node`). init `bun init`｜add `bun add`｜run `bun run`｜test `bun test`｜global `bun install -g`
-- **Python**: ALWAYS use `uv` (replaces `pip`/`python`/`venv`). init `uv init`｜add `uv add`｜run `uv run`｜test `uv run pytest`｜venv `uv venv`｜CLI `uv tool install`
+- **JavaScript/TypeScript**: 新專案預設 `bun`；既有專案依其 lockfile、packageManager 與 runtime 版本宣告，保留 npm／pnpm／yarn／Node 相容性。 init `bun init`｜add `bun add`｜run `bun run`｜test `bun test`｜global `bun install -g`
+- **Python**: 新專案預設 `uv`；既有專案依其依賴與版本宣告。 init `uv init`｜add `uv add`｜run `uv run`｜test `uv run pytest`｜venv `uv venv`｜CLI `uv tool install`
 - **適用範圍：新專案與自有專案。既有 repo 尊重其現有 lockfile 對應的工具**——`package-lock.json`/`pnpm-lock.yaml`/`yarn.lock` → npm/pnpm/yarn；`poetry.lock`/`Pipfile.lock` → poetry/pipenv。NEVER introduce a second package manager's lockfile into an existing repo.
 
 ## 跨 Repo 工作流

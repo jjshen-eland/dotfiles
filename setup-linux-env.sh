@@ -1,13 +1,14 @@
 #!/bin/bash
 #
 # Ubuntu 24.04 現代化開發環境自動安裝腳本
-# 版本：v4.0
-# 最後更新：2026-03-20
+# 版本：v5.0
+# 最後更新：2026-10-09
 #
 # 使用方式：
 #   chmod +x setup-linux-env.sh
 #   ./setup-linux-env.sh
 #   ./setup-linux-env.sh -y    # 跳過確認提示
+#   ./setup-linux-env.sh -p workstation  # 加裝互動式便利工具
 #
 # 新機一鍵執行（含前置依賴安裝 + clone repo）：
 #   curl -fsSL dot.bitpod.cc | sh
@@ -25,12 +26,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 
 # 解析參數
 AUTO_YES=false
-while getopts "y" opt; do
+TOOL_PROFILE=core
+while getopts "yp:" opt; do
     case $opt in
         y) AUTO_YES=true ;;
-        *) echo "用法: $0 [-y]"; exit 1 ;;
+        p) TOOL_PROFILE="$OPTARG" ;;
+        *) echo "用法: $0 [-y] [-p core|workstation]"; exit 1 ;;
     esac
 done
+case "$TOOL_PROFILE" in core|workstation) ;; *) echo "無效工具 profile: $TOOL_PROFILE" >&2; exit 2 ;; esac
 
 # ================================================
 # 顏色定義
@@ -40,14 +44,12 @@ if [ -t 1 ] && command -v tput &> /dev/null && [ "$(tput colors 2>/dev/null || e
     GREEN='\033[0;32m'
     YELLOW='\033[1;33m'
     BLUE='\033[0;34m'
-    CYAN='\033[0;36m'
     NC='\033[0m'
 else
     RED=''
     GREEN=''
     YELLOW=''
     BLUE=''
-    CYAN=''
     NC=''
 fi
 
@@ -146,89 +148,6 @@ LOCAL_EOF
     fi
 }
 
-# 生成 PATH 設定代碼
-# 策略：
-#   1. 按優先級從低到高添加路徑（最高優先級最後添加，排在最前面）
-#   2. 最後執行去重函數，移除重複路徑並保持順序
-generate_path_config() {
-    cat << 'PATH_CONFIG_EOF'
-# -------------------------------------------
-# PATH 設定（按優先級排序，高優先級在前）
-# -------------------------------------------
-
-# PATH 去重函數：移除重複路徑，保留第一次出現的位置
-# 支援正規化：~ → $HOME，移除尾部斜線
-__dedupe_path() {
-    local new_path=""
-    local seen_paths=""
-    local IFS=':'
-
-    for dir in $PATH; do
-        # 跳過空路徑
-        [ -z "$dir" ] && continue
-
-        # 正規化路徑：展開 ~ 為 $HOME，移除尾部斜線
-        local normalized="$dir"
-        case "$normalized" in
-            "~/"*) normalized="$HOME/${normalized#\~/}" ;;
-            "~")   normalized="$HOME" ;;
-        esac
-        normalized="${normalized%/}"
-
-        # 檢查正規化後的路徑是否已存在
-        case ":$seen_paths:" in
-            *":$normalized:"*) ;;  # 已存在，跳過
-            *)
-                seen_paths="${seen_paths:+$seen_paths:}$normalized"
-                new_path="${new_path:+$new_path:}$normalized"
-                ;;
-        esac
-    done
-    export PATH="$new_path"
-}
-
-# Homebrew 環境設定（Linux）
-if [ -d "/home/linuxbrew/.linuxbrew" ]; then
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-elif [ -d "$HOME/.linuxbrew" ]; then
-    eval "$("$HOME/.linuxbrew/bin/brew" shellenv)"
-fi
-
-# 按優先級從低到高添加（最後添加的排在最前面）
-
-# 優先級 6: CUDA Toolkit（無 GPU 主機不存在此目錄，自動略過）
-# 走 /usr/local/cuda symlink 而非版本目錄，升版免改設定
-# lib 路徑由 /etc/ld.so.conf.d/*cuda*.conf 處理，不需 LD_LIBRARY_PATH
-if [ -d "/usr/local/cuda/bin" ]; then
-    export CUDA_HOME="/usr/local/cuda"
-    export PATH="/usr/local/cuda/bin:$PATH"
-fi
-
-# 優先級 5: Go
-[ -d "$HOME/go/bin" ] && export PATH="$HOME/go/bin:$PATH"
-
-# 優先級 4: Cargo (Rust)
-if [ -f "$HOME/.cargo/env" ]; then
-    source "$HOME/.cargo/env"
-elif [ -d "$HOME/.cargo/bin" ]; then
-    export PATH="$HOME/.cargo/bin:$PATH"
-fi
-
-# 優先級 3: Bun
-[ -d "$HOME/.bun/bin" ] && export PATH="$HOME/.bun/bin:$PATH"
-
-# npm 全域套件（相容性備用，優先級低於 bun）
-[ -d "$HOME/.npm-global/bin" ] && export PATH="$HOME/.npm-global/bin:$PATH"
-
-# 優先級 1: 用戶本地程式（最高優先級）
-[ -d "$HOME/.local/bin" ] && export PATH="$HOME/.local/bin:$PATH"
-
-# 執行去重，移除重複路徑
-__dedupe_path
-
-PATH_CONFIG_EOF
-}
-
 # ================================================
 # 主程式開始
 # ================================================
@@ -246,10 +165,10 @@ else
     exit $?
 fi
 
-print_header "Ubuntu 現代化開發環境自動安裝 v4.0"
+print_header "Ubuntu 現代化開發環境自動安裝 v5.0"
 echo "此腳本將："
 echo "  • 安裝 Homebrew on Linux（統一工具管理）"
-echo "  • 安裝 30+ 個開發工具（與 macOS 工具集一致）"
+echo "  • 安裝共用 core 工具（-p workstation 加裝互動便利工具）"
 echo "  • 智能統合現有 PATH 設定（去重、排序）"
 echo "  • 保留 conda、nvm 等重要配置"
 echo "  • 所有配置集中在 .bashrc"
@@ -351,74 +270,16 @@ print_header "步驟 1: 安裝開發工具"
 print_info "安裝核心工具和現代化 CLI 工具..."
 print_info "這可能需要幾分鐘，請耐心等候..."
 
-# 添加 Bun 官方 Homebrew tap
-print_info "添加 Bun 官方 tap..."
-brew tap oven-sh/bun 2>/dev/null || true
-# 信任第三方 tap 的 bun formula（Homebrew tap-trust 機制，否則 install/upgrade 會被忽略並噴 untrusted 警告）
-brew trust --formula oven-sh/bun/bun 2>/dev/null || true
+# 共用工具契約：必要工具失敗即停止，不吞 installer 的 exit code。
+# shellcheck source=shell/environment.sh
+source "$SCRIPT_DIR/shell/environment.sh"
+bash "$SCRIPT_DIR/scripts/dev-tools.sh" apply --profile "$TOOL_PROFILE"
+hash -r
+print_success "所選工具驗收完成（$TOOL_PROFILE）"
 
-# 一次性安裝所有工具（清單與 macOS 對齊）
-brew install \
-  git \
-  gh \
-  wget \
-  htop \
-  tree \
-  tmux \
-  node \
-  oven-sh/bun/bun \
-  python \
-  uv \
-  jq \
-  yq \
-  httpie \
-  lftp \
-  git-delta \
-  ripgrep \
-  fd \
-  bat \
-  fzf \
-  eza \
-  zoxide \
-  tlrc \
-  tokei \
-  sd \
-  hyperfine \
-  lazygit \
-  dust \
-  shellcheck \
-  direnv \
-  just \
-  watchexec \
-  2>&1 | grep -v "already installed" || true
-
-print_success "工具安裝完成"
-
-# AI CLI 工具（與 macOS 對齊）
-print_info "安裝 AI CLI 工具..."
-
-# Codex：官方只上架 cask（無 formula），binary 類 cask macOS/Linux 皆支援，更新由 brew upgrade 管理
-brew install --cask codex 2>&1 | grep -v "already installed" || true
-
-# Claude Code：官方安裝腳本 → ~/.local/bin，安裝後由 claude update 自我更新（brewup 已涵蓋）
-if command -v claude &> /dev/null; then
-    print_info "Claude Code 已安裝，跳過（更新走 claude update / brewup）"
-else
-    if curl -fsSL https://claude.ai/install.sh | bash; then
-        # 本腳本執行環境的 PATH 尚無 ~/.local/bin，補上讓後續步驟找得到 claude
-        export PATH="$HOME/.local/bin:$PATH"
-        print_success "Claude Code 安裝完成"
-    else
-        print_warning "Claude Code 安裝失敗，稍後可手動執行：curl -fsSL https://claude.ai/install.sh | bash"
-    fi
+if [ -x "$(brew --prefix)/opt/fzf/install" ]; then
+    "$(brew --prefix)"/opt/fzf/install --key-bindings --completion --no-update-rc --no-zsh --no-fish
 fi
-
-print_success "AI CLI 工具安裝完成"
-
-# 設定 fzf shell 整合
-print_info "設定 fzf Shell 整合..."
-"$(brew --prefix)"/opt/fzf/install --key-bindings --completion --no-update-rc --no-zsh --no-fish 2>/dev/null || true
-print_success "fzf Shell 整合完成"
 
 # ================================================
 # 步驟 2: 建立配置檔案
@@ -442,7 +303,6 @@ fi
 print_info "分析現有配置..."
 
 CONDA_INIT=""
-EXISTING_PATH_CONFIG=""
 
 if [ -f ~/.bashrc ]; then
     # 提取 conda 初始化
@@ -460,23 +320,8 @@ fi
 # 提取使用者自訂設定到 .local 檔案
 extract_user_settings
 
-# 統合 PATH
-print_info "統合 PATH 設定..."
-EXISTING_PATH_CONFIG=$(generate_path_config)
-print_success "PATH 統合完成"
-
-# 顯示將要設定的 PATH 順序（優先級從高到低）
-echo ""
-echo -e "${CYAN}PATH 優先級順序（高到低）：${NC}"
-echo "  [1] \$HOME/.local/bin        # 用戶本地程式（uv 等）"
-echo "  [2] \$HOME/.bun/bin          # Bun"
-echo "  [3] \$HOME/.cargo/bin        # Cargo (Rust)"
-echo "  [4] \$HOME/go/bin            # Go"
-echo "  [5] /usr/local/cuda/bin      # CUDA Toolkit（目錄存在才加）"
-echo "  [6] (conda 路徑)             # 由 conda init 管理"
-echo "  [7] Homebrew 路徑            # /home/linuxbrew/.linuxbrew"
-echo "  [8] /usr/local/bin 等        # 系統路徑"
-echo ""
+# 共用環境保留專案優先權，僅補足 fallback。
+print_info "PATH：既有專案／個人路徑 → 共用工具 fallback → 系統路徑"
 
 # 建立 .bash_profile（極簡版，只載入 .bashrc）
 print_info "建立 .bash_profile..."
@@ -504,8 +349,8 @@ cat > ~/.bashrc << 'BASHRC_EOF'
 # ===========================================
 # 現代化開發環境配置（Linux）
 # ===========================================
-# 版本：v4.0
-# 最後更新：2026-03-20
+# 版本：v5.0
+# 最後更新：2026-10-09
 # 自動生成於：Ubuntu 環境設定腳本
 #
 # 策略：
@@ -519,7 +364,11 @@ cat > ~/.bashrc << 'BASHRC_EOF'
 BASHRC_EOF
 
 # 插入統合後的 PATH 設定（在非互動 guard 之前，確保腳本和 Claude Code 都有正確 PATH）
-echo "$EXISTING_PATH_CONFIG" >> ~/.bashrc
+cat >> ~/.bashrc << 'ENV_EOF'
+# dotfiles:environment:start
+[ ! -f "$HOME/.dotfiles/shell/environment.sh" ] || . "$HOME/.dotfiles/shell/environment.sh"
+# dotfiles:environment:end
+ENV_EOF
 
 # 環境變數（也在 guard 之前，腳本和 Claude Code 需要 API keys）
 cat >> ~/.bashrc << 'BASHRC_EOF'
@@ -840,9 +689,9 @@ fi
 cat >> ~/.bashrc << 'EOF'
 
 # -------------------------------------------
-# PATH 去重
+# PATH 去重（保留已啟用的專案環境）
 # -------------------------------------------
-__dedupe_path
+[ ! -f "$HOME/.dotfiles/shell/environment.sh" ] || . "$HOME/.dotfiles/shell/environment.sh"
 
 # -------------------------------------------
 # 載入使用者自訂設定（如果存在）
@@ -1156,66 +1005,9 @@ fi
 # ================================================
 print_header "步驟 5: 驗證安裝"
 
-# 計數器
-TOTAL=0
-SUCCESS=0
-
-check_tool() {
-    TOTAL=$((TOTAL + 1))
-    if command -v "$1" &> /dev/null; then
-        SUCCESS=$((SUCCESS + 1))
-        return 0
-    else
-        return 1
-    fi
-}
-
-print_info "檢查已安裝工具..."
-
-# Homebrew
-check_tool brew && echo "  ✅ brew" || echo "  ❌ brew"
-
-# 核心工具
-check_tool git && echo "  ✅ git" || echo "  ❌ git"
-check_tool gh && echo "  ✅ gh" || echo "  ❌ gh"
-check_tool wget && echo "  ✅ wget" || echo "  ❌ wget"
-check_tool htop && echo "  ✅ htop" || echo "  ❌ htop"
-check_tool tree && echo "  ✅ tree" || echo "  ❌ tree"
-check_tool tmux && echo "  ✅ tmux" || echo "  ❌ tmux"
-check_tool node && echo "  ✅ node" || echo "  ❌ node"
-check_tool bun && echo "  ✅ bun" || echo "  ❌ bun"
-check_tool python3 && echo "  ✅ python3" || echo "  ❌ python3"
-check_tool uv && echo "  ✅ uv" || echo "  ❌ uv"
-check_tool jq && echo "  ✅ jq" || echo "  ❌ jq"
-check_tool yq && echo "  ✅ yq" || echo "  ❌ yq"
-
-# 現代化工具
-check_tool rg && echo "  ✅ ripgrep (rg)" || echo "  ❌ ripgrep"
-check_tool fd && echo "  ✅ fd" || echo "  ❌ fd"
-check_tool bat && echo "  ✅ bat" || echo "  ❌ bat"
-check_tool fzf && echo "  ✅ fzf" || echo "  ❌ fzf"
-check_tool eza && echo "  ✅ eza" || echo "  ❌ eza"
-check_tool zoxide && echo "  ✅ zoxide" || echo "  ❌ zoxide"
-check_tool delta && echo "  ✅ git-delta" || echo "  ❌ git-delta"
-check_tool http && echo "  ✅ httpie" || echo "  ❌ httpie"
-check_tool lftp && echo "  ✅ lftp" || echo "  ❌ lftp"
-check_tool tldr && echo "  ✅ tldr" || echo "  ❌ tldr"
-check_tool tokei && echo "  ✅ tokei" || echo "  ❌ tokei"
-check_tool sd && echo "  ✅ sd" || echo "  ❌ sd"
-check_tool hyperfine && echo "  ✅ hyperfine" || echo "  ❌ hyperfine"
-check_tool lazygit && echo "  ✅ lazygit" || echo "  ❌ lazygit"
-check_tool dust && echo "  ✅ dust" || echo "  ❌ dust"
-check_tool shellcheck && echo "  ✅ shellcheck" || echo "  ❌ shellcheck"
-check_tool direnv && echo "  ✅ direnv" || echo "  ❌ direnv"
-check_tool just && echo "  ✅ just" || echo "  ❌ just"
-check_tool watchexec && echo "  ✅ watchexec" || echo "  ❌ watchexec"
-
-# AI CLI 工具
-check_tool claude && echo "  ✅ claude (Claude Code)" || echo "  ❌ claude"
-check_tool codex && echo "  ✅ codex" || echo "  ❌ codex"
-
-echo ""
-print_success "工具安裝完成: $SUCCESS/$TOTAL"
+# 與安裝使用同一份清單；基本功能可執行才算成功。
+bash "$SCRIPT_DIR/scripts/dev-tools.sh" check --profile "$TOOL_PROFILE"
+python3 "$SCRIPT_DIR/scripts/ensure-shell-env.py" apply
 
 # 檢查配置檔案
 echo ""
@@ -1229,17 +1021,8 @@ print_info "檢查配置檔案..."
 [ -f ~/.ssh/id_autogen ] && echo "  ✅ SSH key（id_autogen）" || echo "  ⚠️  id_autogen 未產生"
 [ -f ~/.ssh/id_autogen-cert.pub ] && echo "  ✅ User certificate" || echo "  ⚠️  User certificate 未簽署"
 
-# 顯示 PATH 統合結果
-echo ""
-print_info "PATH 設定順序（優先級從高到低）："
-echo "  1. \$HOME/.local/bin"
-echo "  2. \$HOME/.bun/bin"
-echo "  3. \$HOME/.cargo/bin"
-echo "  4. \$HOME/go/bin"
-echo "  5. /usr/local/cuda/bin（目錄存在才加）"
-echo "  6. (conda 路徑)"
-echo "  7. Homebrew 路徑"
-echo "  8. 系統路徑"
+# 顯示 PATH 契約
+print_info "PATH：既有專案／個人路徑 → 共用工具 fallback → 系統路徑"
 
 # ================================================
 # 完成
