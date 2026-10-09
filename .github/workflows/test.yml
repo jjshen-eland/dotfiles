@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
 
       - name: Add Homebrew to PATH on Linux
         if: runner.os == 'Linux'
@@ -30,5 +32,5 @@ jobs:
       - name: Install test dependencies
         run: brew install shellcheck ripgrep yq zsh
 
-      - name: Run complete suite
-        run: ./tests/run-parallel.sh
+      - name: Run required checks
+        run: python3 -B tests/run-ci.py

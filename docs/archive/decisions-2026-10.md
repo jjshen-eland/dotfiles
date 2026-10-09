@@ -249,3 +249,15 @@
   - 放棄:保留 outdated 表格解析作為更新前置；附加 --latest 跨越原生版本範圍；吞掉更新失敗診斷
   - 重議:使用者另指定版本策略或 brewup 失敗 exit 契約時，以當批需求調整；本批只完成本地來源，不執行真實套件更新或部署
   - 關聯:docs/archive/milestones-2026-08.md（2026-08-11 brewup bun 提示）;scripts/brewup.sh;docs/repo-guide.md;docs/testing-contract.md;tests/run.sh
+
+- **D-20261009-small-change-delivery-spec · 2026-10-09 #285／#279 以完整交付耗時重新建立改善規格**：使用者在唯讀診斷後明示 `$project spec`，並以選項 1 確認前任停止、由本 session 接續 exact workline `codex:brewup-bun-global-update`；本輪只寫規格。PR #289 已將第一批完整退版至 main `d0a4624820b9c462d9a9bb14764164c22cdb3384`。新規格先處理 #285 可歸因的證據重建與流程往返，再評估 #279 的紀錄文件 CI 路徑，將新增保存／核對成本與最終回報一起納入驗收。PR #288 的 1244.449 秒只到同步清理觀測，macOS job 329 秒；其餘不全稱模型思考。最新 macOS core 294 秒，hosted 子項尚未歸因；不把整個 core 當廉價全域 gate。使用獨立 worktree、branch `docs/workflow-delivery-spec`；原 checkout 的 claude/settings.json 是使用者確認的 runtime drift，不納入、不改動。原 Runtime writer／scope 與 work item 保留，不接續該產品目標；四個 coordination fields 以 STATUS 為準。
+  - 日期來源:direct
+  - 放棄:原樣恢復退版功能；只憑測試次數、輸出 bytes 或局部 benchmark 建議採用；先建完整依賴圖、永久快取或另一層治理；以歷史交付授權開新 PR
+  - 重議:固定 scope 的完整操作成本穩定下降且必要失敗 controls 通過才考慮候選採用；收益被波動或新增成本抵銷時保留未驗收並停止追加機制。實作及任何交付仍待當批授權
+  - 關聯:Issue#285;Issue#279;PR#288;PR#289;X-20261009-workflow-verification-economy-revert;D-20261008-ci-critical-path-before-selection;D-20261008-ci-core-controller-recommendation;docs/plans/2026-10-08-workflow-verification-economy.md
+
+- **D-20261009-ci-record-selection-candidate · 2026-10-09 #279 為既有紀錄文字建立有界 CI 候選**：使用者「開工」授權本地實作與驗證。第一個 #285 指引候選無淨收益而撤回後，依既有規格處理每個 PR 無條件執行全套的成本。只允許整個 PR 修改既有 STATUS／backlog／history／plan 一般檔案且 heading 未變；實際必要集合為 kernel、xref、RealRetrievalCorpusTests（含當前 corpus 的 audit --ship）。其餘 scope、未知差異、merge tree 不符及 symlink 別名均全套 fallback，保留雙 OS job 與既有 runner。先前 code commit 不得被最後的 docs commit 掩蓋；選擇器的 Git fixtures、故障傳播與外層取消控制已通過。補充檢查重現縮排／空 heading 被誤判 records，先加 RED 後補足 ATX／Setext 判定；完整驗證及固定來源效能比較仍進行中。
+  - 日期來源:direct
+  - 放棄:一般 Markdown 一律略過全套；只看最新 commit；整個 core 必跑；新依賴圖或持久 cache；修改 required check 名稱；把本地結果當 hosted／完整交付驗收
+  - 重議:必要 gate 漏失、scope 誤分類、取消清理失敗或固定條件無時間收益時撤回／修正候選；hosted 與真實交付仍待當批具名授權
+  - 關聯:Issue#279;Issue#285;D-20261009-small-change-delivery-spec;X-20261009-log-scope-latency;tests/run-ci.py;tests/test_ci_selection.py;docs/testing-contract.md

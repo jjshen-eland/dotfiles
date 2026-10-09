@@ -251,3 +251,10 @@
   - 放棄:PR #287 的整批流程／測試實作；以局部機制收益代替總耗時驗收後建議原樣合併
   - 重議:使用者重新授權，且同類真實工作證明完整操作成本降低時；不自動重新採用或追加規則
   - 關聯:supersedes:M-20261008-workflow-verification-economy-local;M-20261008-workflow-verification-economy-delivery-measured;M-20261009-workflow-verification-economy-call-timeline;docs/plans/2026-10-08-workflow-verification-economy.md;Issue#285;PR#287;PR#288
+
+- **X-20261009-log-scope-latency · 2026-10-09 #285 縮小歷史證據核對的單組 native 候選無時間收益，撤回**：固定 docs-merged fixture 的完整 candidate diff 只有 README prose，舊程式測試與已接受 base 有 EOF newline 差異。Opus baseline 仍執行舊 evidence check 後正確只跑文件檢查；候選先依 repo contract 判定本批驗證範圍，省去該核對，但一組 before／after 完整本地 Log 為 73.9496／74.2011 秒，沒有淨收益。未採用 log-prepare 候選，source 已還原；不因工具次數減少追加規則或擴大矩陣。兩組 Codex CLI 在讀取 skill 前即遇 code-mode host negotiation timeout，原始 trace 保留，不計入效能或 skill pass/fail。CLI capability probe 明示停用 host 會使 Code Mode 不可用，沒有修改真實 runtime 設定或視為修好。
+  - 日期來源:direct
+  - 證據:/tmp/workflow-285-scope-before、/tmp/workflow-285-scope-after 保存 frozen source／prompt／raw native trace／Git fixture；Codex capability probe /tmp/workflow-285-codex-tool-probe.jsonl。Opus 為 claude-opus-5-5[1m]、high／standard；Codex gpt-6.1-sol 工具失效。兩 arm 無真實 provider shipping，單組不同 native 排程不能證明候選較慢或普遍無效
+  - 放棄:把一個省掉的 evidence call 當整體 latency 修復；採用未見淨收益的指引；繼續重跑相同案例直到較快
+  - 重議:有更上游的流程成本證據或工具能力恢復後的具體新候選時；目前先續行已授權 #279 的紀錄文件 CI 路徑
+  - 關聯:Issue#285;D-20261009-small-change-delivery-spec;docs/plans/2026-10-08-workflow-verification-economy.md

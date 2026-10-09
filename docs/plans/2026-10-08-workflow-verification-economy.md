@@ -5,9 +5,90 @@
 - 狀態：in-progress
 - 種類：implementation
 - Writer／Dossier Steward：`codex:brewup-bun-global-update`
-- Workspace：`branch=perf/workflow-verification-economy`
-- 基線：`92dc1b9c6e6a836146606d3cee12edd2505ecef6`；起始唯一未提交變更為本 session 建立的 #285 spec。
-- 需求來源：[GitHub #285](https://github.com/jjshen-eland/dotfiles/issues/285)。使用者已授權開工；2026-10-08 續以 `$project --merge` 授權本次 invocation 的候選交付，部署不在範圍內。
+- Workspace：`branch=docs/workflow-delivery-spec`
+- 當前基線：`d0a4624820b9c462d9a9bb14764164c22cdb3384`（PR #289 完整退版後）；原始基線 `92dc1b9c6e6a836146606d3cee12edd2505ecef6` 僅供歷史重現。
+- 需求來源：[GitHub #285](https://github.com/jjshen-eland/dotfiles/issues/285)、[GitHub #279](https://github.com/jjshen-eland/dotfiles/issues/279)。2026-10-09 使用者重新要求診斷並明示 `$project spec`，確認前任停止，由本 session 接續 `codex:brewup-bun-global-update`；本輪只寫 spec，過去交付授權不沿用。
+
+**目前有效規格（2026-10-09）**：以下本節定義重新開工的順序與驗收；後面的既有診斷、
+最小修正順序及驗證段落保留為已退版方案的歷史重現，不是本輪執行指令。Active contract 見 STATUS；
+決策為 D-20261009-small-change-delivery-spec。原 checkout 的 claude/settings.json 為使用者確認的
+runtime drift，保持原樣；本輪在獨立 worktree，spec 階段僅修改本項 STATUS、既有 plan 與 decision record。
+
+目標是小幅脚本／純紀錄變更從交付指令到最終回報的實際耗時下降，含測試證據準備、
+讀取流程、必要檢查、CI、合併、同步清理及回報。先改善 #285 的可歸因流程成本，再評估
+#279 的紀錄文件 CI 路徑；兩項可分別驗證，局部收益不能代表整體完成。
+
+固定證據與未確認部分：
+
+| 案例／階段 | 秒 | 邊界 |
+|---|---:|---|
+| PR #288 指令到開 PR | 593.629 | 24 次 tool call；9 次 reference reader、6 次含臨時 Python |
+| 可見 tool／background 區間 union | 20.362 | 是上列子集；區間外 573.267 秒含生成、處理與排程，不能全稱模型思考 |
+| PR #288 PR 到 merge | 435.000 | macOS job 329 秒、Ubuntu 157 秒，並行且一次成功 |
+| PR #288 merge 到同步清理觀測 | 215.820 | 不包含最終回報 |
+| PR #288 指令到同步清理觀測 | 1244.449 | 純紀錄三檔；無 compaction、無新增本地全套 |
+
+PR #288 的原始 trace 顯示重建舊環境／snapshot、核對已修正的 EOF newline、
+誤用普通 SHA256 後再讀 canonical helper 的額外往返；證據是流程行為，不把整段差額
+當作某個 helper 的執行時間。Workflow 無差異分類，每個 PR 都跑雙 OS 全套。
+最近五輪 macOS 最慢均為 core；退版後 run 37874093903 的 core／runtime／plan／review／ship_state
+分別 294／263／235／199／107 秒，suite step 296 秒、依賴安裝 6 秒。
+Hosted core 子項與資源競爭仍未知；runner 先緩衝各 shard log 再輸出，不能用輸出時間戳
+推算子項執行時間。歷史不同來源／環境的快慢不是固定條件的因果對照。
+
+實作授權後的候選順序與邊界：
+
+1. 固定純紀錄交付與普通腳本的代表 fixture、原證據、模型／工具環境與階段時間戳。
+   #285 先選一個已觀察、可機械處理的重建／查證／收尾步驟，確認來源語意後用既有入口
+   提供明確結果；每次只改一個因果點。Reference 載入及安全規範若要改，須另有 observed RED
+   與相應行為證據，不能因檔案長或工具呼叫多就刪規則。保存證據的新成本必須一起計時。
+2. #279 先評估紀錄文件能否安全縮小測試集合；按內容角色與實際依賴分類，不用 `.md` 副檔名
+   一刀切。必要文件／xref／topology 等 checks 與治理工具、review controller 自身回歸分開判定；
+   不預設 core 全部必跑或全部可省。以整個 PR 的變更為範圍；新增、刪除、rename、symlink、
+   混合變更、缺差異資料及分類錯誤均有具名 controls。無法證明獨立者全套 fallback，
+   保留雙 OS required check 名稱、正確失敗／取消語意及完整 suite 入口。
+3. 分別比較改前／改後相同 scope 的完整操作，先一組判斷方向，有收益再補必要重複控制，
+   初輪至多三組交錯對照；不以不同 scope 的 PR 差額或斷言數下降驗收。記錄各組及中位數／範圍，
+   波動蓋過收益時標未確認；兩個有界候選仍無淨收益時停止追加機制，回報因果缺口。
+   不透過反覆重跑至較快樣本挑選結果，也不把一次性 benchmark 變成日常交付前置。
+4. 本地證據只證明本地收益；hosted 選測先對照完整集合與故障攔截，再於當批具名 PR／merge
+   授權內觀察真實交付，量到最終回報。慢平台／compaction 保留在原始總時間，另作分項，
+   不任意扣除後宣稱達標。不為量測自動建立／合併空 PR，缺真實交付證據時本項保持未完成。
+
+正確性驗收保留有效沿用、changed／unknown／失敗、必要來源與環境／link topology 核對，
+以及授權、ownership、Git discipline、fresh required checks。若修改共用 skill，先依 AGENTS.md
+authoring route 做相關 Claude Code／Codex native behavior controls；若修改 runner，驗必要的
+集合完整性、受支援入口、失敗聚合與中斷清理。普通變更不自行加 runner 改版才需要的矩陣。
+不自動恢復 #285 已退版功能、不修改 branch protection、不先建立完整依賴圖、永久快取或新治理層。
+
+量測來源：PR #288 body、Actions runs 37824528246／37874093903；同機原始 session
+`/Users/jjshen/.codex/sessions/2026/10/08/rollout-2026-10-08T15-08-21-01a11a57-75bb-7da1-b85e-9714aaa2952f.jsonl`，
+normalized measurement `/tmp/workflow-285-20261009-call-timeline/shipping-session-measurement.json`。
+暫存不存在時明示不可重查的部分，不能補造結果；remote-visible timestamps 可另由 API 核對。
+Spec 完成不代表優化或交付完成。使用者續以「開工」授權本地實作與驗證；
+首個候選先固定完整 candidate diff 的驗證範圍：docs-merged 的舊程式測試與已合入 base
+不同，但本批只有 prose；docs-mixed 的最後一個 commit 同為 prose，前一個 pending commit
+卻有 code。兩者都須先查整批差異與 repo contract，不能用最後一顆 commit 或舊紀錄
+決定本批範圍。候選尚未採用；此步不授權 commit／push／PR／merge／部署。
+
+實作進度：第一個 Log 指引候選的 Opus before／after 為 73.9496／74.2011 秒，無淨收益，
+已撤回指引並保留 fixtures／raw trace（X-20261009-log-scope-latency）；Codex host negotiation
+timeout 發生在 skill 讀取前，屬無效能力樣本。#279 有界紀錄 CI 候選已完成本地驗證，實際規則
+與測試入口見 docs/testing-contract.md 第 25 節及 D-20261009-ci-record-selection-candidate。
+完整 serial 1577 PASS／0 FAIL；固定來源的兩組交錯對照：
+
+| 同機 suite 執行 | 第一組（全套→紀錄） | 第二組（紀錄→全套） |
+|---|---:|---:|
+| 全套 parallel | 120.591 秒 | 116.515 秒 |
+| records（含分類） | 13.135 秒 | 13.111 秒 |
+
+中位數由 118.553 秒降至 13.123 秒（88.93%），每次 exit 0、checkout 乾淨；全套原 manifest
+計數保持 1577／0。真實 xref／缺 Writer 文件故障皆在 records 路徑 exit 1；scope 與取消清理
+controls 通過。完整來源、環境、raw logs 與失敗樣本邊界見 M-20261009-ci-record-selection-local。
+本地收益支持保留候選；不包含 checkout／安裝或完整交付時間。普通程式修改仍跑全套，新增
+selector tests 的 hosted 成本尚待觀察。使用者續選 `$project --pr`，本批開 PR 驗雙 OS；
+merge 與後續同類真實交付仍另待當批授權與證據。
+不宣稱 #285 的完整交付耗時已改善，work item 保持 in-progress。
 
 ## 診斷與證據邊界
 

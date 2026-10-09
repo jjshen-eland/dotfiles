@@ -608,3 +608,10 @@
   - 日期來源:direct
   - 證據:/tmp/workflow-285-revert-o4xlch4g/{serial.log,parallel.log,results.json,tested.patch,source-check.json}；兩 runner 同機並行，wall time 414.585／126.955 秒不作前後效能結論
   - 關聯:X-20261009-workflow-verification-economy-revert;docs/plans/2026-10-08-workflow-verification-economy.md;Issue#285;PR#287;PR#288
+
+- **M-20261009-ci-record-selection-local · 2026-10-09 #279 紀錄文件 CI 候選通過本地驗證與兩組時間對照**：修正後來源在 no-local clean clone 凍結，以既有 STATUS 的文字修改模擬整個 PR。Python 3.14.8、同機同來源依序執行：serial 419.676 秒、1577 PASS／0 FAIL；完整 parallel 120.591 秒 → records 13.135 秒；反向 records 13.111 秒 → 完整 parallel 116.515 秒，全部 exit 0、每次前後 Git checkout 乾淨。兩次全套均 1577／0、五 shard 的原 manifest 計數不變。Records 中位數 13.123 秒，對照完整 runner 中位數 118.553 秒，縮短 88.93%；此為同一候選來源切換檢查集合的本地 suite 時間，不含 checkout／安裝／模型／provider／merge／最終回報。
+  - 日期來源:direct
+  - 驗證:真 Git scope controls 涵蓋前段 code＋尾段 docs、regular-file mode、增刪 rename、symlink 別名、dirty／未知 event、checkout identity、synthetic merge 及 heading；kernel／xref exit 0 的 stdout findings 仍判失敗。Records 取消清除 descendants 且不執行後續 checks；full 外層取消沿用 supervisor。另以真實 STATUS 壞節名引用及缺 Writer 欄位注入，兩者仍選 records 並 exit 1，分別由 xref／document corpus 攔截。
+  - 證據:/var/folders/t5/4b3mtjj52fvdplz5f15mf_ym0000gp/T/workflow-ci-final-bip66bxc 保存 measurement.json、results.json、serial.log、full-1.log、full-2.log、records-1.log、records-2.log、faults.json 與 fault logs。Fixture head d5022864486b683b2ff3482e2779b57e91959aff；changed_source_hashes 對應受測來源，暫存不在則不得假稱可重查。docs-merged／docs-mixed setup 的整批差異分別 README／README＋app.py，最後一顆都只有 README；原生候選結果見 X-20261009-log-scope-latency。
+  - 限制:早期候選縮排／空 heading、xref stdout 與 records 取消 controls 先 RED 後修正；初次 serial 同時受本機 Python 3.9 缺 tomllib 影響，且測試期間候選已失效，不計 final pass 或效能樣本。改用既有 Homebrew Python 後原失敗 48 例及最終全套通過，沒有修改使用者 runtime config。保留本地 CI 候選；普通程式修改仍跑全套，新增 selector regressions 的 hosted 成本、雙 OS 結果與完整交付收益尚未驗收。#285 的無收益指引已撤回，active work item 不結案，無 commit／push／PR／merge／部署授權。
+  - 關聯:Issue#279;Issue#285;D-20261009-ci-record-selection-candidate;X-20261009-log-scope-latency;docs/plans/2026-10-08-workflow-verification-economy.md;tests/run-ci.py;tests/test_ci_selection.py
