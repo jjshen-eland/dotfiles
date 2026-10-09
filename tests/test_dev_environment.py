@@ -44,6 +44,7 @@ if args[0]=='list': sys.exit(0 if (bin/('tool-'+package)).exists() else 1)
 if args[0]=='deps': print(os.environ.get('TEST_DEPS','')); sys.exit(0)
 if args[0]=='outdated': print(os.environ.get('TEST_OUTDATED','')); sys.exit(0)
 if args[0] in ('install','upgrade'):
+ if os.environ.get('TEST_READ_STDIN')=='1': sys.stdin.read()
  if os.environ.get('TEST_FAIL')=='1': sys.exit(42)
  p=bin/os.environ.get('TEST_INSTALL_EXE','tool-'+package); p.write_text('#!/bin/sh\\necho version-1\\n'); p.chmod(0o755)
  sys.exit(0)
@@ -111,6 +112,21 @@ sys.exit(2)
         self.assertEqual(self.run_tools('apply').returncode, 0)
         self.assertEqual(first, self.log())
         self.assertEqual(self.run_tools('check').returncode, 0)
+
+    def test_installer_stdin_cannot_consume_remaining_tools(self):
+        self.env['TEST_READ_STDIN'] = '1'
+        result = self.run_tools('apply', '--profile', 'workstation')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertTrue((self.bin / 'tool-beta').exists(), 'installer skipped the next tool')
+        self.assertEqual(self.ledger(), 'formula\talpha\nformula\tbeta\n')
+        self.assertEqual(self.run_tools('check', '--profile', 'workstation').returncode, 0)
+
+    def test_version_probe_stdin_cannot_hide_missing_tool(self):
+        alpha = self.tool('alpha')
+        alpha.write_text('#!/bin/sh\ncat >/dev/null\necho version-1\n')
+        result = self.run_tools('check', '--profile', 'workstation')
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn('MISSING_OR_BROKEN\ttool-beta\tbeta', result.stdout)
 
     def test_preexisting_and_independent_tools_not_owned_or_changed(self):
         self.tool('alpha')

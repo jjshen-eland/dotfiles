@@ -946,6 +946,8 @@ fixture 全樹／Git metadata、local origin refs 與 journal 才能證明授權
 plan 唯讀、profile 保存、個人工具不接管／升級／移除、明示 adoption 與本機保留、
 依賴阻擋與重跑；未選用的 workstation／legacy 工具在 plan／apply／check 均不得執行，
 plan 僅列可解析路徑，選用工具仍需能力驗證；shell 保留原內容、備份、symlink／管理區塊衝突拒絕、非互動 PATH 與冪等。
+安裝器及版本探測會讀取 stdin 的反例必須仍處理後續工具，缺項不得錯回成功；
+manifest reader 使用獨立 descriptor，子程序 stdin 不得共用工具清單。
 `content` 比對兩端全域文件的 CLI preferences 短段落，拒絕缺失、重複或內容漂移；
 section 擷取有非空、缺失、空白、重複 controls，不固定完整工具清單或宣稱模型選用效果。
 替身不證明 Homebrew registry 或 native installer 的線上可用性；實機 rollout 須另驗。
