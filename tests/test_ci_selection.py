@@ -30,12 +30,16 @@ class SelectionTests(unittest.TestCase):
         tests = self.root / 'tests'; tests.mkdir(exist_ok=True)
         for name in ('suite.py', 'content-checks.py'):
             shutil.copy(SCRIPT.with_name(name), tests / name)
+        for name in ('claude/CLAUDE.md', 'codex/AGENTS.md'):
+            entry = self.root / name
+            entry.parent.mkdir(parents=True, exist_ok=True)
+            entry.write_text('## CLI preferences\n\nFixture tools.\n')
         (tests/'suites.json').write_text(json.dumps({'always':['content'], 'modules': {
             'content': {'command':['{python}', '-B', 'tests/content-checks.py']},
             'full': {'command':['{python}', '-c', 'raise SystemExit(9)']}},
             'routes':[{'paths':['STATUS.md','docs/backlog.md','docs/archive/*.md','docs/plans/*.md'],
                        'modules':['content']}]}))
-        self.git('add', 'STATUS.md', 'docs', 'AGENTS.md', 'app.py', 'tests')
+        self.git('add', 'STATUS.md', 'docs', 'AGENTS.md', 'app.py', 'tests', 'claude', 'codex')
         self.git('commit', '-qm', 'fixture base')
         self.base = self.git('rev-parse', 'HEAD').strip()
         self.git('switch', '-qc', 'fixture-pr')
@@ -193,6 +197,22 @@ class SelectionTests(unittest.TestCase):
             result, plan = self.select(execute=True)
             self.assertEqual(plan['mode'], 'records')
             self.assertNotEqual(result.returncode, 0, result.stdout)
+
+    def test_cli_preferences_missing_duplicate_or_drift_fails_content(self):
+        for name in ('kernel-gate.py', 'xref-gate.py', 'test_doc_governance.py'):
+            (self.root / 'tests' / name).write_text('pass\n')
+        command = [sys.executable, str(self.root / 'tests/content-checks.py')]
+        good = subprocess.run(command, capture_output=True, text=True)
+        self.assertEqual(good.returncode, 0, good.stdout + good.stderr)
+        entry = self.root / 'codex/AGENTS.md'
+        original = entry.read_text()
+        for body in ('', '## CLI preferences\n\n', original + original,
+                     original.replace('Fixture tools.', 'Different tools.')):
+            with self.subTest(body=body):
+                entry.write_text(body)
+                result = subprocess.run(command, capture_output=True, text=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('CLI preferences missing, duplicated or different', result.stdout)
 
     def test_fallback_executes_full_suite_and_preserves_failure(self):
         tests = self.root / 'tests'; tests.mkdir(exist_ok=True)
