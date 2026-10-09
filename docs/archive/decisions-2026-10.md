@@ -281,3 +281,11 @@
   - 放棄:在全域逐一列全部安裝／選配工具；每次強制讀 manifest；為簡短提示引入新共用載入檔；把安裝清單等同每台工具現況
   - 重議:兩端原生入口各保留同一短段，既有 content gate 比對缺失／重複／漂移。完整安裝定義仍在 scripts/dev-tools.tsv，人用工具表仍在 docs/repo-guide.md；未做模型行為 eval，不宣稱提示一定改變選用率。新增工具只有可證明需要常駐提醒時才加入，本批尚未 push／部署。
   - 關聯:D-20261009-setup-tool-ownership;claude/CLAUDE.md;codex/AGENTS.md;tests/content-checks.py;STATUS.md
+
+- **D-20261010-setup-bottle-dependency-guard · 2026-10-10 Setup bottle 安裝不要求更新未使用的編譯依賴**：fleet 續跑預檢證明只更新 ca-certificates 後仍會被 curl／libgit2 等 build tree 的舊版本阻擋。eagle03 的 Homebrew dry-run --force-bottle 只計畫安裝 actionlint／ast-grep；正常 runtime deps 為 actionlint 的 gmp／libffi／shellcheck 與 ast-grep 的空集合，均已安裝，不需要實際更新整棵編譯依賴。既有 guard 不分 source／bottle 是第一個因果差異。
+  - 日期來源:direct
+  - 決定:formula 宣告提供 bottle 且執行期依賴全部已安裝時，以 --force-bottle 安裝或修復 owned tool，只檢查 runtime deps 的 outdated 狀態；不存在可用 bottle 時由 Homebrew 非零退出，禁止 source fallback。原本不提供 bottle 的配方（如 Bun）、任何 runtime 缺項及 cask 維持原完整 build／implicit 依賴檢查；不放寬既有個人工具保全與 ownership。使用者本批已核准七台 ca-certificates 限定更新，其他既有套件仍不得升級。
+  - 證據:真實 dry-run 及 brew deps；本機 Homebrew formula_installer.rb check_install_sanity 明確拒絕 force_bottle 且不可 pour 的情況。三個反例在 3f64eaa helper 上 RED（過期未使用 build dependency、無 bottle 不得退回 source、已安裝 runtime 仍被 compiler 阻擋），修正後 39 個隔離測試通過；新增 outdated runtime 與 missing runtime 保護 controls；Bun 真實 metadata 顯示 bottle=false，追加兩個先 RED 後 GREEN 的相容控制。首版整批 30 模組通過 116.726 秒，metadata 相容調整後定向補驗。原 force removal assertion 誤把 --force-bottle substring 當 --force，改按 exact argv token 檢查，仍拒絕強制移除。
+  - 放棄:逐顆放行不會用到的 compiler tree 更新；全面 brew upgrade；直接跳過所有依賴檢查；只刪 include-build 卻允許 source fallback；對尚有缺項的 runtime tree 套用例外
+  - 重議:本地修正待更新同一 PR #297、必要 CI 與實機驗收；如 Homebrew bottle runtime 與宣告相依出現可觀察差異，先停下該目標核對實際安裝計畫，不擴大升級範圍。
+  - 關聯:D-20261009-setup-tool-ownership;M-20261010-setup-fleet-partial;STATUS.md;docs/testing-contract.md
