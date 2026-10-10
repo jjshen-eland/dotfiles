@@ -12,7 +12,7 @@ import re
 import subprocess
 import sys
 
-from suite import load_manifest, select_paths, expand_aliases, execute as run_modules
+from suite import load_manifest, select_paths, expand_aliases, regular_file_change, execute as run_modules
 
 
 RECORD = re.compile(r'(?:STATUS\.md|docs/backlog\.md|'
@@ -58,10 +58,10 @@ def select(root, environment):
             fields = meta.decode().split()
             name = path.decode('utf-8')
             plan['changed_paths'].append(name)
-            if (len(fields) != 5 or fields[0] not in (':100644', ':100755') or fields[1] != fields[0][1:]
-                    or fields[4] != 'M'):
-                return fallback('non-record, new/deleted/renamed file, or mode change: ' + name)
-            if RECORD.fullmatch(name) and fields[0] != ':100644':
+            mode = regular_file_change(fields)
+            if mode is None:
+                return fallback('mode, symlink or other non-regular change: ' + name)
+            if RECORD.fullmatch(name) and mode != '100644':
                 return fallback('executable record: ' + name)
         if checkout != head:
             # The tested merge tree must not contain additional changes or a

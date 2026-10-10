@@ -119,21 +119,33 @@ class SelectionTests(unittest.TestCase):
                 self.commit('STATUS.md')
                 self.assertEqual(self.select()[1]['mode'], 'records')
 
-    def test_new_deleted_renamed_and_mode_changed_records_fall_back(self):
-        for mutation in ('new', 'delete', 'rename', 'executable', 'symlink'):
+    def test_new_deleted_and_renamed_records_use_document_checks(self):
+        for mutation in ('new', 'delete', 'rename'):
             with self.subTest(mutation=mutation):
                 self.setUp()
                 p = self.root / 'docs/backlog.md'
                 if mutation == 'new':
-                    p = self.root / 'docs/plans/2026-10-09-new.md'; p.write_text('new\n')
+                    p = self.root / 'docs/archive/decisions-2026-11.md'; p.write_text('new\n')
                 elif mutation == 'delete':
                     p.unlink()
-                elif mutation == 'rename':
-                    p.rename(self.root / 'docs/renamed.md')
-                elif mutation == 'executable':
-                    p.chmod(0o755)
                 else:
+                    p.rename(self.root / 'docs/plans/2026-10-10-renamed.md')
+                self.commit('docs', 'STATUS.md')
+                self.assertEqual(self.select()[1]['mode'], 'records')
+
+    def test_mode_symlink_and_unmapped_path_changes_fall_back(self):
+        for mutation in ('executable', 'symlink', 'rename-unmapped', 'new-executable'):
+            with self.subTest(mutation=mutation):
+                self.setUp()
+                p = self.root / 'docs/backlog.md'
+                if mutation == 'executable':
+                    p.chmod(0o755)
+                elif mutation == 'symlink':
                     p.unlink(); p.symlink_to('../app.py')
+                elif mutation == 'rename-unmapped':
+                    p.rename(self.root / 'docs/renamed.md')
+                else:
+                    p = self.root / 'docs/plans/2026-10-10-run.md'; p.write_text('new\n'); p.chmod(0o755)
                 self.commit('docs', 'STATUS.md')
                 self.assertEqual(self.select()[1]['mode'], 'full')
 

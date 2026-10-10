@@ -64,9 +64,27 @@ def select_paths(manifest, paths):
     return [name for name in all_names if name in selected], 'declared input dependencies'
 
 
+REGULAR_MODES = ('100644', '100755')
+
+
+def regular_file_change(fields):
+    """Mode of an added, deleted or content-modified regular file in `git diff --raw`; None otherwise."""
+    if len(fields) != 5:
+        return None
+    src, dst, status = fields[0].removeprefix(':'), fields[1], fields[4]
+    if status == 'M' and src == dst and src in REGULAR_MODES:
+        return dst
+    if status == 'A' and src == '000000' and dst in REGULAR_MODES:
+        return dst
+    if status == 'D' and dst == '000000' and src in REGULAR_MODES:
+        return src
+    return None
+
+
 def expand_aliases(root, paths):
     expanded = set(paths)
-    changed = [(root / path).resolve(strict=True) for path in paths]
+    # A deleted path no longer exists; a link still aimed at it fails strict resolution below.
+    changed = [(root / path).resolve(strict=(root / path).exists()) for path in paths]
     entries = subprocess.check_output(['git', '-C', str(root), 'ls-files', '-s', '-z'])
     for entry in entries.split(b'\0'):
         if entry.startswith(b'120000 '):
@@ -89,10 +107,8 @@ def local_paths(root, base):
     raw = git('diff', '--raw', '--no-abbrev', '--no-renames', '-z', ancestor).split(b'\0')
     paths = []
     for meta, path in zip(raw[:-1:2], raw[1:-1:2]):
-        fields = meta.decode().split()
-        if (len(fields) != 5 or fields[0] not in (':100644', ':100755')
-                or fields[1] != fields[0][1:] or fields[4] != 'M'):
-            raise ValueError('new/deleted file or mode/topology change')
+        if regular_file_change(meta.decode().split()) is None:
+            raise ValueError('mode/topology change')
         paths.append(os.fsdecode(path))
     return expand_aliases(root, paths)
 

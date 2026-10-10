@@ -306,3 +306,8 @@
   - 放棄:縮減 Project reference 載入（#246 已量過收益不足）；把 Ubuntu 的 brew 安裝改走 apt（不在關鍵路徑）；修改受信任 doc-governance scanner 來機檢紀錄長度（會牽動 fleet byte-identical 契約，改由 repo 測試承接）
   - 重議:端到端量測顯示開 PR 前的耗時不隨紀錄量下降時，重新定位主因
   - 關聯:Issue#285;Issue#279;supersedes:D-20261009-ci-system-redesign 的驗收條件;D-20261010-transfer-delivery-overhead
+- **D-20261010-ci-route-deletion-evidence · 2026-10-10 CI 路由以刪除實驗定 consumer，新增／刪除一般檔依路徑選測**:測試原始碼的文字參照分不出「讀取」與「只提到名稱」，遞移推斷會把多數檔案推回全套，也會漏掉 Python 路徑組合與動態呼叫（如 content 呼叫 `{scanner}-gate.py`）。改以乾淨 clone 刪除整組路徑後跑全套，失敗模組即該組路由；再由 content 的 route drift 檢查守住日後新增的完整路徑讀取。一般檔的新增／刪除與修改同樣依路徑選測，mode／symlink 變動與未知路徑仍回全套。
+  - 日期來源:direct
+  - 放棄:純文字遞移 oracle（過寬且仍漏動態路徑）；Linux 容器 strace 追蹤（需先證明容器網段安全，且需另維護生成產物）；`push: main` 事後全套（第 25 節禁止以合併後重驗取代 PR gate）
+  - 重議:出現路由內模組以外的失敗被合併後才發現，或 route drift 例外清單持續增長時
+  - 關聯:Issue#285;Issue#279;D-20261010-delivery-overhead-spec;M-20261010-ci-route-coverage-local
