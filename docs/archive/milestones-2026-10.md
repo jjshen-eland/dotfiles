@@ -719,3 +719,8 @@
   - 放棄:為統一版本升級既有 Codex／Claude Code；自動更新 macmini 憑證；以可用性驗收冒充舊工具 ownership／退役完成
   - 重議:歷史 setup 工具歸屬與用途仍待核對，未確認不 adopt／移除；部署事後紀錄為本地 docs/setup-fleet-results，後續 push／PR／merge 須當批具名指令。
   - 關聯:M-20261010-setup-fleet-resumed;D-20261010-setup-bottle-dependency-guard;STATUS.md;PR#297
+- **M-20261010-ci-route-coverage-local · 2026-10-10 #285 CI 路由補齊完成本地驗收**:觸發全套的 tracked 檔由 201 降到 50（剩 runner、workflow、always-on、shell 環境、setup 入口、hooks、治理 scanner／設定、runtime 設定）。修正三個既有漏選：`tests/modules/{lint,platform,shell-contract}.sh` 未選 ci-regression、任一模組腳本未選 platform、`scripts/brewup.sh` 未選 hooks，各先有 RED。新增／刪除一般檔依路徑選測。驗收未完整：近 8 個 PR 重放只有 #295／#297 由 30 模組約 192 秒降到 5 模組約 36 秒（macOS 估算）；#294／#296（always-on）與 #299／#300（治理設定）仍全套，#293 改 deep-plan 本該跑 19 模組。
+  - 日期來源:direct
+  - 證據:23 組刪除實驗中立環境（Homebrew Python、系統 git、去除 session 變數）baseline 30/30；本地全套 30/30、140 秒；注入 `dev-tools.sh` 缺陷時本地選 4 模組、dev-environment 與 lint 判紅；route drift 拿掉 brewup→hooks 時判紅。原始 log 在本 session scratchpad，暫存遺失不補造。
+  - 重議:hosted 雙 OS 時間尚未量；content 約 36 秒是每個 PR 的下限
+  - 關聯:D-20261010-ci-route-deletion-evidence;Issue#285;Issue#279

@@ -95,7 +95,7 @@ this pattern. Everything else points.
 - **Skill authoring route**：建立或修改 any repo-local skill 前，先讀當前 runtime 的 authoring guide 與
   `docs/skill-portability.md`；規則不因 canonical source 位於哪個 runtime tree 而失效。
 - **測試**：以 `./tests/run.sh --base <本批基線>` 驗整批 committed／staged／unstaged 差異；
-  基線必須涵蓋本批全部變更，不能只取最後一顆 commit。未知影響、新增／刪除、mode／link 變動
+  基線必須涵蓋本批全部變更，不能只取最後一顆 commit。未知影響、untracked、mode／link 變動
   或無法證明範圍時 runner 自動回全套；沒有可用基線就跑 `./tests/run.sh`。
   `--module <name>` 是開發時的定向檢查，不冒充整批驗收。以 exit code 判綠紅；必要模組與
   執行理由由 runner 列出。同一份程式／測試輸入已驗過，不因收尾紀錄文字變更再重跑程式全套；

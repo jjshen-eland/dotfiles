@@ -50,6 +50,44 @@ class Selection(unittest.TestCase):
         self.assertEqual(set(actual), expected)
         self.assertIn('crawl-quality', actual)
 
+    def select(self, *paths):
+        return set(self.suite.select_paths(self.manifest, list(paths))[0])
+
+    def test_module_scripts_select_modules_that_read_them(self):
+        # ci-regression reads these module bodies; platform greps every module body.
+        for path in ['tests/modules/lint.sh', 'tests/modules/platform.sh', 'tests/modules/shell-contract.sh']:
+            with self.subTest(path=path):
+                self.assertIn('ci-regression', self.select(path))
+        for path in ['tests/modules/deployment.sh', 'tests/modules/hooks.sh']:
+            with self.subTest(path=path):
+                self.assertLessEqual({'platform', 'shell-contract'}, self.select(path))
+
+    def test_brewup_selects_hooks_that_inspect_it(self):
+        # hooks asserts brewup.sh still invokes the auto-mode drift check.
+        self.assertIn('hooks', self.select('scripts/brewup.sh'))
+
+    def test_runner_contract_and_shared_shell_inputs_stay_full(self):
+        for path in ['tests/suites.json', 'tests/run-ci.py', 'tests/module-shell.sh', 'tests/shell-gate-files.py',
+                     'AGENTS.md', 'claude/CLAUDE.md', 'shell/environment.sh']:
+            with self.subTest(path=path):
+                self.assertEqual(self.select(path), set(self.manifest['modules']))
+
+    def test_owned_inputs_skip_unrelated_controllers(self):
+        heavy = {'deep-plan', 'review-controller', 'ship-state', 'turbo'}
+        cases = {
+            'docs/testing-contract.md': {'content', 'document-contract'},
+            'tests/test_dev_environment.py': {'dev-environment'},
+            'scripts/dev-tools.sh': {'dev-environment'},
+            'tests/runtime-layout.py': {'runtime-layout'},
+            'tests/test_mac_metadata.py': {'mac-metadata'},
+            'claude/known-hazards.md': {'content', 'guidance'},
+        }
+        for path, required in cases.items():
+            with self.subTest(path=path):
+                names = self.select(path)
+                self.assertLessEqual(required, names)
+                self.assertFalse(heavy & names, sorted(heavy & names))
+
     def test_manifest_rejects_unowned_shell_modules(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp); (root/'tests/modules').mkdir(parents=True)
@@ -71,6 +109,8 @@ class Selection(unittest.TestCase):
             (root/'b').write_text('index');git('add','b')
             (root/'c').write_text('worktree')
             self.assertEqual(set(self.suite.local_paths(root,base)),{'a','b','c','alias'})
+            (root/'d').write_text('added');git('add','d');git('rm','-q','a')
+            self.assertEqual(set(self.suite.local_paths(root,base)),{'a','b','c','d','alias'})
             (root/'b').chmod(0o755)
             with self.assertRaises(ValueError): self.suite.local_paths(root,base)
 

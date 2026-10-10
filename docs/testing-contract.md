@@ -791,14 +791,19 @@ local 覆寫 global）。同樣明列、不假裝擋得住。
 - Claude plugin 提示由同一 helper 讀 `enabledPlugins`，只輸出值為 `true` 的項目並穩定排序；
   macOS、Linux setup 不得各自再實作一份解析邏輯。
 - CI 使用整個 PR 相對 merge-base 的差異，核對 immutable event endpoints、實際 checkout
-  與 synthetic merge tree。已宣告相依的既有 regular file 修改選模組；新增／刪除／rename／mode
-  變動、未知路徑、dirty CI checkout 或無法取得 scope 時跑全套。Record heading 變更由當前 xref／corpus 驗證，
-  不因此重跑 scanner 實作的合成回歸。
-  tracked symlink 的別名消費路徑一併納入相依判定，未知 consumer 不能省略。
+  與 synthetic merge tree。已宣告相依的 regular file 新增、刪除或內容修改依路徑選模組（rename
+  以 `--no-renames` 拆成刪除＋新增，兩端路徑都要有路由）；mode／symlink 變動、未知路徑、dirty CI checkout
+  或無法取得 scope 時跑全套。Record heading 變更由當前 xref／corpus 驗證，不因此重跑 scanner 實作的合成回歸。
+  tracked symlink 的別名消費路徑一併納入相依判定，未知 consumer 不能省略；仍指向已刪除檔的別名解析失敗即回全套。
 - 本地 `./tests/run.sh --base REF` 包含本批 commits、index、worktree；untracked／unmerged
   或拓樸變動回全套。沒有 base 預設全套。`--module NAME` 只作定向檢查，`--list` 顯示決策。
   同一份 `tests/suites.json` 為 local／CI 供應模組、命令與路徑相依；不另維護兩套排程。
-  共用 workflow 的相依先取保守聯集；新增已知路徑映射須核對全部 consumer 與失敗反例。
+  共用 workflow 的相依先取保守聯集；runner、workflow、always-on 契約、`shell/*.sh` 與 shared harness 維持全套。
+- 新增路徑映射須以刪除實驗核對 consumer：在乾淨 clone 刪除該組路徑後跑全套，失敗的模組都必須在路由內；
+  文字推斷無法分辨「讀取」與「只提到名稱」，不能取代此實驗。`content` 另有 route drift 檢查：module
+  source 寫出已路由檔案的完整路徑（含目錄）時，其模組須被選中。`tests/module-shell.sh` 與選測自身測試
+  只把路徑當資料，不算讀者；同一 source 供多個模組時選中任一即可。確認只是 fixture 名稱、註解或字串時，
+  在 `suites.json` 的 `name_only_mentions` 登記 source 與路徑；登記項失效（檔案移除或不再提及）會判紅。
 - `tests/suite.py` 預設至多四個模組並行，可用 `--jobs 1` 序列執行。`tests/run-parallel.sh`
   僅為同一入口的相容命令；不再保留 DOTFILES_TEST_SHARD 或按歷史節號切片。
   每個模組輸出 TEST_MODULE（名稱、exit、passed、wall time），全體 TEST_RESULT 列出選定與完成集合。
