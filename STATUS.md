@@ -39,27 +39,26 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **本輪驗收**：輸出摘要已完成本地驗收，33 個 runtime isolation tests 通過；最終 serial／parallel 各 exit 0、1575 PASS／0 FAIL，349 個 tracked 檔案內容在測試前後及兩 runner 間一致。新增測試的無 CLI 環境誤紅已以隔離 PATH 重現後修正，能力缺項仍須同一行可見；formatter／migration 程式未因此修改。交付前完整 parallel 補驗同為 1575／0、exit 0，383 個 tracked input paths 含 link targets 前後一致、test-evidence 回 REUSE；詳見 M-20261007-runtime-output-shipping-candidate。來源交付以本批 PR provider 結果為準，fleet 部署與原 legacy cleanup 另待。
 - **本輪 inventory 檢查**：依使用者指定唯讀核對現行 14 台；全部正式 handoff store 為實體目錄、legacy store absent、layout handoff plan unchanged，無 handoff lock／stage，handoff receipts 均 committed。四台保留備份與 receipt before 指紋一致；canonical 在檢查前後相同。雙 runtime 的實際 adapter helper 皆解析到 repo shared helper 並與各自 HEAD 相同。PR #275 signed UID 修正在 14 台的 real ps／負 UID／writer blocking／malformed UID controls 通過，本機 dhcp6d UID -2 正常解析、仍列 14 個 writers。此為 inventory 內 default-path cleanup 的遷移前提證據，不含 inventory 外終端、native discovery 或 cleanup 實作／部署；詳見 M-20261007-inventory-handoff-cleanup-ready。
 - **進度**：來源修正已由 PR #276 rebase merge 至 origin/main `b6299f5`，required macOS／Ubuntu CI 通過；14 台已核對當時的 Claude literal default／cloud false／settings symlink 與 Codex repo 不固定 model。十三台遠端先通過；2026-10-07 macs 從普通 terminal 停止 native daemon 與核身 updater 後，common entry／verify／rerun／verify-rerun 均通過，layout 正式結構驗收達 14／14（缺 CLI 的既有能力邊界沿 plan 表）。18 個 handoff 檔移至正式 store，checksum／mode／mtime 完整、原備份含 inode 保留、無 stage 殘留；雙端原生 metadata-only discovery 各載入 11 repo adapters。Claude 依已部署 user settings 的 opt-out 在啟動時把 215 個雲端 skill 檔移到原生 .trash、保留內容／mode／mtime／inode，移除 3 個同步索引檔；runtime 與 repo 的 synced／syncd 四路徑均 absent。受管理 entries／handoff／receipts／backups／source 在 native startup 保留，僅原生 cache 與 .claude.json 有預期變化。另已重現 literal default 產生額外 Custom model，依使用者選擇備份 UI 回寫後只收省略 model；來源原生選單驗證只有一個推薦 Default，其他設定與 local 模型覆寫保留。證據見 M-20261007-macs-runtime-layout-accepted／M-20261007-claude-native-default-verified；省略 model 的修正尚未交付 fleet，不宣稱 model turn、背景週期或全專案完成。
-- **下一步**：先依 docs/transfer.md 的 conditional owner record 與 canonical endpoint ancestry 驗證正式接手；生效後，定位 D-20260917-terminal-macbooks-outside-inventory 及 STATUS 的未完成驗收；先取得兩部額外 MacBook 的識別／revision／legacy store 依賴事實，再決定原 plan 的 cleanup 前提，不能直接部署或刪除。
+- **下一步**：定位 D-20260917-terminal-macbooks-outside-inventory 及 STATUS 的未完成驗收；先取得兩部額外 MacBook 的識別／revision／legacy store 依賴事實，再決定原 plan 的 cleanup 前提，不能直接部署或刪除。
 - **關聯**：#271; D-20260823-portable-handoff-skill; D-20260912-neutral-portable-skill-core; D-20260912-codex-config-three-layer-merge; M-20260912-codex-config-and-dotsync-exit; M-20261001-handoff-frontmatter-anchor-verify; D-20261007-claude-model-default-unset; M-20261007-claude-native-default-verified; M-20261007-macs-runtime-layout-accepted
 
 ### 3. 小幅變更的驗證與交付成本改善（#285）
 
 - **Writer**：`claude:delivery-overhead`
 - **Workspace**：`branch=perf/delivery-overhead-verification`
-- **Write Scope**：tests/, shared/skills/project/, shared/skills/deep-review/scripts/review-control.py, shared/skills/deep-plan/scripts/review-state.py, AGENTS.md, docs/testing-contract.md, .github/workflows/test.yml
+- **Write Scope**：tests/, shared/skills/project/, shared/skills/deep-review/scripts/review-control.py, shared/skills/deep-plan/scripts/review-state.py, AGENTS.md, docs/testing-contract.md, docs/document-governance.md, .github/workflows/test.yml
 - **Dossier Steward**：`claude:delivery-overhead`
-- **Context**：#285 第一批由 PR #289 完整退版；#279 紀錄 CI 選測再由 PR #290 合併為 `1f0d967`，雙 OS required checks 通過。使用者懷疑 10 月初 skill 改動造成交付耗時跳升，授權以固定歷史版本分開量 Project 收尾與 CI。PR #288 的 1244.449 秒事故仍是完整交付未驗收的證據，不以本地局部收益結案。
-- **Goal**：以整體重構或重寫重新設計 repo 的本地驗證與 CI，讓測試成本對應實際變更風險，降低交付指令到最終回報的完整耗時；既有測試、分片、觸發規則與驗證流程都可重設，不以保留既有數量或架構為前提。
+- **Context**：2026-10-10 唯讀診斷：小改動交付的最大段是指令到開 PR（#286／#288 約 590 秒），PR 到 merge 約 3–7 分鐘。CI 近 8 次有 7 次退回全套，其中 5 次因 `docs/testing-contract.md` 未路由；414 個 tracked 檔有 201 個未路由，含模組自己的測試檔。macOS 全套的關鍵路徑是平台無關的 deep-plan／review-controller／ship-state／turbo（各 91–116 秒）。紀錄成本：兩週內 STATUS.md 改 111 次，近 40 個 commit 有 15 個只改紀錄，包含獨立補記 PR（#288、#298）。模組化選測的前段成果見 M-20261009-ci-modular-redesign-local。
+- **Goal**：降低小幅變更從交付指令到最終回報的完整耗時：CI 只跑受影響且必要的模組與平台，交付流程不再為紀錄本身多產生 commit、PR 或長篇文字。
 - **Acceptance Criteria**：
-  1. 依實際失敗風險盤點測試群組，對保留／合併／分層／改寫／移除給出理由與新承接位置；不把歷史存在當必要性的證明。
-  2. 模組有獨立入口，本地與 CI 使用一致的測試宣告；靜態內容、單元行為、真實整合與原生模型 eval 分層，消除重複 fixture 與無必要的跨模組全套成本。
-  3. 按整批差異與實際相依選測，平台矩陣及 full regression 觸發重新設計。未知範圍、工具失敗、漏跑／假成功、取消清理及必要 OS 反例有行為驗證；不靠降低錯誤攔截取得 GREEN。
-  4. 純紀錄、普通腳本、共用依賴及 CI 自身修改均有代表案例；固定來源／環境比較完整耗時，選測與證據成本納入。local、hosted、真實交付分開報告，未量到指令至最終回報不宣稱整體完成。
-  5. 舊 runner／重複規則隨新架構退出；testing contract 與 agent 驗證指引一致，不永久疊新包裝。產品 helper 的必要改動另核對 scope／ownership，skill authoring 依既有規則。
-- **Constraints**：2026-10-09 使用者要求本項以重構或重寫處理，解除前輪僅診斷、單一有界候選、保留所有既有測試／分片的限制。沿用同一 writer／steward 與 worktree；原 Runtime 項目不接續，claude/settings.json runtime drift 保留。PR #292 已依後續 merge 指令完成。使用者續以「繼續」授權 deep-plan 耗時診斷、本地實作與驗證；使用者隨後以 `$project --pr` 授權本批提交、push feature branch 與開 PR；終點不含 merge／部署。
-- **進度**：模組化與選測重構已完成本地驗收：29 個獨立模組、本地／CI 共用 catalog 與 executor，舊歷史分片及固定計數聚合退役。凍結來源全套 exit 0、127.666 秒；相同 brewup 小修改的兩輪 CI 入口對照平均 119.680 → 14.713 秒（87.71%），純紀錄 13.406 秒。選測／失敗／取消 controls 通過，詳細來源與限制見 M-20261009-ci-modular-redesign-local。後續 controller 分層與重複驗證去重已完成本地全套，見下一步及 M-20261009-ci-controller-test-layers-local；本機收益不代表雙 OS 或完整交付已驗收。
-- **下一步**：先依 docs/transfer.md 的 conditional owner record 與 canonical endpoint ancestry 驗證正式接手；生效後，讀有效 plan 與 D-20261009-ci-system-redesign，從 main 的 61afb0d 準備固定來源／環境的分段計時；先定位 reference 載入、QA、provider、merge／cleanup 及回報成本，再決定有可重現證據的下一個有界改動。
-- **關聯**：[本項診斷與驗證計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285（https://github.com/jjshen-eland/dotfiles/issues/285）; GitHub #279（https://github.com/jjshen-eland/dotfiles/issues/279）; PR #288; PR #289; D-20261009-small-change-delivery-spec; D-20261008-ci-critical-path-before-selection; D-20261008-ci-core-controller-recommendation; X-20261009-workflow-verification-economy-revert; B-20260924-workflow-verification-economy
+  1. CI 路由：`docs/testing-contract.md` 等說明文件走 content；`tests/<x>.py` 與 `scripts/*` 對應到擁有它的模組；只有 runner／workflow／共用 lib 或無法解析的路徑才跑全套。漏選、未知路徑、新增／刪除／rename 先有 RED controls 再 GREEN；以近 8 次 PR 的實際 diff 重放，列出每次選中的模組，非 runner 類改動不再全套。
+  2. 平台矩陣：以行為證據（例如兩平台結果一致、程式沒有平台分支）證明上述 controller 模組平台無關後，只在 Ubuntu 跑；macOS 保留平台敏感模組，required check 名稱不變。普通腳本改動的最慢 job 有 hosted before／after。
+  3. 紀錄減量契約：在單一權威處明定 merge、CI、fleet 結果不另開 commit／PR 補記，以 PR／Actions 為準；milestone 有長度上限並由 repo 測試機檢；`docs/testing-contract.md` 只在測試規則改變時修改；item 的 branch 合併或刪除後，Workspace 欄位要同步更新或結案。條文先經使用者確認；skill 變更依 authoring guide 做行為驗證，不只改 prose。
+  4. 端到端：固定一個同規模的小改動（普通腳本加測試），量改善前後「交付指令→最終回報」的總時間與分段（開 PR 前／CI／merge／回報）；local、hosted、真實交付分開報告。
+- **Constraints**：本版驗收取代 2026-10-09 版（D-20261010-delivery-overhead-spec）。不靠降低錯誤攔截取得 GREEN；選測錯誤或空集合不得假綠。不改 `scripts/doc-governance.py` 受信任 scanner（fleet byte-identical 契約）；branch protection 與 required checks 調整需另經具名授權。claude/settings.json 的 runtime drift 保留。item 2／4 不在本項範圍。本 Spec 未授權任何 commit、push、PR、merge 或部署。
+- **進度**：2026-10-10 由 `codex:brewup-bun-global-update` 正式移交（PR #299，D-20261010-transfer-delivery-overhead），Spec 已更新，尚未實作。
+- **下一步**：先做 CI 路由：用近 8 次 PR 的 diff 建 selector 重放對照與 RED controls，再補路由；接著做平台矩陣；紀錄減量條文起草後先交使用者確認；最後量端到端。
+- **關聯**：[本項計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285; GitHub #279; PR #288; PR #298; PR #299; D-20261010-delivery-overhead-spec; D-20261010-transfer-delivery-overhead; D-20261009-ci-system-redesign; M-20261009-ci-modular-redesign-local; B-20260924-workflow-verification-economy
 
 ### 4. Setup 工具與 agent shell 環境對齊
 
@@ -72,7 +71,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **Acceptance Criteria**：core／workstation 分層、新增 actionlint／ast-grep；plan／apply／check 可觀察且重跑收斂；必要安裝及驗證失敗回非零；雙 shell 無互動命令可讀相同環境，保留專案／個人 PATH 優先權與覆寫；npm／bun 以專案 lockfile 為準；隔離新裝／升級／失敗／重跑測試與完整 suite 通過；14 台 rollout 有逐台預演、revision、驗收與回復路徑。2026-10-10 使用者接受兩端全域工具指引精簡化：只保留高價值工具與適用任務、可用性與按需安裝原則，不複製完整安裝清單；兩端短段落需機檢一致。
 - **Constraints**：本批使用者選擇 `$project --merge` 交付修正、七台僅更新 ca-certificates 並續部署；已依此完成 PR #297 與下列驗收。既有工具未經確認不 adopt／移除／升級，除本批具名憑證更新外保持原版本；settings runtime drift 保留，不重跑 setup 覆寫 rc，不放行 direnv trust。使用者完成 macmini Xcode license 處理後，本輪依原部署範圍續作該台；後續外向動作依新批指令，歷史紀錄不是授權來源。
 - **進度**：PR #297 已 rebase merge 至 `792f154`（修復 manifest stdin 消耗與未使用的 build dependencies 誤擋）；新 HEAD macOS／Ubuntu CI 3m29s／2m04s 全綠，39 個工具／shell 隔離測試通過。14 台 source 與雙端全域指引均同步此版本，core check 掃足 22 項全過。eagle03／db01／ap01／ap02／m4mini／fe01／be01 已完成 plan、限定憑證更新、apply／check／apply／check、原內容保全及 CLI probes；m4mini／be01 新增 Claude Code 2.1.295。七台 ca-certificates 活躍 opt target 均為 2026-09-25，其餘既有套件版本不變、舊憑證 keg 留存；shell 原內容／mode 與 settings hash 保留。macmini 已完成 fresh inventory、plan、apply／check／apply／check，新增 actionlint 1.7.12／ast-grep 0.50.0；92 個既有 Homebrew 套件（含 ca-certificates 2026-08-13）版本不變，雙 shell CLI probes 通過，第二次完整 snapshot 相同。
-- **下一步**：先依 docs/transfer.md 的 conditional owner record 與 canonical endpoint ancestry 驗證正式接手；生效後，先讀 M-20261010-setup-fleet-complete，將待辦限制在歷史工具歸屬／用途核對；依已有 plan／ledger 的非秘密事實列出需使用者判定的 adopt／keep，沒有當批授權不做 SSH／更新／移除。
+- **下一步**：先讀 M-20261010-setup-fleet-complete，將待辦限制在歷史工具歸屬／用途核對；依已有 plan／ledger 的非秘密事實列出需使用者判定的 adopt／keep，沒有當批授權不做 SSH／更新／移除。
 - **關聯**：item 2 Runtime 目錄收斂；item 3 #285；[環境使用說明](docs/repo-guide.md)
 
 ## 暫停中
@@ -105,4 +104,4 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 移交準備度
 
-- 2026-10-10：移交至 `claude:delivery-overhead` 的準備狀態為 `PREPARED`。本次 transfer commit 將三項 active coordination fields 原子切換為 next actor／獨立 workspace，抵達 canonical main 前皆為 conditional pending values；effective current steward 仍是 `codex:brewup-bun-global-update`。條件、前後 mapping 與接手第一步見 [移交指南](docs/transfer.md) 及 D-20261010-transfer-delivery-overhead。使用者確認的 settings runtime drift 保留於原 checkout，排除於移交。
+(個人 infra,暫無移交打算——平時留空)
