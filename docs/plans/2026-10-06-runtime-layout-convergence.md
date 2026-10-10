@@ -5,8 +5,8 @@
 - 狀態：in-progress
 - 種類：implementation plan
 - 需求來源：使用者要求同版 dotfiles 的新裝／升級／重跑得到相同受管理 runtime 結構，並於 2026-10-06 指示「開工」。
-- Writer／Dossier Steward：`codex:runtime-deployment-output`
-- Workspace：`branch=fix/runtime-deployment-output`
+- Writer／Dossier Steward：`claude:delivery-overhead`（conditional pending；effective authority 見 [移交指南](../transfer.md)）
+- Workspace：`branch=fix/delivery-overhead-runtime-layout`
 - 原規劃／盤點基線：`338da91fc3a2ba6ce2487e63d0f8ab4b6c527ab1`
 - 接續基線：`79269535b3a3a741a87c3f7a8bb1c8a161ce2fcd`；#271 已經 PR #272 合併，接續時 runtime setup／helpers 尚未實作。原盤點維持其採集時間與限制，apply 前仍須重新量測。
 - 需求／驗收權威：[STATUS.md](../../STATUS.md)「Runtime 目錄收斂與 legacy 遷移」。使用者「開工」授權本地實作／驗證，PR #273 已合併 origin/main `744356df`，使用者現已明示本批「14 個目標的遷移部署與驗收」。

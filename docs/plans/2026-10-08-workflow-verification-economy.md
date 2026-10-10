@@ -4,8 +4,8 @@
 - 工作項：issue-285-workflow-verification-economy
 - 狀態：in-progress
 - 種類：implementation
-- Writer／Dossier Steward：`codex:brewup-bun-global-update`
-- Workspace：`branch=perf/delivery-cause-diagnosis`
+- Writer／Dossier Steward：`claude:delivery-overhead`（conditional pending；effective authority 見 [移交指南](../transfer.md)）
+- Workspace：`branch=perf/delivery-overhead-verification`
 - 當前工作基線：`1f0d96729dc7d9769b9f356245408393b0e4e649`（PR #290 合併後）；重啟 spec 基線為 `d0a4624`（PR #289 完整退版後），原始基線 `92dc1b9c6e6a836146606d3cee12edd2505ecef6` 僅供歷史重現。
 - 需求來源：[GitHub #285](https://github.com/jjshen-eland/dotfiles/issues/285)、[GitHub #279](https://github.com/jjshen-eland/dotfiles/issues/279)。2026-10-09 使用者重新要求診斷並明示 `$project spec`，確認前任停止，由本 session 接續 `codex:brewup-bun-global-update`；本輪只寫 spec，過去交付授權不沿用。
 
