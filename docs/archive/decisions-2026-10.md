@@ -301,3 +301,8 @@
   - 放棄:只改部分 active items；以 local commit、feature push 或 open PR 宣稱 TRANSFERRED；讓 next steward 自行撿回未整合工作；把 runtime drift、credentials 或前批外向授權混入移交
   - 重議:recipient、mapping、endpoint、原 assignment 或已知 in-flight 工作改變時重跑 Transfer gates；無法取得 remote-visible ancestry 時停止 authority 切換。原 work items 保持 active，不因換 steward 結案。
   - 關聯:STATUS.md item 2／3／4;Issue#285;docs/transfer.md;docs/plans/2026-10-06-runtime-layout-convergence.md;docs/plans/2026-10-08-workflow-verification-economy.md
+- **D-20261010-delivery-overhead-spec · 2026-10-10 #285 改以 CI 路由、平台矩陣、紀錄減量與端到端量測為驗收**:唯讀診斷顯示小改動交付時間以開 PR 前的 agent 收尾為最大段，CI 次之；CI 多數退回全套是因為路由覆蓋不足，而不是選測設計本身。使用者選定四項：補齊 CI 路由、平台無關 controller 只跑 Ubuntu、紀錄減量契約、端到端交付量測，取代 2026-10-09 版的五項驗收。
+  - 日期來源:direct
+  - 放棄:縮減 Project reference 載入（#246 已量過收益不足）；把 Ubuntu 的 brew 安裝改走 apt（不在關鍵路徑）；修改受信任 doc-governance scanner 來機檢紀錄長度（會牽動 fleet byte-identical 契約，改由 repo 測試承接）
+  - 重議:端到端量測顯示開 PR 前的耗時不隨紀錄量下降時，重新定位主因
+  - 關聯:Issue#285;Issue#279;supersedes:D-20261009-ci-system-redesign 的驗收條件;D-20261010-transfer-delivery-overhead

@@ -4,12 +4,16 @@
 - 工作項：issue-285-workflow-verification-economy
 - 狀態：in-progress
 - 種類：implementation
-- Writer／Dossier Steward：`claude:delivery-overhead`（conditional pending；effective authority 見 [移交指南](../transfer.md)）
+- Writer／Dossier Steward：`claude:delivery-overhead`（2026-10-10 經 PR #299 移交生效，見 D-20261010-transfer-delivery-overhead）
 - Workspace：`branch=perf/delivery-overhead-verification`
 - 當前工作基線：`1f0d96729dc7d9769b9f356245408393b0e4e649`（PR #290 合併後）；重啟 spec 基線為 `d0a4624`（PR #289 完整退版後），原始基線 `92dc1b9c6e6a836146606d3cee12edd2505ecef6` 僅供歷史重現。
 - 需求來源：[GitHub #285](https://github.com/jjshen-eland/dotfiles/issues/285)、[GitHub #279](https://github.com/jjshen-eland/dotfiles/issues/279)。2026-10-09 使用者重新要求診斷並明示 `$project spec`，確認前任停止，由本 session 接續 `codex:brewup-bun-global-update`；本輪只寫 spec，過去交付授權不沿用。
 
-**目前有效規格（2026-10-09，整體重構）**：使用者要求把本項當成重構或重寫，
+**目前有效規格（2026-10-10）**：驗收改為 CI 路由補齊、平台無關 controller 只跑 Ubuntu、
+紀錄減量契約、端到端交付量測四項，條文以 STATUS.md item 3 為準，決策見
+D-20261010-delivery-overhead-spec。下方 2026-10-09 版規格與後續段落保留為歷史追溯。
+
+**2026-10-09 版規格（整體重構，已由上段取代）**：使用者要求把本項當成重構或重寫，
 不預設逐年累積的測試、gate、分片、觸發條件或驗證流程不可改。本節與 STATUS 的新契約
 取代先前「保留所有現有案例、只做單一有界候選」的實作限制；下方歷史對照與已退版實作
 只供追溯，不限制新設計。決策見 D-20261009-ci-system-redesign。原 checkout 的
