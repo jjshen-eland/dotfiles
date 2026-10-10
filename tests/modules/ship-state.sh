@@ -79,16 +79,16 @@ git init -q -b main "$TMP/ss-work"
 
 out="$(SHIP_STATE_GH="$TMP/gh-protected" "$SS_SCRIPT" "$TMP/ss-work")"
 assert_rc "feature branch 偵測 → exit 0" 0 $?
-if echo "$out" | grep -q "protection: PROTECTED"; then ok "stub protected → PROTECTED"; else bad "stub protected 未判 PROTECTED"; fi
-if echo "$out" | grep -q "ship-path: PR"; then ok "PROTECTED → PR 路徑"; else bad "PROTECTED 未走 PR 路徑"; fi
-if echo "$out" | grep -q "files-vs-default: 1 檔"; then ok "三點 diff 列出 branch 帶來的檔"; else bad "三點 diff 未列檔"; fi
-if echo "$out" | grep -q "branch-first: 已在 feature branch"; then ok "feature branch → 免 branch-first"; else bad "feature branch 誤判 branch-first"; fi
+if grep -q "protection: PROTECTED" <<< "$out"; then ok "stub protected → PROTECTED"; else bad "stub protected 未判 PROTECTED"; fi
+if grep -q "ship-path: PR" <<< "$out"; then ok "PROTECTED → PR 路徑"; else bad "PROTECTED 未走 PR 路徑"; fi
+if grep -q "files-vs-default: 1 檔" <<< "$out"; then ok "三點 diff 列出 branch 帶來的檔"; else bad "三點 diff 未列檔"; fi
+if grep -q "branch-first: 已在 feature branch" <<< "$out"; then ok "feature branch → 免 branch-first"; else bad "feature branch 誤判 branch-first"; fi
 
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ss-work")"
 # 無保護仍預設 PR（`claude/skills/project/references/log-prepare.md`「Step 1：逐 repo 狀態 + 流程偵測（先於任何 commit）」）——腳本 verdict 是 model 照抄的東西，
 # 印 DIRECT-PUSH 會與規則牴觸，等於誘導 agent 略過 PR（u3 eval 的 RED 即此形狀）
-if echo "$out" | grep -q "protection: OPEN" && echo "$out" | grep -q "ship-path: PR" \
-    && ! echo "$out" | grep -q "ship-path: DIRECT-PUSH"; then
+if grep -q "protection: OPEN" <<< "$out" && grep -q "ship-path: PR" <<< "$out" \
+    && ! grep -q "ship-path: DIRECT-PUSH" <<< "$out"; then
     ok "stub open → OPEN 但 ship-path 仍為 PR（直推降為 escape hatch）"
 else bad "stub open 判定錯誤"; fi
 if grep -q "required-policy: none" <<< "$out"; then
@@ -109,20 +109,20 @@ if grep -q "required-policy: UNKNOWN" <<< "$out"; then
 else bad "required policy 不可見被冒充 none（${out}）"; fi
 
 out="$(SHIP_STATE_GH="$TMP/gh-notfound" "$SS_SCRIPT" "$TMP/ss-work")"
-if echo "$out" | grep -q "protection: UNKNOWN" && echo "$out" | grep -q "treat as PROTECTED" \
-    && echo "$out" | grep -q "viewerPermission=READ" && echo "$out" | grep -q "ship-path: PR"; then
+if grep -q "protection: UNKNOWN" <<< "$out" && grep -q "treat as PROTECTED" <<< "$out" \
+    && grep -q "viewerPermission=READ" <<< "$out" && grep -q "ship-path: PR" <<< "$out"; then
     ok "stub notfound → UNKNOWN=protected + 身分分離提示"
 else bad "stub notfound 判定錯誤"; fi
 
 # 站在 main + 未 commit 變更 → branch-first REQUIRED
 (cd "$TMP/ss-work" && git switch -q main && echo dirty > new.txt)
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ss-work")"
-if echo "$out" | grep -q "branch-first: REQUIRED"; then ok "main + 髒 tree → branch-first REQUIRED"; else bad "未要求 branch-first"; fi
+if grep -q "branch-first: REQUIRED" <<< "$out"; then ok "main + 髒 tree → branch-first REQUIRED"; else bad "未要求 branch-first"; fi
 
 # 誤 commit 在本地 main → misplaced WARNING（情況 B）
 (cd "$TMP/ss-work" && "${GITC[@]}" add new.txt && "${GITC[@]}" commit -qm "oops on main")
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ss-work")"
-if echo "$out" | grep -q "misplaced: WARNING"; then ok "誤 commit 在 main → misplaced WARNING"; else bad "misplaced 未偵測"; fi
+if grep -q "misplaced: WARNING" <<< "$out"; then ok "誤 commit 在 main → misplaced WARNING"; else bad "misplaced 未偵測"; fi
 if grep -q "branch-first-cmd: .*branch-first\.sh" <<< "$out"; then ok "misplaced → 附 branch-first.sh 呼叫指令供照抄"; else bad "misplaced 未附 branch-first-cmd"; fi
 
 # 全乾淨 → changes NONE + docs-only 提醒；protection/ship-path/branch-first 仍須輸出
@@ -130,11 +130,11 @@ if grep -q "branch-first-cmd: .*branch-first\.sh" <<< "$out"; then ok "misplaced
 git clone -q "$TMP/ss-origin.git" "$TMP/ss-clean"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ss-clean")"
 assert_rc "乾淨 repo → exit 0" 0 $?
-if echo "$out" | grep -q "changes: NONE" && echo "$out" | grep -q "docs-only"; then
+if grep -q "changes: NONE" <<< "$out" && grep -q "docs-only" <<< "$out"; then
     ok "乾淨 repo → changes NONE + docs-only 提醒"
 else bad "乾淨 repo 輸出缺 docs-only 提醒"; fi
-if echo "$out" | grep -q "protection: OPEN" && echo "$out" | grep -q "ship-path:" \
-    && echo "$out" | grep -q "branch-first: REQUIRED"; then
+if grep -q "protection: OPEN" <<< "$out" && grep -q "ship-path:" <<< "$out" \
+    && grep -q "branch-first: REQUIRED" <<< "$out"; then
     ok "乾淨 repo 仍印 protection/ship-path/branch-first（docs-only mode 需用）"
 else bad "乾淨 repo 缺 protection/ship-path/branch-first（docs-only mode 取不到 verdict）"; fi
 
@@ -153,37 +153,37 @@ ss_top="$(git -C "$TMP/ss-work" rev-parse --show-toplevel)"
 
 out="$("$SS_SCRIPT" resolve "$TMP/ss-work")"
 assert_rc "resolve repo 根（絕對路徑）→ exit 0" 0 $?
-if echo "$out" | grep -qF "resolve: REPO $ss_top"; then ok "repo 根 → REPO + toplevel"; else bad "repo 根未判 REPO（${out}）"; fi
+if grep -qF "resolve: REPO $ss_top" <<< "$out"; then ok "repo 根 → REPO + toplevel"; else bad "repo 根未判 REPO（${out}）"; fi
 
 out="$( (cd "$TMP/ss-work" && "$SS_SCRIPT" resolve .) )"
-if echo "$out" | grep -qF "resolve: REPO $ss_top"; then ok "'.' → REPO（pwd 所在 repo 根）"; else bad "'.' 未判 REPO（${out}）"; fi
+if grep -qF "resolve: REPO $ss_top" <<< "$out"; then ok "'.' → REPO（pwd 所在 repo 根）"; else bad "'.' 未判 REPO（${out}）"; fi
 
 mkdir -p "$TMP/ss-work/sub/dir"
 out="$( (cd "$TMP/ss-work" && "$SS_SCRIPT" resolve sub/dir) )"
-if echo "$out" | grep -q "resolve: MODULE"; then ok "repo 內子路徑 → MODULE（不鎖定）"; else bad "子路徑未判 MODULE（${out}）"; fi
+if grep -q "resolve: MODULE" <<< "$out"; then ok "repo 內子路徑 → MODULE（不鎖定）"; else bad "子路徑未判 MODULE（${out}）"; fi
 
 # '.' 在 repo 子目錄下也必須指向所屬 repo 根（舊 SKILL.md 契約：`.` → pwd 所在的 git repo 根）
 out="$( (cd "$TMP/ss-work/sub/dir" && "$SS_SCRIPT" resolve .) )"
-if echo "$out" | grep -qF "resolve: REPO $ss_top"; then ok "子目錄下 '.' → REPO（舊契約語意）"; else bad "子目錄下 '.' 未判 REPO（${out}）"; fi
+if grep -qF "resolve: REPO $ss_top" <<< "$out"; then ok "子目錄下 '.' → REPO（舊契約語意）"; else bad "子目錄下 '.' 未判 REPO（${out}）"; fi
 
 ln -s "$TMP/ss-work" "$TMP/ss-link"
 out="$("$SS_SCRIPT" resolve "$TMP/ss-link")"
-if echo "$out" | grep -qF "resolve: REPO $ss_top"; then ok "symlink 到 repo 根 → REPO（realpath 正規化）"; else bad "symlink 未判 REPO（${out}）"; fi
+if grep -qF "resolve: REPO $ss_top" <<< "$out"; then ok "symlink 到 repo 根 → REPO（realpath 正規化）"; else bad "symlink 未判 REPO（${out}）"; fi
 
 out="$( (cd "$TMP" && "$SS_SCRIPT" resolve ss-work) )"
-if echo "$out" | grep -qF "resolve: REPO $ss_top"; then ok "相對路徑到 repo 根 → REPO"; else bad "相對路徑未判 REPO（${out}）"; fi
+if grep -qF "resolve: REPO $ss_top" <<< "$out"; then ok "相對路徑到 repo 根 → REPO"; else bad "相對路徑未判 REPO（${out}）"; fi
 
 # CDPATH 誘餌：cd builtin 吃環境 CDPATH，相對 token 會被拐去別處 → 必須隔離
 mkdir -p "$TMP/cdpath-decoy/ss-work"
 out="$( (cd "$TMP" && CDPATH="$TMP/cdpath-decoy" "$SS_SCRIPT" resolve ss-work) )"
-if echo "$out" | grep -qF "resolve: REPO $ss_top"; then ok "CDPATH 誘餌下相對路徑仍判 REPO（cd 已隔離）"; else bad "CDPATH 干擾 resolve 判定（${out}）"; fi
+if grep -qF "resolve: REPO $ss_top" <<< "$out"; then ok "CDPATH 誘餌下相對路徑仍判 REPO（cd 已隔離）"; else bad "CDPATH 干擾 resolve 判定（${out}）"; fi
 
 out="$("$SS_SCRIPT" resolve "$TMP/no-such-token")"
 assert_rc "resolve 不存在路徑 → exit 0（verdict 即成功）" 0 $?
-if echo "$out" | grep -q "resolve: UNKNOWN"; then ok "不存在路徑 → UNKNOWN（交回 session 記憶比對）"; else bad "不存在路徑未判 UNKNOWN（${out}）"; fi
+if grep -q "resolve: UNKNOWN" <<< "$out"; then ok "不存在路徑 → UNKNOWN（交回 session 記憶比對）"; else bad "不存在路徑未判 UNKNOWN（${out}）"; fi
 
 out="$("$SS_SCRIPT" resolve "$TMP")"
-if echo "$out" | grep -q "resolve: UNKNOWN"; then ok "repo 外目錄 → UNKNOWN"; else bad "repo 外目錄未判 UNKNOWN（${out}）"; fi
+if grep -q "resolve: UNKNOWN" <<< "$out"; then ok "repo 外目錄 → UNKNOWN"; else bad "repo 外目錄未判 UNKNOWN（${out}）"; fi
 
 "$SS_SCRIPT" resolve >/dev/null 2>&1
 assert_rc "resolve 無 token → exit 2" 2 $?
@@ -258,17 +258,17 @@ git init -q -b main "$TMP/sb-work"
 
 # 乾淨（只有 main）→ 不得印 stale-branches（無殘留時保持安靜）
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/sb-work")"
-if ! echo "$out" | grep -q "stale-branches"; then ok "無殘留 branch → 不印 stale-branches（不噪音）"; else bad "無殘留卻印 stale-branches（${out}）"; fi
+if ! grep -q "stale-branches" <<< "$out"; then ok "無殘留 branch → 不印 stale-branches（不噪音）"; else bad "無殘留卻印 stale-branches（${out}）"; fi
 
 # 造一支已完全併入 main 的 local + remote branch（模擬 merge 後沒清）
 (cd "$TMP/sb-work" \
     && git switch -qc feat/old-merged && git push -qu origin feat/old-merged \
     && git switch -q main)
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/sb-work")"
-if echo "$out" | grep -q "stale-branches:"; then ok "已併入 default 的殘留 branch → 印 stale-branches"; else bad "殘留 branch 未偵測（${out}）"; fi
-if echo "$out" | grep -q "feat/old-merged"; then ok "stale-branches 列出 branch 名"; else bad "stale-branches 未列名"; fi
-if echo "$out" | grep -q "cleanup-cmd:"; then ok "stale-branches 附清掃指令（供照抄，不代刪）"; else bad "stale-branches 缺 cleanup-cmd"; fi
-if echo "$out" | grep -q "fetch --prune"; then ok "清掃指令前置 fetch --prune（防 remote-tracking 殘影誤刪）"; else bad "清掃指令未前置 fetch --prune"; fi
+if grep -q "stale-branches:" <<< "$out"; then ok "已併入 default 的殘留 branch → 印 stale-branches"; else bad "殘留 branch 未偵測（${out}）"; fi
+if grep -q "feat/old-merged" <<< "$out"; then ok "stale-branches 列出 branch 名"; else bad "stale-branches 未列名"; fi
+if grep -q "cleanup-cmd:" <<< "$out"; then ok "stale-branches 附清掃指令（供照抄，不代刪）"; else bad "stale-branches 缺 cleanup-cmd"; fi
+if grep -q "fetch --prune" <<< "$out"; then ok "清掃指令前置 fetch --prune（防 remote-tracking 殘影誤刪）"; else bad "清掃指令未前置 fetch --prune"; fi
 
 # --- dossier 章節完整性：整節被刪必須被抓到 ---
 # 簽章只要求「任一」專屬章節在，尺寸 flag 只管上限——兩者都攔不住「刪掉整節」。
@@ -711,17 +711,17 @@ if grep -q "^review-terminal:" <<< "$out"; then ok "terminal_head 物件不存�
 # 抓到，原 fixture 無 origin/HEAD 故漏測）
 (cd "$TMP/sb-work" && git remote set-head origin main)
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/sb-work")"
-if ! echo "$out" | grep -qE "^  remote: origin$"; then ok "origin/HEAD 不被當成殘留 branch"; else bad "裸 remote 名混入殘留清單（${out}）"; fi
+if ! grep -qE "^  remote: origin$" <<< "$out"; then ok "origin/HEAD 不被當成殘留 branch"; else bad "裸 remote 名混入殘留清單（${out}）"; fi
 # remote 側的刪除**一律走 cleanup-stale-branch.sh**（執行當下 ls-remote 重驗 + lease），
 # **絕不退化成裸 `push --delete`**：local 側有 git 自己把關（`-d` 對未併入的 branch 直接拒），
 # remote 側沒有等價保護——偵測後有人推過，裸刪就把那些 commit 從唯一的副本上砍掉。
-if echo "$out" | grep -qE "^  cleanup-cmd: .*cleanup-stale-branch\.sh'? .+ remote "; then ok "remote 殘留附 cleanup-stale-branch.sh（帶執行當下重驗）"; else bad "remote 殘留缺帶重驗的刪除指令（${out}）"; fi
-if echo "$out" | grep -qE "push .*--delete"; then bad "remote 刪除退回裸 push --delete（無 lease、無執行當下重驗）"; else ok "cleanup-cmd 不含裸 push --delete"; fi
-if echo "$out" | grep -qF "remote 'origin/"; then bad "cleanup-cmd 的 remote branch 名未剝 remote 前綴"; else ok "cleanup-cmd 剝除 remote 前綴"; fi
+if grep -qE "^  cleanup-cmd: .*cleanup-stale-branch\.sh'? .+ remote " <<< "$out"; then ok "remote 殘留附 cleanup-stale-branch.sh（帶執行當下重驗）"; else bad "remote 殘留缺帶重驗的刪除指令（${out}）"; fi
+if grep -qE "push .*--delete" <<< "$out"; then bad "remote 刪除退回裸 push --delete（無 lease、無執行當下重驗）"; else ok "cleanup-cmd 不含裸 push --delete"; fi
+if grep -qF "remote 'origin/" <<< "$out"; then bad "cleanup-cmd 的 remote branch 名未剝 remote 前綴"; else ok "cleanup-cmd 剝除 remote 前綴"; fi
 # expected SHA 必須是該 tracking ref 的當下 tip。給錯就一律 STOP——指令看起來還在、實際上
 # 每次照抄都被擋，等於訊號默默廢掉（且失敗長相像「有人推過」，會誤導去查不存在的第二寫入者）
 sb_exp="$(git -C "$TMP/sb-work" rev-parse refs/remotes/origin/feat/old-merged)"
-if echo "$out" | grep -qE "^  cleanup-cmd: .*remote 'feat/old-merged' ${sb_exp}\$"; then ok "cleanup-cmd 帶正確的 expected SHA（＝tracking ref 當下 tip）"; else bad "cleanup-cmd 的 expected SHA 不符 tracking ref tip（照抄必被 STOP）"; fi
+if grep -qE "^  cleanup-cmd: .*remote 'feat/old-merged' ${sb_exp}\$" <<< "$out"; then ok "cleanup-cmd 帶正確的 expected SHA（＝tracking ref 當下 tip）"; else bad "cleanup-cmd 的 expected SHA 不符 tracking ref tip（照抄必被 STOP）"; fi
 
 # 未併入 default 的 branch（有獨立 commit）→ 不得列入（那是還沒 ship 的工作）
 (cd "$TMP/sb-work" \
@@ -729,12 +729,12 @@ if echo "$out" | grep -qE "^  cleanup-cmd: .*remote 'feat/old-merged' ${sb_exp}\
     && "${GITC[@]}" add w.txt && "${GITC[@]}" commit -qm "feat: wip" \
     && git switch -q main)
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/sb-work")"
-if ! echo "$out" | grep -q "feat/in-progress"; then ok "未併入 default 的 branch 不列入殘留（不誤報未 ship 的工作）"; else bad "誤把未 merge 的 branch 當殘留（${out}）"; fi
+if ! grep -q "feat/in-progress" <<< "$out"; then ok "未併入 default 的 branch 不列入殘留（不誤報未 ship 的工作）"; else bad "誤把未 merge 的 branch 當殘留（${out}）"; fi
 
 # 當前 branch 即使已併入 default 也不列入（不建議刪自己腳下那支）
 (cd "$TMP/sb-work" && git switch -q feat/old-merged)
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/sb-work")"
-if ! echo "$out" | grep -qE "^  local: .*feat/old-merged"; then ok "當前 branch 不列入 local 殘留"; else bad "把當前 branch 列為可刪殘留（${out}）"; fi
+if ! grep -qE "^  local: .*feat/old-merged" <<< "$out"; then ok "當前 branch 不列入 local 殘留"; else bad "把當前 branch 列為可刪殘留（${out}）"; fi
 (cd "$TMP/sb-work" && git switch -q main)
 
 # 當前 branch 的 **remote 對應**同樣不得列入（2026-08-07 實地誤報：意外 push 了一條指向
@@ -742,7 +742,7 @@ if ! echo "$out" | grep -qE "^  local: .*feat/old-merged"; then ok "當前 branc
 # 「本次正要送出的那條」——照抄就會把自己的 branch 從遠端砍掉）
 (cd "$TMP/sb-work" && git switch -q feat/old-merged)
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/sb-work")"
-if ! echo "$out" | grep -qE "^  remote: origin/feat/old-merged"; then ok "當前 branch 的 remote 對應不列入殘留"; else bad "把當前 branch 的 remote 對應列為可刪（照抄會砍掉正要送出的 branch）"; fi
+if ! grep -qE "^  remote: origin/feat/old-merged" <<< "$out"; then ok "當前 branch 的 remote 對應不列入殘留"; else bad "把當前 branch 的 remote 對應列為可刪（照抄會砍掉正要送出的 branch）"; fi
 (cd "$TMP/sb-work" && git switch -q main)
 
 # 端到端：把 remote 的 cleanup-cmd **照抄執行**，遠端 branch 必須真的消失。
@@ -768,7 +768,7 @@ if [ -n "$sbe_cmd" ]; then
         bad "cleanup-cmd 綁到全域／runtime 專屬副本（${sbe_cmd}）"
     fi
     if bash -c "$sbe_cmd" >/dev/null 2>&1; then ok "照抄 remote cleanup-cmd 可實際刪除（路徑與參數端到端成立）"; else bad "照抄 remote cleanup-cmd 執行失敗（STOP／路徑／參數錯，訊號等於廢掉）"; fi
-    if git -C "$TMP/sbe-work" ls-remote --heads origin feat/e2e-merged 2>/dev/null | grep -q .; then bad "照抄後遠端 branch 仍在（指令實際沒生效）"; else ok "照抄後遠端殘留 branch 確實消失"; fi
+    if [ -n "$(git -C "$TMP/sbe-work" ls-remote --heads origin feat/e2e-merged 2>/dev/null)" ]; then bad "照抄後遠端 branch 仍在（指令實際沒生效）"; else ok "照抄後遠端殘留 branch 確實消失"; fi
 else
     bad "未取得 remote 的 cleanup-cmd（fixture 前提失效）"
 fi
@@ -1000,7 +1000,7 @@ mk_cl_repo "$TMP/cl-rem"
 cl_rem_tip="$(git -C "$TMP/cl-rem" rev-parse feat/gone)"
 out="$("$CL_SCRIPT" "$TMP/cl-rem" remote feat/gone "$cl_rem_tip" 2>&1)"; rc=$?
 assert_rc "SHA 相符 → remote 刪除成功（exit 0）" 0 $rc
-if ! git -C "$TMP/cl-rem" ls-remote --heads origin feat/gone | grep -q .; then ok "remote branch 已刪除"; else bad "remote 未刪除（${out}）"; fi
+if [ -z "$(git -C "$TMP/cl-rem" ls-remote --heads origin feat/gone)" ]; then ok "remote branch 已刪除"; else bad "remote 未刪除（${out}）"; fi
 
 # remote SHA 不符 → STOP，遠端原封不動
 mk_cl_repo "$TMP/cl-rem-moved"
@@ -1008,7 +1008,7 @@ cl_rm_old="$(git -C "$TMP/cl-rem-moved" rev-parse feat/gone)"
 (cd "$TMP/cl-rem-moved" && git switch -q feat/gone && echo d > f.txt && "${GITC[@]}" commit -qam "feat: 遠端也前進了" && git push -q origin feat/gone && git switch -q main)
 out="$("$CL_SCRIPT" "$TMP/cl-rem-moved" remote feat/gone "$cl_rm_old" 2>&1)"; rc=$?
 if [ "$rc" -ne 0 ]; then ok "remote SHA 不符 → 非 0 退出"; else bad "remote SHA 不符卻刪了"; fi
-if git -C "$TMP/cl-rem-moved" ls-remote --heads origin feat/gone | grep -q .; then ok "remote SHA 不符 → 遠端 branch 仍在"; else bad "remote SHA 不符仍刪掉遠端（不可逆）"; fi
+if [ -n "$(git -C "$TMP/cl-rem-moved" ls-remote --heads origin feat/gone)" ]; then ok "remote SHA 不符 → 遠端 branch 仍在"; else bad "remote SHA 不符仍刪掉遠端（不可逆）"; fi
 # lease 是第二道防線（拿掉前置比對它照樣會擋），故另立一條看**前置檢查本身**還在不在——
 # 少了這條，前置比對可以被整段刪掉而全綠：使用者拿到的會是 git 的 lease 錯誤訊息而非 STOP
 if grep -q "STOP" <<< "$out"; then ok "remote SHA 不符 → 輸出 STOP verdict（前置比對，不倚賴 lease 兜底）"; else bad "remote SHA 不符只靠 lease 擋（輸出是 git 錯誤，非 STOP verdict）"; fi
@@ -1044,10 +1044,10 @@ git init -q -b refactor/initial-import "$TMP/bs-feature-work"
     && echo hi > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
     && git remote add origin "$TMP/bs-feature-origin.git")
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/bs-feature-work")"
-if echo "$out" | grep -q "verdict: STOP" && ! echo "$out" | grep -q "bootstrap-cmd:"; then
+if grep -q "verdict: STOP" <<< "$out" && ! grep -q "bootstrap-cmd:" <<< "$out"; then
     ok "空 remote + feature HEAD + 無 intended-default → STOP 且不輸出 bootstrap push"
 else bad "空 remote 把 feature HEAD 當 default bootstrap（${out}）"; fi
-if echo "$out" | grep -q "baseline"; then
+if grep -q "baseline" <<< "$out"; then
     ok "missing intended-default STOP 揭露 baseline evidence 缺口"
 else bad "missing intended-default STOP 未說明 baseline 缺口（${out}）"; fi
 
@@ -1059,11 +1059,11 @@ git init -q -b main "$TMP/bs-work"
     && git remote add origin "$TMP/bs-origin.git")
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/bs-work")"
 assert_rc "空 remote → exit 0（verdict 即成功）" 0 $?
-if echo "$out" | grep -q "verdict: BOOTSTRAP"; then ok "遠端零 branch → BOOTSTRAP verdict"; else bad "遠端零 branch 未判 BOOTSTRAP（${out}）"; fi
-if echo "$out" | grep -q "remote-heads: 0"; then ok "BOOTSTRAP 附遠端 branch 數證據"; else bad "BOOTSTRAP 缺 remote-heads 證據"; fi
-if echo "$out" | grep -qF "push -u 'origin' 'main'"; then ok "BOOTSTRAP 附可照抄 push 指令（remote/branch 均已 quote）"; else bad "BOOTSTRAP 缺 bootstrap-cmd"; fi
-if echo "$out" | grep -q "bootstrap-note:.*default branch"; then ok "BOOTSTRAP 標明首推將決定遠端 default"; else bad "BOOTSTRAP 未標明 default 後果"; fi
-if echo "$out" | grep -q "bootstrap-scope:"; then ok "BOOTSTRAP 標明豁免作用域（防授權蔓延）"; else bad "BOOTSTRAP 缺 scope 行（授權會蔓延到後續 commit）"; fi
+if grep -q "verdict: BOOTSTRAP" <<< "$out"; then ok "遠端零 branch → BOOTSTRAP verdict"; else bad "遠端零 branch 未判 BOOTSTRAP（${out}）"; fi
+if grep -q "remote-heads: 0" <<< "$out"; then ok "BOOTSTRAP 附遠端 branch 數證據"; else bad "BOOTSTRAP 缺 remote-heads 證據"; fi
+if grep -qF "push -u 'origin' 'main'" <<< "$out"; then ok "BOOTSTRAP 附可照抄 push 指令（remote/branch 均已 quote）"; else bad "BOOTSTRAP 缺 bootstrap-cmd"; fi
+if grep -q "bootstrap-note:.*default branch" <<< "$out"; then ok "BOOTSTRAP 標明首推將決定遠端 default"; else bad "BOOTSTRAP 未標明 default 後果"; fi
+if grep -q "bootstrap-scope:" <<< "$out"; then ok "BOOTSTRAP 標明豁免作用域（防授權蔓延）"; else bad "BOOTSTRAP 缺 scope 行（授權會蔓延到後續 commit）"; fi
 
 # 非 main intended default + HEAD 在 feature，但 local trunk 是 ancestor → 推 trunk，不推 feature。
 git init --bare -q -b trunk "$TMP/bs-nonmain-origin.git"
@@ -1164,7 +1164,7 @@ else bad "remote race 未被 helper 擋下（${out}）"; fi
 # 情境 2：遠端零 branch + detached HEAD → 不可 bootstrap（無 branch 名可當 default）
 (cd "$TMP/bs-work" && git checkout -q --detach)
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/bs-work")"
-if echo "$out" | grep -q "verdict: STOP" && ! echo "$out" | grep -q "verdict: BOOTSTRAP"; then
+if grep -q "verdict: STOP" <<< "$out" && ! grep -q "verdict: BOOTSTRAP" <<< "$out"; then
     ok "空 remote + detached HEAD → STOP（非 bootstrap）"
 else bad "detached HEAD 誤判 bootstrap（${out}）"; fi
 (cd "$TMP/bs-work" && git checkout -q main)
@@ -1181,16 +1181,16 @@ git init -q -b main "$TMP/bs-nofetch"
     && echo hi > g.txt && "${GITC[@]}" add g.txt && "${GITC[@]}" commit -qm init \
     && git remote add origin "$TMP/bs-trunk.git")
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/bs-nofetch")"
-if echo "$out" | grep -q "verdict: STOP" && ! echo "$out" | grep -q "BOOTSTRAP"; then
+if grep -q "verdict: STOP" <<< "$out" && ! grep -q "BOOTSTRAP" <<< "$out"; then
     ok "遠端有 branch 但定位不到 default → STOP（不得誤判 bootstrap）"
 else bad "遠端有 branch 卻判 bootstrap——會把 feature branch 推成遠端 default（${out}）"; fi
-if echo "$out" | grep -q "remote-heads: 1"; then ok "反例附遠端 branch 數證據（供使用者 fetch/指定）"; else bad "反例缺 remote-heads 證據"; fi
+if grep -q "remote-heads: 1" <<< "$out"; then ok "反例附遠端 branch 數證據（供使用者 fetch/指定）"; else bad "反例缺 remote-heads 證據"; fi
 
 # 情境 4（機制失效）：baseline 建立後 → 永不再印 BOOTSTRAP，branch-first 恢復 REQUIRED
 (cd "$TMP/bs-work" && git push -qu origin main)
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/bs-work")"
-if ! echo "$out" | grep -q "BOOTSTRAP"; then ok "baseline 建立後 → BOOTSTRAP 豁免自動失效（機制而非記憶）"; else bad "baseline 已存在仍印 BOOTSTRAP（授權可蔓延）"; fi
-if echo "$out" | grep -q "branch-first: REQUIRED"; then ok "baseline 建立後 → branch-first 恢復 REQUIRED"; else bad "baseline 後未恢復 branch-first"; fi
+if ! grep -q "BOOTSTRAP" <<< "$out"; then ok "baseline 建立後 → BOOTSTRAP 豁免自動失效（機制而非記憶）"; else bad "baseline 已存在仍印 BOOTSTRAP（授權可蔓延）"; fi
+if grep -q "branch-first: REQUIRED" <<< "$out"; then ok "baseline 建立後 → branch-first 恢復 REQUIRED"; else bad "baseline 後未恢復 branch-first"; fi
 
 # --- dossier 偵測行（Step 2 衛生檢查；門檻單一來源 = 本腳本）---
 
@@ -1201,7 +1201,7 @@ git init -q -b main "$TMP/ds-work"
     && echo hi > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init \
     && git remote add origin "$TMP/ds-origin.git" && git push -qu origin main)
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier: NONE"; then ok "無 STATUS.md → dossier: NONE"; else bad "缺 dossier: NONE 行"; fi
+if grep -q "dossier: NONE" <<< "$out"; then ok "無 STATUS.md → dossier: NONE"; else bad "缺 dossier: NONE 行"; fi
 
 # 乾淨 dossier（<300 行、進行中無 ✅、無 Session Log、剛 commit）→ 無 flag
 # （已完成節的 ✅ 是合法用法，不得誤報——負向測試就藏在這份 fixture 裡）
@@ -1231,10 +1231,10 @@ cat > "$TMP/ds-work/STATUS.md" <<'DOSSIER'
 DOSSIER
 (cd "$TMP/ds-work" && "${GITC[@]}" add STATUS.md && "${GITC[@]}" commit -qm "docs: dossier")
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier: STATUS.md"; then ok "有 STATUS.md → dossier 行含行數"; else bad "缺 dossier: STATUS.md 行"; fi
-if echo "$out" | grep -q "dossier-flag:"; then bad "乾淨 dossier 不應有 flag（$(echo "$out" | grep 'dossier-flag:')）"; else ok "乾淨 dossier → 無 dossier-flag（已完成節 ✅ 未誤報）"; fi
+if grep -q "dossier: STATUS.md" <<< "$out"; then ok "有 STATUS.md → dossier 行含行數"; else bad "缺 dossier: STATUS.md 行"; fi
+if grep -q "dossier-flag:" <<< "$out"; then bad "乾淨 dossier 不應有 flag（$(echo "$out" | grep 'dossier-flag:')）"; else ok "乾淨 dossier → 無 dossier-flag（已完成節 ✅ 未誤報）"; fi
 # 各節佔比只在全檔超標時印——常態輸出多一段佔比表就成了每次 ship 的噪音
-if echo "$out" | grep -q "^dossier-sections:"; then bad "未超標卻印 dossier-sections（污染常態輸出）"; else ok "未超標 → 不印 dossier-sections"; fi
+if grep -q "^dossier-sections:" <<< "$out"; then bad "未超標卻印 dossier-sections（污染常態輸出）"; else ok "未超標 → 不印 dossier-sections"; fi
 
 # 「進行中」含 ✅ → flag（working tree 內容即測，不需 commit）
 cat > "$TMP/ds-work/STATUS.md" <<'DOSSIER'
@@ -1248,7 +1248,7 @@ cat > "$TMP/ds-work/STATUS.md" <<'DOSSIER'
 - 無
 DOSSIER
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*進行中.*✅"; then ok "進行中含 ✅ → flag"; else bad "進行中 ✅ 未偵測"; fi
+if grep -q "dossier-flag:.*進行中.*✅" <<< "$out"; then ok "進行中含 ✅ → flag"; else bad "進行中 ✅ 未偵測"; fi
 
 # 規範外章節（Session Log）→ flag
 cat > "$TMP/ds-work/STATUS.md" <<'DOSSIER'
@@ -1261,7 +1261,7 @@ cat > "$TMP/ds-work/STATUS.md" <<'DOSSIER'
 - 2026-07-01 做了一堆事
 DOSSIER
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*Session Log"; then ok "Session Log 章節 → flag"; else bad "Session Log 未偵測"; fi
+if grep -q "dossier-flag:.*Session Log" <<< "$out"; then ok "Session Log 章節 → flag"; else bad "Session Log 未偵測"; fi
 
 # append-only 章節的**別名家族**：規範是「NEVER add an append-only log section」，不是
 # 「不要叫 Session Log」——只認一個字面時，換個名字就整個漏掉。訊息須附**實際命中的
@@ -1269,7 +1269,7 @@ if echo "$out" | grep -q "dossier-flag:.*Session Log"; then ok "Session Log 章�
 for ao_name in "變更紀錄" "變更記錄" "工作日誌" "開發日誌" "CHANGELOG" "Change Log" "Session Log（2026-08）"; do
     { echo "# 測試專案 STATUS"; echo; echo "## 進行中"; echo "- 項目"; echo; echo "## ${ao_name}"; echo "- 條目"; } > "$TMP/ds-work/STATUS.md"
     out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-    if echo "$out" | grep -q "dossier-flag:.*append-only log：## ${ao_name}"; then
+    if grep -q "dossier-flag:.*append-only log：## ${ao_name}" <<< "$out"; then
         ok "append-only 別名「${ao_name}」→ flag（訊息附實際 heading）"
     else
         bad "append-only 別名「${ao_name}」未偵測或訊息未附實際 heading"
@@ -1279,7 +1279,7 @@ done
 for ao_safe in "為何不使用 Change Log" "Session Log 的替代方案" "已完成(里程碑)"; do
     { echo "# 測試專案 STATUS"; echo; echo "## 進行中"; echo "- 項目"; echo; echo "## ${ao_safe}"; echo "- 條目"; } > "$TMP/ds-work/STATUS.md"
     out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-    if echo "$out" | grep -q "dossier-flag:.*append-only log"; then
+    if grep -q "dossier-flag:.*append-only log" <<< "$out"; then
         bad "討論性章節「${ao_safe}」被誤報成 append-only log"
     else
         ok "討論性章節「${ao_safe}」→ 不誤報"
@@ -1289,8 +1289,8 @@ done
 # 全檔 > 300 行 → flag
 { echo "# 測試專案 STATUS"; echo; echo "## 進行中"; seq 1 310 | sed 's/^/- filler /'; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*> 300"; then ok "全檔 >300 行 → flag"; else bad ">300 行未偵測"; fi
-if echo "$out" | grep -q "建議收斂至 ≤ 255 行"; then ok "行數 flag 附建議收斂目標（300 × 85%）"; else bad "行數 flag 缺建議收斂目標"; fi
+if grep -q "dossier-flag:.*> 300" <<< "$out"; then ok "全檔 >300 行 → flag"; else bad ">300 行未偵測"; fi
+if grep -q "建議收斂至 ≤ 255 行" <<< "$out"; then ok "行數 flag 附建議收斂目標（300 × 85%）"; else bad "行數 flag 缺建議收斂目標"; fi
 
 # 總量 bytes 超標但行數遠低於 300 → bytes flag（行數代理被巨型單行架空的後盾；
 # 每行 ~548 bytes < 1000，不得連帶觸發最長行 flag——測試隔離）
@@ -1298,16 +1298,16 @@ if echo "$out" | grep -q "建議收斂至 ≤ 255 行"; then ok "行數 flag 附
   awk 'BEGIN { s = "- 填充"; for (i = 0; i < 30; i++) s = s "巨量內容累積"; for (r = 0; r < 120; r++) print s }'
   echo; echo "## 已完成（里程碑）"; echo "- ✅ 無"; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -qE "dossier-flag:.*全檔.*bytes > "; then ok "行數少但總 bytes 超標 → bytes flag（風格不敏感後盾）"; else bad "bytes 超標未偵測（行數代理可被巨型單行架空）"; fi
-if echo "$out" | grep -q "dossier-flag:.*> 300"; then bad "bytes fixture 不應觸發行數 flag（行數僅 ~125）"; else ok "bytes fixture 未誤觸發行數 flag"; fi
-if echo "$out" | grep -q "dossier-flag:.*最長行"; then bad "bytes fixture 不應觸發最長行 flag（每行 ~548B < 1000）"; else ok "bytes fixture 未誤觸發最長行 flag"; fi
+if grep -qE "dossier-flag:.*全檔.*bytes > " <<< "$out"; then ok "行數少但總 bytes 超標 → bytes flag（風格不敏感後盾）"; else bad "bytes 超標未偵測（行數代理可被巨型單行架空）"; fi
+if grep -q "dossier-flag:.*> 300" <<< "$out"; then bad "bytes fixture 不應觸發行數 flag（行數僅 ~125）"; else ok "bytes fixture 未誤觸發行數 flag"; fi
+if grep -q "dossier-flag:.*最長行" <<< "$out"; then bad "bytes fixture 不應觸發最長行 flag（每行 ~548B < 1000）"; else ok "bytes fixture 未誤觸發最長行 flag"; fi
 # 建議收斂目標：壓到「剛好低於門檻」等於下次 ship 必再觸發，故 flag 要直接給目標值
-if echo "$out" | grep -q "建議收斂至 ≤ 26112 bytes"; then ok "bytes flag 附建議收斂目標（門檻 85%）"; else bad "bytes flag 缺建議收斂目標（agent 會停在剛好過關處）"; fi
+if grep -q "建議收斂至 ≤ 26112 bytes" <<< "$out"; then ok "bytes flag 附建議收斂目標（門檻 85%）"; else bad "bytes flag 缺建議收斂目標（agent 會停在剛好過關處）"; fi
 # 各節佔比：超標時才印，供 model 決定收哪一節（憑印象挑會挑錯——krepo 實證 905B/PR）
-if echo "$out" | grep -q "^dossier-sections:"; then ok "全檔超標 → 印各節佔比"; else bad "全檔超標未印 dossier-sections（收斂對象只能靠猜）"; fi
+if grep -q "^dossier-sections:" <<< "$out"; then ok "全檔超標 → 印各節佔比"; else bad "全檔超標未印 dossier-sections（收斂對象只能靠猜）"; fi
 # 釘住「最大戶排第一」＋數值形狀：排序方向是這功能的全部價值（挑錯對象正是它要防的），
 # 只 grep「行存在 + 含某節名」的斷言在 sort -rn → sort -n 突變下照樣全綠（R1 審查實證）
-if echo "$out" | grep -qE "^dossier-sections: 進行中 [0-9]{4,} \([0-9]+%\)"; then ok "各節佔比：最大戶排第一、附 bytes 與百分比"; else bad "dossier-sections 排名或數值形狀錯（實得：$(echo "$out" | grep dossier-sections)）"; fi
+if grep -qE "^dossier-sections: 進行中 [0-9]{4,} \([0-9]+%\)" <<< "$out"; then ok "各節佔比：最大戶排第一、附 bytes 與百分比"; else bad "dossier-sections 排名或數值形狀錯（實得：$(echo "$out" | grep dossier-sections)）"; fi
 
 # fence 重的章節不得被低估到排名倒轉：剝 fence 時若「清空」該行（而非哨兵前綴保留長度），
 # 決策節 30KB 的 code block 會被算成幾百 bytes、沉到小章節後面——而 SKILL.md 正是要 agent
@@ -1332,20 +1332,20 @@ if echo "$out" | grep -qE "^dossier-sections: 進行中 [0-9]{4,} \([0-9]+%\)"; 
   echo "## 已完成（里程碑）"
   awk 'BEGIN { s = "- ✅ 里程碑填充"; for (i = 0; i < 10; i++) s = s "內容"; for (r = 0; r < 30; r++) print s }'; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -qE "^dossier-sections: 關鍵決策（附理由） [0-9]{5,}"; then ok "fenced 內容計入分節 bytes（大 fence 章節排第一，未被低估）"; else bad "fence 章節被低估／排名倒轉（實得：$(echo "$out" | grep dossier-sections)）"; fi
-if echo "$out" | grep -q "dossier-flag:.*簽章"; then bad "大輸入下簽章偽陽性（herestring 或括號 ERE 不相容）"; else ok "大檔簽章判定正確（herestring + GNU/BSD grep 括號 ERE）"; fi
+if grep -qE "^dossier-sections: 關鍵決策（附理由） [0-9]{5,}" <<< "$out"; then ok "fenced 內容計入分節 bytes（大 fence 章節排第一，未被低估）"; else bad "fence 章節被低估／排名倒轉（實得：$(echo "$out" | grep dossier-sections)）"; fi
+if grep -q "dossier-flag:.*簽章" <<< "$out"; then bad "大輸入下簽章偽陽性（herestring 或括號 ERE 不相容）"; else ok "大檔簽章判定正確（herestring + GNU/BSD grep 括號 ERE）"; fi
 # ✅ 偵測必須吃 unfenced：讀原檔會把 fence 內的範例當成真的「進行中含 ✅」
-if echo "$out" | grep -q "dossier-flag:.*進行中.*✅"; then bad "fence 內的 ✅ 範例被誤報為完成項未移走（✅ 偵測未吃 unfenced）"; else ok "fence 內的 ✅ 範例不誤報"; fi
+if grep -q "dossier-flag:.*進行中.*✅" <<< "$out"; then bad "fence 內的 ✅ 範例被誤報為完成項未移走（✅ 偵測未吃 unfenced）"; else ok "fence 內的 ✅ 範例不誤報"; fi
 # Session Log 偵測的失效方向是偽陰性（命中才早退），比簽章那處更隱蔽——必須有具名守門
-if echo "$out" | grep -q "dossier-flag:.*Session Log"; then ok "大檔（>pipe buffer）Session Log 仍偵測到（herestring 防 SIGPIPE 偽陰性）"; else bad "大輸入下 Session Log 偽陰性（grep -q 早退 + pipefail）"; fi
+if grep -q "dossier-flag:.*Session Log" <<< "$out"; then ok "大檔（>pipe buffer）Session Log 仍偵測到（herestring 防 SIGPIPE 偽陰性）"; else bad "大輸入下 Session Log 偽陰性（grep -q 早退 + pipefail）"; fi
 
 # 巨型單行（1202 bytes > 1000）→ 最長行 flag（總量未爆前的早期風格糾正）
 { echo "# 測試專案 STATUS"; echo; echo "## 進行中"
   awk 'BEGIN { s = "- "; for (i = 0; i < 1200; i++) s = s "x"; print s }'
   echo; echo "## 已完成（里程碑）"; echo "- ✅ 無"; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*最長行"; then ok "1202 bytes 單行 → 最長行 flag"; else bad "巨型單行未偵測"; fi
-if echo "$out" | grep -qE "dossier-flag:.*全檔.*bytes > "; then bad "最長行 fixture 不應觸發總量 bytes flag（全檔 <2KB）"; else ok "最長行 fixture 未誤觸發 bytes flag"; fi
+if grep -q "dossier-flag:.*最長行" <<< "$out"; then ok "1202 bytes 單行 → 最長行 flag"; else bad "巨型單行未偵測"; fi
+if grep -qE "dossier-flag:.*全檔.*bytes > " <<< "$out"; then bad "最長行 fixture 不應觸發總量 bytes flag（全檔 <2KB）"; else ok "最長行 fixture 未誤觸發 bytes flag"; fi
 
 # 決策節單一條目 >800 bytes（正常換行的多行條目，每行 <1000B）→ 條目 flag（行數繞不過蒸餾上限）
 { echo "# 測試專案 STATUS"; echo; echo "## 進行中"; echo "- 項目：還在做"; echo
@@ -1354,13 +1354,13 @@ if echo "$out" | grep -qE "dossier-flag:.*全檔.*bytes > "; then bad "最長行
                t = "  續行補充："; for (i = 0; i < 60; i++) t = t "更多細節"; print t }'
   echo "- 短決策：一行帶過"; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*最大條目"; then ok "決策節條目 >800 bytes → 條目 flag（蒸餾上限）"; else bad "決策節超大條目未偵測"; fi
-if echo "$out" | grep -q "dossier-flag:.*最長行"; then bad "條目 fixture 不應觸發最長行 flag（每行 <1000B）"; else ok "條目 fixture 未誤觸發最長行 flag"; fi
+if grep -q "dossier-flag:.*最大條目" <<< "$out"; then ok "決策節條目 >800 bytes → 條目 flag（蒸餾上限）"; else bad "決策節超大條目未偵測"; fi
+if grep -q "dossier-flag:.*最長行" <<< "$out"; then bad "條目 fixture 不應觸發最長行 flag（每行 <1000B）"; else ok "條目 fixture 未誤觸發最長行 flag"; fi
 # 定位：只報 bytes 不報位置時，agent 會預設「應該是我剛寫的那條」——多 session 並行改同一份
 # dossier 時經常猜錯（krepo 2026-07-29 實證：猜錯兩次、白壓兩輪）。大條目在本 fixture 的第 7 行
-if echo "$out" | grep -q "dossier-flag:.*最大條目.*在第 7 行"; then ok "條目 flag 帶正確行號（定位）"; else bad "條目 flag 缺行號或行號錯（實得：$(echo "$out" | grep '最大條目')）"; fi
+if grep -q "dossier-flag:.*最大條目.*在第 7 行" <<< "$out"; then ok "條目 flag 帶正確行號（定位）"; else bad "條目 flag 缺行號或行號錯（實得：$(echo "$out" | grep '最大條目')）"; fi
 # 手段提示：條目超標更常是粒度過粗（一條記多個決策），壓字壓不動
-if echo "$out" | grep -q "拆成多條"; then ok "條目 flag 提示拆分而非壓字"; else bad "條目 flag 缺拆分提示"; fi
+if grep -q "拆成多條" <<< "$out"; then ok "條目 flag 提示拆分而非壓字"; else bad "條目 flag 缺拆分提示"; fi
 
 # 條目 bytes 同樣要剝哨兵：條目續行區含 fence 時每行虛胖 1 byte，足以把未超標的條目推過門檻
 # （300 行 fence = +300B，650B 的條目就被誤判成 >800B）。fixture 調成「剝哨兵→不觸發、
@@ -1372,7 +1372,7 @@ if echo "$out" | grep -q "拆成多條"; then ok "條目 flag 提示拆分而非
   awk 'BEGIN { for (r = 0; r < 300; r++) print "k" }'
   echo '```'; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*最大條目"; then bad "條目 bytes 因 fence 虛胖而誤觸發門檻（條目 awk 未剝哨兵；實得：$(echo "$out" | grep '最大條目')）"; else ok "條目 bytes 已剝哨兵（fence 續行不虛胖）"; fi
+if grep -q "dossier-flag:.*最大條目" <<< "$out"; then bad "條目 bytes 因 fence 虛胖而誤觸發門檻（條目 awk 未剝哨兵；實得：$(echo "$out" | grep '最大條目')）"; else ok "條目 bytes 已剝哨兵（fence 續行不虛胖）"; fi
 
 # ✅ 偵測的非錨定比對：`/✅/` 沒有行首錨點，哨兵中和不了它——fence 必須放在「進行中」節內
 # 才測得到（既有 fence fixture 把圍欄放在決策節，in_sec=0 永遠踩不到這條路徑）。
@@ -1385,7 +1385,7 @@ if echo "$out" | grep -q "dossier-flag:.*最大條目"; then bad "條目 bytes �
   echo '```'
   echo; echo "## 關鍵決策（附理由）"; echo "- 選了 X 因為 Y"; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*進行中.*✅"; then bad "「進行中」節內圍欄的 ✅ 被誤報為完成項（非錨定比對未 skip 哨兵行）"; else ok "「進行中」節內圍欄的 ✅ 不誤報（非錨定比對有 skip 哨兵）"; fi
+if grep -q "dossier-flag:.*進行中.*✅" <<< "$out"; then bad "「進行中」節內圍欄的 ✅ 被誤報為完成項（非錨定比對未 skip 哨兵行）"; else ok "「進行中」節內圍欄的 ✅ 不誤報（非錨定比對有 skip 哨兵）"; fi
 
 # ✅ 只在**條目形狀（list item）**上算數：表格儲存格的 ✅ 是子項狀態欄，不是「做完卻沒
 # 移走的項目」。krepo 2026-08-10 連三次 ship 都被這條誤報（進行中節的一張盤點表，4 列
@@ -1397,7 +1397,7 @@ if echo "$out" | grep -q "dossier-flag:.*進行中.*✅"; then bad "「進行中
   echo "| foo | ✅ 已就位 | 已就位 |"
   echo "| bar | ✅ 已就位 | 已就位 |"; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*進行中.*✅"; then bad "表格儲存格的 ✅ 被誤報為完成項未移走（判準未收窄到 list item）"; else ok "表格儲存格的 ✅ 不誤報（判準限 list item）"; fi
+if grep -q "dossier-flag:.*進行中.*✅" <<< "$out"; then bad "表格儲存格的 ✅ 被誤報為完成項未移走（判準未收窄到 list item）"; else ok "表格儲存格的 ✅ 不誤報（判準限 list item）"; fi
 
 # 同一件事的完整實地形狀，釘住「把續行併入所屬條目」那個候選判準**不可行**：krepo 的表格
 # 前面隔著散文、但更前面（第 259 行）有 bullet，而條目 bytes 那套寬續行模型（bullet 之後
@@ -1410,26 +1410,26 @@ if echo "$out" | grep -q "dossier-flag:.*進行中.*✅"; then bad "表格儲存
   echo "|---|---|"
   echo "| foo | ✅ 已就位 |"; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*進行中.*✅"; then bad "bullet 之後、隔著散文的表格 ✅ 被算成該條目的續行而誤報（判準採了寬續行模型）"; else ok "bullet 之後隔著散文的表格 ✅ 不誤報（未採寬續行模型）"; fi
+if grep -q "dossier-flag:.*進行中.*✅" <<< "$out"; then bad "bullet 之後、隔著散文的表格 ✅ 被算成該條目的續行而誤報（判準採了寬續行模型）"; else ok "bullet 之後隔著散文的表格 ✅ 不誤報（未採寬續行模型）"; fi
 
 # 收窄不得只認頂層 bullet：縮排子項同樣是條目形狀，`  - ✅ x` 是真的完成項未移走
 { echo "# 測試專案 STATUS"; echo; echo "## 進行中"
   echo "- 某個 Phase：還在做"
   echo "  - ✅ 這個子項做完了卻沒移走"; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*進行中.*✅"; then ok "縮排 list item 的 ✅ → flag（收窄未誤殺子項）"; else bad "縮排 list item 的 ✅ 未偵測（收窄只認了頂層 bullet）"; fi
+if grep -q "dossier-flag:.*進行中.*✅" <<< "$out"; then ok "縮排 list item 的 ✅ → flag（收窄未誤殺子項）"; else bad "縮排 list item 的 ✅ 未偵測（收窄只認了頂層 bullet）"; fi
 
 # `*` / `+` 兩種 marker 同樣算條目（CommonMark 三種 bullet 都合法，只認 `-` 會漏）
 { echo "# 測試專案 STATUS"; echo; echo "## 進行中"; echo "* ✅ 做完了卻沒移走的項目"; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*進行中.*✅"; then ok "\`*\` marker 的 ✅ → flag"; else bad "\`*\` marker 的 ✅ 未偵測"; fi
+if grep -q "dossier-flag:.*進行中.*✅" <<< "$out"; then ok "\`*\` marker 的 ✅ → flag"; else bad "\`*\` marker 的 ✅ 未偵測"; fi
 
 # marker 後**必須**有空白，否則 `**粗體** ✅` 這種散文行會被當成 bullet 而讓收窄失效
 # （`*` 開頭 + 行內有 ✅ = 本次要排除的形狀之一，寬版 pattern 抓不出差別）
 { echo "# 測試專案 STATUS"; echo; echo "## 進行中"; echo "- 還在做的項目"; echo
   echo "**盤點結論** ✅ 這句是散文強調，不是條目"; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*進行中.*✅"; then bad "\`**粗體**\` 開頭的散文行被當成 bullet（marker 後未要求空白）"; else ok "marker 後要求空白：\`**粗體** ✅\` 散文行不誤報"; fi
+if grep -q "dossier-flag:.*進行中.*✅" <<< "$out"; then bad "\`**粗體**\` 開頭的散文行被當成 bullet（marker 後未要求空白）"; else ok "marker 後要求空白：\`**粗體** ✅\` 散文行不誤報"; fi
 
 # 明示放棄的 false negative（不是 bug，改動前先讀這條）：✅ 寫在條目的**續行**上不會亮。
 # 上面那條 krepo 回歸證明了續行併入會把表格一起收回來，兩者不可兼得；選擇讓「條目內部的
@@ -1438,7 +1438,7 @@ if echo "$out" | grep -q "dossier-flag:.*進行中.*✅"; then bad "\`**粗體**
   echo "- 某個 Phase：還在做"
   echo "  ✅ 其中一步完成了（續行標註，非條目本身）"; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*進行中.*✅"; then bad "續行 ✅ 亮了——判準比預期寬，請確認是否連帶讓表格列也回來了"; else ok "續行 ✅ 不亮（已知且刻意放棄的 false negative）"; fi
+if grep -q "dossier-flag:.*進行中.*✅" <<< "$out"; then bad "續行 ✅ 亮了——判準比預期寬，請確認是否連帶讓表格列也回來了"; else ok "續行 ✅ 不亮（已知且刻意放棄的 false negative）"; fi
 
 # 分節 bytes 不得虛胖：剝 fence 的 \001 哨兵若在量長度時沒剝掉，每個 fenced 行多算 1 byte，
 # 短行多的 fence（YAML/JSON/log 片段）會讓單節 bytes 超過全檔總量、百分比破 100%
@@ -1457,7 +1457,7 @@ if [ -n "$maxpct" ] && [ "$maxpct" -le 100 ]; then ok "分節佔比不破 100%�
   awk 'BEGIN { s = "前言填充"; for (i = 0; i < 20; i++) s = s "內容"; for (r = 0; r < 300; r++) print s }'
   echo; echo "## 進行中"; echo "- x"; echo; echo "## 關鍵決策（附理由）"; echo "- y"; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -qE "^dossier-sections: \(前言/未分節\) [0-9]{4,}"; then ok "前言殘量現身於分節表（不靜默丟棄）"; else bad "前言 bytes 被丟棄，表格會誤導收斂對象（實得：$(echo "$out" | grep dossier-sections)）"; fi
+if grep -qE "^dossier-sections: \(前言/未分節\) [0-9]{4,}" <<< "$out"; then ok "前言殘量現身於分節表（不靜默丟棄）"; else bad "前言 bytes 被丟棄，表格會誤導收斂對象（實得：$(echo "$out" | grep dossier-sections)）"; fi
 
 # 分節 bytes 必須把**標題行本身**算進它開啟的那一節：歸零會讓各節加總系統性少掉每個標題
 # 的長度，讀表的人會以為有一塊沒被算到。此 fixture 無 fence、節數 < TOP_N，故加總應**恰好**
@@ -1483,21 +1483,21 @@ if [ "${sec_sum:-0}" = "$file_bytes" ]; then ok "分節 bytes 加總 == 檔案 b
   awk 'BEGIN { s = "- 選了方案甲："; for (i = 0; i < 60; i++) s = s "理由與推導"; print s
                t = "  續行補充："; for (i = 0; i < 60; i++) t = t "更多細節"; print t }'; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*最大條目.*在第 12 行"; then ok "行號不受 fenced block 位移（哨兵前綴式剝除）"; else bad "fenced block 使行號位移（實得：$(echo "$out" | grep '最大條目')）"; fi
+if grep -q "dossier-flag:.*最大條目.*在第 12 行" <<< "$out"; then ok "行號不受 fenced block 位移（哨兵前綴式剝除）"; else bad "fenced block 使行號位移（實得：$(echo "$out" | grep '最大條目')）"; fi
 
 # 里程碑節超大條目（單行 872 bytes：>800 條目上限、<1000 最長行門檻）→ 條目 flag（一行化的機器面）
 { echo "# 測試專案 STATUS"; echo; echo "## 進行中"; echo "- 項目：還在做"; echo
   echo "## 已完成（里程碑）"
   awk 'BEGIN { s = "- ✅ 2026-07-01 大功告成："; for (i = 0; i < 70; i++) s = s "過程敘事"; print s }'; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*最大條目"; then ok "里程碑節散文條目 → 條目 flag（一行化機器面）"; else bad "里程碑超大條目未偵測"; fi
+if grep -q "dossier-flag:.*最大條目" <<< "$out"; then ok "里程碑節散文條目 → 條目 flag（一行化機器面）"; else bad "里程碑超大條目未偵測"; fi
 
 # 作用域反例：「進行中」的 >800 bytes 條目（spec 區合法偏大）不得觸發條目 flag
 { echo "# 測試專案 STATUS"; echo; echo "## 進行中"
   awk 'BEGIN { s = "- 工作項 spec："; for (i = 0; i < 70; i++) s = s "合約細節"; print s }'
   echo; echo "## 已完成（里程碑）"; echo "- ✅ 無"; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*最大條目"; then bad "進行中的大條目誤觸發條目 flag（作用域應限決策/里程碑）"; else ok "進行中大條目未誤觸發（spec 區合法偏大）"; fi
+if grep -q "dossier-flag:.*最大條目" <<< "$out"; then bad "進行中的大條目誤觸發條目 flag（作用域應限決策/里程碑）"; else ok "進行中大條目未誤觸發（spec 區合法偏大）"; fi
 
 # 作用域比對必須**錨在標題開頭**，不是子字串：`## 進行中（已完成 M1）` 含「已完成」三個字，
 # 子字串版會把整個進行中章節當里程碑節掃進來——而 spec 區合法偏大，於是恆誤報。
@@ -1506,14 +1506,14 @@ if echo "$out" | grep -q "dossier-flag:.*最大條目"; then bad "進行中的�
   awk 'BEGIN { s = "- 工作項 spec："; for (i = 0; i < 70; i++) s = s "合約細節"; print s }'
   echo; echo "## 已完成（里程碑）"; echo "- ✅ 無"; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*最大條目"; then bad "標題含「已完成」的進行中章節被當成里程碑節（作用域用子字串比對，未端錨定）"; else ok "節名端錨定：`## 進行中（已完成 M1）` 不被當成里程碑節"; fi
+if grep -q "dossier-flag:.*最大條目" <<< "$out"; then bad "標題含「已完成」的進行中章節被當成里程碑節（作用域用子字串比對，未端錨定）"; else ok "節名端錨定：`## 進行中（已完成 M1）` 不被當成里程碑節"; fi
 
 # ✅ 掃描同型：`## 已完成（進行中殘項）` 含「進行中」，子字串版會把里程碑的 ✅ 當成
 # 「進行中章節有已完成項」而誤報。此處進行中章節本身沒有 ✅，故不得印該 flag。
 { echo "# 測試專案 STATUS"; echo; echo "## 進行中"; echo "- 還在做的事"
   echo; echo "## 已完成（進行中殘項）"; echo "- ✅ 2026-07-01 某里程碑"; } > "$TMP/ds-work/STATUS.md"
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*✅"; then bad "標題含「進行中」的里程碑節，其 ✅ 被當成進行中章節的（✅ 掃描未端錨定）"; else ok "✅ 掃描節名端錨定（不被標題內的「進行中」三字騙到）"; fi
+if grep -q "dossier-flag:.*✅" <<< "$out"; then bad "標題含「進行中」的里程碑節，其 ✅ 被當成進行中章節的（✅ 掃描未端錨定）"; else ok "✅ 掃描節名端錨定（不被標題內的「進行中」三字騙到）"; fi
 
 # 簽章不符：STATUS.md 存在但非 dossier（撞名領域產物，無「進行中」章節）→ flag
 cat > "$TMP/ds-work/STATUS.md" <<'DOSSIER'
@@ -1524,7 +1524,7 @@ cat > "$TMP/ds-work/STATUS.md" <<'DOSSIER'
 - site-b
 DOSSIER
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*簽章"; then ok "撞名非 dossier → 簽章不符 flag"; else bad "簽章不符未偵測"; fi
+if grep -q "dossier-flag:.*簽章" <<< "$out"; then ok "撞名非 dossier → 簽章不符 flag"; else bad "簽章不符未偵測"; fi
 
 # 簽章假陽性防護：恰含「進行中」字樣標題的領域文件仍非 dossier（簽章需雙訊號——
 # 誤放行會讓 spec/log 模式直接編輯領域文件，比誤攔截危險）
@@ -1538,7 +1538,7 @@ cat > "$TMP/ds-work/STATUS.md" <<'DOSSIER'
 - host-a
 DOSSIER
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*簽章"; then ok "僅含進行中字樣標題 → 仍判簽章不符（雙訊號）"; else bad "簽章假陽性：單訊號誤認 dossier"; fi
+if grep -q "dossier-flag:.*簽章" <<< "$out"; then ok "僅含進行中字樣標題 → 仍判簽章不符（雙訊號）"; else bad "簽章假陽性：單訊號誤認 dossier"; fi
 
 # 簽章需標題語意錨定：兩個訊號都被「子字串」命中的領域看板（進行中的部署/已完成的部署）
 # 仍非 dossier——章節名必須是標題結尾，不是任意子字串
@@ -1552,7 +1552,7 @@ cat > "$TMP/ds-work/STATUS.md" <<'DOSSIER'
 - web v1
 DOSSIER
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*簽章"; then ok "雙訊號皆子字串命中 → 仍判簽章不符（端錨定）"; else bad "簽章假陽性：子字串比對誤認 dossier"; fi
+if grep -q "dossier-flag:.*簽章" <<< "$out"; then ok "雙訊號皆子字串命中 → 仍判簽章不符（端錨定）"; else bad "簽章假陽性：子字串比對誤認 dossier"; fi
 
 # fenced code block 內的範例標題不算章節
 cat > "$TMP/ds-work/STATUS.md" <<'DOSSIER'
@@ -1567,7 +1567,7 @@ cat > "$TMP/ds-work/STATUS.md" <<'DOSSIER'
 - 照上面範例寫
 DOSSIER
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*簽章"; then ok "fenced 範例標題 → 仍判簽章不符（剝圍欄）"; else bad "簽章假陽性：fenced 範例標題誤認 dossier"; fi
+if grep -q "dossier-flag:.*簽章" <<< "$out"; then ok "fenced 範例標題 → 仍判簽章不符（剝圍欄）"; else bad "簽章假陽性：fenced 範例標題誤認 dossier"; fi
 
 # 巢狀圍欄（CommonMark：closer 須同字元且長度 ≥ opener）：四反引號外層包三反引號範例，
 # 內層 ``` 不得誤判關欄——否則範例標題洩出、簽章誤放行
@@ -1586,7 +1586,7 @@ cat > "$TMP/ds-work/STATUS.md" <<'DOSSIER'
 - 照上面範例寫
 DOSSIER
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-work")"
-if echo "$out" | grep -q "dossier-flag:.*簽章"; then ok "巢狀圍欄範例 → 仍判簽章不符（opener 字元/長度追蹤）"; else bad "簽章假陽性：內層三反引號誤關外層四反引號圍欄"; fi
+if grep -q "dossier-flag:.*簽章" <<< "$out"; then ok "巢狀圍欄範例 → 仍判簽章不符（opener 字元/長度追蹤）"; else bad "簽章假陽性：內層三反引號誤關外層四反引號圍欄"; fi
 
 # 過期：STATUS.md 最後 commit 落後 repo 活動 > 30 天 → flag
 # （固定舊日期使 lag 恆 >30 天，不依賴執行當日）
@@ -1600,4 +1600,4 @@ git init -q -b main "$TMP/ds-stale"
     && git init --bare -q -b main "$TMP/ds-stale-origin.git" \
     && git remote add origin "$TMP/ds-stale-origin.git" && git push -qu origin main)
 out="$(SHIP_STATE_GH="$TMP/gh-open" "$SS_SCRIPT" "$TMP/ds-stale")"
-if echo "$out" | grep -q "dossier-flag:.*落後 repo 活動"; then ok "STATUS.md 落後 repo 活動 >30 天 → 過期 flag"; else bad "過期未偵測"; fi
+if grep -q "dossier-flag:.*落後 repo 活動" <<< "$out"; then ok "STATUS.md 落後 repo 活動 >30 天 → 過期 flag"; else bad "過期未偵測"; fi

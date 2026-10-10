@@ -724,3 +724,11 @@
   - 證據:23 組刪除實驗中立環境（Homebrew Python、系統 git、去除 session 變數）baseline 30/30；本地全套 30/30、140 秒；注入 `dev-tools.sh` 缺陷時本地選 4 模組、dev-environment 與 lint 判紅；route drift 拿掉 brewup→hooks 時判紅。原始 log 在本 session scratchpad，暫存遺失不補造。
   - 重議:hosted 雙 OS 時間尚未量；content 約 36 秒是每個 PR 的下限
   - 關聯:D-20261010-ci-route-deletion-evidence;Issue#285;Issue#279
+- **M-20261011-ci-platform-matrix-merged · 2026-10-11 #285 第 1、2 項合併並取得 hosted 數字**:PR #301（路由）與 #302（平台矩陣）已 rebase merge。全套 PR 的 macOS job 由 3 分 02 秒降到 2 分 28 秒（測試段 166→135 秒），critical path 改為 deep-plan。#302 的 Ubuntu 首跑因 ship-state 的 `echo | grep -q` 偽紅，同一 commit 重跑轉綠。另評估 Ubuntu 測試工具改 apt：預估僅省 10–20 秒，但 shellcheck 會由 0.11.0 降為 0.9.0、與機隊的 brew 版本分歧，不採用。
+  - 日期來源:direct
+  - 重議:小 PR 的 Ubuntu 安裝段持續是最慢 job 的主因時，改評估 Homebrew bottle 快取
+  - 關聯:D-20261010-ci-route-deletion-evidence;D-20261010-ci-controller-platform-evidence;PR#301;PR#302;Issue#285
+- **M-20261011-pipe-grep-herestring-local · 2026-10-11 測試模組的 pipe-to-grep 早退偽紅清零（本地）**:shell-contract 的 1cc gate 由「僅 printf」擴為任何 producer 接 `grep -q`／`-m`，先以 206 處命中取得 RED；207 處 `echo "$x" | grep` 機械改為 herestring，另 11 處 `find`／`git`／`sed`／巢狀 grep 手改為 capture 後判斷。受影響 12 模組前後 1,326 條斷言訊息逐行相同；gate 有紅綠 fixture 自檢與「上游延遲第二次寫入 → rc 141」機制對照；本地全套 30/30。
+  - 日期來源:direct
+  - 重議:hosted 上仍出現同類偽紅，或 Python／其他 harness 有同型早退管線
+  - 關聯:M-20261011-ci-platform-matrix-merged;Issue#285

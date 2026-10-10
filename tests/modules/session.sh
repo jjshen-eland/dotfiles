@@ -77,7 +77,7 @@ git clone -q "$spc/origin.git" "$spc/b" 2>/dev/null
 rm -f "$spc/b/.git/FETCH_HEAD"
 spc_out="$(cd "$spc/b" && bash "$SPC")"
 assert_rc "落後 clone → exit 0" 0 $?
-if echo "$spc_out" | grep -q "落後"; then ok "落後 clone → 提醒輸出（含 behind 數）"; else bad "落後 clone 無提醒：$spc_out"; fi
+if grep -q "落後" <<< "$spc_out"; then ok "落後 clone → 提醒輸出（含 behind 數）"; else bad "落後 clone 無提醒：$spc_out"; fi
 
 # (2) 非 git repo → 靜默 exit 0
 spc_out="$(cd "$TMP" && bash "$SPC")"
@@ -96,7 +96,7 @@ assert_eq "detached HEAD → 無輸出" "" "$spc_out"
 (cd "$spc/b" && git remote set-url origin "$spc/nonexistent.git" && touch .git/FETCH_HEAD)
 spc_out="$(cd "$spc/b" && bash "$SPC")"
 assert_rc "壞 remote + FETCH_HEAD 新鮮 → exit 0" 0 $?
-if echo "$spc_out" | grep -q "落後"; then ok "FETCH_HEAD 新鮮 → 跳過 fetch 仍報落後"; else bad "FETCH_HEAD 新鮮未跳過 fetch：$spc_out"; fi
+if grep -q "落後" <<< "$spc_out"; then ok "FETCH_HEAD 新鮮 → 跳過 fetch 仍報落後"; else bad "FETCH_HEAD 新鮮未跳過 fetch：$spc_out"; fi
 rm -f "$spc/b/.git/FETCH_HEAD"
 spc_out="$(cd "$spc/b" && bash "$SPC")"
 assert_rc "壞 remote + 需 fetch → exit 0" 0 $?
@@ -109,7 +109,7 @@ assert_eq "壞 remote + 需 fetch → 靜默放棄偵測" "" "$spc_out"
   && echo 4 >> f && git commit -qam c4)
 spc_out="$(cd "$spc/a" && bash "$SPC")"
 assert_rc "stale STATUS.md → exit 0" 0 $?
-if echo "$spc_out" | grep -q "過期"; then ok "stale STATUS.md → dossier 過期提醒"; else bad "stale STATUS.md 無提醒：$spc_out"; fi
+if grep -q "過期" <<< "$spc_out"; then ok "stale STATUS.md → dossier 過期提醒"; else bad "stale STATUS.md 無提醒：$spc_out"; fi
 
 # (6) 同步且無 STATUS.md → 完全靜默（happy path，「絕不留噪音」契約的正面驗證）
 (cd "$spc/b" && git pull -q origin main >/dev/null 2>&1)

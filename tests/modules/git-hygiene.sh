@@ -13,7 +13,7 @@ git init -q -b main "$TMP/gh-work"
 
 out="$("$GH_SCRIPT" "$TMP/gh-work")"
 assert_rc "clean repo → exit 0" 0 $?
-if echo "$out" | grep -q "verdict: CLEAN"; then ok "clean repo → CLEAN"; else bad "clean repo 未判 CLEAN"; fi
+if grep -q "verdict: CLEAN" <<< "$out"; then ok "clean repo → CLEAN"; else bad "clean repo 未判 CLEAN"; fi
 
 # status 本身失敗時，空 stdout 不能等同 working tree 乾淨。只讓 status 失敗，
 # 其餘 Git 操作（包括 fetch）仍使用真 git，避免其他 UNKNOWN 掩蓋這條失敗路徑。
@@ -36,24 +36,24 @@ else bad "status 失敗卻未降為 UNKNOWN：$out"; fi
 echo dirty > "$TMP/gh-work/untracked.txt"
 out="$("$GH_SCRIPT" "$TMP/gh-work")"
 assert_rc "untracked 殘留 → exit 1" 1 $?
-if echo "$out" | grep -q "verdict: RESIDUE"; then ok "untracked → RESIDUE"; else bad "untracked 未判 RESIDUE"; fi
+if grep -q "verdict: RESIDUE" <<< "$out"; then ok "untracked → RESIDUE"; else bad "untracked 未判 RESIDUE"; fi
 rm "$TMP/gh-work/untracked.txt"
 
 (cd "$TMP/gh-work" && echo v2 > f.txt && "${GITC[@]}" commit -qam "unpushed change")
 out="$("$GH_SCRIPT" "$TMP/gh-work")"
 assert_rc "unpushed commit → exit 1" 1 $?
-if echo "$out" | grep -q "unpushed: 1 commits"; then ok "unpushed commit 被偵測"; else bad "unpushed commit 未偵測"; fi
+if grep -q "unpushed: 1 commits" <<< "$out"; then ok "unpushed commit 被偵測"; else bad "unpushed commit 未偵測"; fi
 
 # local-only repo（無 remote）→ push 狀態無從判斷 → UNKNOWN，不可當乾淨
 git init -q -b main "$TMP/gh-local"
 (cd "$TMP/gh-local" && echo x > a.txt && "${GITC[@]}" add a.txt && "${GITC[@]}" commit -qm init)
 out="$("$GH_SCRIPT" "$TMP/gh-local")"
 assert_rc "local-only repo → exit 1" 1 $?
-if echo "$out" | grep -q "verdict: UNKNOWN"; then ok "local-only → UNKNOWN（不判 CLEAN）"; else bad "local-only 未判 UNKNOWN"; fi
+if grep -q "verdict: UNKNOWN" <<< "$out"; then ok "local-only → UNKNOWN（不判 CLEAN）"; else bad "local-only 未判 UNKNOWN"; fi
 
 out="$("$GH_SCRIPT" "$TMP/not-a-repo")"
 assert_rc "非 git repo → exit 1" 1 $?
-if echo "$out" | grep -q "verdict: UNKNOWN"; then ok "非 repo → UNKNOWN"; else bad "非 repo 未判 UNKNOWN"; fi
+if grep -q "verdict: UNKNOWN" <<< "$out"; then ok "非 repo → UNKNOWN"; else bad "非 repo 未判 UNKNOWN"; fi
 
 "$GH_SCRIPT" >/dev/null 2>&1
 assert_rc "無引數 → exit 2" 2 $?

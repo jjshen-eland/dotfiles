@@ -396,9 +396,9 @@ if [ -f "$ra_anchor" ] && grep -qxF "base=$ra_mb" "$ra_anchor"; then ok "anchor 
 ra_feat_x="$(git -C "$TMP/ra-work" rev-parse HEAD~1)"
 out="$("$RA_SCRIPT" squash-cmd --repo "$TMP/ra-work")"
 assert_rc "squash-cmd happy path → exit 0" 0 $?
-if echo "$out" | grep -qxF "squash-cmd: git -C '$TMP/ra-work' reset --soft $ra_feat_x"; then ok "squash-cmd 停在語意 commit（不壓既有 feat）"; else bad "squash-cmd 指令錯誤（squash base 未避開既有語意 commit）"; fi
-if echo "$out" | grep -q "fix: R1 review fixes"; then ok "squash-range 列出 commit"; else bad "squash-range 清單缺失"; fi
-if echo "$out" | grep -q "^squash-preserve: 1 顆" && grep -q "feat: x" <<< "$out"; then ok "squash-preserve 列出保留的既有 commit"; else bad "squash-preserve 缺失或未列保留 commit"; fi
+if grep -qxF "squash-cmd: git -C '$TMP/ra-work' reset --soft $ra_feat_x" <<< "$out"; then ok "squash-cmd 停在語意 commit（不壓既有 feat）"; else bad "squash-cmd 指令錯誤（squash base 未避開既有語意 commit）"; fi
+if grep -q "fix: R1 review fixes" <<< "$out"; then ok "squash-range 列出 commit"; else bad "squash-range 清單缺失"; fi
+if grep -q "^squash-preserve: 1 顆" <<< "$out" && grep -q "feat: x" <<< "$out"; then ok "squash-preserve 列出保留的既有 commit"; else bad "squash-preserve 缺失或未列保留 commit"; fi
 
 # record 無條件覆蓋（working-tree → base=HEAD）
 ra_head="$(git -C "$TMP/ra-work" rev-parse HEAD)"
@@ -438,26 +438,26 @@ assert_rc "record→switch -c 後 squash-cmd 照常 → exit 0" 0 $?
 "$RA_SCRIPT" record --repo "$TMP/ra-work" --mode working-tree >/dev/null
 out="$("$RA_SCRIPT" squash-cmd --repo "$TMP/ra-work")"
 assert_rc "無 commit 可 squash → exit 0" 0 $?
-if echo "$out" | grep -q "WARNING"; then ok "空 range → WARNING"; else bad "空 range 未警告"; fi
+if grep -q "WARNING" <<< "$out"; then ok "空 range → WARNING"; else bad "空 range 未警告"; fi
 
 # codex-next：C1 → 冪等 → C2 增量 → --full → C4 上限
 "$RA_SCRIPT" record --repo "$TMP/ra-work" --mode branch-diff --base origin/main >/dev/null
 ra_h1="$(git -C "$TMP/ra-work" rev-parse HEAD)"
 out="$("$RA_SCRIPT" codex-next --repo "$TMP/ra-work")"
 assert_rc "codex-next C1 → exit 0" 0 $?
-if echo "$out" | grep -q "codex-round: C1" && echo "$out" | grep -qxF "codex-range: $ra_mb..$ra_h1"; then ok "C1 range = anchor-base..HEAD"; else bad "C1 range 錯誤"; fi
-if echo "$out" | grep -qF "codex-cmd: ~/.claude/skills/deep-review/scripts/codex-exec-review.sh run --repo '$TMP/ra-work' --range $ra_mb..$ra_h1 --round C1"; then ok "codex-cmd 整行照抄可執行"; else bad "codex-cmd 錯誤"; fi
+if grep -q "codex-round: C1" <<< "$out" && grep -qxF "codex-range: $ra_mb..$ra_h1" <<< "$out"; then ok "C1 range = anchor-base..HEAD"; else bad "C1 range 錯誤"; fi
+if grep -qF "codex-cmd: ~/.claude/skills/deep-review/scripts/codex-exec-review.sh run --repo '$TMP/ra-work' --range $ra_mb..$ra_h1 --round C1" <<< "$out"; then ok "codex-cmd 整行照抄可執行"; else bad "codex-cmd 錯誤"; fi
 out="$("$RA_SCRIPT" codex-next --repo "$TMP/ra-work")"
 assert_rc "同 HEAD 再呼叫 → exit 0" 0 $?
-if echo "$out" | grep -q "codex-round: C1"; then ok "同 HEAD 冪等（round 不誤增）"; else bad "冪等失敗"; fi
+if grep -q "codex-round: C1" <<< "$out"; then ok "同 HEAD 冪等（round 不誤增）"; else bad "冪等失敗"; fi
 (cd "$TMP/ra-work" && echo d > f.txt && "${GITC[@]}" commit -qam "fix: codex C1 fixes")
 ra_h2="$(git -C "$TMP/ra-work" rev-parse HEAD)"
 out="$("$RA_SCRIPT" codex-next --repo "$TMP/ra-work")"
-if echo "$out" | grep -q "codex-round: C2" && echo "$out" | grep -qxF "codex-range: $ra_h1..$ra_h2"; then ok "C2 增量 range = 上輪 HEAD..HEAD"; else bad "C2 range 錯誤"; fi
+if grep -q "codex-round: C2" <<< "$out" && grep -qxF "codex-range: $ra_h1..$ra_h2" <<< "$out"; then ok "C2 增量 range = 上輪 HEAD..HEAD"; else bad "C2 range 錯誤"; fi
 (cd "$TMP/ra-work" && echo e > f.txt && "${GITC[@]}" commit -qam "fix: codex C2 fixes")
 ra_h3="$(git -C "$TMP/ra-work" rev-parse HEAD)"
 out="$("$RA_SCRIPT" codex-next --repo "$TMP/ra-work" --full)"
-if echo "$out" | grep -q "codex-round: C3" && echo "$out" | grep -qxF "codex-range: $ra_mb..$ra_h3"; then ok "--full → C1 scope、round 照推"; else bad "--full 錯誤"; fi
+if grep -q "codex-round: C3" <<< "$out" && grep -qxF "codex-range: $ra_mb..$ra_h3" <<< "$out"; then ok "--full → C1 scope、round 照推"; else bad "--full 錯誤"; fi
 (cd "$TMP/ra-work" && echo f2 > f.txt && "${GITC[@]}" commit -qam "fix: codex C3 fixes")
 "$RA_SCRIPT" codex-next --repo "$TMP/ra-work" >/dev/null 2>&1
 assert_rc "超過 C3 上限 → exit 1（STOP）" 1 $?
@@ -469,7 +469,7 @@ git clone -q "$TMP/ra-origin.git" "$TMP/ra-base"
 ra_bh="$(git -C "$TMP/ra-base" rev-parse HEAD)"
 if grep -qxF "base=$ra_bh" "$(git -C "$TMP/ra-base" rev-parse --absolute-git-dir)/deep-review/anchor"; then ok "baseline record base=HEAD（非 empty-tree）"; else bad "baseline base 錯誤"; fi
 out="$("$RA_SCRIPT" codex-next --repo "$TMP/ra-base")"
-if echo "$out" | grep -qxF "codex-range: 4b825dc642cb6eb9a060e54bf8d69288fbee4904..$ra_bh"; then ok "baseline C1 range = empty-tree..HEAD"; else bad "baseline C1 range 錯誤"; fi
+if grep -qxF "codex-range: 4b825dc642cb6eb9a060e54bf8d69288fbee4904..$ra_bh" <<< "$out"; then ok "baseline C1 range = empty-tree..HEAD"; else bad "baseline C1 range 錯誤"; fi
 
 # clear：刪檔 + 幂等
 "$RA_SCRIPT" clear --repo "$TMP/ra-work" >/dev/null
@@ -723,7 +723,7 @@ ra_imp_mb="$(git -C "$TMP/ra-imp" merge-base origin/main HEAD)"
 assert_rc "record --tests-baseline → exit 0" 0 $?
 if grep -qxF "tests_baseline=fail" "$ra_imp_anchor" 2>/dev/null; then ok "tests_baseline 寫入 anchor"; else bad "tests_baseline 未寫入 anchor"; fi
 out="$("$RA_SCRIPT" show --repo "$TMP/ra-imp" 2>/dev/null)"
-if echo "$out" | grep -q "tests-baseline: fail"; then ok "show 顯示 tests-baseline"; else bad "show 未顯示 tests-baseline"; fi
+if grep -q "tests-baseline: fail" <<< "$out"; then ok "show 顯示 tests-baseline"; else bad "show 未顯示 tests-baseline"; fi
 
 # codex-next 改寫 anchor 時保留 tests_baseline（否則 autocodex 階段丟失 baseline 資訊）
 "$RA_SCRIPT" codex-next --repo "$TMP/ra-imp" >/dev/null 2>&1
@@ -731,11 +731,11 @@ if grep -qxF "tests_baseline=fail" "$ra_imp_anchor" 2>/dev/null; then ok "codex-
 
 # record（branch-diff）輸出 diff-cmd 整行（固定 hash，照抄慣例）
 out="$("$RA_SCRIPT" record --repo "$TMP/ra-imp" --mode branch-diff --base origin/main --tests-baseline pass 2>/dev/null)"
-if echo "$out" | grep -qxF "diff-cmd: git -C '$TMP/ra-imp' diff $ra_imp_mb...HEAD"; then ok "record 印 diff-cmd（固定 hash）"; else bad "diff-cmd 缺失或錯誤"; fi
+if grep -qxF "diff-cmd: git -C '$TMP/ra-imp' diff $ra_imp_mb...HEAD" <<< "$out"; then ok "record 印 diff-cmd（固定 hash）"; else bad "diff-cmd 缺失或錯誤"; fi
 
 # range 模式不印 diff-cmd（審查指令 = range 引數本身，...HEAD 會審錯範圍）
 out="$("$RA_SCRIPT" record --repo "$TMP/ra-imp" --mode range --range "$ra_imp_mb..HEAD" 2>/dev/null)"
-if echo "$out" | grep -q "^diff-cmd:"; then bad "range 模式誤印 diff-cmd"; else ok "range 模式不印 diff-cmd"; fi
+if grep -q "^diff-cmd:" <<< "$out"; then bad "range 模式誤印 diff-cmd"; else ok "range 模式不印 diff-cmd"; fi
 
 # tests-baseline 值域驗證
 "$RA_SCRIPT" record --repo "$TMP/ra-imp" --mode working-tree --tests-baseline bogus >/dev/null 2>&1
@@ -863,7 +863,7 @@ assert_eq "stub 收到真實 argv：uv run pytest" "run
 pytest" "$(cat "$TMP/vt-uv-argv")"
 out="$(VT_UV_RC=1 vt_run "$TMP/vt-py")"
 assert_rc "pytest 紅 → exit 1（FAIL）" 1 $?
-if echo "$out" | grep -q "verdict: FAIL"; then ok "FAIL 印 verdict 行"; else bad "FAIL verdict 缺失"; fi
+if grep -q "verdict: FAIL" <<< "$out"; then ok "FAIL 印 verdict 行"; else bad "FAIL verdict 缺失"; fi
 VT_UV_RC=5 vt_run "$TMP/vt-py" >/dev/null
 assert_rc "pytest rc=5（no tests collected）→ exit 3（SKIP）" 3 $?
 
@@ -896,7 +896,7 @@ assert_rc "並存任一紅 → exit 1" 1 $?
 mkdir -p "$TMP/vt-none"
 out="$(vt_run "$TMP/vt-none")"
 assert_rc "無框架 → exit 3（SKIP）" 3 $?
-if echo "$out" | grep -q "verdict: SKIP"; then ok "SKIP 印 verdict 行"; else bad "SKIP verdict 缺失"; fi
+if grep -q "verdict: SKIP" <<< "$out"; then ok "SKIP 印 verdict 行"; else bad "SKIP verdict 缺失"; fi
 vt_run >/dev/null 2>&1
 assert_rc "缺引數 → exit 2" 2 $?
 vt_run "$TMP/vt-nope" >/dev/null 2>&1

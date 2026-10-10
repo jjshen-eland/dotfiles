@@ -93,20 +93,37 @@ else
     printf '%s\n' "$hd_hits" | sed 's/^/     /'
 fi
 
-echo "▶ 1cc. printf-to-grep-q early-exit pipeline gate"
-# `grep -q` 命中後會提早關閉 pipe；輸入變大時，上游 printf 可收到 SIGPIPE，
-# `set -o pipefail` 便把真命中翻成失敗。將掃描 token 拆開，避免 gate 自己成為命中。
-pipe_grep_q_probe='| grep -'
-pipe_grep_q_probe="${pipe_grep_q_probe}q"
-printf_probe='print'
-printf_probe="${printf_probe}f "
-printf_grep_q_hits="$(awk -v producer="$printf_probe" -v consumer="$pipe_grep_q_probe" \
-    'index($0, producer) && index($0, consumer) { print NR ":" $0 }' "$ROOT/tests/modules/"*.sh)"
-if [ -z "$printf_grep_q_hits" ]; then
-    ok "tests/run.sh 無 printf-to-grep-q early-exit pipeline"
+echo "▶ 1cc. pipe-to-grep early-exit gate"
+# `grep -q`／`-m` 命中後會提早關閉 pipe；上游若還有一次寫入就收到 SIGPIPE，
+# `set -o pipefail` 便把真命中翻成失敗。producer 不限 printf：bash 的 stdout 是 line-buffered，
+# 多行 `echo "$out"` 會分次寫入，PR #302 的 Ubuntu run 即因此在 ship-state 偽紅、重跑轉綠。
+# 存在性檢查一律寫 `grep -q ... <<< "$value"`。Regex 拆開組裝，避免 gate 自己成為命中。
+pipe_grep_re='[|][[:space:]]*grep[[:space:]]+-[A-Za-z]*'
+pipe_grep_re="${pipe_grep_re}[qm]"
+pipe_grep_scan() {  # <file...>：印出非註解、非 `||`、未標 intentional 的命中行
+    awk -v re="(^|[^|])$pipe_grep_re" '!/^[[:space:]]*#/ && !/# pipe-grep: intentional/ && $0 ~ re { print FILENAME ":" FNR ":" $0 }' "$@"
+}
+mkdir -p "$TMP/pg"
+# shellcheck disable=SC2016  # fixture 是字面程式碼
+printf '%s\n' 'if echo "$out" @ grep -q x; then :; fi' 'git log @ grep -qE y' | tr '@' '|' > "$TMP/pg/red.sh"
+# shellcheck disable=SC2016
+printf '%s\n' 'if grep -q x <<< "$out"; then :; fi' '# echo "$out" @ grep -q x' 'grep -v x f @ sort' \
+    'a @@ grep -q x <<< "$b"' | tr '@' '|' > "$TMP/pg/green.sh"
+if [ "$(pipe_grep_scan "$TMP/pg/red.sh" | wc -l | tr -d ' ')" = 2 ]; then ok "gate 自檢：echo／指令接 grep -q 都命中"; else bad "pipe-to-grep gate 漏抓 RED fixture"; fi
+if [ -z "$(pipe_grep_scan "$TMP/pg/green.sh")" ]; then ok "gate 自檢：herestring、註解、非早退 grep、|| 不誤報"; else bad "pipe-to-grep gate 誤報安全寫法"; fi
+# 機制對照：上游第二次寫入晚於 grep 命中時，pipefail 必把真命中翻成失敗；herestring 不受影響。
+pg_rc=0; { echo hit; sleep 0.3; echo more; } | grep -q hit || pg_rc=$?  # pipe-grep: intentional
+if [ "$pg_rc" -ne 0 ] && grep -q hit <<< "$(printf 'hit\nmore\n')"; then
+    ok "機制對照：早退 grep + pipefail 翻成失敗（rc=${pg_rc}），herestring 正確命中"
 else
-    bad "tests/run.sh 仍有 printf-to-grep-q pipeline（改用 grep -q ... <<< \"\$value\"）"
-    printf '%s\n' "$printf_grep_q_hits" | sed 's/^/     /'
+    bad "機制對照未重現（rc=${pg_rc}）——gate 的前提需重新查證"
+fi
+pipe_grep_hits="$(pipe_grep_scan "$ROOT/tests/module-shell.sh" "$ROOT/tests/modules/"*.sh)"
+if [ -z "$pipe_grep_hits" ]; then
+    ok "test modules 無 pipe-to-grep early-exit pipeline"
+else
+    bad "test modules 仍有 pipe-to-grep -q／-m（改用 grep -q ... <<< \"\$value\"）：$(wc -l <<< "$pipe_grep_hits" | tr -d ' ') 處"
+    head -5 <<< "$pipe_grep_hits" | sed 's/^/     /'
 fi
 
 

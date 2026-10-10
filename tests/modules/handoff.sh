@@ -123,7 +123,7 @@ git init -q -b main "$TMP/ha-work"
 echo dirty > "$TMP/ha-work/untracked.txt"
 out="$("$HA_SCRIPT" anchors "$TMP/ha-work")"
 assert_rc "anchors 正常 repo → exit 0" 0 $?
-if echo "$out" | grep -q "^created: " && echo "$out" | grep -q "^anchor: $HA_REAL/ha-work main .* dirty=1$"; then
+if grep -q "^created: " <<< "$out" && grep -q "^anchor: $HA_REAL/ha-work main .* dirty=1$" <<< "$out"; then
     ok "anchors 輸出 created + anchor（dirty=1）"
 else bad "anchors 輸出格式錯誤"; fi
 rm "$TMP/ha-work/untracked.txt"
@@ -136,7 +136,7 @@ git init -q -b main "$TMP/ha spaced"
 (cd "$TMP/ha spaced" && echo v1 > f.txt && "${GITC[@]}" add f.txt && "${GITC[@]}" commit -qm init)
 out="$("$HA_SCRIPT" anchors "$TMP/ha spaced" 2>&1)"
 assert_rc "anchors 含空白路徑 → exit 1" 1 $?
-if ! echo "$out" | grep -q "^anchor: " && echo "$out" | grep -q "含空白"; then
+if ! grep -q "^anchor: " <<< "$out" && grep -q "含空白" <<< "$out"; then
     ok "含空白路徑 → 報錯且不輸出 anchor 行"
 else bad "含空白路徑未被寫入端擋下"; fi
 
@@ -145,14 +145,14 @@ else bad "含空白路徑未被寫入端擋下"; fi
 mkdir -p "$TMP/ha-work/sub"
 out="$(cd "$TMP/ha-work/sub" && "$HA_SCRIPT" anchors .)"
 assert_rc "anchors 子目錄相對路徑 → exit 0" 0 $?
-if echo "$out" | grep -q "^anchor: $HA_REAL/ha-work main "; then
+if grep -q "^anchor: $HA_REAL/ha-work main " <<< "$out"; then
     ok "相對路徑/子目錄輸入 → 錨點記 toplevel 絕對路徑"
 else bad "錨點未正規化為 toplevel 絕對路徑（${out}）"; fi
 
 # 空白檢查對解析後的 toplevel 而非原輸入——相對輸入本身無空白、toplevel 卻含空白時仍須擋下
 out="$(cd "$TMP/ha spaced" && "$HA_SCRIPT" anchors . 2>&1)"
 assert_rc "anchors 相對輸入但 toplevel 含空白 → exit 1" 1 $?
-if ! echo "$out" | grep -q "^anchor: " && echo "$out" | grep -q "含空白"; then
+if ! grep -q "^anchor: " <<< "$out" && grep -q "含空白" <<< "$out"; then
     ok "含空白 toplevel 經相對路徑輸入仍被擋"
 else bad "相對路徑繞過了 toplevel 空白檢查（${out}）"; fi
 
@@ -229,7 +229,7 @@ mkdir -p "$TMP/ha-handoffs"
 { echo "---"; "$HA_SCRIPT" anchors "$TMP/ha-work"; echo "---"; echo "# Handoff: test"; } > "$TMP/ha-handoffs/t.md"
 out="$("$HA_SCRIPT" verify "$TMP/ha-handoffs/t.md")"
 assert_rc "verify 未動的 repo → exit 0" 0 $?
-if echo "$out" | grep -q "verdict: FRESH"; then ok "未動的 repo → FRESH"; else bad "未判 FRESH"; fi
+if grep -q "verdict: FRESH" <<< "$out"; then ok "未動的 repo → FRESH"; else bad "未判 FRESH"; fi
 
 # verify 的 metadata 邊界：正文可以引用 created/anchor 範例，但不能參與驗證。
 # 一份有效交接若因正文範例多出壞錨點而降級，就是 false STALE-RISK。
@@ -238,7 +238,7 @@ if echo "$out" | grep -q "verdict: FRESH"; then ok "未動的 repo → FRESH"; e
 } > "$TMP/ha-handoffs/body-example.md"
 out="$("$HA_SCRIPT" verify "$TMP/ha-handoffs/body-example.md")"
 assert_rc "verify 忽略正文錨點範例 → exit 0" 0 $?
-if echo "$out" | grep -q 'verdict: FRESH' && ! echo "$out" | grep -q 'status: MISSING'; then
+if grep -q 'verdict: FRESH' <<< "$out" && ! grep -q 'status: MISSING' <<< "$out"; then
     ok "正文錨點範例不造成假 STALE-RISK"
 else bad "正文錨點範例污染驗證結果（${out}）"; fi
 
@@ -246,8 +246,8 @@ else bad "正文錨點範例污染驗證結果（${out}）"; fi
 { echo '```text'; "$HA_SCRIPT" anchors "$TMP/ha-work"; echo '```'; } > "$TMP/ha-handoffs/body-only.md"
 out="$("$HA_SCRIPT" verify "$TMP/ha-handoffs/body-only.md")"
 assert_rc "verify 只有正文範例 → exit 1" 1 $?
-if echo "$out" | grep -q 'age: UNKNOWN' && echo "$out" | grep -q 'verdict: UNVERIFIABLE' \
-    && ! echo "$out" | grep -q 'status: FRESH'; then
+if grep -q 'age: UNKNOWN' <<< "$out" && grep -q 'verdict: UNVERIFIABLE' <<< "$out" \
+    && ! grep -q 'status: FRESH' <<< "$out"; then
     ok "正文 metadata 不會假放行"
 else bad "正文 metadata 被誤認為 frontmatter（${out}）"; fi
 
@@ -256,7 +256,7 @@ else bad "正文 metadata 被誤認為 frontmatter（${out}）"; fi
     > "$TMP/ha-handoffs/missing-dirty.md"
 out="$("$HA_SCRIPT" verify "$TMP/ha-handoffs/missing-dirty.md")"
 assert_rc "verify 缺 dirty 欄位 → exit 1" 1 $?
-if echo "$out" | grep -q 'status: BAD-ANCHOR' && ! echo "$out" | grep -q 'status: FRESH'; then
+if grep -q 'status: BAD-ANCHOR' <<< "$out" && ! grep -q 'status: FRESH' <<< "$out"; then
     ok "缺 dirty 欄位不得 FRESH"
 else bad "缺 dirty 欄位被放行（${out}）"; fi
 
@@ -264,35 +264,35 @@ else bad "缺 dirty 欄位被放行（${out}）"; fi
 (cd "$TMP/ha-work" && echo v2 > f.txt && "${GITC[@]}" commit -qam "advance after handoff")
 out="$("$HA_SCRIPT" verify "$TMP/ha-handoffs/t.md")"
 assert_rc "verify 前進後的 repo → exit 1" 1 $?
-if echo "$out" | grep -q "status: DRIFTED" && echo "$out" | grep -q "advance after handoff"; then
+if grep -q "status: DRIFTED" <<< "$out" && grep -q "advance after handoff" <<< "$out"; then
     ok "repo 前進 → DRIFTED + 列中間 commit"
 else bad "DRIFTED 判定或 commit 清單缺失"; fi
-if echo "$out" | grep -q "verdict: STALE-RISK"; then ok "DRIFTED → verdict STALE-RISK"; else bad "verdict 未標 STALE-RISK"; fi
+if grep -q "verdict: STALE-RISK" <<< "$out"; then ok "DRIFTED → verdict STALE-RISK"; else bad "verdict 未標 STALE-RISK"; fi
 
 # verify：DIVERGED（記錄的 HEAD 被 rebase 掉、不在現行歷史）
 { echo "---"; "$HA_SCRIPT" anchors "$TMP/ha-work"; echo "---"; } > "$TMP/ha-handoffs/t.md"
 (cd "$TMP/ha-work" && echo v3 > f.txt && "${GITC[@]}" commit -qa --amend -m "rewritten")
 out="$("$HA_SCRIPT" verify "$TMP/ha-handoffs/t.md")"
 assert_rc "verify 歷史改寫 → exit 1" 1 $?
-if echo "$out" | grep -q "status: DIVERGED"; then ok "歷史改寫 → DIVERGED"; else bad "未判 DIVERGED"; fi
+if grep -q "status: DIVERGED" <<< "$out"; then ok "歷史改寫 → DIVERGED"; else bad "未判 DIVERGED"; fi
 
 # verify：MISSING（repo 路徑不存在）
 printf -- '---\ncreated: %s\nanchor: %s/gone main abc1234 dirty=0\n---\n' "$(date +%Y-%m-%d)" "$TMP" > "$TMP/ha-handoffs/t.md"
 out="$("$HA_SCRIPT" verify "$TMP/ha-handoffs/t.md")"
 assert_rc "verify repo 消失 → exit 1" 1 $?
-if echo "$out" | grep -q "status: MISSING"; then ok "repo 消失 → MISSING"; else bad "未判 MISSING"; fi
+if grep -q "status: MISSING" <<< "$out"; then ok "repo 消失 → MISSING"; else bad "未判 MISSING"; fi
 
 # verify：EXPIRED（created 超過 EXPIRE_DAYS）
 { echo "---"; echo "created: 2026-01-01"; "$HA_SCRIPT" anchors "$TMP/ha-work" | grep '^anchor: '; echo "---"; } > "$TMP/ha-handoffs/t.md"
 out="$("$HA_SCRIPT" verify "$TMP/ha-handoffs/t.md")"
 assert_rc "verify 過期交接檔 → exit 1" 1 $?
-if echo "$out" | grep -q "EXPIRED"; then ok "created 超過 7 天 → EXPIRED"; else bad "未標 EXPIRED"; fi
+if grep -q "EXPIRED" <<< "$out"; then ok "created 超過 7 天 → EXPIRED"; else bad "未標 EXPIRED"; fi
 
 # verify：無錨點 → UNVERIFIABLE
 printf -- '---\ncreated: %s\n---\nno anchors here\n' "$(date +%Y-%m-%d)" > "$TMP/ha-handoffs/t.md"
 out="$("$HA_SCRIPT" verify "$TMP/ha-handoffs/t.md")"
 assert_rc "verify 無錨點 → exit 1" 1 $?
-if echo "$out" | grep -q "verdict: UNVERIFIABLE"; then ok "無錨點 → UNVERIFIABLE"; else bad "未判 UNVERIFIABLE"; fi
+if grep -q "verdict: UNVERIFIABLE" <<< "$out"; then ok "無錨點 → UNVERIFIABLE"; else bad "未判 UNVERIFIABLE"; fi
 
 "$HA_SCRIPT" verify "$TMP/ha-handoffs/no-such.md" >/dev/null 2>&1
 assert_rc "verify 檔案不存在 → exit 1" 1 $?
@@ -301,7 +301,7 @@ assert_rc "verify 檔案不存在 → exit 1" 1 $?
 printf -- '---\ncreated: %s\nanchor: %s/ha-work\n---\n' "$(date +%Y-%m-%d)" "$TMP" > "$TMP/ha-handoffs/t.md"
 out="$("$HA_SCRIPT" verify "$TMP/ha-handoffs/t.md" 2>&1)"
 assert_rc "verify 欄位不足錨點 → exit 1" 1 $?
-if echo "$out" | grep -q "status: BAD-ANCHOR" && ! echo "$out" | grep -q "unbound variable"; then
+if grep -q "status: BAD-ANCHOR" <<< "$out" && ! grep -q "unbound variable" <<< "$out"; then
     ok "欄位不足 → BAD-ANCHOR（無 bash 錯誤）"
 else bad "欄位不足錨點未優雅判定"; fi
 
@@ -309,7 +309,7 @@ else bad "欄位不足錨點未優雅判定"; fi
 printf -- '---\ncreated: %s\nanchor: * main abc1234 dirty=0\n---\n' "$(date +%Y-%m-%d)" > "$TMP/ha-handoffs/t.md"
 out="$("$HA_SCRIPT" verify "$TMP/ha-handoffs/t.md")"
 assert_rc "verify glob 字元錨點 → exit 1" 1 $?
-if echo "$out" | grep -q "recorded: branch=main head=abc1234" && echo "$out" | grep -q "status: MISSING"; then
+if grep -q "recorded: branch=main head=abc1234" <<< "$out" && grep -q "status: MISSING" <<< "$out"; then
     ok "glob 字元不展開 → 判 MISSING"
 else bad "glob 字元錨點被 pathname expansion 展開"; fi
 
@@ -325,21 +325,21 @@ out="$("$HA_SCRIPT" list "$TMP/ha-handoffs")"
 assert_rc "list → exit 0" 0 $?
 # 時戳欄的值會變（取 mtime），故用 pattern 吃掉；但 `0d` 與 `OK` **仍必須被斷言**——
 # 只留 `grep -q "active: fresh.md"` 也會全綠，那格從此不再守 age 與 flag
-if echo "$out" | grep -qE '^active: fresh\.md — 更新 [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2} — 0d — OK$'; then
+if grep -qE '^active: fresh\.md — 更新 [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2} — 0d — OK$' <<< "$out"; then
     ok "list 新檔標 OK（含 mtime 時戳欄）"
 else bad "list 新檔標記錯誤或缺時戳欄"; fi
-if echo "$out" | grep "active: old.md" | grep -q "EXPIRED"; then ok "list 過期檔標 EXPIRED"; else bad "list 未標 EXPIRED"; fi
+if grep -q "EXPIRED" <<< "$(grep "active: old.md" <<< "$out")"; then ok "list 過期檔標 EXPIRED"; else bad "list 未標 EXPIRED"; fi
 if [ ! -f "$TMP/ha-handoffs/archive/20260101-dead.md" ] && [ -f "$TMP/ha-handoffs/archive/recent.md" ]; then
     ok "list 清超過保留期的 archive、留新的"
 else bad "archive 清理行為錯誤"; fi
-if echo "$out" | grep -q "archive: 已清 1 份"; then ok "list 回報清理數量"; else bad "list 未回報清理"; fi
+if grep -q "archive: 已清 1 份" <<< "$out"; then ok "list 回報清理數量"; else bad "list 未回報清理"; fi
 
 # list：path 行（verify/consume 吃完整路徑，讀取端不必手拼）與 title 行（多份待選時只看 slug
 # 分不出是哪條工作線）；無標題行的檔整行省略，不留空欄位
 printf -- '---\ncreated: %s\n---\n# Handoff: 訂單重試強化\n' "$(date +%Y-%m-%d)" > "$TMP/ha-handoffs/titled.md"
 out="$("$HA_SCRIPT" list "$TMP/ha-handoffs")"
-if echo "$out" | grep -q "^  path: .*/ha-handoffs/titled.md$"; then ok "list 印完整 path 行"; else bad "list 缺 path 行"; fi
-if echo "$out" | grep -q "^  title: 訂單重試強化$"; then ok "list 印 title 行"; else bad "list 缺 title 行"; fi
+if grep -q "^  path: .*/ha-handoffs/titled.md$" <<< "$out"; then ok "list 印完整 path 行"; else bad "list 缺 path 行"; fi
+if grep -q "^  title: 訂單重試強化$" <<< "$out"; then ok "list 印 title 行"; else bad "list 缺 title 行"; fi
 assert_eq "無標題行的檔不印 title" "1" "$(echo "$out" | grep -c '^  title: ')"
 rm "$TMP/ha-handoffs/titled.md"
 
@@ -359,7 +359,7 @@ out="$("$HA_SCRIPT" find-predecessor foo "$FP")"
 assert_rc "find-predecessor 命中 → exit 0" 0 $?
 assert_eq "後綴同名的別條工作線不得誤中（bar-foo vs foo），且取同 slug 最新一份" \
     "$FP/archive/20260803-100000-foo.md" "$(echo "$out" | sed -n 's/^predecessor: //p')"
-if echo "$out" | grep -q "^location: archive"; then ok "命中 archive 標 location"; else bad "location 標記錯誤"; fi
+if grep -q "^location: archive" <<< "$out"; then ok "命中 archive 標 location"; else bad "location 標記錯誤"; fi
 
 out="$("$HA_SCRIPT" find-predecessor bar-foo "$FP")"
 assert_eq "查較長的工作線名照樣精確" \
@@ -373,16 +373,16 @@ assert_eq "active 未消費的同 slug 優先於 archive" "$FP/foo.md" "$(echo "
 # 檔名對得上但檔內 slug 不符 → 不採用（手改過的殘檔不得被撿）
 printf -- '---\nslug: someone-else\n---\n' > "$FP/archive/20260804-110000-mismatch.md"
 out="$("$HA_SCRIPT" find-predecessor mismatch "$FP")"
-if echo "$out" | grep -q "predecessor: NONE"; then ok "檔內 slug 與檔名不符 → 不採用"; else bad "採用了 slug 不符的檔"; fi
+if grep -q "predecessor: NONE" <<< "$out"; then ok "檔內 slug 與檔名不符 → 不採用"; else bad "採用了 slug 不符的檔"; fi
 
 # 無命中＝首輪，是正常結果不是錯誤
 out="$("$HA_SCRIPT" find-predecessor brand-new "$FP")"
 assert_rc "find-predecessor 無命中 → exit 0（首輪是正常結果）" 0 $?
-if echo "$out" | grep -q "predecessor: NONE"; then ok "無命中印 NONE"; else bad "無命中輸出錯誤"; fi
+if grep -q "predecessor: NONE" <<< "$out"; then ok "無命中印 NONE"; else bad "無命中輸出錯誤"; fi
 
 # slug 含 glob 字元 → 不做 pathname expansion（slug 已不進 glob）
 out="$("$HA_SCRIPT" find-predecessor '*' "$FP")"
-if echo "$out" | grep -q "predecessor: NONE"; then ok "slug 含 glob 字元不誤匹配"; else bad "glob 字元被展開"; fi
+if grep -q "predecessor: NONE" <<< "$out"; then ok "slug 含 glob 字元不誤匹配"; else bad "glob 字元被展開"; fi
 
 # active 檔名就是 <slug>.md，**不得**剝任何前綴——W4 只禁 YYYYMMDD-HHMMSS- 開頭，
 # 日期-only 的 slug 合法；剝了會把它比成 `foo`、判成首輪，接著整檔覆寫、前一輪內容無聲蒸發
@@ -427,7 +427,7 @@ assert_eq "正文/code fence 內的 slug: 不得被當成 frontmatter" \
 # 資訊不足、消不掉，但必須附 AMBIGUOUS note 讓讀取端知道要先確認內容再採用
 printf -- '---\ncreated: 2026-08-01\n---\n' > "$FP/archive/20260810-120000-ambignofm.md"
 out="$("$HA_SCRIPT" find-predecessor ambignofm "$FP")"
-if echo "$out" | grep -q "^note: AMBIGUOUS"; then
+if grep -q "^note: AMBIGUOUS" <<< "$out"; then
     ok "歧義檔名 + 無 metadata → 附 AMBIGUOUS note"
 else bad "歧義且無 metadata 卻未標 AMBIGUOUS"; fi
 assert_eq "歧義檔確實會被另一個 slug 也撈到（故 note 是必要的，不是裝飾）" \
@@ -436,14 +436,14 @@ assert_eq "歧義檔確實會被另一個 slug 也撈到（故 note 是必要的
 
 # 有 slug: frontmatter 佐證者無歧義 → 不得誤標 AMBIGUOUS
 out="$("$HA_SCRIPT" find-predecessor "120000-ambig" "$FP")"
-if echo "$out" | grep -q "^note: AMBIGUOUS"; then
+if grep -q "^note: AMBIGUOUS" <<< "$out"; then
     bad "檔內 slug: 已可佐證歸屬，卻誤標 AMBIGUOUS"
 else ok "有 slug: 佐證 → 不標 AMBIGUOUS"; fi
 
 # frontmatter 有 slug: 但值為空 → malformed，不可當成「沒有欄位」放行
 printf -- '---\nslug:\ncreated: 2026-08-01\n---\n' > "$FP/archive/20260809-100000-emptyfm.md"
 out="$("$HA_SCRIPT" find-predecessor emptyfm "$FP")"
-if echo "$out" | grep -q "predecessor: NONE"; then
+if grep -q "predecessor: NONE" <<< "$out"; then
     ok "frontmatter slug: 空值 → 不採用（不等同缺少欄位）"
 else bad "空值 slug 被當成缺少欄位而放行"; fi
 
@@ -454,7 +454,7 @@ assert_rc "find-predecessor 目錄不存在 → exit 0" 0 $?
 
 out="$("$HA_SCRIPT" list "$TMP/no-such-dir")"
 assert_rc "list 目錄不存在 → exit 0（回報 NONE）" 0 $?
-if echo "$out" | grep -q "handoffs: NONE"; then ok "list 無目錄 → NONE"; else bad "list 無目錄輸出錯誤"; fi
+if grep -q "handoffs: NONE" <<< "$out"; then ok "list 無目錄 → NONE"; else bad "list 無目錄輸出錯誤"; fi
 
 # --- survey（W1／R1 單一入口：清理 → active → worklines → predecessor）---
 # 存在理由是機制取代散文契約：W1 曾把 `list` 寫成「只在未指定 slug 時跑」，W5 的 EXPIRED 回報
@@ -505,8 +505,8 @@ else bad "歧義檔名未標記（$(grep '^workline: nofm' <<< "$out")）"; fi
 if grep -q '^workline: mism — 1 輪 — 最近 2026-08-05（檔內 slug=someone-else' <<< "$out"; then
     ok "parser ②：frontmatter 不符 → 以檔名歸戶並標不可達"
 else bad "fm-mismatch 未以檔名歸戶或未標註（$(grep '^workline: mism' <<< "$out")）"; fi
-if "$HA_SCRIPT" find-predecessor mism "$SV" | grep -q 'predecessor: NONE' \
-    && "$HA_SCRIPT" find-predecessor someone-else "$SV" | grep -q 'predecessor: NONE'; then
+if grep -q 'predecessor: NONE' <<< "$("$HA_SCRIPT" find-predecessor mism "$SV")" \
+    && grep -q 'predecessor: NONE' <<< "$("$HA_SCRIPT" find-predecessor someone-else "$SV")"; then
     ok "fm-mismatch 檔：查檔名與查 frontmatter 值皆 NONE（frontmatter 是否決權不是索引）"
 else bad "fm-mismatch 檔被某個方向撿走了"; fi
 
@@ -644,7 +644,7 @@ esac
 # 重複消費（檔案已在 archive 內）→ 拒絕，不動檔案
 out="$("$HA_SCRIPT" consume "$archived_path" 2>&1)"
 assert_rc "consume archive 內檔案 → exit 1" 1 $?
-if echo "$out" | grep -q "已在 archive"; then ok "重複消費 → 拒絕（已在 archive）"; else bad "重複消費未被拒（${out}）"; fi
+if grep -q "已在 archive" <<< "$out"; then ok "重複消費 → 拒絕（已在 archive）"; else bad "重複消費未被拒（${out}）"; fi
 if [ -f "$archived_path" ]; then ok "拒絕後 archive 檔原地不動"; else bad "拒絕路徑動到了 archive 檔"; fi
 
 "$HA_SCRIPT" consume "$TMP/ha-handoffs/no-such.md" >/dev/null 2>&1
@@ -682,7 +682,7 @@ mkdir -p "$TMP/ha-handoffs/archive/sub"
 printf 'old\n' > "$TMP/ha-handoffs/archive/sub/20990101-000000-nested.md"
 out="$("$HA_SCRIPT" consume "$TMP/ha-handoffs/archive/sub/20990101-000000-nested.md" 2>&1)"
 assert_rc "時戳前綴檔（巢狀位置）→ exit 1" 1 $?
-if echo "$out" | grep -q "已消費"; then ok "時戳前綴 → 拒絕（不變量認得曾歸檔）"; else bad "時戳前綴未被拒（${out}）"; fi
+if grep -q "已消費" <<< "$out"; then ok "時戳前綴 → 拒絕（不變量認得曾歸檔）"; else bad "時戳前綴未被拒（${out}）"; fi
 if [ -f "$TMP/ha-handoffs/archive/sub/20990101-000000-nested.md" ]; then ok "前綴拒絕後檔案原地不動"; else bad "前綴拒絕卻動了檔案"; fi
 rm -rf "$TMP/ha-handoffs/archive/sub"
 

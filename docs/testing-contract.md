@@ -356,8 +356,11 @@ marker 後**須有空白**，否則 `**粗體** ✅` 這種散文強調行被當
 
 `printf | grep -q` 早退觸發 SIGPIPE ＋ pipefail 判偽。守門 fixture 的**命中點須在前段**才逼得出來，
 置於檔尾則 printf 已寫完、測試形同虛設。
-`tests/run.sh` 另以 source gate 要求自身的 `printf … | grep -q` 為零；掃描 token 在測試碼中拆開，
-避免 gate 自己被自己命中。此 gate 只處理 B13 已盤點的 `printf` producer，不宣稱其他 producer 已全數安全。
+不限大輸入：bash 的 stdout 是 line-buffered，多行 `echo "$out"` 也會分次寫入，PR #302 的 Ubuntu run
+即因 `echo "$out" | grep -q` 偽紅、重跑轉綠。shell-contract 的 source gate 要求 `tests/module-shell.sh`
+與 `tests/modules/*.sh` 中任何 producer 接 `grep -q`／`-m` 為零（`||` 與註解不算）；`capture` 成變數或
+`$(…)` 後用 herestring。刻意保留的管線（如機制對照）須在行尾標 `# pipe-grep: intentional`。
+gate 帶紅綠 fixture 自檢與「上游延遲第二次寫入 → rc 141」的機制對照；掃描 regex 在測試碼中拆開組裝。
 
 ### bootstrap 判定
 
