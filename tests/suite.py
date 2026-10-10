@@ -18,6 +18,9 @@ import tempfile
 import time
 
 
+CI_SYSTEMS = ['Linux', 'Darwin']  # platform.system() of the CI matrix runners
+
+
 def load_manifest(root):
     manifest = json.loads((root / 'tests/suites.json').read_text())
     modules = manifest['modules']
@@ -34,6 +37,10 @@ def load_manifest(root):
             if command != ['bash', 'tests/module-shell.sh', name]:
                 raise ValueError('invalid shell entry: ' + name)
             shell.add(name)
+        platforms = entry.get('ci_platforms', CI_SYSTEMS)
+        if (not isinstance(platforms, list) or not platforms or len(platforms) != len(set(platforms))
+                or not set(platforms) <= set(CI_SYSTEMS)):
+            raise ValueError('invalid ci_platforms: ' + name)
     actual = {p.stem for p in (root / 'tests/modules').glob('*.sh')}
     if shell != actual:
         raise ValueError('shell module registration mismatch: ' + str(shell ^ actual))

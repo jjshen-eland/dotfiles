@@ -3,6 +3,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 import signal
 import subprocess
 import sys
@@ -94,6 +95,35 @@ class Selection(unittest.TestCase):
             (root/'tests/modules/unlisted.sh').write_text(':\n')
             (root/'tests/suites.json').write_text(json.dumps({'modules':{},'routes':[]}))
             with self.assertRaises(ValueError): self.suite.load_manifest(root)
+
+    def test_manifest_rejects_invalid_ci_platforms(self):
+        for value in ([], ['Windows'], 'Linux', ['Linux', 'Linux']):
+            with self.subTest(value=value), tempfile.TemporaryDirectory() as tmp:
+                root=Path(tmp); (root/'tests/modules').mkdir(parents=True)
+                (root/'tests/suites.json').write_text(json.dumps({'modules':{'m':{'command':['true'],
+                    'ci_platforms':value}},'routes':[]}))
+                with self.assertRaises(ValueError): self.suite.load_manifest(root)
+
+    def test_ci_platform_restrictions_follow_recorded_evidence(self):
+        # D-20261010-ci-controller-platform-evidence: deep-plan has macOS-only launcher defects.
+        restricted = {n: e['ci_platforms'] for n, e in self.manifest['modules'].items() if 'ci_platforms' in e}
+        self.assertEqual(restricted, {'review-controller': ['Linux'], 'turbo': ['Linux'], 'ship-state': ['Linux']})
+        workflow = (ROOT/'.github/workflows/test.yml').read_text()
+        matrix = re.search(r'^\s*os: \[(.*)\]$', workflow, re.M).group(1).split(', ')
+        systems = {{'ubuntu': 'Linux', 'macos': 'Darwin'}[os_name.split('-')[0]] for os_name in matrix}
+        self.assertEqual(systems, {'Linux', 'Darwin'})
+        for name, platforms in restricted.items():
+            self.assertLessEqual(set(platforms), systems, name)
+
+    def test_local_runner_ignores_ci_platforms(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); (root/'tests/modules').mkdir(parents=True)
+            (root/'tests/suites.json').write_text(json.dumps({'modules':{'m':{'command':['{python}','-c','pass'],
+                'ci_platforms':['Linux' if sys.platform == 'darwin' else 'Darwin']}},'routes':[]}))
+            result=subprocess.run([sys.executable,'-B',str(ROOT/'tests/suite.py'),'--root',str(root)],
+                                  capture_output=True,text=True)
+            self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+            self.assertIn('"name": "m"',result.stdout)
 
     def test_local_impact_includes_commits_index_worktree_and_aliases(self):
         with tempfile.TemporaryDirectory() as tmp:

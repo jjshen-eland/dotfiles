@@ -2,9 +2,9 @@
   "always": ["content"],
   "modules": {
     "deep-plan": {"command": ["bash", "tests/module-shell.sh", "deep-plan"], "shell": true},
-    "review-controller": {"command": ["{python}", "-B", "tests/review-repair-controller.py", "."]},
-    "turbo": {"command": ["{python}", "-B", "tests/turbo-mode.py"]},
-    "ship-state": {"command": ["bash", "tests/module-shell.sh", "ship-state"], "shell": true},
+    "review-controller": {"command": ["{python}", "-B", "tests/review-repair-controller.py", "."], "ci_platforms": ["Linux"]},
+    "turbo": {"command": ["{python}", "-B", "tests/turbo-mode.py"], "ci_platforms": ["Linux"]},
+    "ship-state": {"command": ["bash", "tests/module-shell.sh", "ship-state"], "shell": true, "ci_platforms": ["Linux"]},
     "review-skill": {"command": ["bash", "tests/module-shell.sh", "review-skill"], "shell": true},
     "project": {"command": ["bash", "tests/module-shell.sh", "project"], "shell": true},
     "document-regression": {"command": ["{python}", "-B", "tests/test_doc_governance.py", "--synthetic"]},
