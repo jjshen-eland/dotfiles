@@ -316,3 +316,33 @@
   - 放棄:四個 controller 全移（deep-plan 有 macOS 專屬真實缺陷）；以 workflow `if` 或拆 job 實作（會改 required check 形狀）；以環境變數覆寫平台（多一個可繞過的旋鈕）
   - 重議:移出的模組出現只在 macOS 主機重現的缺陷；或 macOS CI 的 Python 版本差異（現為 Homebrew 3.14、Ubuntu 3.12）造成這些模組行為分歧
   - 關聯:Issue#285;D-20261010-delivery-overhead-spec;D-20261010-ci-route-deletion-evidence;PR#301
+- **D-20261011-record-volume-plan-choices · 2026-10-11 紀錄減量規劃的四項取捨**:使用者核定：部署後結案是否併入下一個 PR，先以服務型 repo 情境驗證再定；dotfiles milestone 上限 1,500 B；testing-contract 既有事件證據本批清除並整份機檢；實作前以 deep-plan 審查計畫。依據為 12 個 KB platform repo 的唯讀盤點（本項計畫 Phase 0）。
+  - 日期來源:direct
+  - 放棄:上限 1,200 B（dotfiles 現有僅 7% 符合，其他 repo p90 亦多超過）；只檢查 testing-contract 新增內容
+  - 重議:Phase 2 證明部署後結案的取捨不可接受，或上限造成必要證據被移出紀錄
+  - 關聯:Issue#285;D-20261010-delivery-overhead-spec
+- **D-20261011-record-volume-scope-narrowed · 2026-10-11 #285 第 3 項縮小為 dotfiles 專屬兩條，排在 turbo 移除之後**:deep-plan 第一輪 NO-GO，兩位 reviewer 獨立判阻斷：dotfiles 的結案 commit 都隨程式 PR 送出、沒有多跑 CI，純紀錄 PR 是部署結果、本機量測與 backlog 更正，全機隊條文 1、2 幾乎沒有可量收益，還會牽動 log-prepare 提交規則、authority 與 turbo 停止條件。使用者選擇只保留 milestone 1,500 B 上限與 testing-contract 只寫規則，撤下 merge／CI／fleet 不補記與 Workspace 同步兩項驗收，並等 item 5 移除 turbo 後再修訂計畫重審。
+  - 日期來源:direct
+  - 放棄:重新設計全機隊條文（收益未量到、衝突多）；第 3 項整個不做
+  - 重議:端到端量測顯示紀錄撰寫或純紀錄 PR 是交付時間的主要成本
+  - 關聯:Issue#285;D-20261011-record-volume-plan-choices;supersedes:D-20261010-delivery-overhead-spec 的第 3 項驗收
+- **D-20261011-turbo-retirement-choices · 2026-10-11 turbo 移除計畫的三項取捨**:deep-plan 第一輪兩位 reviewer 實測部署腳本不會移除已刪 skill 的殘留連結，並指出 native-review 只服務 turbo。使用者核定：殘留的 `~/.claude/skills/turbo`、`~/.agents/skills/turbo` 在獲授權的散佈步驟逐台刪除，不改 item 2 的 ensure-runtime-layout 契約；native-review 子命令、schema 與相關測試一併移除，eval 的 Codex 臂改用一般收集流程；第二批以 inventory 14 台確認為準，兩台 inventory 外 MacBook 依既有 pull＋brewup 路徑收斂。
+  - 日期來源:direct
+  - 放棄:在 ensure-runtime-layout 加入懸空連結清理（屬 item 2 範圍且受 writer gate 阻擋）；接受殘留連結（CLI 行為未驗證）；保留 native-review（無一般流程使用且文件只綁 turbo）；等兩台 MacBook 確認才刪腳本（可能無限期延後）
+  - 重議:有主機在第二批後只 git pull 就啟動 Codex 而出現 hook 錯誤；或需要原生 review 程序證明的新需求出現
+  - 關聯:D-20261005-turbo-delegated-controller;D-20261006-turbo-native-evidence-transitions;D-20260917-terminal-macbooks-outside-inventory;STATUS item 5
+- **D-20261011-turbo-direct-deletion · 2026-10-11 turbo 一批直接刪除，不留過渡空殼**:deep-plan 第二輪指出刪除空殼後，仍持有舊 hooks 的 session 與只 pull 的主機會執行不存在的腳本（實測 exit 2，Claude Code 視為阻擋）。使用者認為空殼與等待期都會被遺忘，選擇一批刪除 turbo-state.py，空窗期改由散佈步驟處理：dotsync 後重開各主機的 Claude Code／Codex session，本機合併時先清 branch、最後 pull 再重開，inventory 外 MacBook 恢復時跑 brewup 並重開。
+  - 日期來源:direct
+  - 放棄:永久保留空殼（留下無主檔與永久例外）；等待期後刪除（會被遺忘）
+  - 重議:散佈後仍出現未重開 session 卡在 hook 錯誤且難以辨識的情況
+  - 關聯:supersedes:D-20261011-turbo-retirement-choices 的兩階段散佈;STATUS item 5
+- **D-20261011-primary-scope-eval-cross-runtime · 2026-10-11 primary-scope eval 保留 Codex 臂，收集方式移入 eval**:使用者指出工作流跨 Claude Code 與 Codex 使用，退役 Codex 臂會失去 deep-review 在 Codex 端的行為證據。改把 native-review.py 的 Codex 收集（codex exec 隔離旗標、子行程環境清除、快照與獨立性檢查）移入 tests/review-primary-native-eval.py，schema 搬到 tests/fixtures 供兩臂使用；controller 的 native-review 子命令與 proof 檢查照 D-20261011-turbo-retirement-choices 移除，並以假 codex transport 測試守住 incomplete report 保留。
+  - 日期來源:direct
+  - 放棄:退役 Codex 臂（失去跨 runtime 證據）；改用 deep-plan 的 launch-reviewers.py（綁定計畫審查參數且屬 codex tree）
+  - 重議:deep-review 在 Codex 端有正式的 reviewer 收集路徑時，改用它
+  - 關聯:supersedes:D-20261011-turbo-retirement-choices 的 schema 移除;STATUS item 5
+- **D-20261011-turbo-plan-nogo-proceed · 2026-10-11 turbo 移除計畫在 NO-GO 下修正後直接實作，改以 code review 把關**:deep-plan 兩批四輪都是 NO-GO，第 2 批最後一輪的新 finding 集中在前一輪修正新增的段落（eval 搬遷、本機合併序列、決策鏈），屬修 A 引入 B，且多為只能對實際程式查證的細節。使用者選擇把該輪 findings 修進計畫後直接實作，以 RED 測試與 deep-review 審查實際 diff 承接殘留風險，不再開第 3 批計畫審查。
+  - 日期來源:direct
+  - 放棄:第 3 批計畫審查（預期繼續在新增細節上產生同型 finding）
+  - 重議:deep-review 在實作 diff 上發現計畫層級的設計錯誤
+  - 關聯:D-20261011-turbo-retirement-choices;D-20261011-turbo-direct-deletion;D-20261011-primary-scope-eval-cross-runtime;STATUS item 5

@@ -53,11 +53,11 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **Acceptance Criteria**：
   1. CI 路由：`docs/testing-contract.md` 等說明文件走 content；`tests/<x>.py` 與 `scripts/*` 對應到擁有它的模組；只有 runner／workflow／共用 lib 或無法解析的路徑才跑全套。漏選、未知路徑、新增／刪除／rename 先有 RED controls 再 GREEN；以近 8 次 PR 的實際 diff 重放，列出每次選中的模組，非 runner 類改動不再全套。
   2. 平台矩陣：以行為證據（例如兩平台結果一致、程式沒有平台分支）證明上述 controller 模組平台無關後，只在 Ubuntu 跑；macOS 保留平台敏感模組，required check 名稱不變。普通腳本改動的最慢 job 有 hosted before／after。
-  3. 紀錄減量契約：在單一權威處明定 merge、CI、fleet 結果不另開 commit／PR 補記，以 PR／Actions 為準；milestone 有長度上限並由 repo 測試機檢；`docs/testing-contract.md` 只在測試規則改變時修改；item 的 branch 合併或刪除後，Workspace 欄位要同步更新或結案。條文先經使用者確認；skill 變更依 authoring guide 做行為驗證，不只改 prose。
+  3. 紀錄減量（dotfiles 專屬，D-20261011-record-volume-scope-narrowed）：milestone 每筆不超過 1,500 B，由 repo 測試檢查生效後的新紀錄；docs/testing-contract.md 只寫規則與一句理由，既有事件證據移入 D／M 紀錄（缺的先補）並整份機檢。生效判定方式與 decision 是否納入在計畫定義。不改全機隊共用的 skill 條文。
   4. 端到端：固定一個同規模的小改動（普通腳本加測試），量改善前後「交付指令→最終回報」的總時間與分段（開 PR 前／CI／merge／回報）；local、hosted、真實交付分開報告。
-- **Constraints**：本版驗收取代 2026-10-09 版（D-20261010-delivery-overhead-spec）。不靠降低錯誤攔截取得 GREEN；選測錯誤或空集合不得假綠。不改 `scripts/doc-governance.py` 受信任 scanner（fleet byte-identical 契約）；branch protection 與 required checks 調整需另經具名授權。claude/settings.json 的 runtime drift 保留。item 2／4 不在本項範圍。本 Spec 未授權任何 commit、push、PR、merge 或部署。
-- **進度**：第 1、2 項已合併（M-20261011-ci-platform-matrix-merged）：全套觸發檔 201→50，controller 三模組只跑 Ubuntu，全套 PR 的 macOS job 3 分 02 秒→2 分 28 秒。測試模組 pipe-to-grep 早退偽紅已在本地清零（M-20261011-pipe-grep-herestring-local），待送出。
-- **下一步**：送出 pipe-to-grep 修正；紀錄減量條文起草後先交使用者確認；最後量端到端。
+- **Constraints**：本版驗收取代 2026-10-09 版（D-20261010-delivery-overhead-spec）。不靠降低錯誤攔截取得 GREEN；選測錯誤或空集合不得假綠。不改 `scripts/doc-governance.py` 受信任 scanner（fleet byte-identical 契約）；branch protection 與 required checks 調整需另經具名授權。claude/settings.json 的 runtime drift 不帶進 commit（dotsync／brewup 會丟棄）。item 2／4 不在本項範圍。本 Spec 未授權任何 commit、push、PR、merge 或部署。
+- **進度**：第 1、2 項已合併（M-20261011-ci-platform-matrix-merged）：全套觸發檔 201→50，controller 三模組只跑 Ubuntu，全套 PR 的 macOS job 3 分 02 秒→2 分 28 秒。測試模組 pipe-to-grep 早退偽紅已清零並合併（M-20261011-pipe-grep-herestring-local）。
+- **下一步**：等 item 5 移除 turbo 後，依 D-20261011-record-volume-scope-narrowed 修訂第 3 項計畫並重跑 deep-plan；最後量端到端。
 - **關聯**：[本項計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285; GitHub #279; PR #288; PR #298; PR #299; D-20261010-delivery-overhead-spec; D-20261010-transfer-delivery-overhead; D-20261009-ci-system-redesign; M-20261009-ci-modular-redesign-local; B-20260924-workflow-verification-economy
 
 ### 4. Setup 工具與 agent shell 環境對齊
@@ -69,10 +69,31 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **Context**：現有 setup 混合必要與互動便利工具，brew 失敗被吞掉；環境依賴各平台生成的 shell 設定。使用者要求按 Codex／Claude Code 需求改版，統一 npm 措辭，提供 14 台既有主機免重跑 setup 的對齊方式。
 - **Goal**：新裝與增量更新共用工具宣告及受管理 shell 環境，必要工具失敗可見，保留個人設定與既有額外工具；使用者追加要求明確區分 setup 納管與主機自行安裝，只有前者依新定義新增／移除，後者不升級、不移除、不接管。
 - **Acceptance Criteria**：core／workstation 分層、新增 actionlint／ast-grep；plan／apply／check 可觀察且重跑收斂；必要安裝及驗證失敗回非零；雙 shell 無互動命令可讀相同環境，保留專案／個人 PATH 優先權與覆寫；npm／bun 以專案 lockfile 為準；隔離新裝／升級／失敗／重跑測試與完整 suite 通過；14 台 rollout 有逐台預演、revision、驗收與回復路徑。2026-10-10 使用者接受兩端全域工具指引精簡化：只保留高價值工具與適用任務、可用性與按需安裝原則，不複製完整安裝清單；兩端短段落需機檢一致。
-- **Constraints**：本批使用者選擇 `$project --merge` 交付修正、七台僅更新 ca-certificates 並續部署；已依此完成 PR #297 與下列驗收。既有工具未經確認不 adopt／移除／升級，除本批具名憑證更新外保持原版本；settings runtime drift 保留，不重跑 setup 覆寫 rc，不放行 direnv trust。使用者完成 macmini Xcode license 處理後，本輪依原部署範圍續作該台；後續外向動作依新批指令，歷史紀錄不是授權來源。
+- **Constraints**：本批使用者選擇 `$project --merge` 交付修正、七台僅更新 ca-certificates 並續部署；已依此完成 PR #297 與下列驗收。既有工具未經確認不 adopt／移除／升級，除本批具名憑證更新外保持原版本；settings runtime drift 不帶進 commit（dotsync／brewup 會丟棄），不重跑 setup 覆寫 rc，不放行 direnv trust。使用者完成 macmini Xcode license 處理後，本輪依原部署範圍續作該台；後續外向動作依新批指令，歷史紀錄不是授權來源。
 - **進度**：PR #297 已 rebase merge 至 `792f154`（修復 manifest stdin 消耗與未使用的 build dependencies 誤擋）；新 HEAD macOS／Ubuntu CI 3m29s／2m04s 全綠，39 個工具／shell 隔離測試通過。14 台 source 與雙端全域指引均同步此版本，core check 掃足 22 項全過。eagle03／db01／ap01／ap02／m4mini／fe01／be01 已完成 plan、限定憑證更新、apply／check／apply／check、原內容保全及 CLI probes；m4mini／be01 新增 Claude Code 2.1.295。七台 ca-certificates 活躍 opt target 均為 2026-09-25，其餘既有套件版本不變、舊憑證 keg 留存；shell 原內容／mode 與 settings hash 保留。macmini 已完成 fresh inventory、plan、apply／check／apply／check，新增 actionlint 1.7.12／ast-grep 0.50.0；92 個既有 Homebrew 套件（含 ca-certificates 2026-08-13）版本不變，雙 shell CLI probes 通過，第二次完整 snapshot 相同。
 - **下一步**：先讀 M-20261010-setup-fleet-complete，將待辦限制在歷史工具歸屬／用途核對；依已有 plan／ledger 的非秘密事實列出需使用者判定的 adopt／keep，沒有當批授權不做 SSH／更新／移除。
 - **關聯**：item 2 Runtime 目錄收斂；item 3 #285；[環境使用說明](docs/repo-guide.md)
+
+### 5. 移除 turbo skill 與其他 skill 的耦合
+
+- **Writer**：`claude:delivery-overhead`
+- **Workspace**：`unassigned`
+- **Write Scope**：shared/skills/turbo/, claude/skills/turbo/, codex/skills/turbo/, shared/skills/deep-plan/, shared/skills/deep-review/, shared/skills/project/references/ship-policy.md, shared/skills/project/references/spec-workflow.md, claude/settings.json（僅 turbo hooks）, codex/config.toml, claude/CLAUDE.md, codex/AGENTS.md, scripts/agent-turn-end-timestamp.sh, README.md, tests/, docs/plans/
+- **Dossier Steward**：`claude:delivery-overhead`
+- **寫入協調**：claude/settings.json 與 codex/config.toml 也在 item 2 的 Write Scope；item 2 的遷移目前停止且同一 writer，本項只改 turbo hooks。tests/、shared/skills/project/、review-control.py、review-state.py 也在 item 3 的 Write Scope；item 3 排在本項之後（D-20261011-record-volume-scope-narrowed）。claude/CLAUDE.md、codex/AGENTS.md、README.md、tests/ 也在 item 4 的 Write Scope，item 4 目前只剩工具歸屬核對、不改這些檔。三項依序進行，不平行寫入。
+- **Context**：turbo（2026-10-06 加入，D-20261005-turbo-delegated-controller）以 session 為單位自主跑完審查到交付。本機 session 紀錄只有 1 次真實使用（Codex，2026-10-06），Claude Code 為 0；其他主機未量。它滲進 31 個檔：deep-plan／deep-review 的 controller 程式與 references、project 的 ship-policy 與 spec-workflow、Claude／Codex 各 7 個 hooks、兩份全域指令。使用者判斷這些配合讓其他 skill 變複雜，決定移除。
+- **Goal**：移除 turbo skill，其他 skill、hooks、全域指令與測試不再依賴或提及 turbo；依散佈步驟執行 ensure-runtime 並重開 session 的主機不再有 turbo hooks 或 skill；未重開或只 pull 的主機的修復方式明列（D-20261011-turbo-direct-deletion）。
+- **Acceptance Criteria**：
+  1. 三棵樹的 turbo skill 與其專屬測試移除；以 `git grep -il turbo` 檢查 tracked 檔，排除 docs/archive 後只剩 STATUS.md 與 docs/plans/。
+  2. deep-plan `review-state.py` 與 deep-review `review-control.py` 移除 turbo checkpoint、`consume_request`、`delegated-reentry`、`refresh-subject`；`native-review` 子命令與 `native-review.py` 移除（D-20261011-turbo-retirement-choices）；primary-scope eval 保留 Codex 與 Claude 兩臂，Codex 收集移入 eval、schema 搬到 tests/fixtures，假 codex transport 測試守住 incomplete report 保留。對應 references 與 project 的 ship-policy、spec-workflow 移除 turbo 分支。非 turbo 路徑的既有測試全數照過；被移除的子命令經 argparse 判為 invalid choice（exit 2）。
+  3. claude/settings.json 與 codex/config.toml 移除 turbo hooks；實作在獨立 worktree 進行，commit 不含主 checkout 的 runtime drift，並以乾淨 clone 驗證 settings JSON 合法、7 組 turbo hook 已移除。以臨時 HOME 證明 `ensure-codex-config.py` 會清掉既有主機設定中的 turbo hooks 並保留其他 hooks。`~/.claude/skills/turbo`、`~/.agents/skills/turbo` 殘留連結在獲授權的散佈步驟逐台刪除，只刪指向 dotfiles 的 symlink。
+  4. 一批刪除，含 turbo-state.py（D-20261011-turbo-direct-deletion）。散佈經授權：dotsync、逐台刪殘留連結、確認 Codex 設定不含 turbo 腳本路徑、重開各主機 session；agent 只 merge 與刪 remote branch，使用者關閉本機所有 session 後於終端機丟棄 settings drift、pull、跑 ensure-runtime.sh、刪殘留連結再開新 session；兩台 inventory 外 MacBook 恢復時跑 brewup 並重開。
+  5. claude/CLAUDE.md 與 codex/AGENTS.md 的 turbo 委任行移除，kernel managed block 不變；README、tests/suites.json 路由與 guidance／session 測試同步。
+  6. 全套測試與 `doc-governance audit --ship` 通過。
+- **Constraints**：本 Spec 只授權寫 active contract，不授權 commit、push、PR、merge、dotsync 或任何主機操作。歷史紀錄 append-only 不改；docs/plans/2026-10-05-turbo-skill.md 已凍結不改，退役以新紀錄說明。claude/settings.json 的 runtime drift 不帶進 commit；未經權威 repo 修改並 push 的 drift 會在 dotsync／brewup 時丟棄，本機合併前依同樣做法丟棄。實作前先寫計畫並以 deep-plan 審查。
+- **進度**：2026-10-11 已完成唯讀盤點，Spec 與[計畫](docs/plans/2026-10-11-turbo-retirement.md)建立。
+- **下一步**：deep-plan 審查計畫，通過後依計畫實作。
+- **關聯**：D-20261005-turbo-delegated-controller；D-20261010-ci-controller-platform-evidence；item 2；item 3
 
 ## 暫停中
 
