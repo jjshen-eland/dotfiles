@@ -311,3 +311,8 @@
   - 放棄:純文字遞移 oracle（過寬且仍漏動態路徑）；Linux 容器 strace 追蹤（需先證明容器網段安全，且需另維護生成產物）；`push: main` 事後全套（第 25 節禁止以合併後重驗取代 PR gate）
   - 重議:出現路由內模組以外的失敗被合併後才發現，或 route drift 例外清單持續增長時
   - 關聯:Issue#285;Issue#279;D-20261010-delivery-overhead-spec;M-20261010-ci-route-coverage-local
+- **D-20261010-ci-controller-platform-evidence · 2026-10-10 review-controller、turbo、ship-state 在 CI 只跑 Ubuntu，deep-plan 保留雙平台**:依 test workflow 近 149 次 run 中 17 次單平台失敗逐一歸因：deep-plan 有 6 次只在 macOS 失敗，根因是 `launch-reviewers.py` 的 process-group 權限與 signal 重入缺陷（M-20260915-b07-timeout-zombie-oracle-fixed、M-20260917-deep-plan-signal-single-cleanup、M-20260918-deep-plan-timeout-cleanup），屬真實平台差異，不移。ship-state 的 3 次只在 Ubuntu 失敗都是測試 harness 的 `echo | grep -q` SIGPIPE 偽紅，與受測程式無關；review-controller、turbo 無單平台失敗。靜態掃描這三個模組實際執行的程式：僅 `fcntl.flock`（兩平台語意相同）與 ship-state.sh review-terminal 時間的 BSD／GNU `date` 雙路 fallback，後者輸出沒有任何測試斷言，移出 macOS 不減少斷言。PR #301 實測 macOS 全套 166 秒、Ubuntu 87 秒；依各模組秒數估算移出後 macOS 約 112 秒。限制只作用於 `tests/run-ci.py`，本地 runner 照跑全部選定模組。
+  - 日期來源:direct
+  - 放棄:四個 controller 全移（deep-plan 有 macOS 專屬真實缺陷）；以 workflow `if` 或拆 job 實作（會改 required check 形狀）；以環境變數覆寫平台（多一個可繞過的旋鈕）
+  - 重議:移出的模組出現只在 macOS 主機重現的缺陷；或 macOS CI 的 Python 版本差異（現為 Homebrew 3.14、Ubuntu 3.12）造成這些模組行為分歧
+  - 關聯:Issue#285;D-20261010-delivery-overhead-spec;D-20261010-ci-route-deletion-evidence;PR#301

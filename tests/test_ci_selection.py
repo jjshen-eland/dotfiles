@@ -1,6 +1,7 @@
 """Exercise PR-wide record selection and failure propagation with real Git."""
 import json
 import os
+import platform
 from pathlib import Path
 import signal
 import shutil
@@ -233,6 +234,26 @@ class SelectionTests(unittest.TestCase):
         self.assertEqual(plan['mode'], 'full')
         self.assertIn('"name": "full"', result.stdout)
         self.assertNotEqual(result.returncode, 0)
+
+    def test_ci_runs_platform_restricted_modules_only_on_listed_systems(self):
+        catalog = self.root / 'tests/suites.json'
+        here = platform.system()
+        other = 'Linux' if here == 'Darwin' else 'Darwin'
+        for platforms, runs in (([other], False), ([here], True)):
+            with self.subTest(platforms=platforms):
+                manifest = json.loads(catalog.read_text())
+                manifest['modules']['full']['ci_platforms'] = platforms
+                catalog.write_text(json.dumps(manifest))
+                (self.root / 'app.py').write_text(f'{platforms}\n')
+                self.commit('tests', 'app.py')
+                result, plan = self.select(execute=True)
+                self.assertEqual(plan['mode'], 'full')
+                skipped = json.loads(next(line.removeprefix('CI_PLATFORM ') for line in result.stdout.splitlines()
+                                          if line.startswith('CI_PLATFORM ')))
+                self.assertEqual(skipped, {'system': here, 'skipped': [] if runs else ['full']})
+                self.assertEqual('"name": "full"' in result.stdout, runs)
+                if runs:
+                    self.assertNotEqual(result.returncode, 0)
 
     def test_record_cancellation_cleans_check_descendants(self):
         tests = self.root / 'tests'; tests.mkdir(exist_ok=True)

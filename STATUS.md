@@ -56,8 +56,8 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
   3. 紀錄減量契約：在單一權威處明定 merge、CI、fleet 結果不另開 commit／PR 補記，以 PR／Actions 為準；milestone 有長度上限並由 repo 測試機檢；`docs/testing-contract.md` 只在測試規則改變時修改；item 的 branch 合併或刪除後，Workspace 欄位要同步更新或結案。條文先經使用者確認；skill 變更依 authoring guide 做行為驗證，不只改 prose。
   4. 端到端：固定一個同規模的小改動（普通腳本加測試），量改善前後「交付指令→最終回報」的總時間與分段（開 PR 前／CI／merge／回報）；local、hosted、真實交付分開報告。
 - **Constraints**：本版驗收取代 2026-10-09 版（D-20261010-delivery-overhead-spec）。不靠降低錯誤攔截取得 GREEN；選測錯誤或空集合不得假綠。不改 `scripts/doc-governance.py` 受信任 scanner（fleet byte-identical 契約）；branch protection 與 required checks 調整需另經具名授權。claude/settings.json 的 runtime drift 保留。item 2／4 不在本項範圍。本 Spec 未授權任何 commit、push、PR、merge 或部署。
-- **進度**：第 1 項 CI 路由已完成本地驗收（M-20261010-ci-route-coverage-local）：全套觸發檔 201→50，修正三個既有漏選，新增／刪除一般檔依路徑選測；hosted 時間與尚屬全套的 always-on／治理設定 PR 未改善。
-- **下一步**：做第 2 項平台矩陣（先證明 controller 模組平台無關）；紀錄減量條文起草後先交使用者確認；最後量端到端。
+- **進度**：第 1 項 CI 路由已完成本地驗收（M-20261010-ci-route-coverage-local）：全套觸發檔 201→50，修正三個既有漏選，新增／刪除一般檔依路徑選測；hosted 時間與尚屬全套的 always-on／治理設定 PR 未改善；PR #301 合併（hosted 全套 macOS 166 秒、Ubuntu 87 秒）。第 2 項平台矩陣本地完成（D-20261010-ci-controller-platform-evidence）：review-controller、turbo、ship-state 在 CI 只跑 Ubuntu，deep-plan 因 macOS 專屬缺陷史保留雙平台；估算 macOS 全套 166→112 秒，hosted after 待 PR 實測。普通腳本改動在第 1 項後已不選這些 controller，本項只縮短全套 PR。
+- **下一步**：送出第 2 項並取 hosted after；紀錄減量條文起草後先交使用者確認；最後量端到端。
 - **關聯**：[本項計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285; GitHub #279; PR #288; PR #298; PR #299; D-20261010-delivery-overhead-spec; D-20261010-transfer-delivery-overhead; D-20261009-ci-system-redesign; M-20261009-ci-modular-redesign-local; B-20260924-workflow-verification-economy
 
 ### 4. Setup 工具與 agent shell 環境對齊

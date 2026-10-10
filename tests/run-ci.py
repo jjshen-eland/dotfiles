@@ -7,6 +7,7 @@ No network calls, persistent cache, path-only workflow filtering, or empty succe
 import argparse
 import json
 import os
+import platform
 from pathlib import Path
 import re
 import subprocess
@@ -87,7 +88,11 @@ def select(root, environment):
 def execute(root, plan):
     manifest = load_manifest(root)
     names = list(manifest['modules']) if plan['mode'] == 'full' else plan['checks']
-    return run_modules(root, manifest, names)
+    # Local runs ignore ci_platforms; the other matrix job still runs what is skipped here.
+    system = platform.system()
+    skipped = [n for n in names if system not in manifest['modules'][n].get('ci_platforms', [system])]
+    print('CI_PLATFORM ' + json.dumps({'system': system, 'skipped': skipped}), flush=True)
+    return run_modules(root, manifest, [n for n in names if n not in skipped])
 
 
 def main():

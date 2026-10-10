@@ -804,6 +804,11 @@ local 覆寫 global）。同樣明列、不假裝擋得住。
   source 寫出已路由檔案的完整路徑（含目錄）時，其模組須被選中。`tests/module-shell.sh` 與選測自身測試
   只把路徑當資料，不算讀者；同一 source 供多個模組時選中任一即可。確認只是 fixture 名稱、註解或字串時，
   在 `suites.json` 的 `name_only_mentions` 登記 source 與路徑；登記項失效（檔案移除或不再提及）會判紅。
+- 模組的 `ci_platforms` 限定它在哪些 CI runner 執行，未標示者兩平台都跑；值必須是 matrix 實際涵蓋的
+  `platform.system()`。只有以行為證據證明平台無關的模組才可限制：逐一歸因單平台失敗的歷史，並掃描受測
+  程式的平台分支，結論寫成 decision record。有平台專屬缺陷史者（如 deep-plan launcher 的 macOS
+  process-group 缺陷）不得限制。限制只作用於 `tests/run-ci.py`，以 `CI_PLATFORM` 列出略過的模組；
+  本地 runner 照跑全部選定模組。
 - `tests/suite.py` 預設至多四個模組並行，可用 `--jobs 1` 序列執行。`tests/run-parallel.sh`
   僅為同一入口的相容命令；不再保留 DOTFILES_TEST_SHARD 或按歷史節號切片。
   每個模組輸出 TEST_MODULE（名稱、exit、passed、wall time），全體 TEST_RESULT 列出選定與完成集合。
