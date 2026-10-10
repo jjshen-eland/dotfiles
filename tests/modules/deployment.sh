@@ -42,7 +42,7 @@ if [ -d "$ecs/legacy/.system" ] && [ ! -L "$ecs/legacy/.system" ]; then ok "lega
 # 接管實體目錄須「備份而非刪除」：此腳本每台每次 dotsync 都跑，直接 rm -rf 等於把
 # 手工修改的內容不可逆地消滅。備份區必須在 DST_ROOT 之外——codex 會把 skills/ 下每個
 # 目錄當 skill 載入，備份留在裡面會變成另一個過期 skill。
-if find "$ecs/dst-backup" -name SKILL.md 2>/dev/null | grep -q .; then
+if [ -n "$(find "$ecs/dst-backup" -name SKILL.md 2>/dev/null)" ]; then
     ok "原實體目錄已備份（非直接刪除）"
 else bad "原實體目錄被直接刪除，內容不可回收"; fi
 if grep -rq '舊版' "$ecs/dst-backup" 2>/dev/null; then
@@ -638,7 +638,7 @@ assert_rc "產出不完整 → exit 1" 1 "$esc_rc"
 # 靜默失敗會讓 dotsync 的 helper warn 有理由、使用者卻看不到是哪一項壞了
 if grep -q '⚠️' <<< "$esc_out"; then ok "失敗有明確訊息"; else bad "失敗卻靜默"; fi
 assert_eq "不完整時原檔未動" "$esc_before" "$(cksum < "$esc/home/.ssh/config")"
-if find "$esc/home/.ssh" -name '.config.dotfiles.*' | grep -q .; then bad "殘留暫存檔"; else ok "暫存檔已清"; fi
+if [ -n "$(find "$esc/home/.ssh" -name '.config.dotfiles.*')" ]; then bad "殘留暫存檔"; else ok "暫存檔已清"; fi
 
 # key 檔名落後的機器：拿「可用的舊 config」換成「指向不存在的 key」＝當場斷認證，
 # 而修正要靠 GitHub 拉回來。本 helper 讓重生變自動，這道守門是配套。
@@ -766,7 +766,7 @@ if [ ! -s "$bfx/killall.log" ]; then ok "無卡死 process → 不呼叫 killall
 out=$(bfx_env "$bfx/ps-stuck" "$bfx/lsof-few"); rc=$?
 assert_rc "偵測到卡死 process → exit 1" 1 $rc
 assert_eq "verdict: STUCK" "verdict: STUCK" "$(echo "$out" | grep '^verdict:')"
-if echo "$out" | grep -q '^stuck-process: pid=99999'; then ok "列出卡死 pid"; else bad "未列出卡死 pid"; fi
+if grep -q '^stuck-process: pid=99999' <<< "$out"; then ok "列出卡死 pid"; else bad "未列出卡死 pid"; fi
 
 # 同一個 process，但 lsof 條目正常（dylib 已載入）→ 不得判為卡死
 out=$(bfx_env "$bfx/ps-stuck" "$bfx/lsof-many"); rc=$?
@@ -858,8 +858,8 @@ if grep -q '需換寫 0' <<< "$out"; then ok "--apply 幂等（第二次無事�
 git config --global "url.git@github-work:elandcomtw/.insteadOf" "git@github.com:elandcomtw/"
 git config --global "url.git@internal-mirror/.insteadOf" "https://internal/"
 MIGRATE_SSH="$mg/ssh-ok" "$MG_SCRIPT" --apply "$mg/roots" >/dev/null 2>&1
-if ! git config --global --get-regexp 'insteadof' 2>/dev/null | grep -q 'github-work'; then ok "github-work 的 insteadOf 已清"; else bad "insteadOf 未清（收斂沒完成）"; fi
-if git config --global --get-regexp 'insteadof' 2>/dev/null | grep -q 'internal-mirror'; then ok "無關的 insteadOf 未被波及"; else bad "誤刪了使用者其他的 insteadOf"; fi
+if ! grep -q 'github-work' <<< "$(git config --global --get-regexp 'insteadof' 2>/dev/null)"; then ok "github-work 的 insteadOf 已清"; else bad "insteadOf 未清（收斂沒完成）"; fi
+if grep -q 'internal-mirror' <<< "$(git config --global --get-regexp 'insteadof' 2>/dev/null)"; then ok "無關的 insteadOf 未被波及"; else bad "誤刪了使用者其他的 insteadOf"; fi
 
 # --skip-identity-check：明說才跳過（stub 給錯身分也照跑）
 mg_reset

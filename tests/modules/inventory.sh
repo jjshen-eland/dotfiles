@@ -64,10 +64,10 @@ assert_rc "--apply 目標不存在 → exit 1" 1 $?
 echo "▶ 6. render-ssh-config.sh"
 cp "$FIX/ssh-config-before" "$TMP/sshconf"
 out="$(INVENTORY_FILE="$FIX/inventory.conf" SSH_CONFIG_FILE="$TMP/sshconf" "$ROOT/scripts/render-ssh-config.sh" --stdout)"
-if echo "$out" | grep -q "HostName 10.0.0.10"; then ok "--stdout 含渲染的 host"; else bad "--stdout 缺渲染的 host"; fi
-if echo "$out" | grep -q "stale-host"; then bad "--stdout 未替換舊區塊"; else ok "--stdout 替換舊區塊"; fi
-if echo "$out" | grep -q "^Include config.local$"; then ok "--stdout 保留區塊前內容"; else bad "--stdout 弄丟區塊前內容"; fi
-if echo "$out" | grep -q "IdentityFile ~/.ssh/id_github"; then ok "--stdout 保留區塊後內容"; else bad "--stdout 弄丟區塊後內容"; fi
+if grep -q "HostName 10.0.0.10" <<< "$out"; then ok "--stdout 含渲染的 host"; else bad "--stdout 缺渲染的 host"; fi
+if grep -q "stale-host" <<< "$out"; then bad "--stdout 未替換舊區塊"; else ok "--stdout 替換舊區塊"; fi
+if grep -q "^Include config.local$" <<< "$out"; then ok "--stdout 保留區塊前內容"; else bad "--stdout 弄丟區塊前內容"; fi
+if grep -q "IdentityFile ~/.ssh/id_github" <<< "$out"; then ok "--stdout 保留區塊後內容"; else bad "--stdout 弄丟區塊後內容"; fi
 
 INVENTORY_FILE="$FIX/inventory.conf" SSH_CONFIG_FILE="$TMP/sshconf" "$ROOT/scripts/render-ssh-config.sh" --check >/dev/null 2>&1
 assert_rc "--check 不同步 → exit 1" 1 $?

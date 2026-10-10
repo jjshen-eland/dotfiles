@@ -50,7 +50,7 @@ cqs_grep "4e 編碼實體殘留" "$out" 'check-4e: encoded-entity docs=1'
 cqs_grep "4g 欄位冗餘（title 重複於 content 前綴）" "$out" 'check-4g: field-redundancy docs=1/1'
 cqs_grep "4h 超長 chunk（>8000 字元）" "$out" 'check-4h: oversize docs=1'
 cqs_grep "per-source 分群與抽樣行" "$out" 'source: newsA records=10 share=50.0% sampled=10'
-if echo "$out" | grep -q 'score: clean=49 rag=80 composite=61'; then
+if grep -q 'score: clean=49 rag=80 composite=61' <<< "$out"; then
     ok "扣分帳目算術（clean=49 rag=80 composite=61）"
 else
     bad "score 不符期望"
@@ -65,7 +65,7 @@ assert_eq "重跑輸出完全一致（H5 不漂移）" "$out" "$out2"
 # content-ratio ~15% ≤20% → -10）→ clean=69、rag=70、composite=round(69*0.6+70*0.4)=69
 out3="$(python3 "$CQS" "$CQS_DIR/small.json" --classify p1=metadata 2>&1)"
 assert_rc "--classify 重跑 → exit 0" 0 $?
-if echo "$out3" | grep -q 'score: clean=69 rag=70 composite=69'; then
+if grep -q 'score: clean=69 rag=70 composite=69' <<< "$out3"; then
     ok "--classify p1=metadata → 分數移轉（clean 49→69、rag 80→70）"
 else
     bad "--classify 分數移轉不符期望"
@@ -75,7 +75,7 @@ fi
 # --exempt：context 豁免（如技術站 HTML 為正文）→ 該項不扣分但仍報告
 out4="$(python3 "$CQS" "$CQS_DIR/small.json" --exempt 4e 2>&1)"
 assert_rc "--exempt 重跑 → exit 0" 0 $?
-if echo "$out4" | grep -q 'score: clean=54'; then
+if grep -q 'score: clean=54' <<< "$out4"; then
     ok "--exempt 4e → 清潔度不扣該項（49→54）"
 else
     bad "--exempt 未生效"
@@ -145,7 +145,7 @@ json.dump(recs, open(sys.argv[1], "w"), ensure_ascii=False)
 PY
 out="$(python3 "$CQS" "$CQS_DIR/longnav.json" 2>&1)"
 cqs_grep "長前綴剝除後開頭區分度=100%" "$out" 'check-4h: opening-uniqueness=100.0%'
-if echo "$out" | grep -q 'ledger-rag: 4h-opening'; then
+if grep -q 'ledger-rag: 4h-opening' <<< "$out"; then
     bad "noise 前綴雙扣了 4h-opening（違反 H3 單一維度）"
 else
     ok "無 4h-opening 扣分（H3 單一維度）"
@@ -155,7 +155,7 @@ fi
 echo '{broken' > "$CQS_DIR/broken.json"
 err="$(python3 "$CQS" "$CQS_DIR/broken.json" 2>&1 >/dev/null)"
 assert_rc "壞 JSON → exit 1" 1 $?
-if echo "$err" | grep -q 'Traceback'; then bad "壞 JSON 噴 traceback"; else ok "壞 JSON 無 traceback"; fi
+if grep -q 'Traceback' <<< "$err"; then bad "壞 JSON 噴 traceback"; else ok "壞 JSON 無 traceback"; fi
 cqs_grep "壞 JSON stderr 附原因" "$err" 'JSON 解析失敗'
 
 # R2 迴歸：JSONL 逐行載入（首字元 { 不可誤走整檔 json.load）
@@ -212,7 +212,7 @@ cqs_grep "小來源 80% 共用 nav 前綴未被全域稀釋" "$out" 'check-4a@sp
 echo 'garbage' > "$CQS_DIR/fake.db"
 err="$(python3 "$CQS" "$CQS_DIR/fake.db" 2>&1 >/dev/null)"
 assert_rc "壞 SQLite → exit 1" 1 $?
-if echo "$err" | grep -q 'Traceback'; then bad "壞 SQLite 噴 traceback"; else ok "壞 SQLite 無 traceback"; fi
+if grep -q 'Traceback' <<< "$err"; then bad "壞 SQLite 噴 traceback"; else ok "壞 SQLite 無 traceback"; fi
 cqs_grep "壞 SQLite stderr 附原因" "$err" 'SQLite'
 
 # R2 迴歸：--source-field 打錯 → exit 2（per-source 分析不可靜默失效）
@@ -248,7 +248,7 @@ PY
 out="$(python3 "$CQS" "$CQS_DIR/kvnoise.json" --classify p1=noise 2>&1)"
 assert_rc "KV 形前綴改判 noise → exit 0" 0 $?
 cqs_grep "改判後 4a 扣清潔度" "$out" 'ledger-clean: 4a'
-if echo "$out" | grep -q 'ledger-rag: 4g-prefix'; then
+if grep -q 'ledger-rag: 4g-prefix' <<< "$out"; then
     bad "noise 前綴仍扣 4g-prefix（違反 H3）"
 else
     ok "無 4g-prefix 扣分（H3 單一維度）"
@@ -331,7 +331,7 @@ json.dump(recs, open(sys.argv[1], "w"), ensure_ascii=False)
 PY
 out="$(python3 "$CQS" "$CQS_DIR/specialsrc.json" 2>&1)"
 cqs_grep "特例項 per-source 門檻行（A 100% metadata-prefix）" "$out" 'check-4g-prefix@A:'
-if echo "$out" | grep -q 'rag=100'; then
+if grep -q 'rag=100' <<< "$out"; then
     bad "小來源 metadata 混入被全域稀釋（rag 仍 100）"
 else
     ok "小來源 metadata 混入反映進 rag 分數"
@@ -356,7 +356,7 @@ db.commit()
 PY
 err="$(python3 "$CQS" "$CQS_DIR/empty.db" 2>&1 >/dev/null)"
 assert_rc "空 SQLite 表 → exit 1" 1 $?
-if echo "$err" | grep -q 'Traceback'; then bad "空表噴 traceback"; else ok "空表乾淨錯誤訊息"; fi
+if grep -q 'Traceback' <<< "$err"; then bad "空表噴 traceback"; else ok "空表乾淨錯誤訊息"; fi
 
 # C1 迴歸：前導空白的合法 JSON 不得誤判 JSONL
 python3 - "$CQS_DIR/leadws.json" <<'PY'

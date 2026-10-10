@@ -197,7 +197,7 @@ else
     bad "Claude always-on 契約缺少 repo-specific／Kernel 分界或 Edit/Write 規則"
 fi
 for rule in 'git", "push' 'git", "send-pack' 'gh", "pr", "merge'; do
-    if grep -F "$rule" "$ROOT/codex/rules/default.rules" | grep -q 'decision="prompt"'; then
+    if grep -q 'decision="prompt"' <<< "$(grep -F "$rule" "$ROOT/codex/rules/default.rules")"; then
         ok "Codex canonical rule prompt: $rule"
     else
         bad "Codex canonical rule 未 prompt: $rule"

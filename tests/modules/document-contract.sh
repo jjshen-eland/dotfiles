@@ -443,7 +443,7 @@ if grep -q 'references/workflow.md' "$ROOT/claude/skills/deep-review/SKILL.md" \
 else
     bad "deep-review 入口未指向 portable workflow 或仍留 stale Codex protocol 指標"
 fi
-if sed -n '1,24p' "$ROOT/tests/xref-gate.py" | grep -q 'finding.*0.*error.*2'; then
+if grep -q 'finding.*0.*error.*2' <<< "$(sed -n '1,24p' "$ROOT/tests/xref-gate.py")"; then
     ok "xref compatibility wrapper 檔頭保留 exit contract"
 else
     bad "xref compatibility wrapper 檔頭缺判準／exit contract，既有指標已指空"

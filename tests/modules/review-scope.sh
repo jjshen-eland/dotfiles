@@ -17,7 +17,7 @@ git init -q -b main "$TMP/bf-work"
 echo dirty > "$TMP/bf-work/wip.txt"
 out="$("$BF_SCRIPT" "$TMP/bf-work" feat/a)"
 assert_rc "情況 A → exit 0" 0 $?
-if echo "$out" | grep -q "case: A" && echo "$out" | grep -q "verdict: OK"; then ok "情況 A 判定 + OK"; else bad "情況 A 判定錯誤（${out}）"; fi
+if grep -q "case: A" <<< "$out" && grep -q "verdict: OK" <<< "$out"; then ok "情況 A 判定 + OK"; else bad "情況 A 判定錯誤（${out}）"; fi
 assert_eq "情況 A 後 HEAD 在 feature branch" "feat/a" "$(git -C "$TMP/bf-work" symbolic-ref --short HEAD)"
 if [ -f "$TMP/bf-work/wip.txt" ]; then ok "情況 A working tree 變更跟隨"; else bad "情況 A 弄丟 working tree 變更"; fi
 assert_eq "情況 A main 未動（== origin/main）" \
@@ -28,7 +28,7 @@ assert_eq "情況 A main 未動（== origin/main）" \
 (cd "$TMP/bf-work" && echo v2 > f.txt && "${GITC[@]}" commit -qam "oops: on main")
 out="$("$BF_SCRIPT" "$TMP/bf-work" feat/b)"
 assert_rc "情況 B → exit 0" 0 $?
-if echo "$out" | grep -q "case: B" && echo "$out" | grep -q "verdict: OK"; then ok "情況 B 判定 + OK"; else bad "情況 B 判定錯誤（${out}）"; fi
+if grep -q "case: B" <<< "$out" && grep -q "verdict: OK" <<< "$out"; then ok "情況 B 判定 + OK"; else bad "情況 B 判定錯誤（${out}）"; fi
 assert_eq "情況 B 後 HEAD 在 feature branch" "feat/b" "$(git -C "$TMP/bf-work" symbolic-ref --short HEAD)"
 assert_eq "情況 B feature branch 接住 1 commit" "1" \
     "$(git -C "$TMP/bf-work" rev-list --count origin/main..feat/b)"
@@ -40,9 +40,9 @@ assert_eq "情況 B main 已退回 origin/main" \
 (cd "$TMP/bf-work" && echo v3 > f.txt && "${GITC[@]}" commit -qam "oops2: on main" && echo precious > notes.txt)
 out="$("$BF_SCRIPT" "$TMP/bf-work" feat/c)"
 assert_rc "mixed state → exit 0" 0 $?
-if echo "$out" | grep -q "case: B"; then ok "mixed state 判為情況 B"; else bad "mixed state 判定錯誤"; fi
+if grep -q "case: B" <<< "$out"; then ok "mixed state 判為情況 B"; else bad "mixed state 判定錯誤"; fi
 assert_eq "mixed state 未 commit 檔完好無損" "precious" "$(cat "$TMP/bf-work/notes.txt" 2>/dev/null)"
-if echo "$out" | grep -q "verify: porcelain 前後一致"; then ok "mixed state 附 porcelain 前後快照驗證"; else bad "缺 porcelain 快照驗證行"; fi
+if grep -q "verify: porcelain 前後一致" <<< "$out"; then ok "mixed state 附 porcelain 前後快照驗證"; else bad "缺 porcelain 快照驗證行"; fi
 assert_eq "mixed state main 已退回 origin/main" \
     "$(git -C "$TMP/bf-work" rev-parse origin/main)" "$(git -C "$TMP/bf-work" rev-parse main)"
 (cd "$TMP/bf-work" && rm notes.txt && git switch -q main && git branch -qD feat/c)
@@ -52,7 +52,7 @@ git clone -q "$TMP/bf-origin.git" "$TMP/bf-detach"
 (cd "$TMP/bf-detach" && git checkout -q --detach && echo dh > d.txt && "${GITC[@]}" add d.txt && "${GITC[@]}" commit -qm "on detached")
 out="$("$BF_SCRIPT" "$TMP/bf-detach" feat/dh)"
 assert_rc "detached HEAD → exit 0" 0 $?
-if echo "$out" | grep -q "case: A"; then ok "detached HEAD 判為情況 A"; else bad "detached HEAD 判定錯誤（${out}）"; fi
+if grep -q "case: A" <<< "$out"; then ok "detached HEAD 判為情況 A"; else bad "detached HEAD 判定錯誤（${out}）"; fi
 assert_eq "detached 後 HEAD 在 feature branch" "feat/dh" "$(git -C "$TMP/bf-detach" symbolic-ref --short HEAD)"
 assert_eq "detached commit 被 feature branch 接走" "1" \
     "$(git -C "$TMP/bf-detach" rev-list --count origin/main..feat/dh)"
@@ -61,7 +61,7 @@ assert_eq "detached commit 被 feature branch 接走" "1" \
 (cd "$TMP/bf-work" && git branch feat/exists && echo dirty2 > wip2.txt)
 out="$("$BF_SCRIPT" "$TMP/bf-work" feat/exists)"
 assert_rc "branch 撞名 → exit 1" 1 $?
-if echo "$out" | grep -q "verdict: STOP"; then ok "撞名 → STOP"; else bad "撞名未 STOP"; fi
+if grep -q "verdict: STOP" <<< "$out"; then ok "撞名 → STOP"; else bad "撞名未 STOP"; fi
 assert_eq "撞名後仍在 main（未半途執行）" "main" "$(git -C "$TMP/bf-work" symbolic-ref --short HEAD)"
 (cd "$TMP/bf-work" && rm wip2.txt && git branch -qD feat/exists)
 
@@ -69,7 +69,7 @@ assert_eq "撞名後仍在 main（未半途執行）" "main" "$(git -C "$TMP/bf-
 (cd "$TMP/bf-work" && git switch -qc feat/other)
 out="$("$BF_SCRIPT" "$TMP/bf-work" feat/d)"
 assert_rc "非 default branch → exit 1" 1 $?
-if echo "$out" | grep -q "verdict: STOP"; then ok "已在 feature branch → STOP"; else bad "非 default 未 STOP"; fi
+if grep -q "verdict: STOP" <<< "$out"; then ok "已在 feature branch → STOP"; else bad "非 default 未 STOP"; fi
 if git -C "$TMP/bf-work" show-ref --verify -q refs/heads/feat/d; then bad "STOP 卻建了 branch"; else ok "STOP 未建 branch"; fi
 (cd "$TMP/bf-work" && git switch -q main && git branch -qD feat/other)
 
@@ -80,7 +80,7 @@ git clone -q "$TMP/bf-origin.git" "$TMP/bf-push2"
 bf_main_before="$(git -C "$TMP/bf-work" rev-parse main)"
 out="$("$BF_SCRIPT" "$TMP/bf-work" feat/e)"
 assert_rc "分岔 → exit 1" 1 $?
-if echo "$out" | grep -q "verdict: STOP"; then ok "分岔 → STOP（交回使用者）"; else bad "分岔未 STOP（${out}）"; fi
+if grep -q "verdict: STOP" <<< "$out"; then ok "分岔 → STOP（交回使用者）"; else bad "分岔未 STOP（${out}）"; fi
 assert_eq "分岔 STOP 後 main ref 未動" "$bf_main_before" "$(git -C "$TMP/bf-work" rev-parse main)"
 if git -C "$TMP/bf-work" show-ref --verify -q refs/heads/feat/e; then bad "分岔 STOP 卻建了 branch"; else ok "分岔 STOP 未建 branch"; fi
 
@@ -88,7 +88,7 @@ if git -C "$TMP/bf-work" show-ref --verify -q refs/heads/feat/e; then bad "分�
 # 未來 STOP 換理由時假綠）
 out="$("$BF_SCRIPT" "$TMP/gh-local" feat/x)"
 assert_rc "無 remote → exit 1" 1 $?
-if echo "$out" | grep -q "verdict: STOP（無 remote"; then ok "無 remote → STOP（含原因）"; else bad "無 remote 未 STOP 或原因缺失"; fi
+if grep -q "verdict: STOP（無 remote" <<< "$out"; then ok "無 remote → STOP（含原因）"; else bad "無 remote 未 STOP 或原因缺失"; fi
 
 # 非 git repo / 用法錯誤
 "$BF_SCRIPT" "$TMP/not-a-repo" feat/x >/dev/null 2>&1
@@ -113,45 +113,45 @@ git init -q -b main "$TMP/rs-work"
 (cd "$TMP/rs-work" && echo v2 > f.txt && echo new > new.txt)
 out="$("$RS_SCRIPT" "$TMP/rs-work")"
 assert_rc "dirty tree 偵測 → exit 0" 0 $?
-if echo "$out" | grep -q "scope-priority: 2"; then ok "dirty tree → priority 2"; else bad "dirty tree 未判 priority 2"; fi
-if echo "$out" | grep -qA2 "untracked" && echo "$out" | grep -q "new.txt"; then ok "untracked 另列（diff HEAD 不含）"; else bad "untracked 未另列"; fi
+if grep -q "scope-priority: 2" <<< "$out"; then ok "dirty tree → priority 2"; else bad "dirty tree 未判 priority 2"; fi
+if grep -qA2 "untracked" <<< "$out" && grep -q "new.txt" <<< "$out"; then ok "untracked 另列（diff HEAD 不含）"; else bad "untracked 未另列"; fi
 
 # feature branch 領先、tree clean → priority 3 + merge-base
 (cd "$TMP/rs-work" && git checkout -q -- f.txt && rm new.txt \
     && git switch -qc feat/y && echo v3 > f.txt && "${GITC[@]}" commit -qam "feat: y")
 mb_expect="$(git -C "$TMP/rs-work" rev-parse origin/main)"
 out="$("$RS_SCRIPT" "$TMP/rs-work")"
-if echo "$out" | grep -q "scope-priority: 3"; then ok "clean+領先 → priority 3"; else bad "未判 priority 3"; fi
-if echo "$out" | grep -q "base: origin/main"; then ok "base 偵測 origin/main"; else bad "base 偵測錯誤"; fi
-if echo "$out" | grep -q "hash-merge-base: $mb_expect"; then ok "merge-base = 分叉點（squash base 候選）"; else bad "merge-base 錯誤"; fi
-if echo "$out" | grep -q "round: 1"; then ok "無 fix commit → Round 1"; else bad "round 誤判"; fi
+if grep -q "scope-priority: 3" <<< "$out"; then ok "clean+領先 → priority 3"; else bad "未判 priority 3"; fi
+if grep -q "base: origin/main" <<< "$out"; then ok "base 偵測 origin/main"; else bad "base 偵測錯誤"; fi
+if grep -q "hash-merge-base: $mb_expect" <<< "$out"; then ok "merge-base = 分叉點（squash base 候選）"; else bad "merge-base 錯誤"; fi
+if grep -q "round: 1" <<< "$out"; then ok "無 fix commit → Round 1"; else bad "round 誤判"; fi
 
 # 加 fix commit → Round 2
 (cd "$TMP/rs-work" && echo v4 > f.txt && "${GITC[@]}" commit -qam "fix: R1 review fixes")
 out="$("$RS_SCRIPT" "$TMP/rs-work")"
-if echo "$out" | grep -q "round: 2"; then ok "1 個 fix commit → Round 2"; else bad "fix commit 輪次誤判"; fi
+if grep -q "round: 2" <<< "$out"; then ok "1 個 fix commit → Round 2"; else bad "fix commit 輪次誤判"; fi
 
 # 現行中性格式（主 agent 階段 + codex 階段）在 round 端也要認得——上面只驗到舊的 R{N} 格式，
 # review-state 側對主要格式的 ^(...)$ 錨定屬未測路徑
 (cd "$TMP/rs-work" && echo v5 > f.txt && "${GITC[@]}" commit -qam "fix: address review findings")
 out="$("$RS_SCRIPT" "$TMP/rs-work")"
-if echo "$out" | grep -q "round: 3"; then ok "中性主格式計入 round"; else bad "中性主格式未被 round 偵測認出"; fi
+if grep -q "round: 3" <<< "$out"; then ok "中性主格式計入 round"; else bad "中性主格式未被 round 偵測認出"; fi
 (cd "$TMP/rs-work" && echo v6 > f.txt && "${GITC[@]}" commit -qam "fix: address external review findings")
 out="$("$RS_SCRIPT" "$TMP/rs-work")"
-if echo "$out" | grep -q "round: 4"; then ok "codex 階段格式計入 round"; else bad "codex 階段格式未被 round 偵測認出"; fi
+if grep -q "round: 4" <<< "$out"; then ok "codex 階段格式計入 round"; else bad "codex 階段格式未被 round 偵測認出"; fi
 
 # 使用者自寫的 fix: 中斷連續段 → 輪次歸零重算。
 # 注意 round 與 squash 是刻意不同的集合：`wip:` 中斷 round、卻會被 squash 收攏，
 # 兩者邊界因此不同（見 review-state.sh 註解），不要把這兩組斷言互相對齊。
 (cd "$TMP/rs-work" && echo v7 > f.txt && "${GITC[@]}" commit -qam "fix: 修正邊界處理")
 out="$("$RS_SCRIPT" "$TMP/rs-work")"
-if echo "$out" | grep -q "round: 1"; then ok "使用者自寫的 fix: 中斷連續段 → round 歸 1"; else bad "使用者的 fix: 未中斷計數（會灌水吃掉 R5 預算）"; fi
+if grep -q "round: 1" <<< "$out"; then ok "使用者自寫的 fix: 中斷連續段 → round 歸 1"; else bad "使用者的 fix: 未中斷計數（會灌水吃掉 R5 預算）"; fi
 
 # 跨場次殘留不得灌進新一場：上一場被語意 commit 隔開而未壓掉的 review commit（squash-note
 # 情境）仍在 branch 下層，新一場的輪次只能數自己這段——全範圍計數在此會得 round 5。
 (cd "$TMP/rs-work" && echo v8 > f.txt && "${GITC[@]}" commit -qam "fix: address review findings")
 out="$("$RS_SCRIPT" "$TMP/rs-work")"
-if echo "$out" | grep -q "round: 2"; then ok "更早場次的殘留 review commit 不計入新一場"; else bad "跨場次殘留灌進 round（白吃修復輪次額度）"; fi
+if grep -q "round: 2" <<< "$out"; then ok "更早場次的殘留 review commit 不計入新一場"; else bad "跨場次殘留灌進 round（白吃修復輪次額度）"; fi
 
 # wip snapshot 位於連續段底部（真實流程的位置）→ 不算輪次，也不影響其上 fix 的計數
 git clone -q "$TMP/rs-origin.git" "$TMP/rs-wip"
@@ -159,18 +159,18 @@ git clone -q "$TMP/rs-origin.git" "$TMP/rs-wip"
     && echo w1 > w.txt && "${GITC[@]}" add w.txt && "${GITC[@]}" commit -qm "wip: pre-review snapshot" \
     && echo w2 > w.txt && "${GITC[@]}" commit -qam "fix: address review findings")
 out="$("$RS_SCRIPT" "$TMP/rs-wip")"
-if echo "$out" | grep -q "round: 2"; then ok "wip snapshot 不算輪次（其上的 fix 照常計）"; else bad "wip snapshot 計數錯誤"; fi
+if grep -q "round: 2" <<< "$out"; then ok "wip snapshot 不算輪次（其上的 fix 照常計）"; else bad "wip snapshot 計數錯誤"; fi
 
 # clean 且與 base 同步 → priority 4 MUST ASK
 git clone -q "$TMP/rs-origin.git" "$TMP/rs-clean"
 out="$("$RS_SCRIPT" "$TMP/rs-clean")"
-if echo "$out" | grep -q "scope-priority: 4" && echo "$out" | grep -q "MUST ASK USER"; then
+if grep -q "scope-priority: 4" <<< "$out" && grep -q "MUST ASK USER" <<< "$out"; then
     ok "clean 同步 → priority 4 + MUST ASK USER"
 else bad "priority 4 gate 輸出缺失"; fi
 
 # local-only repo（無 remote，有本地 main）→ base 退用本地 branch
 out="$("$RS_SCRIPT" "$TMP/gh-local")"
-if echo "$out" | grep -q "base: main"; then ok "無 remote → base 退用本地 main"; else bad "本地 base fallback 錯誤"; fi
+if grep -q "base: main" <<< "$out"; then ok "無 remote → base 退用本地 main"; else bad "本地 base fallback 錯誤"; fi
 
 "$RS_SCRIPT" "$TMP/not-a-repo" >/dev/null 2>&1
 assert_rc "非 git repo → exit 1" 1 $?
@@ -181,25 +181,25 @@ assert_rc "無引數 → exit 2" 2 $?
 
 # feature branch（rs-work 現在 feat/y、clean）→ 資訊行、無 continuity
 out="$("$RS_SCRIPT" "$TMP/rs-work")"
-if echo "$out" | grep -q "branch-first: 已在 feature branch（feat/y）"; then ok "feature branch → branch-first 資訊行"; else bad "feature branch branch-first 誤判"; fi
-if echo "$out" | grep -q "continuity: WARNING"; then bad "clean tree 不應有 continuity 警告"; else ok "clean tree 無 continuity 警告"; fi
+if grep -q "branch-first: 已在 feature branch（feat/y）" <<< "$out"; then ok "feature branch → branch-first 資訊行"; else bad "feature branch branch-first 誤判"; fi
+if grep -q "continuity: WARNING" <<< "$out"; then bad "clean tree 不應有 continuity 警告"; else ok "clean tree 無 continuity 警告"; fi
 
 # dirty + ahead>0 → continuity WARNING
 (cd "$TMP/rs-work" && echo v5 > f.txt)
 out="$("$RS_SCRIPT" "$TMP/rs-work")"
-if echo "$out" | grep -q "continuity: WARNING"; then ok "dirty+ahead → continuity WARNING"; else bad "continuity 警告缺失"; fi
+if grep -q "continuity: WARNING" <<< "$out"; then ok "dirty+ahead → continuity WARNING"; else bad "continuity 警告缺失"; fi
 (cd "$TMP/rs-work" && git checkout -q -- f.txt)
 
 # HEAD 在 main（rs-clean、priority 4）→ REQUIRED + branch-cmd + empty-tree 常數
 out="$("$RS_SCRIPT" "$TMP/rs-clean")"
-if echo "$out" | grep -q "branch-first: REQUIRED"; then ok "HEAD 在 main → branch-first REQUIRED"; else bad "main branch-first 誤判"; fi
-if echo "$out" | grep -qF "branch-cmd: git -C '$TMP/rs-clean' switch -c <type>/<slug>"; then ok "branch-cmd 印出待填指令"; else bad "branch-cmd 缺失"; fi
-if echo "$out" | grep -q "empty-tree: 4b825dc642cb6eb9a060e54bf8d69288fbee4904"; then ok "priority 4 印 empty-tree 常數"; else bad "empty-tree 常數缺失"; fi
+if grep -q "branch-first: REQUIRED" <<< "$out"; then ok "HEAD 在 main → branch-first REQUIRED"; else bad "main branch-first 誤判"; fi
+if grep -qF "branch-cmd: git -C '$TMP/rs-clean' switch -c <type>/<slug>" <<< "$out"; then ok "branch-cmd 印出待填指令"; else bad "branch-cmd 缺失"; fi
+if grep -q "empty-tree: 4b825dc642cb6eb9a060e54bf8d69288fbee4904" <<< "$out"; then ok "priority 4 印 empty-tree 常數"; else bad "empty-tree 常數缺失"; fi
 
 # dirty 但 ahead=0 → 無 continuity（兩條件須同時成立）
 (cd "$TMP/rs-clean" && echo x > d.txt)
 out="$("$RS_SCRIPT" "$TMP/rs-clean")"
-if echo "$out" | grep -q "continuity: WARNING"; then bad "ahead=0 不應有 continuity 警告"; else ok "dirty 但 ahead=0 → 無 continuity 警告"; fi
+if grep -q "continuity: WARNING" <<< "$out"; then bad "ahead=0 不應有 continuity 警告"; else ok "dirty 但 ahead=0 → 無 continuity 警告"; fi
 (cd "$TMP/rs-clean" && rm d.txt)
 
 # detached HEAD → REQUIRED
