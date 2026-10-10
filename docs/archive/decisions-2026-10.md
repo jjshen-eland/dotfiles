@@ -289,3 +289,15 @@
   - 放棄:逐顆放行不會用到的 compiler tree 更新；全面 brew upgrade；直接跳過所有依賴檢查；只刪 include-build 卻允許 source fallback；對尚有缺項的 runtime tree 套用例外
   - 重議:本地修正待更新同一 PR #297、必要 CI 與實機驗收；如 Homebrew bottle runtime 與宣告相依出現可觀察差異，先停下該目標核對實際安裝計畫，不擴大升級範圍。
   - 關聯:D-20261009-setup-tool-ownership;M-20261010-setup-fleet-partial;STATUS.md;docs/testing-contract.md
+
+- **D-20261010-transfer-delivery-overhead · 2026-10-10 Dotfiles 準備原子移交至 Claude delivery-overhead**：使用者先明確叫用 Transfer，指定 current steward `codex:brewup-bun-global-update` 與 recipient `claude:delivery-overhead`，再明確叫用本 worktree 的 Project Log merge endpoint。Portable-knowledge、三項 active mapping、獨立 next workspace、credential separation 與 fresh clone QA 已驗證；settings 新增欄位由使用者確認為 runtime drift，原 checkout 保留並排除於移交。本 record 與所有 active items 的 Steward／assigned Writer／Workspace／第一個 next step 收在同一顆 transfer commit，Write Scope 與未完成目標保留。
+  - 日期來源:direct
+  - Current steward:`codex:brewup-bun-global-update`
+  - Next steward:`claude:delivery-overhead`
+  - Canonical handover endpoint:`git@github.com:jjshen-eland/dotfiles.git` 的 `main`
+  - Effective condition:包含本 decision、docs/transfer.md 與全部 active-item 原子切換的 transfer commit 已 merged 至上述 canonical endpoint，且 remote-visible ancestry 證明該 commit 可達。條件未成立時，STATUS／active plan 的 next actor coordination fields 只是 conditional pending values，effective steward／writer 依指南的 transfer 前 mapping；條件成立才是 TRANSFERRED。
+  - Parent evidence:準備基線 `e8e226dbe8b9818ad9123ac85ec6f25797d3def3` 保留三項原 assignment；指南列完整 current／next mapping。Runtime、#285、Setup 的 next workspace 分別為 `branch=fix/delivery-overhead-runtime-layout`、`branch=perf/delivery-overhead-verification`、`branch=chore/delivery-overhead-setup`；均不沿用舊 workspace 或 transfer branch。
+  - 驗證:準備時 fresh no-local clone 全套 30 模組 exit 0／111.672 秒，415 個 inputs 前後無漂移；原失敗 Python 3.9 與 dev-env 的 Python 3.14 controls 見指南。Log 只補當前 lifecycle 文件檢查；本 record 寫入時 PR／CI／merge／endpoint 尚待，不宣稱移交生效。
+  - 放棄:只改部分 active items；以 local commit、feature push 或 open PR 宣稱 TRANSFERRED；讓 next steward 自行撿回未整合工作；把 runtime drift、credentials 或前批外向授權混入移交
+  - 重議:recipient、mapping、endpoint、原 assignment 或已知 in-flight 工作改變時重跑 Transfer gates；無法取得 remote-visible ancestry 時停止 authority 切換。原 work items 保持 active，不因換 steward 結案。
+  - 關聯:STATUS.md item 2／3／4;Issue#285;docs/transfer.md;docs/plans/2026-10-06-runtime-layout-convergence.md;docs/plans/2026-10-08-workflow-verification-economy.md
