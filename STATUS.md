@@ -77,7 +77,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 ### 5. 移除 turbo skill 與其他 skill 的耦合
 
 - **Writer**：`claude:delivery-overhead`
-- **Workspace**：`unassigned`
+- **Workspace**：`branch=refactor/turbo-retirement`
 - **Write Scope**：shared/skills/turbo/, claude/skills/turbo/, codex/skills/turbo/, shared/skills/deep-plan/, shared/skills/deep-review/, shared/skills/project/references/ship-policy.md, shared/skills/project/references/spec-workflow.md, claude/settings.json（僅 turbo hooks）, codex/config.toml, claude/CLAUDE.md, codex/AGENTS.md, scripts/agent-turn-end-timestamp.sh, README.md, tests/, docs/plans/
 - **Dossier Steward**：`claude:delivery-overhead`
 - **寫入協調**：claude/settings.json 與 codex/config.toml 也在 item 2 的 Write Scope；item 2 的遷移目前停止且同一 writer，本項只改 turbo hooks。tests/、shared/skills/project/、review-control.py、review-state.py 也在 item 3 的 Write Scope；item 3 排在本項之後（D-20261011-record-volume-scope-narrowed）。claude/CLAUDE.md、codex/AGENTS.md、README.md、tests/ 也在 item 4 的 Write Scope，item 4 目前只剩工具歸屬核對、不改這些檔。三項依序進行，不平行寫入。
