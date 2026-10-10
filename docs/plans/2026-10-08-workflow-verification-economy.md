@@ -12,6 +12,122 @@
 **目前有效規格（2026-10-10）**：驗收改為 CI 路由補齊、平台無關 controller 只跑 Ubuntu、
 紀錄減量契約、端到端交付量測四項，條文以 STATUS.md item 3 為準，決策見
 D-20261010-delivery-overhead-spec。下方 2026-10-09 版規格與後續段落保留為歷史追溯。
+第 1、2 項已合併（M-20261011-ci-platform-matrix-merged）；第 3 項的規劃見下一節。
+
+## 第 3 項：紀錄減量契約規劃（2026-10-11 起草，待使用者核可）
+
+本節狀態為 draft：規則檔一律未修改，deep-plan 審查通過後才實作。因條文經 project skill 影響所有使用
+`/project`／`$project` 的 repo，先盤點與規劃，不以 dotfiles 單一 repo 的數據直接定案。
+
+### 問題與證據（dotfiles，2026-09-26～2026-10-11）
+
+- 126 顆 commit 中 53 顆只改紀錄（42%）。依主旨分類：結案 21、指派／建立 workline 6、
+  部署／rollout 5、CI 追蹤 6、送出準備 4、其他證據補記 11；另有 #288、#298 為補記另開 PR。
+- milestone：10 月 107 筆，中位 1.7KB、p90 2.9KB、最大 4.7KB。採用 repo 的 history 沒有
+  長度限制（`docs/document-governance.md`「Only loaded is size-limited」）；legacy 路徑反而有每條
+  800B 的上限（`shared/skills/project/scripts/ship-state.sh` 的 `DOSSIER_ENTRY_MAX_BYTES`）。
+- `docs/testing-contract.md` 兩週改 28 次、74KB，17 行夾帶 PR／run／日期等事件證據。
+- 成因假說（Phase 0 驗證）：「完成」沒有定義。`shared/skills/project/references/dossier.md` 寫「milestone 在完成當下追加」、
+  `shared/skills/project/references/log-prepare.md` Step 2 寫「工作完成時」，turbo 的 execution contract 又把 completion 定為
+  acceptance 加 delivery evidence，結案因此落在 merge 或部署之後，只能另開 commit／PR。
+
+### 規則面盤點（已完成，唯讀）
+
+| 位置 | 相關規則 | 影響範圍 | 本項處置 |
+|---|---|---|---|
+| Kernel managed block（`AGENTS.md`、`claude/CLAUDE.md`、`codex/AGENTS.md`） | event-time 記錄；結案移除 active item、寫 milestone | 所有 repo | 不改；新條文須與它相容 |
+| `docs/document-governance.md`、`scripts/doc-governance.py` | 資料模型、append-only、Workspace 格式 | 採用 repo，須逐 byte 相同 | 不改（Spec 限制） |
+| `shared/skills/project/references/dossier.md` | 記錄時機、Workspace 欄位意義 | 所有用 project skill 的 repo | 改寫既有句子 |
+| `shared/skills/project/references/log-prepare.md` Step 2 第 3 點 | 結案步驟、endpoint 未達成不得宣稱已送出 | 同上 | 改成指向 dossier；endpoint 真實性保留 |
+| `shared/skills/project/references/authority.md`「保留新 assignment」段 | 先提交 assignment 再結案 | 同上 | 不改，確認相容 |
+| `shared/skills/project/scripts/steward-authority.py` completion gate | 結案 candidate 的 parent 須有 active item | 同上 | 不改；同 commit 結案已可通過 |
+| `shared/skills/turbo/references/execution-contract.md` | completion 含 delivery evidence | 用 turbo 的 repo | 須與完成定義對齊 |
+| `shared/skills/project/templates/STATUS-template.md` | 新 repo 的 STATUS 範本 | 新採用 repo | 檢查是否需同步 |
+| dotfiles 專屬：`AGENTS.md` Repo specifics、`docs/testing-contract.md`、`tests/content-checks.py` | 測試契約與 repo 測試 | 只有 dotfiles | 放 dotfiles 專屬條文與機檢 |
+
+### Phase 0：其他 repo 盤點（2026-10-11 完成，唯讀）
+
+範圍由使用者提供（M-20260908-fleet-governance-rollout-closeout 的清單已過時，不作依據，未掃描
+`~/Projects`）：elandcomtw 下 12 個 KB platform 生產 repo。以 scratchpad 的 bare partial clone 與
+`gh pr list` 唯讀量測 2026-09-26 起的 default branch。
+
+| repo | 治理 | commit | 純紀錄 commit | merged PR | 純紀錄 PR | milestone 中位／p90 |
+|---|---|---|---|---|---|---|
+| dotfiles（對照） | adopted | 126 | 53（42%） | 54 | 3 | 1.7KB／2.9KB |
+| kapi-infra | adopted | 350 | 161（46%） | 72 | 13 | 1.2KB／1.9KB |
+| krepo-judicial | adopted | 58 | 18（31%） | 33 | 7 | 1.2KB／1.7KB |
+| krepo-common | adopted | 14 | 7（50%） | 7 | 3 | 1.0KB／1.6KB |
+| krepo-mops-major-news | adopted | 58 | 10（17%） | 26 | 1 | 1.0KB／1.3KB |
+| krepo-mops-financial-statements | adopted | 36 | 6（16%） | 17 | 1 | 0.9KB／1.8KB |
+| krepo-mops-disclosure | adopted | 50 | 7（14%） | 25 | 0 | 1.4KB／1.9KB |
+| krepo-company | adopted | 35 | 4（11%） | 21 | 0 | 1.1KB／1.6KB |
+| kapi-protocol | adopted | 25 | 6（24%） | 12 | 1 | 0.8KB／1.2KB |
+| notification-center | adopted | 6 | 0 | 5 | 0 | 單筆 |
+| aism-api | legacy（只有 STATUS.md） | 10 | 0 | — | — | — |
+| kapi-kb-hub、kapi-proxy-pool | 無 dossier | 19、7 | 0 | — | — | — |
+
+9 個 adopted repo 的 scanner 都與 dotfiles 逐 byte 相同。commit message 均無 turbo 字樣（使用與否
+無法由此判定）。
+
+發現：
+
+- 純紀錄 commit 比例高估浪費：kapi-infra 的純紀錄 commit 多為決策、核准、開立工作項與營運事件
+  （主機切換、金鑰輪替、清理），這些本來就只改紀錄。真正多花一輪 CI 與 merge 的是純紀錄 PR：
+  dotfiles 3／54，其他 adopted repo 26／218。
+- 其他 repo 的純紀錄 PR 主要是 production 部署或驗證後的結案與補記（如 krepo-judicial #102–#111、
+  krepo-common #75–#81、krepo-mops-major-news #72）。服務型 repo 的部署驗證是真實驗收，
+  營運型 repo（kapi-infra）的部署與營運結果就是工作成果，沒有其他持久紀錄。
+- dotfiles 的 milestone 明顯比其他 repo 長；長度問題主要在 dotfiles。
+
+### Phase 1：條文設計（候選，依 Phase 0 修正）
+
+1. 交付終點不補記：只針對 GitHub 已有持久紀錄的事實——merge、PR、CI／Actions 結果與耗時——不為
+   記錄它們另開 commit 或 PR。部署與營運結果在 repo 外沒有持久紀錄，維持寫入 repo，不在此限。
+2. 完成定義：驗收只需本地與 PR 證據時，結案（milestone、移除 active item）與最後一批實作同
+   commit。驗收含部署或 production 驗證時，item 保留 active 到驗證完成；結案與驗證結果優先併入
+   下一個 PR，沒有後續工作時才單獨送出。turbo 的 completion 需同步對齊。
+3. milestone 長度上限：dotfiles 專屬，寫在 `AGENTS.md` Repo specifics，由 content 測試檢查
+   生效日後的新紀錄。其他 repo 的長度已接近候選上限，機隊化須改受信任 scanner，另開工作。
+4. `docs/testing-contract.md` 只寫規則與一句理由，事件證據留在 D／M 並以 ID 指向；dotfiles 專屬。
+5. Workspace：記 branch 名；merge 刪除後同名重開不改欄位，改用其他 branch 時於該批第一顆
+   commit 更新。
+
+條文 1、2、5 改寫 `shared/skills/project/references/dossier.md` 既有句子，不另開平行章節；3、4 只放
+dotfiles 專屬位置。條文 2 的「優先併入下一個 PR」會讓 main 上的 STATUS 在部署後暫時落後，
+需在 Phase 2 以服務型 repo 的情境驗證這個取捨是否可接受。
+
+### 不改什麼
+
+kernel managed block、`docs/document-governance.md`、受信任 scanner、既有紀錄（append-only）、
+`shared/skills/project/scripts/steward-authority.py` 的 completion gate 語意；Phase 2 證明必要時才另議。
+
+### Phase 2：驗證
+
+- skill 變更依 `claude/skill-building-guide.md` 與 `docs/skill-portability.md`，在 Claude 與
+  Codex 兩個 runtime、以較弱模型做改前／改後成對實驗。情境：最後一批實作完成、PR 已合併後、
+  驗收需部署驗證、fleet 部署結果。先確認 fixture 不洩題；改前沒有任何情境出現分歧就不改 skill。
+- 機械檢查先 RED 再 GREEN：milestone 長度、testing-contract 事件證據。
+- 回放：逐顆判斷 53 顆純紀錄 commit 在新規則下是否仍會產生。
+- 全套測試與 `doc-governance audit --ship`。
+
+### Phase 3：送出與擴散
+
+dotfiles PR 合併並經 dotsync 部署到各主機後，所有 repo 的 skill 同時生效；其他 repo 沒有
+檔案變更。合併後觀察 dotfiles 接下來 10 個 PR 的純紀錄 commit 與 milestone 長度。
+
+### 驗收（候選）
+
+- 觀察期內不再出現只為結案或補記 merge／CI／部署結果的 commit 或 PR。
+- 生效日後的 milestone 全數不超過上限（機檢）。
+- 成對實驗：改後各情境符合期望，且改前至少一個情境有分歧。
+- Phase 0 的部署驗證與營運紀錄需求，都有對應條文或明確排除。
+
+### 已決（2026-10-11，D-20261011-record-volume-plan-choices）
+
+1. 條文 2 的部署後結案取捨，先在 Phase 2 以服務型 repo 情境驗證再定案。
+2. milestone 長度上限 1,500 B。
+3. testing-contract 既有 17 行事件證據本批清除，整份納入機檢。
+4. 實作前以 deep-plan 審查本計畫。
 
 **2026-10-09 版規格（整體重構，已由上段取代）**：使用者要求把本項當成重構或重寫，
 不預設逐年累積的測試、gate、分片、觸發條件或驗證流程不可改。本節與 STATUS 的新契約
