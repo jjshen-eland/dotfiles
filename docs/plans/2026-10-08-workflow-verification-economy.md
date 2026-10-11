@@ -214,12 +214,20 @@ transcript，Claude 舊 transcript 有缺；compaction 標記不等於規則內�
    (a) 本地完成但 endpoint 未達、證據在暫存目錄的 milestone；(b) 使用者在編號選項中選定後的 decision；
    (c) 量測型 milestone；(d) 帶下一步的 dead end；(e) 脈絡中沒有規則段（模擬 compaction 後）時寫一筆 milestone，
    兩臂只差 always-on 指令有無寫前重讀那一行，看是否重讀並遵守；fixture 是 dotfiles 以外、不含 `shared/` 的暫存
-   repo，指標只能經部署路徑解析。各情境 fixture 須含 Phase 1 對照表列出的脈絡。
+   repo，指標只能經部署路徑解析。各情境 fixture 須含 Phase 1 對照表列出的脈絡；不限單一類型的規則，其觸發脈絡
+   （STATUS Writer／branch、暫存路徑、內部代碼、STATUS 項次、原始量測等）分散放進盡量多個情境，以不同情境的觀察
+   代替同一情境重複執行。
    a–d 兩臂 query 與 fixture 逐字相同，只差 dossier.md 規則段；fixture 不含規則或答案。oracle 列出每情境的必寫項與
    禁止項，沒有語意歧義的（暫存路徑為唯一證據、位置式引用、自創欄位、缺子項、`#數字` 開頭標題）以腳本判，其餘
    以盲評。授權過程與 session 狀態只用盲評：現有 90 筆紀錄含「授權」，許多以授權規則為主題；情境 a 依流程必須
-   寫 endpoint pending，字樣比對會把遵守流程判錯。盲評判準寫明流程規定的 endpoint 狀態不算違規。先在 Sonnet 上取得改前分歧（RED）；任一情境改前無分歧，對應規則不加。
-   之後在 Claude Code `opus[1m]` 與 Codex production model 正式驗收，記錄 alias、resolved model、effort 與 CLI 版本。
+   寫 endpoint pending，字樣比對會把遵守流程判錯。盲評判準寫明流程規定的 endpoint 狀態不算違規。
+   RED 在 Sonnet 上逐條規則判定。一次試驗是同一情境兩臂各跑一次：改前違反且改後遵守為「正」，其餘（兩臂都遵守、
+   都違反、只有改後違反）為「負」；同一規則在不同情境的觀察各算一次試驗。每條規則採五戰三勝：先取 3 次試驗，
+   先達 3 正為有分歧、先達 3 負為無分歧，未分勝負時補到第 4、5 次，只補跑該規則所在的情境。無分歧的規則不加，
+   即使同情境其他規則有分歧。不再增加試驗次數：剩餘誤差主要來自情境擬真度、盲評與模型更新，Phase 3 另以實際紀錄
+   觀察。
+   之後在 Claude Code `opus[1m]` 與 Codex production model 正式驗收：每個模型每個情境跑有規則的一臂一次，有違反才
+   加跑；記錄 alias、resolved model、effort 與 CLI 版本。
    情境寫進 `shared/skills/project/references/pressure-tests.md`。
 3. **dotfiles 機檢**：`tests/content-checks.py` 對新增紀錄檢查可機械判定的規則。新增的判定沿用
    `scripts/doc-governance.py` 的 git 基準：取當前 branch 與 default branch 的 merge-base，基準時不存在的紀錄才
@@ -259,7 +267,8 @@ Phase 0 同一標籤判讀缺陷率。
 
 ### 驗收
 
-1. dossier.md 的規則段含四類規則，每條對應 Phase 0 的缺陷並有 Phase 1 對照表的情境涵蓋；Phase 2 成對實驗改前有分歧、改後兩端正式驗收通過。
+1. dossier.md 的規則段含四類規則，每條對應 Phase 0 的缺陷並有 Phase 1 對照表的情境涵蓋；每條規則在 Phase 2
+   五戰三勝判定有分歧（逐條，不以情境代判），改後兩端正式驗收通過。
 2. 重寫範例保留五項可還原資訊，`find` 命中名次不退步。
 3. dotfiles 機檢的三個 RED 對照（新增違規紅、基準已存在綠、CI 無基準紅）先紅後綠。
 4. testing-contract 機檢（字樣與 ID 存在）先紅後綠、清理後零命中；重掃確認後清單的每個位置都已改為規則加理由並
