@@ -141,7 +141,10 @@ krepo-judicial M 的 active-state 內容 5/8；暫存路徑與重議寫成下一
    - 含證據 token 的標題：874（H2，#246）、921（H2，2026-10-02）、748（H3）。
 
    實作時先以同一判準重掃確認清單（token 掃描會漏掉不帶日期或數字的敘述），再把這些位置改為規則加一句理由並以
-   ID 指向紀錄；沒有 D／X／M 的先補 event-time 紀錄（日期依原事件，`日期來源` 註明推得方式），再刪原文。兩個 H2
+   ID 指向紀錄。沒有任何紀錄的位置逐處搬成一筆紀錄，依 `docs/doc-governance-rollout.md`「history 遷移」：原文
+   帶日期的（595、776）以原文日期標 `日期來源:migration-entry`；無日期的（224、373、592、754、764）以搬遷當天
+   日期寫進標題，標 `migration-cutover`。只在 2026-08 legacy 區段或 milestones 前言的位置已在 history store、
+   `find` 查得到，改指向該處，不另建紀錄。搬完再刪原文。兩個 H2
    改為主題標題，跑 title-free recall ratchet 與 xref audit。不另加 testing-contract 的機檢：事件敘述無法以
    token 可靠判定，誤報會擋下合法規則行。
 5. 全套測試與 `doc-governance audit --ship`。
