@@ -10,7 +10,7 @@
 - 需求來源：[GitHub #285](https://github.com/jjshen-eland/dotfiles/issues/285)、[GitHub #279](https://github.com/jjshen-eland/dotfiles/issues/279)。2026-10-09 使用者重新要求診斷並明示 `$project spec`，確認前任停止，由本 session 接續 `codex:brewup-bun-global-update`；本輪只寫 spec，過去交付授權不沿用。
 
 **目前有效規格（2026-10-10）**：驗收改為 CI 路由補齊、平台無關 controller 只跑 Ubuntu、
-紀錄減量契約、端到端交付量測四項，條文以 STATUS.md item 3 為準，決策見
+紀錄撰寫規則、端到端交付量測四項，條文以 STATUS.md item 3 為準，決策見
 D-20261010-delivery-overhead-spec。下方 2026-10-09 版規格與後續段落保留為歷史追溯。
 第 1、2 項已合併（M-20261011-ci-platform-matrix-merged）；第 3、4 項見下兩節。
 
@@ -52,7 +52,7 @@ D-20261011-delivery-measurement-next-targets）。第 4 項量測顯示寫紀錄
 
 ### Phase 0：缺陷證據（2026-10-11，唯讀）
 
-dotfiles 2026-08～10 的 448 筆紀錄，依檔內位置等距抽 M 16、D 15、X 8 筆，另加 2026-10 最長的 M 5 筆、D 3 筆；
+dotfiles 2026-08～10 的 443 筆紀錄（a60d20d），依檔內位置等距抽 M 16、D 15、X 8 筆，另加 2026-10 最長的 M 5 筆、D 3 筆；
 人工判讀，另以 regex 統計全語料趨勢（只能看趨勢）。無實質缺陷：M 4/16、D 5/15、X 5/8；缺陷集中在 2026-10 與
 2026-09 下旬。M 篇幅中位 08→10 月為 1,477→1,713 B，p90 1,921→2,895 B；10 月出現約 20 種自創欄位名，08 月只有
 規定的四種。範例良好紀錄：M-20260822-retrieval-source-diversity、D-20260822-portable-project-skill、
