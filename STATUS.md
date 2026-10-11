@@ -59,7 +59,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
   6. 流程簡化（D-20261011-protocol-records-to-workflow-simplification）：依實際使用狀況簡化 steward、writer、transfer 與 dossier 流程，改善工作體驗；含 endpoint 未達成的 milestone 與移交 owner decision 是否改由 PR 與 `docs/transfer.md` 承載、減少確認題。會改 authority 相關 skill 與檢查程式，獨立規劃並跑 deep-plan；可與第 5 項合併規劃。
 - **Constraints**：本版驗收取代 2026-10-09 版（D-20261010-delivery-overhead-spec）。不靠降低錯誤攔截取得 GREEN；選測錯誤或空集合不得假綠。不改 `scripts/doc-governance.py` 受信任 scanner（fleet byte-identical 契約）；branch protection 與 required checks 調整需另經具名授權。claude/settings.json 的 runtime drift 不帶進 commit（dotsync／brewup 會丟棄）。item 2／4 不在本項範圍。本 Spec 未授權任何 commit、push、PR、merge 或部署。
 - **進度**：第 1、2 項已合併（M-20261011-ci-platform-matrix-merged）：全套觸發檔 201→50，controller 三模組只跑 Ubuntu，全套 PR 的 macOS job 3 分 02 秒→2 分 28 秒。測試模組 pipe-to-grep 早退偽紅已清零並合併（M-20261011-pipe-grep-herestring-local）。
-- **下一步**：第 3 項計畫已修訂（全機隊、四類規則），以 deep-plan 審查；通過後實作。第 4 項只剩改善後的真實交付一筆，於下次真實小改動送出時順便量。之後規劃第 5 項。
+- **下一步**：第 3 項計畫經 deep-plan 第 6 批兩輪仍 NO-GO（阻斷集中在 Phase 3 無法以 15 筆人工判讀判定規則有效性）；選 A（不做紀錄機檢）時所依賴的 Phase 3 補償本就不成立，A 須在此前提下重新確認，計畫未實作。2026-10-12 使用者另要求以新 session 從頭評估本 repo 的提交、驗證與 CI 流程應有的樣貌（依風險分層），第 3 項與第 5、6 項的去留待該評估。第 4 項只剩改善後的真實交付一筆。
 - **關聯**：[本項計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285; GitHub #279; PR #288; PR #298; PR #299; D-20261010-delivery-overhead-spec; D-20261010-transfer-delivery-overhead; D-20261009-ci-system-redesign; M-20261009-ci-modular-redesign-local; B-20260924-workflow-verification-economy
 
 ### 4. Setup 工具與 agent shell 環境對齊
