@@ -2,7 +2,7 @@
 
 - 工作項：STATUS item 5「移除 turbo skill 與其他 skill 的耦合」
 - 日期：2026-10-11
-- 狀態：in-progress
+- 狀態：implemented
 - 種類：implementation plan
 - Writer／Dossier Steward：`claude:delivery-overhead`
 - Workspace：實作時建立 `refactor/turbo-retirement`，在 scratchpad 的獨立 git worktree 進行，見「提交與分支」

@@ -732,3 +732,7 @@
   - 日期來源:direct
   - 重議:hosted 上仍出現同類偽紅，或 Python／其他 harness 有同型早退管線
   - 關聯:M-20261011-ci-platform-matrix-merged;Issue#285
+- **M-20261011-turbo-retired · 2026-10-11 移除 turbo skill 與其耦合並完成散佈**:PR #304 rebase merge 至 `e6b4376`：turbo 三棵樹、Claude／Codex 各 7 個 hooks、deep-plan／deep-review controller 的委任子命令與 native-review、全域指令與 README 的 turbo 段一併移除；全套 29/29 綠，deep-review full PASS、4 條 low 皆以先紅後綠修復。經授權 dotsync 後 inventory 內 13 台遠端主機在 `e6b4376`、殘留連結逐台刪除、turbo hooks 為 0；本機由使用者關閉 session 後切換，Claude Code 與 Codex 新 session 皆無 hook 錯誤。本機 Codex 設定另有 44 筆 `/private/tmp/turbo-*` eval 專案信任紀錄，非 hooks，保留未清。inventory 外終端依 D-20261011-out-of-inventory-reminder-only 只提醒：恢復使用時跑 brewup、刪兩個殘留連結並重開 session。
+  - 日期來源:direct
+  - 重議:出現需要跨回合自主續跑到交付的明確需求
+  - 關聯:D-20261011-turbo-retired;D-20261011-turbo-direct-deletion;D-20261011-out-of-inventory-reminder-only;PR#304;Issue#285
