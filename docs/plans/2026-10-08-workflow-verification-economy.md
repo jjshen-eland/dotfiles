@@ -12,125 +12,106 @@
 **目前有效規格（2026-10-10）**：驗收改為 CI 路由補齊、平台無關 controller 只跑 Ubuntu、
 紀錄減量契約、端到端交付量測四項，條文以 STATUS.md item 3 為準，決策見
 D-20261010-delivery-overhead-spec。下方 2026-10-09 版規格與後續段落保留為歷史追溯。
-第 1、2 項已合併（M-20261011-ci-platform-matrix-merged）；第 3 項的規劃見下一節。
+第 1、2 項已合併（M-20261011-ci-platform-matrix-merged）；第 3、4 項見下兩節。
 
-## 第 3 項：紀錄減量契約規劃（2026-10-11 起草，待使用者核可）
+## 第 3 項：D／X／M 紀錄撰寫規則（全機隊，2026-10-11 修訂）
 
-本節狀態為 draft：規則檔一律未修改，deep-plan 審查通過後才實作。因條文經 project skill 影響所有使用
-`/project`／`$project` 的 repo，先盤點與規劃，不以 dotfiles 單一 repo 的數據直接定案。
+狀態：draft，deep-plan 審查通過前不改任何規則檔。取代本節 2026-10-11 稍早的「紀錄減量契約」草稿與 1,500 B
+上限（D-20261011-record-volume-scope-narrowed、D-20261011-record-rules-before-size-cap、
+D-20261011-delivery-measurement-next-targets）。第 4 項量測顯示寫紀錄約佔扣等待後交付時間 9–11%，本項目標因此是
+紀錄品質與可追溯性，不以省時間為驗收，也不設長度上限。
 
-### 問題與證據（dotfiles，2026-09-26～2026-10-11）
+### 目標
 
-- 126 顆 commit 中 53 顆只改紀錄（42%）。依主旨分類：結案 21、指派／建立 workline 6、
-  部署／rollout 5、CI 追蹤 6、送出準備 4、其他證據補記 11；另有 #288、#298 為補記另開 PR。
-- milestone：10 月 107 筆，中位 1.7KB、p90 2.9KB、最大 4.7KB。採用 repo 的 history 沒有
-  長度限制（`docs/document-governance.md`「Only loaded is size-limited」）；legacy 路徑反而有每條
-  800B 的上限（`shared/skills/project/scripts/ship-state.sh` 的 `DOSSIER_ENTRY_MAX_BYTES`）。
-- `docs/testing-contract.md` 兩週改 28 次、74KB，17 行夾帶 PR／run／日期等事件證據。
-- 成因假說（Phase 0 驗證）：「完成」沒有定義。`shared/skills/project/references/dossier.md` 寫「milestone 在完成當下追加」、
-  `shared/skills/project/references/log-prepare.md` Step 2 寫「工作完成時」，turbo 的 execution contract 又把 completion 定為
-  acceptance 加 delivery evidence，結案因此落在 merge 或部署之後，只能另開 commit／PR。
+定義 D／X／M 紀錄的四類規則，讓沒有原對話的讀者（另一主機、另一 runtime 或人）只靠紀錄與其指標就能還原：
+發生或決定了什麼、為什麼、如何查證、何時不再適用、與哪些紀錄相依。
 
-### 規則面盤點（已完成，唯讀）
+1. **必寫**：每類紀錄必須帶的資訊。
+2. **不用寫**：可由 git／PR／CI、計畫或其他紀錄取得的內容，改以指標引用。
+3. **不要寫**：不屬於歷史事件結果的內容。
+4. **不使用的寫法**：讓冷讀者無法解讀或會隨時間腐爛的寫法。
 
-| 位置 | 相關規則 | 影響範圍 | 本項處置 |
+每條規則必須對應 Phase 0 觀察到的缺陷；沒有觀察到的不寫。
+
+### 範圍與放置
+
+- 規則寫在 `shared/skills/project/references/dossier.md`「記錄時機與 record schema」，改寫該節既有內容，不另開
+  平行章節或新 reference；Claude 與 Codex 的 project skill 都連到 shared core，dotsync 後所有使用 `/project`／
+  `$project` 的 repo 同時生效，其他 repo 沒有檔案變更。
+- dossier.md 在 Log 結案階段必讀（目前 10,900 B），讀規則文件已佔交付時間約 14%（第 4 項）；本項新增內容以
+  表格精簡呈現，並在 Phase 2 量測增加的讀取 bytes。
+- 不改：kernel managed block、`docs/document-governance.md` 與受信任 scanner（fleet 逐 byte 相同）、既有紀錄
+  （append-only，已知缺陷不回改；斷鏈與懸空引用如需更正，以新紀錄說明）、`steward-authority.py`。
+- 寫入協調：`shared/skills/project/`、`tests/`、`docs/testing-contract.md` 在本項 Write Scope；item 4 的 Write
+  Scope 也含 `tests/`、`docs/testing-contract.md`，但其現行下一步只做工具歸屬核對、不改這兩處，兩項依序進行。
+
+### Phase 0：缺陷證據（2026-10-11，唯讀）
+
+dotfiles 2026-08～10 的 448 筆紀錄，依檔內位置等距抽 M 16、D 15、X 8 筆，另加 2026-10 最長的 M 5 筆、D 3 筆；
+人工判讀，另以 regex 統計全語料趨勢（只能看趨勢）。無實質缺陷：M 4/16、D 5/15、X 5/8；缺陷集中在 2026-10 與
+2026-09 下旬。M 篇幅中位 08→10 月為 1,477→1,713 B，p90 1,921→2,895 B；10 月出現約 20 種自創欄位名，08 月只有
+規定的四種。範例良好紀錄：M-20260822-retrieval-source-diversity、D-20260822-portable-project-skill、
+D-20260917-terminal-macbooks-outside-inventory、X-20260823-retrieval-idf-and-h3-chunking。
+
+| 缺陷 | 抽樣 M／D／X | 全語料趨勢 | 對應規則類 |
 |---|---|---|---|
-| Kernel managed block（`AGENTS.md`、`claude/CLAUDE.md`、`codex/AGENTS.md`） | event-time 記錄；結案移除 active item、寫 milestone | 所有 repo | 不改；新條文須與它相容 |
-| `docs/document-governance.md`、`scripts/doc-governance.py` | 資料模型、append-only、Workspace 格式 | 採用 repo，須逐 byte 相同 | 不改（Spec 限制） |
-| `shared/skills/project/references/dossier.md` | 記錄時機、Workspace 欄位意義 | 所有用 project skill 的 repo | 改寫既有句子 |
-| `shared/skills/project/references/log-prepare.md` Step 2 第 3 點 | 結案步驟、endpoint 未達成不得宣稱已送出 | 同上 | 改成指向 dossier；endpoint 真實性保留 |
-| `shared/skills/project/references/authority.md`「保留新 assignment」段 | 先提交 assignment 再結案 | 同上 | 不改，確認相容 |
-| `shared/skills/project/scripts/steward-authority.py` completion gate | 結案 candidate 的 parent 須有 active item | 同上 | 不改；同 commit 結案已可通過 |
-| `shared/skills/turbo/references/execution-contract.md` | completion 含 delivery evidence | 用 turbo 的 repo | 須與完成定義對齊 |
-| `shared/skills/project/templates/STATUS-template.md` | 新 repo 的 STATUS 範本 | 新採用 repo | 檢查是否需同步 |
-| dotfiles 專屬：`AGENTS.md` Repo specifics、`docs/testing-contract.md`、`tests/content-checks.py` | 測試契約與 repo 測試 | 只有 dotfiles | 放 dotfiles 專屬條文與機檢 |
+| 證據只指向 `/tmp` 等暫存 | 8／1／2 | M-10 61/108、08 月 0 | 必寫：可持久查證的指標 |
+| 授權／endpoint 狀態與否定式聲明 | 8／3／1 | M-10 66/108、M-08 3/33 | 不要寫 |
+| 原始量測、版本、完整 hash 傾倒 | 7／1／0 | M-10 58/108 帶 40/64 位 hex | 不用寫（放計畫或 artifact） |
+| 重議寫成下一步或現況 | 6／0／0 | M-10 約 15 筆 | 必寫：可觀察條件 |
+| 標題以 #issue 或階段詞開頭、缺主題詞 | 5／3／1 | 74 筆以 #數字開頭 | 必寫：主題詞標題 |
+| session 過程敘事（使用者選項、上一輪） | 4／3／2 | 使用者選擇類 D-10 11、M-10 10 | 不要寫 |
+| active-state／ownership 內容 | 4／1／0 | M-10 16 筆 | 不要寫 |
+| 位置式或相對引用（`STATUS item N`） | 3／3／1 | 11 處，8 處已懸空 | 不使用的寫法 |
+| 未定義術語或代碼 | 3／4／1 | — | 不使用的寫法 |
+| 一筆多事件 | 3／1／0 | 單一 issue 一日 10 筆 M | 不要寫 |
+| 缺放棄／重議欄 | 2／1／0 | 10 月 M＋D 缺放棄 23、缺重議 19 | 必寫（無則 none） |
+| 與其他紀錄重複 | 2／2／0 | — | 不用寫（引用 ID） |
+| 類型錯置 | 2／1／1 | — | 必寫：類型定義 |
+| 關聯 ≥8 項 | 4／0／0 | M-09 23 筆 | 不使用的寫法 |
 
-### Phase 0：其他 repo 盤點（2026-10-11 完成，唯讀）
+限制：單一評分者、39 筆；regex 數字含誤報。分析腳本與抽樣原文在 session scratchpad，不入庫。
 
-範圍由使用者提供（M-20260908-fleet-governance-rollout-closeout 的清單已過時，不作依據，未掃描
-`~/Projects`）：elandcomtw 下 12 個 KB platform 生產 repo。以 scratchpad 的 bare partial clone 與
-`gh pr list` 唯讀量測 2026-09-26 起的 default branch。
+### Phase 1：規則（候選）
 
-| repo | 治理 | commit | 純紀錄 commit | merged PR | 純紀錄 PR | milestone 中位／p90 |
-|---|---|---|---|---|---|---|
-| dotfiles（對照） | adopted | 126 | 53（42%） | 54 | 3 | 1.7KB／2.9KB |
-| kapi-infra | adopted | 350 | 161（46%） | 72 | 13 | 1.2KB／1.9KB |
-| krepo-judicial | adopted | 58 | 18（31%） | 33 | 7 | 1.2KB／1.7KB |
-| krepo-common | adopted | 14 | 7（50%） | 7 | 3 | 1.0KB／1.6KB |
-| krepo-mops-major-news | adopted | 58 | 10（17%） | 26 | 1 | 1.0KB／1.3KB |
-| krepo-mops-financial-statements | adopted | 36 | 6（16%） | 17 | 1 | 0.9KB／1.8KB |
-| krepo-mops-disclosure | adopted | 50 | 7（14%） | 25 | 0 | 1.4KB／1.9KB |
-| krepo-company | adopted | 35 | 4（11%） | 21 | 0 | 1.1KB／1.6KB |
-| kapi-protocol | adopted | 25 | 6（24%） | 12 | 1 | 0.8KB／1.2KB |
-| notification-center | adopted | 6 | 0 | 5 | 0 | 單筆 |
-| aism-api | legacy（只有 STATUS.md） | 10 | 0 | — | — | — |
-| kapi-kb-hub、kapi-proxy-pool | 無 dossier | 19、7 | 0 | — | — | — |
-
-9 個 adopted repo 的 scanner 都與 dotfiles 逐 byte 相同。commit message 均無 turbo 字樣（使用與否
-無法由此判定）。
-
-發現：
-
-- 純紀錄 commit 比例高估浪費：kapi-infra 的純紀錄 commit 多為決策、核准、開立工作項與營運事件
-  （主機切換、金鑰輪替、清理），這些本來就只改紀錄。真正多花一輪 CI 與 merge 的是純紀錄 PR：
-  dotfiles 3／54，其他 adopted repo 26／218。
-- 其他 repo 的純紀錄 PR 主要是 production 部署或驗證後的結案與補記（如 krepo-judicial #102–#111、
-  krepo-common #75–#81、krepo-mops-major-news #72）。服務型 repo 的部署驗證是真實驗收，
-  營運型 repo（kapi-infra）的部署與營運結果就是工作成果，沒有其他持久紀錄。
-- dotfiles 的 milestone 明顯比其他 repo 長；長度問題主要在 dotfiles。
-
-### Phase 1：條文設計（候選，依 Phase 0 修正）
-
-1. 交付終點不補記：只針對 GitHub 已有持久紀錄的事實——merge、PR、CI／Actions 結果與耗時——不為
-   記錄它們另開 commit 或 PR。部署與營運結果在 repo 外沒有持久紀錄，維持寫入 repo，不在此限。
-2. 完成定義：驗收只需本地與 PR 證據時，結案（milestone、移除 active item）與最後一批實作同
-   commit。驗收含部署或 production 驗證時，item 保留 active 到驗證完成；結案與驗證結果優先併入
-   下一個 PR，沒有後續工作時才單獨送出。turbo 的 completion 需同步對齊。
-3. milestone 長度上限：dotfiles 專屬，寫在 `AGENTS.md` Repo specifics，由 content 測試檢查
-   生效日後的新紀錄。其他 repo 的長度已接近候選上限，機隊化須改受信任 scanner，另開工作。
-4. `docs/testing-contract.md` 只寫規則與一句理由，事件證據留在 D／M 並以 ID 指向；dotfiles 專屬。
-5. Workspace：記 branch 名；merge 刪除後同名重開不改欄位，改用其他 branch 時於該批第一顆
-   commit 更新。
-
-條文 1、2、5 改寫 `shared/skills/project/references/dossier.md` 既有句子，不另開平行章節；3、4 只放
-dotfiles 專屬位置。條文 2 的「優先併入下一個 PR」會讓 main 上的 STATUS 在部署後暫時落後，
-需在 Phase 2 以服務型 repo 的情境驗證這個取捨是否可接受。
-
-### 不改什麼
-
-kernel managed block、`docs/document-governance.md`、受信任 scanner、既有紀錄（append-only）、
-`shared/skills/project/scripts/steward-authority.py` 的 completion gate 語意；Phase 2 證明必要時才另議。
+| 類 | 內容 |
+|---|---|
+| 必寫 | 標題含主題詞，不以 issue 號或階段詞開頭。D：選了什麼、為什麼、適用範圍；X：試了什麼、為何放棄、證據；M：現在成立的結果與驗收證據。證據指標須可持久查證（repo 路徑、commit、PR／issue、CI run）；暫存路徑只能附註，不能是唯一證據。四個子項都寫，無則 `none`；重議是可觀察的觸發條件。被取代時寫 `supersedes:<ID>`。 |
+| 不用寫 | diff、commit 清單、PR 討論與 CI 耗時等 git／GitHub 已持久保存的事實（除非它就是量測結果本身）；已在其他紀錄或計畫中的內容（引用 ID 或路徑）；原始量測、環境版本、完整 hash（放計畫或 artifact，紀錄只寫結論數字與指標）。 |
+| 不要寫 | Writer／Steward／branch／Write Scope 等 active-state；授權與 endpoint 狀態及否定式聲明（「未 push」「不宣稱」）；session 過程（使用者選了哪個選項、上一輪、本批如何進行）；下一步與待辦（屬 STATUS／backlog）；同一筆塞多個獨立事件。 |
+| 不使用的寫法 | 位置式或相對引用（`STATUS item N`、上一輪、本批、今天）；未定義的縮寫與代碼；四個子項以外的自創欄位；與本紀錄無直接相依的長串關聯。 |
 
 ### Phase 2：驗證
 
-- skill 變更依 `claude/skill-building-guide.md` 與 `docs/skill-portability.md`，在 Claude 與
-  Codex 兩個 runtime、以較弱模型做改前／改後成對實驗。情境：最後一批實作完成、PR 已合併後、
-  驗收需部署驗證、fleet 部署結果。先確認 fixture 不洩題；改前沒有任何情境出現分歧就不改 skill。
-- 機械檢查先 RED 再 GREEN：milestone 長度、testing-contract 事件證據。
-- 回放：逐顆判斷 53 顆純紀錄 commit 在新規則下是否仍會產生。
-- 全套測試與 `doc-governance audit --ship`。
+1. **重寫範例**：取 Phase 0 長尾 5 筆 M 與 3 筆 D，依規則重寫（不入庫）。逐筆核對 Phase 0 的五項可還原資訊
+   是否保留，並以暫存語料比較原文與重寫版在 `doc-governance.py find` 對該主題查詢的命中名次。
+2. **成對實驗**：依 `claude/skill-building-guide.md` 與 `docs/skill-portability.md`。情境取 Phase 0 的實際形狀：
+   本地完成但 endpoint 未達、證據在暫存目錄的 milestone；使用者在編號選項中選定後的 decision；量測型
+   milestone；帶下一步的 dead end。兩臂 query 與 fixture 逐字相同，只差 dossier.md 規則段；fixture 不含規則或
+   答案。oracle 列出每情境的必寫項與禁止項，能機械判定的（暫存路徑為唯一證據、位置式引用、自創欄位、缺子項、
+   授權聲明字樣）以腳本判，其餘以盲評。先在 Sonnet 上取得改前分歧（RED）；任一情境改前無分歧，對應規則不加。
+   之後在 Claude Code `opus[1m]` 與 Codex production model 正式驗收，記錄 alias、resolved model、effort 與 CLI 版本。
+   情境寫進 `shared/skills/project/references/pressure-tests.md`。
+3. **dotfiles 機檢**：`tests/content-checks.py` 對生效後新增的紀錄檢查可機械判定的規則；生效判定以實作當下
+   既有紀錄 ID 的固定清單排除舊紀錄（清單只減不增，任何新增都在 diff 中可見），不依 ID 日期，避免補寫的舊日期
+   紀錄被豁免。先以違規 fixture 取得 RED。
+4. **testing-contract**：約 25 處事件證據改為規則加一句理由，以 ID 指向紀錄；其中 7 處目前沒有任何紀錄，先補
+   event-time 紀錄（日期依原事件，`日期來源` 註明推得方式），再刪原文。含證據 token 的兩個 H2 改為主題標題，
+   並跑 title-free recall ratchet 與 xref audit。
+5. 全套測試與 `doc-governance audit --ship`。
 
-### Phase 3：送出與擴散
+### Phase 3：送出與觀察
 
-dotfiles PR 合併並經 dotsync 部署到各主機後，所有 repo 的 skill 同時生效；其他 repo 沒有
-檔案變更。合併後觀察 dotfiles 接下來 10 個 PR 的純紀錄 commit 與 milestone 長度。
+一個 PR；合併後經授權 dotsync。觀察 dotfiles 之後 15 筆新紀錄，並抽查一個其他 adopted repo 的新紀錄，以
+Phase 0 同一標籤判讀缺陷率。
 
-### 驗收（候選）
+### 驗收
 
-- 觀察期內不再出現只為結案或補記 merge／CI／部署結果的 commit 或 PR。
-- 生效日後的 milestone 全數不超過上限（機檢）。
-- 成對實驗：改後各情境符合期望，且改前至少一個情境有分歧。
-- Phase 0 的部署驗證與營運紀錄需求，都有對應條文或明確排除。
-
-### 已決（2026-10-11，D-20261011-record-volume-plan-choices）
-
-1. 條文 2 的部署後結案取捨，先在 Phase 2 以服務型 repo 情境驗證再定案。
-2. milestone 長度上限 1,500 B。
-3. testing-contract 既有 17 行事件證據本批清除，整份納入機檢。
-4. 實作前以 deep-plan 審查本計畫。
-
-上列第 2 項的 1,500 B 上限已撤下（D-20261011-record-rules-before-size-cap）：第 3 項改為定義紀錄規則，
-順序改為先做第 4 項量測。
+1. dossier.md 的規則段含四類規則，每條對應 Phase 0 的缺陷；Phase 2 成對實驗改前有分歧、改後兩端正式驗收通過。
+2. 重寫範例保留五項可還原資訊，`find` 命中名次不退步。
+3. dotfiles 機檢先紅後綠，舊紀錄以固定清單豁免。
+4. testing-contract 只剩規則與一句理由；被移出的證據都有對應紀錄；recall ratchet 與 xref 通過。
+5. 全套測試、`doc-governance audit --ship` 通過；dossier.md 增加的 bytes 與讀取成本列入報告。
 
 ## 第 4 項：端到端量測（2026-10-11，進行中）
 
