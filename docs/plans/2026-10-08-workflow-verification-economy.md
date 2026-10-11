@@ -95,9 +95,18 @@ D-20260917-terminal-macbooks-outside-inventory、X-20260823-retrieval-idf-and-h3
 3. **dotfiles 機檢**：`tests/content-checks.py` 對生效後新增的紀錄檢查可機械判定的規則；生效判定以實作當下
    既有紀錄 ID 的固定清單排除舊紀錄（清單只減不增，任何新增都在 diff 中可見），不依 ID 日期，避免補寫的舊日期
    紀錄被豁免。先以違規 fixture 取得 RED。
-4. **testing-contract**：約 25 處事件證據改為規則加一句理由，以 ID 指向紀錄；其中 7 處目前沒有任何紀錄，先補
-   event-time 紀錄（日期依原事件，`日期來源` 註明推得方式），再刪原文。含證據 token 的兩個 H2 改為主題標題，
-   並跑 title-free recall ratchet 與 xref audit。
+4. **testing-contract**：事件證據指敘述特定一次發生的事（日期、PR／issue、run、commit、主機、該次實測結果），
+   規則、指向計畫的路徑與作為規則識別的 stable ID 不算。以 a60d20d 的行號，Phase 0 判讀的位置為：
+   - 已有 D／X／M 紀錄：131、165、171、359、477、566、584、911。
+   - 只在 2026-08 legacy 區段或 milestones 前言、不是 D／X／M：16、21、74、94、280、296、300–301、335–339、744。
+   - 部分對應：553。
+   - 沒有任何紀錄：224、373、592、595、754、764、776。
+   - 含證據 token 的標題：874（H2，#246）、921（H2，2026-10-02）、748（H3）。
+
+   實作時先以同一判準重掃確認清單（token 掃描會漏掉不帶日期或數字的敘述），再把這些位置改為規則加一句理由並以
+   ID 指向紀錄；沒有 D／X／M 的先補 event-time 紀錄（日期依原事件，`日期來源` 註明推得方式），再刪原文。兩個 H2
+   改為主題標題，跑 title-free recall ratchet 與 xref audit。不另加 testing-contract 的機檢：事件敘述無法以
+   token 可靠判定，誤報會擋下合法規則行。
 5. 全套測試與 `doc-governance audit --ship`。
 
 ### Phase 3：送出與觀察
