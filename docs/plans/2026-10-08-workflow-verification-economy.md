@@ -168,14 +168,20 @@ A 7/23、B 1/24。dotfiles 2026-08 起改 archive 的 252 個 commit 作者都�
 transcript，Claude 舊 transcript 有缺；compaction 標記不等於規則內容遺失；B 組多為 10 月長 session，可能混雜；
 單一判讀者、樣本小，只作方向證據。
 
+**紀錄中的 commit 指標存活率**（2026-10-11，dotfiles 2026 年 shard 中反引號內、長度 7–12 或 40 且含 a–f 的
+十六進位字串，共 66 個）：在 `origin/main` 上 26 個（39%）；不在 main 但 GitHub commits API 仍查得到 27 個（41%，
+只靠 PR 保存）；GitHub 已查不到 13 個（20%，其中 5 個只存在本機）。主因是紀錄在 feature branch 當下引用該 branch
+的 commit，rebase／squash merge 後換成新 SHA。不帶 a–f 或其他長度的 21 個多為 run ID 或 agent ID，未計入；
+以 regex 判斷 SHA 會誤認這些字串。
+
 ### Phase 1：規則（候選）
 
 | 類 | 內容 |
 |---|---|
-| 必寫 | 標題含主題詞，不以 issue 號或階段詞開頭。D：選了什麼、為什麼、適用範圍；X：試了什麼、為何放棄、證據；M：現在成立的結果與驗收證據。結果不完整時寫明範圍邊界，以肯定句描述（「只驗 Claude 端」），不用「不宣稱…」句型。決定來自使用者核定時寫明核定出處與核定的內容。證據指標須可持久查證（repo 路徑、commit、PR／issue、CI run）；暫存路徑只能附註，不能是唯一證據。四個子項都寫，無則 `none`；重議是可觀察的觸發條件。流程規定的內容（endpoint 未達成的 milestone、移交的 conditional owner decision）依該流程現行要求。 |
-| 不用寫 | 原始量測：逐次樣本、中間拆解與完整分項表；不影響結論的環境版本；40／64 位完整 hash（commit 指標用短 SHA）；只是過程描述的 CI 耗時。這些放計畫、artifact 或 PR，紀錄只寫結論數字並指向原始資料。結論數字指判斷所依據的指標值（改前／改後或門檻判定，帶單位與量測條件）；判準是拿掉該數字結論是否仍成立，仍成立就不寫。CI 耗時本身是量測指標時屬結論；會限制結論成立範圍的版本屬必寫的範圍邊界。 |
+| 必寫 | 標題含主題詞，不以 issue 號或階段詞開頭。D：選了什麼、為什麼、適用範圍；X：試了什麼、為何放棄、證據；M：現在成立的結果與驗收證據。結果不完整時寫明範圍邊界，以肯定句描述（「只驗 Claude 端」），不用「不宣稱…」句型。決定來自使用者核定時寫明核定出處與核定的內容。證據指標須可持久查證（repo 路徑、PR／issue、CI run、紀錄 ID、`commit:<sha>`；commit 只限已在 default branch 上的）；暫存路徑只能附註，不能是唯一證據。四個子項都寫，無則 `none`；重議是可觀察的觸發條件。流程規定的內容（endpoint 未達成的 milestone、移交的 conditional owner decision）依該流程現行要求。 |
+| 不用寫 | 原始量測：逐次樣本、中間拆解與完整分項表；不影響結論的環境版本；40／64 位 hash 傾倒（commit 指標用 `commit:<sha>`）；只是過程描述的 CI 耗時。這些放計畫、artifact 或 PR，紀錄只寫結論數字並指向原始資料。結論數字指判斷所依據的指標值（改前／改後或門檻判定，帶單位與量測條件）；判準是拿掉該數字結論是否仍成立，仍成立就不寫。CI 耗時本身是量測指標時屬結論；會限制結論成立範圍的版本屬必寫的範圍邊界。 |
 | 不要寫 | Writer／Steward／branch／Write Scope 等 active-state；授權過程與 session 狀態（「已具名授權」「未 push」「尚未 commit」）；session 過程敘事（使用者選了選項幾、上一輪、本批如何進行）；下一步與待辦（屬 STATUS／backlog）；同一筆塞多個獨立事件。流程規定的內容不受此列限制。 |
-| 不使用的寫法 | 位置式或相對引用（`STATUS item N`、上一輪、本批、今天）；未定義的縮寫與代碼；四個子項以外的自創欄位，移交的 conditional owner decision 亦同（誰交給誰、endpoint 與生效條件寫在正文並指向移交指南；欄位格式屬移交指南）。 |
+| 不使用的寫法 | 位置式或相對引用（`STATUS item N`、上一輪、本批、今天）；未定義的縮寫與代碼；引用本 branch 的 commit SHA（rebase／squash merge 後換新 SHA，部分永久消失；同批 commit 以 `git log -S <紀錄ID>` 找引入紀錄的 commit）；不加 `commit:` 標記的 SHA；四個子項以外的自創欄位，移交的 conditional owner decision 亦同（誰交給誰、endpoint 與生效條件寫在正文並指向移交指南；欄位格式屬移交指南）。 |
 
 每條規則都要有成對實驗情境涵蓋，否則不進 dossier.md。dotfiles 機檢擋不住機隊其他 repo，所以只是 dotfiles
 的額外防線，不能取代情境；重寫範例是教材，不算驗證。情境代號見 Phase 2 第 2 點。
@@ -198,6 +204,7 @@ transcript，Claude 舊 transcript 有缺；compaction 標記不等於規則內�
 | 位置式引用 | b | 有 |
 | 未定義縮寫 | b（fixture 帶內部代碼） | — |
 | 自創欄位 | a–d | 有 |
+| commit 指標限 default branch 並加 `commit:` | a（fixture 帶本地 commit SHA） | `commit:` 須在基準可達；未標記的疑似 SHA |
 | 寫前重讀規則段（always-on 指令） | e | — |
 
 考慮過但不立規則（每條規則都由機隊每次讀 dossier.md 永久付閱讀成本，沒有必要性的不加）：
@@ -239,10 +246,13 @@ transcript，Claude 舊 transcript 有缺；compaction 標記不等於規則內�
    通過。main 上跳過可接受，因為變更都經 PR，PR 一定有基準。先以暫存 repo 的 RED 對照取得證據：feature
    branch 新增違規紀錄為紅；同一筆違規紀錄在基準時已存在為綠；CI 環境無基準為紅。自創欄位檢查不設允許清單
    （清單會讓任何紀錄借用移交欄位），移交紀錄也只准四個子項；違規訊息說明「移交資訊寫在正文，欄位格式屬於
-   移交指南」，避免寫入者為過檢刪掉流程要求的內容。
+   移交指南」，避免寫入者為過檢刪掉流程要求的內容。另檢查 `commit:<sha>` 在基準 commit 可達（PR 中即 merge-base
+   之前），本 branch 的 commit 判違規；未加標記的疑似 SHA（同 testing-contract 判準）判違規，訊息請寫入者改用
+   `commit:` 或改寫。
 4. **testing-contract**：事件證據指敘述特定一次發生的事（日期、PR／issue、run、commit、主機、該次實測結果），
    規則、指向計畫的路徑與作為規則識別的 stable ID 不算。以 a60d20d 的行號，Phase 0 判讀的位置為：
    - 已有 D／X／M 紀錄：131、165、171、359、477、566、584、911。
+   - 以 issue 號作規則識別：892（#240、#229），與 477 同樣改指 stable ID。
    - 只在 2026-08 legacy 區段或 milestones 前言、不是 D／X／M：16、21、74、94、280、296、300–301、335–339、744。
    - 部分對應：553。
    - 沒有任何紀錄：224、373、592、595、754、764、776。
@@ -258,9 +268,12 @@ transcript，Claude 舊 transcript 有缺；compaction 標記不等於規則內�
    改為主題標題，跑 title-free recall ratchet 與 xref audit。
 5. **testing-contract 機檢**（依 D-20261011-record-volume-plan-choices 整份機檢）：`tests/content-checks.py` 整份
    掃描 ISO 日期、`#數字`／`PR #數字` 的 PR／issue 號、run ID 與 commit SHA，排除 `docs/plans/`、`docs/archive/`
-   路徑內的字樣；清理完成後必須零命中。a60d20d 版以此規則命中 16 行，全在上列事件證據清單內，沒有命中規則行；
-   其中 477、892 行以 issue 號作規則識別、874 行為 H2，清理時改為 stable ID 或主題標題。先以含各類字樣的 fixture
-   取得 RED。同一測試另驗 testing-contract 中每個 D／X／M ID 都對應到既有紀錄（`xref_scan` 只驗檔案＋節名引用，
+   路徑內的字樣；清理完成後必須零命中。commit SHA 的判準：先剝除 `D/X/M/B-YYYYMMDD-slug` 形式的 ID，再比對前後
+   不接 `[A-Za-z0-9_-]` 的 7–40 位 `[0-9a-f]` 字串；不要求含 a–f，全數字短 SHA 也命中。a60d20d 版以 ISO 日期與
+   `#數字` 命中 17 行（21、74、94、131、171、280、296、335、359、477、566、595、776、874、892、911、921），都在上列
+   清單內；SHA 判準另只命中 577 行的 awk 範例 key `00000000000000`，清理時改寫為文字描述，規則不開例外。477、892
+   以 issue 號作規則識別、874 為 H2，清理時改為 stable ID 或主題標題。先以含各類字樣的 fixture 取得 RED，另含
+   全數字短 SHA 必須命中、紀錄 ID 不得命中兩個對照。同一測試另驗 testing-contract 中每個 D／X／M ID 都對應到既有紀錄（`xref_scan` 只驗檔案＋節名引用，
    不驗 ID；原型掃 444 筆紀錄約 4.4 ms），以打錯的 ID fixture 取得 RED。不帶字樣的事件敘述（如 224 行）沒有
    機檢；本次清理以重掃後的清單為準，之後新增的這類敘述不受機檢保護。
 6. 全套測試與 `doc-governance audit --ship`。
