@@ -283,7 +283,7 @@ if [ -x "$TET" ]; then
         | PATH="$tet_bin:$PATH" TZ=UTC TET_DATE_CALL="$tet_date_call" "$TET")"
     assert_rc "turn-end timestamp hook 成功 → exit 0" 0 $?
     assert_eq "turn-end timestamp 輸出兩端共用的有效 JSON" \
-        '{"systemMessage":"🕒 等待輸入起點：2026-09-02 16:05:06 GMT+8"}' "$tet_out"
+        '{"systemMessage":"🕒 等待輸入開始：2026-09-02 16:05:06 GMT+8"}' "$tet_out"
     if printf '%s\n' "$tet_out" | jq -e '.systemMessage | type == "string"' >/dev/null 2>&1; then
         ok "turn-end timestamp stdout 可被 hook runtime 當作 JSON 解析"
     else bad "turn-end timestamp stdout 不是有效 hook JSON：$tet_out"; fi
@@ -306,7 +306,7 @@ if [ -x "$TET" ]; then
         tet_rt_out="$(printf '%s\n' '{"hook_event_name":"Stop","last_assistant_message":"done"}' \
             | PATH="$tet_bin:$PATH" TZ=UTC TET_DATE_CALL="$tet_date_call" "$TET" "$tet_runtime")"
         assert_eq "turn-end timestamp（${tet_runtime}）輸出固定 label" \
-            '{"systemMessage":"🕒 等待輸入起點：2026-09-02 16:05:06 GMT+8"}' "$tet_rt_out"
+            '{"systemMessage":"🕒 等待輸入開始：2026-09-02 16:05:06 GMT+8"}' "$tet_rt_out"
         if [ -e "$tet_py_call" ]; then bad "turn-end timestamp（${tet_runtime}）不應啟動 python3"
         else ok "turn-end timestamp（${tet_runtime}）不啟動 python3"; fi
         rm -f "$tet_bin/python3"

@@ -7,7 +7,7 @@ exec 2>/dev/null
 
 # Both runtimes send one JSON object on stdin. Consume it without echoing any
 # conversation content, then emit the shared structured hook response.
-label='等待輸入起點'
+label='等待輸入開始'
 cat >/dev/null || true
 timestamp=$(TZ=Etc/GMT-8 date '+%Y-%m-%d %H:%M:%S GMT+8') || exit 0
 [ -n "$timestamp" ] || exit 0
