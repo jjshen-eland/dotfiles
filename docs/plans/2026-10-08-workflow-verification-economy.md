@@ -170,9 +170,13 @@ krepo-judicial M 的 active-state 內容 5/8；暫存路徑與重議寫成下一
    帶日期的（595、776）以原文日期標 `日期來源:migration-entry`；無日期的（224、373、592、754、764）以搬遷當天
    日期寫進標題，標 `migration-cutover`。只在 2026-08 legacy 區段或 milestones 前言的位置已在 history store、
    `find` 查得到，改指向該處，不另建紀錄。搬完再刪原文。兩個 H2
-   改為主題標題，跑 title-free recall ratchet 與 xref audit。不另加 testing-contract 的機檢：事件敘述無法以
-   token 可靠判定，誤報會擋下合法規則行。
-5. 全套測試與 `doc-governance audit --ship`。
+   改為主題標題，跑 title-free recall ratchet 與 xref audit。
+5. **testing-contract 機檢**（依 D-20261011-record-volume-plan-choices 整份機檢）：`tests/content-checks.py` 整份
+   掃描 ISO 日期、`#數字`／`PR #數字` 的 PR／issue 號、run ID 與 commit SHA，排除 `docs/plans/`、`docs/archive/`
+   路徑內的字樣；清理完成後必須零命中。a60d20d 版以此規則命中 16 行，全在上列事件證據清單內，沒有命中規則行；
+   其中 477、892 行以 issue 號作規則識別、874 行為 H2，清理時改為 stable ID 或主題標題。先以含各類字樣的 fixture
+   取得 RED。不帶字樣的事件敘述（如 224 行）不在機檢範圍，由實作後審查抽查。
+6. 全套測試與 `doc-governance audit --ship`。
 
 ### Phase 3：送出與觀察
 
@@ -184,7 +188,8 @@ Phase 0 同一標籤判讀缺陷率。
 1. dossier.md 的規則段含四類規則，每條對應 Phase 0 的缺陷；Phase 2 成對實驗改前有分歧、改後兩端正式驗收通過。
 2. 重寫範例保留五項可還原資訊，`find` 命中名次不退步。
 3. dotfiles 機檢先紅後綠，舊紀錄以固定清單豁免。
-4. testing-contract 只剩規則與一句理由；被移出的證據都有對應紀錄；recall ratchet 與 xref 通過。
+4. testing-contract 機檢先紅後綠、清理後零命中；計畫列出的每個位置都已改為規則加理由並指向紀錄；被移出的證據都有
+   對應紀錄；recall ratchet 與 xref 通過。
 5. 全套測試、`doc-governance audit --ship` 通過；dossier.md 增加的 bytes 與讀取成本列入報告。
 
 ## 第 4 項：端到端量測（2026-10-11，進行中）
