@@ -138,9 +138,9 @@ krepo-judicial M 的 active-state 內容 5/8；暫存路徑與重議寫成下一
 
 | 類 | 內容 |
 |---|---|
-| 必寫 | 標題含主題詞，不以 issue 號或階段詞開頭。D：選了什麼、為什麼、適用範圍；X：試了什麼、為何放棄、證據；M：現在成立的結果與驗收證據。證據指標須可持久查證（repo 路徑、commit、PR／issue、CI run）；暫存路徑只能附註，不能是唯一證據。四個子項都寫，無則 `none`；重議是可觀察的觸發條件。被取代時寫 `supersedes:<ID>`。 |
+| 必寫 | 標題含主題詞，不以 issue 號或階段詞開頭。D：選了什麼、為什麼、適用範圍；X：試了什麼、為何放棄、證據；M：現在成立的結果與驗收證據。結果不完整時寫明範圍邊界，以肯定句描述（「只驗 Claude 端」），不用「不宣稱…」句型。決定來自使用者核定時寫明核定出處與核定的內容。證據指標須可持久查證（repo 路徑、commit、PR／issue、CI run）；暫存路徑只能附註，不能是唯一證據。四個子項都寫，無則 `none`；重議是可觀察的觸發條件。被取代時寫 `supersedes:<ID>`。流程規定的內容（endpoint 未達成的 milestone、移交的 conditional owner decision）依該流程現行要求。 |
 | 不用寫 | diff、commit 清單、PR 討論與 CI 耗時等 git／GitHub 已持久保存的事實（除非它就是量測結果本身）；已在其他紀錄或計畫中的內容（引用 ID 或路徑）；原始量測、環境版本、完整 hash（放計畫或 artifact，紀錄只寫結論數字與指標）。 |
-| 不要寫 | Writer／Steward／branch／Write Scope 等 active-state；授權與 endpoint 狀態及否定式聲明（「未 push」「不宣稱」）；session 過程（使用者選了哪個選項、上一輪、本批如何進行）；下一步與待辦（屬 STATUS／backlog）；同一筆塞多個獨立事件。 |
+| 不要寫 | Writer／Steward／branch／Write Scope 等 active-state；授權過程與 session 狀態（「已具名授權」「未 push」「尚未 commit」）；session 過程敘事（使用者選了選項幾、上一輪、本批如何進行）；下一步與待辦（屬 STATUS／backlog）；同一筆塞多個獨立事件。流程規定的內容不受此列限制。 |
 | 不使用的寫法 | 位置式或相對引用（`STATUS item N`、上一輪、本批、今天）；未定義的縮寫與代碼；四個子項以外的自創欄位；與本紀錄無直接相依的長串關聯。 |
 
 ### Phase 2：驗證
