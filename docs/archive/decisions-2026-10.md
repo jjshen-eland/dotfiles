@@ -396,3 +396,8 @@
   - 放棄:全部不機檢（缺子項與本 branch commit 的損害永久且可精確判定）；恢復暫存路徑唯一證據機檢（幾乎抓不到）
   - 重議:Phase 3 觀察中暫存路徑或位置式引用的缺陷未低於規則前，且出現不誤擋的判準
   - 關聯:supersedes:D-20261011-record-rules-no-record-check 的「不做任何新增紀錄機檢」;docs/plans/2026-10-08-workflow-verification-economy.md;Issue#285
+- **D-20261012-record-checks-reverted · 2026-10-12 紀錄撰寫規則回到不做 dotfiles 新增紀錄機檢**:使用者決定撤回缺子項與引用本 branch commit 兩項機檢，#285 紀錄撰寫規則不做任何新增紀錄機檢。「本 branch commit」只涵蓋仍在 merge-base..HEAD 的 commit，amend／rebase 後的舊 SHA 與 cherry-pick 整合時 worker 的原 SHA 會放行，「可精確判定」的前提不成立；以 merge-base 為基準的機檢在 commit 後才變紅時與「已 commit 不改不刪」衝突，fixture 也缺 default branch 基準，缺子項機檢同樣受影響。規則本身與 Phase 3 的生效前後各 15 筆比較承擔這些缺陷。
+  - 日期來源:direct
+  - 放棄:保留兩項機檢（覆蓋不完整且帶出新例外）
+  - 重議:Phase 3 比較中缺子項或失效 commit 引用的缺陷未低於生效前，且出現不依 merge-base、不與 append-only 衝突的判準
+  - 關聯:supersedes:D-20261012-record-checks-two-precise;D-20261011-record-rules-no-record-check;docs/plans/2026-10-08-workflow-verification-economy.md;Issue#285
