@@ -57,7 +57,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
   4. 端到端：固定一個同規模的小改動（普通腳本加測試），量改善前後「交付指令→最終回報」的總時間與分段（開 PR 前／CI／merge／回報）；local、hosted、真實交付分開報告。
 - **Constraints**：本版驗收取代 2026-10-09 版（D-20261010-delivery-overhead-spec）。不靠降低錯誤攔截取得 GREEN；選測錯誤或空集合不得假綠。不改 `scripts/doc-governance.py` 受信任 scanner（fleet byte-identical 契約）；branch protection 與 required checks 調整需另經具名授權。claude/settings.json 的 runtime drift 不帶進 commit（dotsync／brewup 會丟棄）。item 2／4 不在本項範圍。本 Spec 未授權任何 commit、push、PR、merge 或部署。
 - **進度**：第 1、2 項已合併（M-20261011-ci-platform-matrix-merged）：全套觸發檔 201→50，controller 三模組只跑 Ubuntu，全套 PR 的 macOS job 3 分 02 秒→2 分 28 秒。測試模組 pipe-to-grep 早退偽紅已清零並合併（M-20261011-pipe-grep-herestring-local）。
-- **下一步**：等 item 5 移除 turbo 後，依 D-20261011-record-volume-scope-narrowed 修訂第 3 項計畫並重跑 deep-plan；最後量端到端。
+- **下一步**：turbo 已移除（M-20261011-turbo-retired），依 D-20261011-record-volume-scope-narrowed 修訂第 3 項計畫並重跑 deep-plan；最後量端到端。
 - **關聯**：[本項計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285; GitHub #279; PR #288; PR #298; PR #299; D-20261010-delivery-overhead-spec; D-20261010-transfer-delivery-overhead; D-20261009-ci-system-redesign; M-20261009-ci-modular-redesign-local; B-20260924-workflow-verification-economy
 
 ### 4. Setup 工具與 agent shell 環境對齊
@@ -73,29 +73,6 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **進度**：PR #297 已 rebase merge 至 `792f154`（修復 manifest stdin 消耗與未使用的 build dependencies 誤擋）；新 HEAD macOS／Ubuntu CI 3m29s／2m04s 全綠，39 個工具／shell 隔離測試通過。14 台 source 與雙端全域指引均同步此版本，core check 掃足 22 項全過。eagle03／db01／ap01／ap02／m4mini／fe01／be01 已完成 plan、限定憑證更新、apply／check／apply／check、原內容保全及 CLI probes；m4mini／be01 新增 Claude Code 2.1.295。七台 ca-certificates 活躍 opt target 均為 2026-09-25，其餘既有套件版本不變、舊憑證 keg 留存；shell 原內容／mode 與 settings hash 保留。macmini 已完成 fresh inventory、plan、apply／check／apply／check，新增 actionlint 1.7.12／ast-grep 0.50.0；92 個既有 Homebrew 套件（含 ca-certificates 2026-08-13）版本不變，雙 shell CLI probes 通過，第二次完整 snapshot 相同。
 - **下一步**：先讀 M-20261010-setup-fleet-complete，將待辦限制在歷史工具歸屬／用途核對；依已有 plan／ledger 的非秘密事實列出需使用者判定的 adopt／keep，沒有當批授權不做 SSH／更新／移除。
 - **關聯**：item 2 Runtime 目錄收斂；item 3 #285；[環境使用說明](docs/repo-guide.md)
-
-### 5. 移除 turbo skill 與其他 skill 的耦合
-
-- **Writer**：`claude:delivery-overhead`
-- **Workspace**：`branch=docs/turbo-distribution-closure`
-- **Write Scope**：shared/skills/turbo/, claude/skills/turbo/, codex/skills/turbo/, shared/skills/deep-plan/, shared/skills/deep-review/, shared/skills/project/references/ship-policy.md, shared/skills/project/references/spec-workflow.md, claude/settings.json（僅 turbo hooks）, codex/config.toml, claude/CLAUDE.md, codex/AGENTS.md, scripts/agent-turn-end-timestamp.sh, README.md, tests/, docs/plans/
-- **Dossier Steward**：`claude:delivery-overhead`
-- **寫入協調**：claude/settings.json 與 codex/config.toml 也在 item 2 的 Write Scope；item 2 的遷移目前停止且同一 writer，本項只改 turbo hooks。tests/、shared/skills/project/、review-control.py、review-state.py 也在 item 3 的 Write Scope；item 3 排在本項之後（D-20261011-record-volume-scope-narrowed）。claude/CLAUDE.md、codex/AGENTS.md、README.md、tests/ 也在 item 4 的 Write Scope，item 4 目前只剩工具歸屬核對、不改這些檔。三項依序進行，不平行寫入。
-- **Context**：turbo（2026-10-06 加入，D-20261005-turbo-delegated-controller）以 session 為單位自主跑完審查到交付。本機 session 紀錄只有 1 次真實使用（Codex，2026-10-06），Claude Code 為 0；其他主機未量。它滲進 31 個檔：deep-plan／deep-review 的 controller 程式與 references、project 的 ship-policy 與 spec-workflow、Claude／Codex 各 7 個 hooks、兩份全域指令。使用者判斷這些配合讓其他 skill 變複雜，決定移除。
-- **Goal**：移除 turbo skill，其他 skill、hooks、全域指令與測試不再依賴或提及 turbo；依散佈步驟執行 ensure-runtime 並重開 session 的主機不再有 turbo hooks 或 skill；未重開或只 pull 的主機的修復方式明列（D-20261011-turbo-direct-deletion）。
-- **Acceptance Criteria**：
-  1. 三棵樹的 turbo skill 與其專屬測試移除；以 `git grep -il turbo` 檢查 tracked 檔，排除 docs/archive 後只剩 STATUS.md 與 docs/plans/。
-  2. deep-plan `review-state.py` 與 deep-review `review-control.py` 移除 turbo checkpoint、`consume_request`、`delegated-reentry`、`refresh-subject`；`native-review` 子命令與 `native-review.py` 移除（D-20261011-turbo-retirement-choices）；primary-scope eval 保留 Codex 與 Claude 兩臂，Codex 收集移入 eval、schema 搬到 tests/fixtures，假 codex transport 測試守住 incomplete report 保留。對應 references 與 project 的 ship-policy、spec-workflow 移除 turbo 分支。非 turbo 路徑的既有測試全數照過；被移除的子命令經 argparse 判為 invalid choice（exit 2）。
-  3. claude/settings.json 與 codex/config.toml 移除 turbo hooks；實作在獨立 worktree 進行，commit 不含主 checkout 的 runtime drift，並以乾淨 clone 驗證 settings JSON 合法、7 組 turbo hook 已移除。以臨時 HOME 證明 `ensure-codex-config.py` 會清掉既有主機設定中的 turbo hooks 並保留其他 hooks。`~/.claude/skills/turbo`、`~/.agents/skills/turbo` 殘留連結在獲授權的散佈步驟逐台刪除，只刪指向 dotfiles 的 symlink。
-  4. 一批刪除，含 turbo-state.py（D-20261011-turbo-direct-deletion）。散佈經授權：dotsync、逐台刪殘留連結、確認 Codex 設定不含 turbo 腳本路徑、重開各主機 session；agent 只 merge 與刪 remote branch，使用者關閉本機所有 session 後於終端機丟棄 settings drift、pull、跑 ensure-runtime.sh、刪殘留連結再開新 session。inventory 外終端不列結案條件，結案回報時提醒其本機更新路徑（D-20261011-out-of-inventory-reminder-only）。
-  5. claude/CLAUDE.md 與 codex/AGENTS.md 的 turbo 委任行移除，kernel managed block 不變；README、tests/suites.json 路由與 guidance／session 測試同步。
-  6. 全套測試與 `doc-governance audit --ship` 通過。
-- **Constraints**：本 Spec 只授權寫 active contract，不授權 commit、push、PR、merge、dotsync 或任何主機操作。歷史紀錄 append-only 不改；docs/plans/2026-10-05-turbo-skill.md 已凍結不改，退役以新紀錄說明。claude/settings.json 的 runtime drift 不帶進 commit；未經權威 repo 修改並 push 的 drift 會在 dotsync／brewup 時丟棄，本機合併前依同樣做法丟棄。實作前先寫計畫並以 deep-plan 審查。
-- **進度**：2026-10-11 於 worktree 完成實作（D-20261011-turbo-retired）：三組 RED 轉綠、eval 兩臂與 schema 搬移、臨時 HOME 驗證 Codex 設定清除 7 個 turbo hook 且保留其他 hooks 與專案信任、刪除實驗確認 eval／schema 只由 review-skill 讀取。title-free recall ratchet 一度 6→5（本批決策紀錄把 canonical evals 擠出前 5 名、只剩 symlink 別名），改為以實體路徑判命中後回到 6/10（D-20261011-recall-alias-canonical）。
-- **審查**：deep-review full（3 位 fresh reviewer）PASS，0 阻斷；4 條 low 依使用者指示全修，各有先紅後綠測試與突變驗證：升級前以 native transport 派出的 ticket 在 `finish` 拒收、eval 移除無讀取者的 reviewer 標記並改斷言 `-a never`／`-s read-only`、eval 中斷時停止 reviewer process group 並關閉 attempt、evals.md 措辭。
-- **散佈**：PR #304 依使用者指示 rebase merge 至 `e6b4376`，remote 與本地 branch 已清。經授權 dotsync 後，inventory 內 13 台遠端主機皆在 `e6b4376`；逐台只刪除指向 dotfiles 的兩個殘留連結；Codex 設定與 Claude settings 的 turbo 計數皆為 0；這些主機沒有執行中的 tmux session。本機切換由使用者在關閉所有 session 後於終端機執行。
-- **下一步**：使用者完成本機切換、開新 session 後，確認本機在 `e6b4376` 以上、兩個連結不存在、turbo 計數為 0、無 hook 錯誤，即寫 milestone 結案。結案回報提醒 inventory 外終端恢復使用時跑 brewup 並重開 session。
-- **關聯**：D-20261005-turbo-delegated-controller；D-20261010-ci-controller-platform-evidence；item 2；item 3
 
 ## 暫停中
 
@@ -119,6 +96,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - 「CI controller 靜態重分配本地採用（#279）」的結案契約與驗收：[M-20261008-ci-controller-core-local](docs/archive/milestones-2026-10.md)；hosted 效能仍待具名交付授權後驗證。
 - 「brewup 自動更新 bun 全域套件」的本地結案契約與驗收：[M-20261008-brewup-bun-global-update-local](docs/archive/milestones-2026-10.md)；已完成本批本地來源，尚未取得 push／PR／merge／部署授權。
 - legacy dead-end 的完整推導與實驗證據：`docs/dead-ends.md`「分工」。
+- 「移除 turbo skill 與其他 skill 的耦合」的結案與散佈結果：[M-20261011-turbo-retired](docs/archive/milestones-2026-10.md)；計畫 `docs/plans/2026-10-11-turbo-retirement.md` 已凍結。
 - 無路徑線索時執行 `scripts/doc-governance.py find '自然語言問題或 stable ID'`；人工 pointer 不作為可檢索性的代理。
 
 ## 待辦入口
