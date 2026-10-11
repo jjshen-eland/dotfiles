@@ -62,6 +62,9 @@ D-20261011-delivery-measurement-next-targets）。第 4 項量測顯示寫紀錄
   對應情境）與移交時的 conditional owner decision（`transfer-workflow.md`、`dossier.md`「平行協作與
   stewardship」、`templates/transfer-guide-template.md`）。規則寫明以這些流程為準，並列為第 6 項流程簡化的相依，
   不是永久例外；實作時核對這些檔與規則段沒有互相矛盾，成對實驗不以相反的 oracle 判分。
+  `transfer-workflow.md` 只要求追加 conditional owner `D-*` record 並以 ID 定位，未規定欄位格式；
+  `templates/transfer-guide-template.md` 的 Current steward 等欄位屬移交指南。保留的是流程要求的內容，不是
+  D-20261010-transfer-delivery-overhead 把指南欄位複製成子項的慣例。
 - 寫入協調：`shared/skills/project/`、`tests/`、`docs/testing-contract.md`、`claude/CLAUDE.md`、`codex/AGENTS.md`
   在本項 Write Scope；item 4 的 Write Scope 也含這些路徑中的後四者，但其現行下一步只做工具歸屬核對、不改這些檔，
   兩項依序進行。
@@ -172,7 +175,7 @@ transcript，Claude 舊 transcript 有缺；compaction 標記不等於規則內�
 | 必寫 | 標題含主題詞，不以 issue 號或階段詞開頭。D：選了什麼、為什麼、適用範圍；X：試了什麼、為何放棄、證據；M：現在成立的結果與驗收證據。結果不完整時寫明範圍邊界，以肯定句描述（「只驗 Claude 端」），不用「不宣稱…」句型。決定來自使用者核定時寫明核定出處與核定的內容。證據指標須可持久查證（repo 路徑、commit、PR／issue、CI run）；暫存路徑只能附註，不能是唯一證據。四個子項都寫，無則 `none`；重議是可觀察的觸發條件。流程規定的內容（endpoint 未達成的 milestone、移交的 conditional owner decision）依該流程現行要求。 |
 | 不用寫 | 原始量測：逐次樣本、中間拆解與完整分項表；不影響結論的環境版本；40／64 位完整 hash（commit 指標用短 SHA）；只是過程描述的 CI 耗時。這些放計畫、artifact 或 PR，紀錄只寫結論數字並指向原始資料。結論數字指判斷所依據的指標值（改前／改後或門檻判定，帶單位與量測條件）；判準是拿掉該數字結論是否仍成立，仍成立就不寫。CI 耗時本身是量測指標時屬結論；會限制結論成立範圍的版本屬必寫的範圍邊界。 |
 | 不要寫 | Writer／Steward／branch／Write Scope 等 active-state；授權過程與 session 狀態（「已具名授權」「未 push」「尚未 commit」）；session 過程敘事（使用者選了選項幾、上一輪、本批如何進行）；下一步與待辦（屬 STATUS／backlog）；同一筆塞多個獨立事件。流程規定的內容不受此列限制。 |
-| 不使用的寫法 | 位置式或相對引用（`STATUS item N`、上一輪、本批、今天）；未定義的縮寫與代碼；四個子項以外的自創欄位。 |
+| 不使用的寫法 | 位置式或相對引用（`STATUS item N`、上一輪、本批、今天）；未定義的縮寫與代碼；四個子項以外的自創欄位，移交的 conditional owner decision 亦同（誰交給誰、endpoint 與生效條件寫在正文並指向移交指南；欄位格式屬移交指南）。 |
 
 每條規則都要有成對實驗情境涵蓋，否則不進 dossier.md。dotfiles 機檢擋不住機隊其他 repo，所以只是 dotfiles
 的額外防線，不能取代情境；重寫範例是教材，不算驗證。情境代號見 Phase 2 第 2 點。
@@ -234,7 +237,9 @@ transcript，Claude 舊 transcript 有缺；compaction 標記不等於規則內�
    檢查；不依 ID 日期，補寫的舊日期紀錄同樣受檢，也不維護 ID 清單（清單本身會成為旁路）。CI 為完整歷史
    （`.github/workflows/test.yml` 的 `fetch-depth: 0`）；找不到基準時本機印出跳過說明，CI 上判失敗，不靜默
    通過。main 上跳過可接受，因為變更都經 PR，PR 一定有基準。先以暫存 repo 的 RED 對照取得證據：feature
-   branch 新增違規紀錄為紅；同一筆違規紀錄在基準時已存在為綠；CI 環境無基準為紅。
+   branch 新增違規紀錄為紅；同一筆違規紀錄在基準時已存在為綠；CI 環境無基準為紅。自創欄位檢查不設允許清單
+   （清單會讓任何紀錄借用移交欄位），移交紀錄也只准四個子項；違規訊息說明「移交資訊寫在正文，欄位格式屬於
+   移交指南」，避免寫入者為過檢刪掉流程要求的內容。
 4. **testing-contract**：事件證據指敘述特定一次發生的事（日期、PR／issue、run、commit、主機、該次實測結果），
    規則、指向計畫的路徑與作為規則識別的 stable ID 不算。以 a60d20d 的行號，Phase 0 判讀的位置為：
    - 已有 D／X／M 紀錄：131、165、171、359、477、566、584、911。
