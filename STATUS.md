@@ -53,11 +53,11 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **Acceptance Criteria**：
   1. CI 路由：`docs/testing-contract.md` 等說明文件走 content；`tests/<x>.py` 與 `scripts/*` 對應到擁有它的模組；只有 runner／workflow／共用 lib 或無法解析的路徑才跑全套。漏選、未知路徑、新增／刪除／rename 先有 RED controls 再 GREEN；以近 8 次 PR 的實際 diff 重放，列出每次選中的模組，非 runner 類改動不再全套。
   2. 平台矩陣：以行為證據（例如兩平台結果一致、程式沒有平台分支）證明上述 controller 模組平台無關後，只在 Ubuntu 跑；macOS 保留平台敏感模組，required check 名稱不變。普通腳本改動的最慢 job 有 hosted before／after。
-  3. 紀錄減量（dotfiles 專屬，D-20261011-record-volume-scope-narrowed）：milestone 每筆不超過 1,500 B，由 repo 測試檢查生效後的新紀錄；docs/testing-contract.md 只寫規則與一句理由，既有事件證據移入 D／M 紀錄（缺的先補）並整份機檢。生效判定方式與 decision 是否納入在計畫定義。不改全機隊共用的 skill 條文。
-  4. 端到端：固定一個同規模的小改動（普通腳本加測試），量改善前後「交付指令→最終回報」的總時間與分段（開 PR 前／CI／merge／回報）；local、hosted、真實交付分開報告。
+  3. 紀錄規則（D-20261011-record-rules-before-size-cap，取代 1,500 B 上限）：定義 D／X／M 紀錄的規則、內容格式、必要資訊與書寫原則，並以既有長紀錄的重寫範例驗證規則足以保留可追溯資訊、title-free recall 不退步；長度上限只在第 4 項量測顯示紀錄撰寫是明顯成本時，由重寫範例推出。docs/testing-contract.md 只寫規則與一句理由，既有事件證據移入 D／M 紀錄（缺的先補）。規則放 dotfiles 專屬位置或全機隊共用的 skill 條文，待量測後在計畫決定。
+  4. 端到端（先做）：固定一個同規模的小改動（普通腳本加測試），量改善前後「交付指令→最終回報」的總時間與分段（開 PR 前／紀錄撰寫／CI／merge／回報）；local、hosted、真實交付分開報告。另以既有 session 紀錄回溯真實交付的同一分段，量紀錄撰寫佔比。
 - **Constraints**：本版驗收取代 2026-10-09 版（D-20261010-delivery-overhead-spec）。不靠降低錯誤攔截取得 GREEN；選測錯誤或空集合不得假綠。不改 `scripts/doc-governance.py` 受信任 scanner（fleet byte-identical 契約）；branch protection 與 required checks 調整需另經具名授權。claude/settings.json 的 runtime drift 不帶進 commit（dotsync／brewup 會丟棄）。item 2／4 不在本項範圍。本 Spec 未授權任何 commit、push、PR、merge 或部署。
 - **進度**：第 1、2 項已合併（M-20261011-ci-platform-matrix-merged）：全套觸發檔 201→50，controller 三模組只跑 Ubuntu，全套 PR 的 macOS job 3 分 02 秒→2 分 28 秒。測試模組 pipe-to-grep 早退偽紅已清零並合併（M-20261011-pipe-grep-herestring-local）。
-- **下一步**：turbo 已移除（M-20261011-turbo-retired），依 D-20261011-record-volume-scope-narrowed 修訂第 3 項計畫並重跑 deep-plan；最後量端到端。
+- **下一步**：先做第 4 項端到端量測：回溯既有 session 的真實交付分段（唯讀），再做固定小改動的 local／hosted 前後比較；真實交付需另經 PR／merge 授權。量測後依結果定第 3 項的規則範圍與是否需要長度上限，修訂計畫並視影響面決定是否跑 deep-plan。
 - **關聯**：[本項計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285; GitHub #279; PR #288; PR #298; PR #299; D-20261010-delivery-overhead-spec; D-20261010-transfer-delivery-overhead; D-20261009-ci-system-redesign; M-20261009-ci-modular-redesign-local; B-20260924-workflow-verification-economy
 
 ### 4. Setup 工具與 agent shell 環境對齊
