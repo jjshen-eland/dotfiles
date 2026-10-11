@@ -386,3 +386,8 @@
   - 放棄:改寫原紀錄（已 commit 紀錄不改不刪）
   - 重議:none
   - 關聯:D-20261011-record-volume-plan-choices;D-20261011-record-volume-scope-narrowed;D-20261011-turbo-retirement-choices;D-20261011-turbo-direct-deletion;D-20261011-primary-scope-eval-cross-runtime;D-20261011-turbo-plan-nogo-proceed;D-20261011-turbo-retired;D-20261011-recall-alias-canonical;D-20261011-out-of-inventory-reminder-only;D-20261011-record-rules-before-size-cap;D-20261011-delivery-measurement-next-targets;M-20261011-ci-platform-matrix-merged
+- **D-20261011-record-rules-no-record-check · 2026-10-11 紀錄撰寫規則不做 dotfiles 新增紀錄機檢**:使用者決定 #285 紀錄撰寫規則只寫在 project skill 的 dossier.md，以成對實驗逐條決定是否採用、送出後以實際新紀錄的缺陷率判斷是否有效；dotfiles 不另對新增紀錄做撰寫規則機檢。原設計（自創欄位、位置式引用、四子項、commit 標記、疑似 SHA）經 deep-plan 審查，每補一個例外就出現新的旁路或誤擋：全數字 CI run ID 與跨 repo commit 被判成 SHA、搬移標記可自我宣告繞過、未採用的規則仍由機檢擋人。機隊其他 repo 本來就只有 dossier.md 的規則。保留 testing-contract 整份事件字樣檢查與紀錄 ID 存在檢查，範圍是單一檔案、判準已在該檔逐行查核。
+  - 日期來源:direct
+  - 放棄:dotfiles 新增紀錄撰寫規則機檢（例外與旁路持續增加，且只保護 dotfiles）
+  - 重議:送出後觀察的新紀錄中，某條可機械判定的規則缺陷率未低於規則前，且該缺陷能以不誤擋合法證據的判準辨識
+  - 關聯:D-20261011-record-rules-fleet-wide;D-20261011-record-volume-plan-choices;docs/plans/2026-10-08-workflow-verification-economy.md;Issue#285
