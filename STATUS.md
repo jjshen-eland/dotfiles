@@ -46,7 +46,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 - **Writer**：`claude:delivery-overhead`
 - **Workspace**：`branch=perf/delivery-overhead-verification`
-- **Write Scope**：tests/, shared/skills/project/, shared/skills/deep-review/scripts/review-control.py, shared/skills/deep-plan/scripts/review-state.py, AGENTS.md, docs/testing-contract.md, docs/document-governance.md, .github/workflows/test.yml
+- **Write Scope**：tests/, shared/skills/project/, shared/skills/deep-review/scripts/review-control.py, shared/skills/deep-plan/scripts/review-state.py, AGENTS.md, docs/testing-contract.md, docs/document-governance.md, .github/workflows/test.yml, claude/CLAUDE.md, codex/AGENTS.md
 - **Dossier Steward**：`claude:delivery-overhead`
 - **Context**：2026-10-10 唯讀診斷：小改動交付的最大段是指令到開 PR（#286／#288 約 590 秒），PR 到 merge 約 3–7 分鐘。CI 近 8 次有 7 次退回全套，其中 5 次因 `docs/testing-contract.md` 未路由；414 個 tracked 檔有 201 個未路由，含模組自己的測試檔。macOS 全套的關鍵路徑是平台無關的 deep-plan／review-controller／ship-state／turbo（各 91–116 秒）。紀錄成本：兩週內 STATUS.md 改 111 次，近 40 個 commit 有 15 個只改紀錄，包含獨立補記 PR（#288、#298）。模組化選測的前段成果見 M-20261009-ci-modular-redesign-local。
 - **Goal**：降低小幅變更從交付指令到最終回報的完整耗時：CI 只跑受影響且必要的模組與平台，交付流程不再為紀錄本身多產生 commit、PR 或長篇文字。
