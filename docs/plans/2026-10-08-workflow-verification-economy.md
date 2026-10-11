@@ -36,7 +36,9 @@ D-20261011-delivery-measurement-next-targets）。第 4 項量測顯示寫紀錄
 ### 範圍與放置
 
 - 規則寫在 `shared/skills/project/references/dossier.md`「記錄時機與 record schema」，改寫該節既有內容，不另開
-  平行章節或新 reference；Claude 與 Codex 的 project skill 都連到 shared core，dotsync 後所有使用 `/project`／
+  平行章節或新 reference。改寫前逐條列出該節現有規定（`record-path` 用法、不得以 archive batch date 代填、已
+  commit 不改不刪與 `supersedes`、backlog `B-*` 生命週期、record 範本），改寫後在實作 PR 描述附逐條對照表：每條原
+  規定在新版的位置，刻意修改者寫原因，無原因消失為 0；不另寫鎖定文字的測試。Claude 與 Codex 的 project skill 都連到 shared core，dotsync 後所有使用 `/project`／
   `$project` 的 repo 同時生效，其他 repo 沒有檔案變更。
 - dossier.md 在 Log 結案階段必讀（目前 10,900 B），讀規則文件已佔交付時間約 14%（第 4 項）；本項新增內容以
   表格精簡呈現，並在 Phase 2 量測增加的讀取 bytes。
@@ -286,7 +288,7 @@ Phase 0 同一標籤判讀缺陷率。
 ### 驗收
 
 1. dossier.md 的規則段含四類規則，每條對應 Phase 0 的缺陷並有 Phase 1 對照表的情境涵蓋；每條規則在 Phase 2
-   五戰三勝判定有分歧（逐條，不以情境代判），改後兩端正式驗收通過。
+   五戰三勝判定有分歧（逐條，不以情境代判），改後兩端正式驗收通過；該節原有規定的逐條對照表無原因消失為 0。
 2. 重寫範例保留五項可還原資訊，`find` 命中名次不退步。
 3. dotfiles 機檢的三個 RED 對照（新增違規紅、基準已存在綠、CI 無基準紅）先紅後綠。
 4. testing-contract 機檢（字樣與 ID 存在）先紅後綠、清理後零命中；重掃確認後清單的每個位置都已改為規則加理由並
