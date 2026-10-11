@@ -6,7 +6,7 @@
 - 種類：implementation
 - Writer／Dossier Steward：`claude:delivery-overhead`（2026-10-10 經 PR #299 移交生效，見 D-20261010-transfer-delivery-overhead）
 - Workspace：`branch=perf/delivery-overhead-verification`
-- 當前工作基線：`1f0d96729dc7d9769b9f356245408393b0e4e649`（PR #290 合併後）；重啟 spec 基線為 `d0a4624`（PR #289 完整退版後），原始基線 `92dc1b9c6e6a836146606d3cee12edd2505ecef6` 僅供歷史重現。
+- 當前工作基線：第 3 項以 origin/main `0333be3` 與本 branch 的 `a60d20d` 為準；先前基線 `1f0d96729dc7d9769b9f356245408393b0e4e649`（PR #290 合併後）；重啟 spec 基線為 `d0a4624`（PR #289 完整退版後），原始基線 `92dc1b9c6e6a836146606d3cee12edd2505ecef6` 僅供歷史重現。
 - 需求來源：[GitHub #285](https://github.com/jjshen-eland/dotfiles/issues/285)、[GitHub #279](https://github.com/jjshen-eland/dotfiles/issues/279)。2026-10-09 使用者重新要求診斷並明示 `$project spec`，確認前任停止，由本 session 接續 `codex:brewup-bun-global-update`；本輪只寫 spec，過去交付授權不沿用。
 
 **目前有效規格（2026-10-10）**：驗收改為 CI 路由補齊、平台無關 controller 只跑 Ubuntu、
@@ -189,7 +189,7 @@ transcript，Claude 舊 transcript 有缺；compaction 標記不等於規則內�
 | 必寫 | 標題含主題詞，不以 issue 號或階段詞開頭。D：選了什麼、為什麼、適用範圍；X：試了什麼、為何放棄、證據；M：現在成立的結果與驗收證據。結果不完整時寫明範圍邊界，以肯定句描述（「只驗 Claude 端」），不用「不宣稱…」句型。決定來自使用者核定時寫明核定出處與核定的內容。證據指標須可持久查證（repo 路徑、PR／issue、CI run、紀錄 ID、commit；commit 只限已在該 repo default branch 上的，跨 repo 時寫明 repo）；暫存路徑只能附註，不能是唯一證據。四個子項都寫，無則 `none`；重議是可觀察的觸發條件。流程規定的內容（endpoint 未達成的 milestone、移交的 conditional owner decision）依該流程現行要求。 |
 | 不用寫 | 原始量測：逐次樣本、中間拆解與完整分項表；不影響結論的環境版本；40／64 位 hash 傾倒；只是過程描述的 CI 耗時。這些放計畫、artifact 或 PR，紀錄只寫結論數字並指向原始資料。結論數字指判斷所依據的指標值（改前／改後或門檻判定，帶單位與量測條件）；判準是拿掉該數字結論是否仍成立，仍成立就不寫。CI 耗時本身是量測指標時屬結論；會限制結論成立範圍的版本屬必寫的範圍邊界。 |
 | 不要寫 | Writer／Steward／branch／Write Scope 等 active-state；授權過程與 session 狀態（「已具名授權」「未 push」「尚未 commit」）；session 過程敘事（使用者選了選項幾、上一輪、本批如何進行）；下一步與待辦（屬 STATUS／backlog）；同一筆塞多個獨立事件。流程規定的內容不受此列限制。 |
-| 不使用的寫法 | 位置式或相對引用（`STATUS item N`、上一輪、本批、今天）；未定義的縮寫與代碼；引用本 branch 的 commit SHA（rebase／squash merge 後換新 SHA，部分永久消失；同批 commit 以 `git log --reverse -S <紀錄ID> -- docs/archive/` 的第一筆 找引入紀錄的 commit）；四個子項以外的自創欄位（scanner `find` 支援的選用子項 `別名`、`標籤` 不算自創），移交的 conditional owner decision 亦同（誰交給誰、endpoint 寫在正文；生效條件即本紀錄所在 commit 到達 endpoint，以 `git log --reverse -S <紀錄ID> -- docs/archive/` 的第一筆 定位，不另寫指標；移交指南在移交後退役，不作為指標）。 |
+| 不使用的寫法 | 位置式或相對引用（`STATUS item N`、上一輪、本批、今天）；未定義的縮寫與代碼；引用本 branch 的 commit SHA（rebase／squash merge 後換新 SHA，部分永久消失；同批 commit 以 `git log --reverse -S <紀錄ID> -- docs/archive/` 的第一筆 找引入紀錄的 commit；紀錄在 Log commit 才寫入時，找到的是 Log commit，實作 commit 由同一 PR 取得）；四個子項以外的自創欄位（scanner `find` 支援的選用子項 `別名`、`標籤` 不算自創），移交的 conditional owner decision 亦同（誰交給誰、endpoint 寫在正文；生效條件即本紀錄所在 commit 到達 endpoint，以 `git log --reverse -S <紀錄ID> -- docs/archive/` 的第一筆 定位，不另寫指標；移交指南在移交後退役，不作為指標）。 |
 
 現行規則與新增規則分開：現行 dossier.md 已規定的（四個子項都寫、`重議`與`關聯`無則 `none`、重議為可觀察條件，
 及上列該節現有規定）照舊保留，不跑 RED，改前一臂本來就有；`放棄`無則 `none` 現行範本沒有，屬新增規則。新增
@@ -241,7 +241,8 @@ transcript，Claude 舊 transcript 有缺；compaction 標記不等於規則內�
    兩臂的 dossier.md 由隔離 HOME 供給：每臂的 `~/.claude/skills`、`~/.agents/skills` 指向該臂版本的 project skill
    副本，不經使用者 HOME 的 symlink（它指向主 checkout，worktree 實作時會讀到舊版）。Claude 端沿用
    `claude/evals/contract-evals.md` 的既有做法（`HOME`／`CLAUDE_CONFIG_DIR` 隔離，credential 以 symlink 暫借）；
-   Codex 端沒有先例，先實測 `CODEX_HOME` 隔離下能登入並讀到該臂的 always-on 檔，不可行時在專用 worktree 依序切換
+   Codex 端可參考 `claude/evals/contract-evals.md` 的 `exec --ignore-user-config` 加 credential 暫借做法，沒有
+   `CODEX_HOME` 隔離先例，先實測隔離下能登入並讀到該臂的 always-on 檔，不可行時在專用 worktree 依序切換
    版本執行，並記錄採用的方式。
    a–d 兩臂 query 與 fixture 逐字相同，只差 dossier.md 規則段；fixture 不含規則或答案。oracle 列出每情境的必寫項與
    禁止項，沒有語意歧義的（暫存路徑為唯一證據、位置式引用、自創欄位、缺子項、`#數字` 開頭標題）以腳本判，其餘
@@ -275,13 +276,14 @@ transcript，Claude 舊 transcript 有缺；compaction 標記不等於規則內�
    - 含證據 token 的標題：874（H2，#246）、921（H2，2026-10-02）、748（H3）。
 
    實作時先以同一判準重掃確認清單（token 掃描會漏掉不帶日期或數字的敘述），再把這些位置改為規則加一句理由並以
-   ID 指向紀錄。沒有任何紀錄的位置逐處寫成一筆新紀錄。testing-contract 的散文不是 legacy history entry，不適用 rollout 的
+   ID 指向紀錄。沒有任何紀錄的位置依下述日期規則寫成新紀錄。testing-contract 的散文不是 legacy history entry，不適用 rollout 的
    「NEVER distill, reword」；新紀錄依本項規則撰寫，內容由搬移對照表核對不遺失。日期：原文帶日期的
-   （595、776）以原文日期寫 `日期來源:direct`。無日期的（224、373、592、754、764）事件日期不明，依 dossier.md
-   「不可拿 archive batch date 代填」不能寫 `direct`；改用 `docs/doc-governance-rollout.md`「2. history 遷移」為
-   日期不明定義的 `migration-cutover`，以寫入當天日期作 ID 與標題日期，正文註明「改寫自 testing-contract 敘述，
-   非原文搬移；原文最晚於 YYYY-MM-DD 寫入（`git blame`）」。a60d20d 的 blame 上界：224、373 為 2026-08-11
-   （`d5c15645`），592 為 2026-08-19（`cabda822`），754、764 為 2026-08-14（`24902375`）。只在 2026-08 legacy 區段或 milestones 前言的位置已在 history store、
+   （595、776）各寫一筆，以原文日期寫 `日期來源:direct`。無日期的（224、373、592、754、764）事件日期不明，任何
+   標記配上替代日期都是代填（`migration-cutover` 屬 legacy 遷移的 cutover date，也不適用），所以不為它們各建一筆，
+   改寫一筆「移出事件」紀錄：事件是當天把這 5 則未記錄的實測敘述從 testing-contract 移入歷史，以寫入當天日期寫
+   `direct`；5 則內容逐則列在正文，各註「原文最晚於 YYYY-MM-DD 寫入（`git blame` 上界，原文可能更早）」。
+   a60d20d 的 blame 上界：224、373 為 2026-08-11（`d5c15645`，該 commit 是從 root CLAUDE.md 拆出的搬移，原文更早），
+   592 為 2026-08-19（`cabda822`），754、764 為 2026-08-14（`24902375`）。只在 2026-08 legacy 區段或 milestones 前言的位置已在 history store、
    `find` 查得到，改指向該處，不另建紀錄。重掃確認後的位置清單（含新發現位置）寫回本點。搬移時逐處列對照表：
    原文、去處（紀錄 ID 或 legacy 位置）、去處中對應的文字；對照表放在實作 PR 描述（GitHub 持久保存，不增加
    repo 閱讀量）。搬完再刪原文。兩個 H2
@@ -300,13 +302,19 @@ transcript，Claude 舊 transcript 有缺；compaction 標記不等於規則內�
 
 ### Phase 3：送出與觀察
 
-一個 PR；合併後經授權 dotsync。觀察 dotfiles 之後 15 筆新紀錄，並抽查一個其他 adopted repo 的新紀錄，以
-Phase 0 同一標籤判讀缺陷率。基準是規則生效前最後 15 筆已在 main 的 dotfiles 紀錄（依引入 commit 順序，排除以
-紀錄規則本身為主題的紀錄，例如 D-20261011-record-volume-plan-choices、本項 branch 的 D-20261011／20261012 系列，
-因為寫入者已知規則草稿；兩邊都可能集中在少數 session，報告中列出 session 分布），與生效後 15 筆用同一選取方式、同一組標籤、同一判讀者比較；不用
-Phase 0 抽樣作基準，因為其中長尾是依長度刻意挑出，缺陷率偏高。觀察完成前 STATUS
-項保持進行中、計畫保持 in-progress。觀察到 15 筆或合併後 30 天先到者為止；不足 15 筆時以已觀察筆數判讀並在報告註明。某條規則對應的缺陷率未低於
-基準時，重新檢討該規則（修改或移除），不視為完成。
+一個 PR；合併後經授權 dotsync。Phase 3 只產出觀察報告並觸發後續動作，不以計數直接決定規則去留。
+
+- 觀察：dotfiles 生效後 15 筆新紀錄（或合併後 30 天，先到者為止；不足 15 筆以實際筆數判讀並註明），並抽查一個
+  其他 adopted repo 的新紀錄，用 Phase 0 同一組標籤，另加「引用非 default branch commit」標籤。
+- 基準：Phase 0 等距抽樣中 2026-10-10 之前寫的 31 筆紀錄（39 筆扣除長尾 7 筆與 2026-10-10 之後 1 筆）。這些是自然選取（不含依長度挑出的長尾），寫入者也還沒接觸
+  紀錄規則草稿（紀錄減量規格始於 D-20261010-delivery-overhead-spec）。基準為 0 或兩邊相同時記「無法判定」，不觸發
+  動作。判讀者是規則作者、非盲評，樣本小，報告照實註明，只作方向證據。
+- 觸發：某條新增規則對應的缺陷在生效後明顯沒有下降時，對該規則重跑 Phase 2 的五戰三勝成對實驗，由實驗結果決定
+  修改或移除，與加入規則用同一標準。現行規則（四子項都寫等，同時屬 `docs/document-governance.md` 的格式契約）
+  只觀察、不在本項去留範圍。
+- 報告列出 D-20261011-record-rules-no-record-check 與 D-20261012-record-checks-reverted 的重議條件是否觸發。
+  Phase 3 結束後不再持續監測，缺陷回升不會自動被發現；這是不做紀錄機檢時接受的取捨。
+- 觀察完成前 STATUS 項保持進行中、計畫保持 in-progress。
 
 ### 驗收
 
@@ -319,7 +327,8 @@ Phase 0 抽樣作基準，因為其中長尾是依長度刻意挑出，缺陷率
 4. testing-contract 機檢（字樣與 ID 存在）先紅後綠、清理後零命中；重掃確認後清單的每個位置都已改為規則加理由並
    指向紀錄；實作 PR 的搬移對照表逐處核對，非預期遺失為 0；recall ratchet 與 xref 通過。
 5. 全套測試、`doc-governance audit --ship` 通過；dossier.md 增加的 bytes 與讀取成本列入報告。
-6. Phase 3 觀察完成並判讀：缺陷率未低於基準的規則已修改或移除；之前本項不結案。
+6. Phase 3 觀察報告完成；觸發重跑實驗的規則已依實驗結果修改、移除或保留；兩筆決策紀錄的重議條件已判讀。之前本項
+   不結案。
 
 ## 第 4 項：端到端量測（2026-10-11，進行中）
 
