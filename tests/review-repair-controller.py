@@ -129,6 +129,13 @@ class Fixture(unittest.TestCase):
 
 
 class Controller(Fixture):
+    def test_retired_delegation_and_native_commands_are_not_commands(self):
+        for action in ('delegated-reentry', 'refresh-subject', 'native-review'):
+            with self.subTest(action=action):
+                r = self.ctl(action, ok=False)
+                self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+                self.assertIn('invalid choice', r.stderr)
+
     def test_fresh_validates_each_scope_once_and_rejects_drift(self):
         spec = importlib.util.spec_from_file_location('fresh_controller', SCRIPTS / 'review-control.py')
         module = importlib.util.module_from_spec(spec)

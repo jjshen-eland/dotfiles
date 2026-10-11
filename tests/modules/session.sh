@@ -297,12 +297,26 @@ if [ -x "$TET" ]; then
         | PATH="$tet_bin:$PATH" TET_DATE_CALL="$tet_date_call" TET_DATE_FAIL=1 "$TET")"
     assert_rc "date 失敗 → hook 仍 exit 0" 0 $?
     assert_eq "date 失敗 → hook 靜默，不阻斷 agent 收尾" "" "$tet_fail_out"
+
+    # Runtime hooks pass codex／claude: the label is fixed and no interpreter is launched.
+    for tet_runtime in codex claude; do
+        tet_py_call="$TMP/tet-python-call-$tet_runtime"
+        printf '#!/usr/bin/env bash\nprintf "%%s\\n" "$*" >> %q\nexit 0\n' "$tet_py_call" > "$tet_bin/python3"
+        chmod +x "$tet_bin/python3"
+        tet_rt_out="$(printf '%s\n' '{"hook_event_name":"Stop","last_assistant_message":"done"}' \
+            | PATH="$tet_bin:$PATH" TZ=UTC TET_DATE_CALL="$tet_date_call" "$TET" "$tet_runtime")"
+        assert_eq "turn-end timestamp（${tet_runtime}）輸出固定 label" \
+            '{"systemMessage":"🕒 等待輸入起點：2026-09-02 16:05:06 GMT+8"}' "$tet_rt_out"
+        if [ -e "$tet_py_call" ]; then bad "turn-end timestamp（${tet_runtime}）不應啟動 python3"
+        else ok "turn-end timestamp（${tet_runtime}）不啟動 python3"; fi
+        rm -f "$tet_bin/python3"
+    done
 else
     bad "turn-end timestamp hook script 不存在或不可執行：$TET"
 fi
 
-# SubagentStop may collect Turbo reviewer evidence, but must never emit main-agent
-# waiting notices. Check those commands instead of forbidding unrelated hooks.
+# SubagentStop must never emit main-agent waiting notices. Check those commands instead of
+# forbidding unrelated hooks.
 claude_subagent_quiet='
     [(.hooks.SubagentStop // [])[] | .hooks[]?
      | select(.command | contains("agent-turn-end-timestamp.sh") or contains("wait4me-hook.sh"))]
@@ -310,12 +324,11 @@ claude_subagent_quiet='
 '
 if jq -e \
     --arg timestamp '"$HOME"/.dotfiles/scripts/agent-turn-end-timestamp.sh claude' \
-    --arg turbo 'python3 "$HOME"/.dotfiles/shared/skills/turbo/scripts/turbo-state.py hook Stop --runtime claude' \
     --arg wait4me 'WAIT4ME_ENV_FILE="$HOME/Projects/krepo/.env" "$HOME"/.dotfiles/shared/skills/wait4me/scripts/wait4me-hook.sh stop' '
     .hooks.Stop == [{hooks: [
         {type: "command", command: $timestamp, timeout: 3},
         {type: "command", command: $wait4me, timeout: 5, async: true}
-    ]}, {hooks: [{type: "command", command: $turbo, timeout: 5}]}]
+    ]}]
 ' "$ROOT/claude/settings.json" >/dev/null 2>&1 \
     && jq -e "$claude_subagent_quiet" "$ROOT/claude/settings.json" >/dev/null 2>&1 \
     && ! jq -e ".hooks.SubagentStop = [{hooks: [{command: \"agent-turn-end-timestamp.sh\"}]}] | $claude_subagent_quiet" \

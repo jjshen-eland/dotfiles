@@ -74,7 +74,7 @@ class Selection(unittest.TestCase):
                 self.assertEqual(self.select(path), set(self.manifest['modules']))
 
     def test_owned_inputs_skip_unrelated_controllers(self):
-        heavy = {'deep-plan', 'review-controller', 'ship-state', 'turbo'}
+        heavy = {'deep-plan', 'review-controller', 'ship-state'}
         cases = {
             'docs/testing-contract.md': {'content', 'document-contract'},
             'tests/test_dev_environment.py': {'dev-environment'},
@@ -107,7 +107,7 @@ class Selection(unittest.TestCase):
     def test_ci_platform_restrictions_follow_recorded_evidence(self):
         # D-20261010-ci-controller-platform-evidence: deep-plan has macOS-only launcher defects.
         restricted = {n: e['ci_platforms'] for n, e in self.manifest['modules'].items() if 'ci_platforms' in e}
-        self.assertEqual(restricted, {'review-controller': ['Linux'], 'turbo': ['Linux'], 'ship-state': ['Linux']})
+        self.assertEqual(restricted, {'review-controller': ['Linux'], 'ship-state': ['Linux']})
         workflow = (ROOT/'.github/workflows/test.yml').read_text()
         matrix = re.search(r'^\s*os: \[(.*)\]$', workflow, re.M).group(1).split(', ')
         systems = {{'ubuntu': 'Linux', 'macos': 'Darwin'}[os_name.split('-')[0]] for os_name in matrix}

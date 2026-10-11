@@ -1,4 +1,0 @@
-interface:
-  display_name: "Turbo"
-  short_description: "Turbo on/off/status; help lists options"
-  default_prompt: "$turbo help"

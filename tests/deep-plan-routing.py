@@ -105,6 +105,12 @@ class Routing(unittest.TestCase):
                                  for r in last["results"] if r["review"]["findings"]],
                 "contracts": ["api.py:1"]}
 
+    def test_retired_delegated_reentry_is_not_a_command(self):
+        result = subprocess.run([sys.executable, "-B", str(SCRIPT), "delegated-reentry"],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertIn("invalid choice", result.stderr)
+
     def test_initial_is_blind_and_valid_repair_is_focused(self):
         first = self.complete()
         self.assertEqual(first["mode"], "blind")
