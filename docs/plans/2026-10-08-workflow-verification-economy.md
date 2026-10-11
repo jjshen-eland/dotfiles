@@ -77,6 +77,10 @@ D-20260917-terminal-macbooks-outside-inventory、X-20260823-retrieval-idf-and-h3
 
 限制：單一評分者、39 筆；regex 數字含誤報。分析腳本與抽樣原文在 session scratchpad，不入庫。
 
+**其他 repo 補抽**（D-20261011-record-rules-fleet-wide）：以同一抽樣規則與缺陷標籤，抽兩個其他 adopted repo
+（營運型 kapi-infra、服務型 krepo-judicial）2026-09～10 的紀錄，判定全機隊是否有同樣缺陷；缺陷率明顯低於
+dotfiles 時依該決策的重議條件重新評估範圍。
+
 ### Phase 1：規則（候選）
 
 | 類 | 內容 |

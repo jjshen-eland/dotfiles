@@ -376,3 +376,8 @@
   - 放棄:在紀錄規則中為流程紀錄設永久例外（兩套判準並存）；在紀錄規則工作中一併改 log-prepare 與 transfer（牽動 authority 檢查，需獨立規劃與審查）
   - 重議:流程簡化工作項決定保留這兩種紀錄的現行寫法
   - 關聯:D-20261011-record-volume-scope-narrowed;D-20261011-delivery-measurement-next-targets;D-20261010-transfer-delivery-overhead;Issue#285
+- **D-20261011-record-rules-fleet-wide · 2026-10-11 紀錄撰寫規則改回全機隊，理由由省時改為品質**:使用者指示 D／X／M 紀錄規則寫進全機隊共用的 project skill，取代「只做 dotfiles 專屬兩條」的範圍。原縮小理由有二：收益未量到、牽動 log-prepare 與 authority。前者原指交付時間，量測後已改以紀錄品質為目標（dotfiles 抽樣無實質缺陷 M 4/16、D 5/15）；後者由 D-20261011-protocol-records-to-workflow-simplification 移到流程簡化工作項。其他 repo 是否有同樣缺陷尚未量測，於規則計畫 Phase 0 補抽其他 adopted repo。
+  - 日期來源:direct
+  - 放棄:只寫 dotfiles 專屬位置（其他 repo 用同一 skill 寫紀錄，缺陷來源相同）
+  - 重議:其他 adopted repo 抽樣顯示缺陷率明顯低於 dotfiles
+  - 關聯:supersedes:D-20261011-record-volume-scope-narrowed 的範圍限制;D-20261011-protocol-records-to-workflow-simplification;D-20261011-delivery-measurement-next-targets;Issue#285
