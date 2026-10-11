@@ -2,7 +2,7 @@
 
 - 工作項：STATUS item 5「移除 turbo skill 與其他 skill 的耦合」
 - 日期：2026-10-11
-- 狀態：draft
+- 狀態：in-progress
 - 種類：implementation plan
 - Writer／Dossier Steward：`claude:delivery-overhead`
 - Workspace：實作時建立 `refactor/turbo-retirement`，在 scratchpad 的獨立 git worktree 進行，見「提交與分支」
@@ -53,7 +53,7 @@ hooks 或 skill；未重開或只 pull 的主機會遇到 hook 錯誤，修復�
 | 全域指令 | `claude/CLAUDE.md` 的 turbo 委任行（PR／Git 節，非 kernel）、`codex/AGENTS.md` 的 turbo 委任行（Explicit workflow pointers） | 刪除該行 |
 | 共用腳本 | `scripts/agent-turn-end-timestamp.sh` 的 codex／claude 分支以 `turbo-state.py notice` 讀 stdin 並產生 label | 改為 `cat >/dev/null` 讀掉輸入並用固定 `等待輸入起點`；turbo 關閉時 `notice` 本來只回傳這個值 |
 | 測試與路由 | `tests/suites.json`（turbo 模組、7 條含 turbo 的路由、`name_only_mentions` 的 session.sh 項、schema 搬移後的新路徑）、`tests/test_suite.py`（heavy 集合、ci_platforms 期望）、`tests/modules/guidance.sh`（portable skill 清單）、`tests/modules/session.sh`（hook 組合測試）、`tests/review-primary-scope.py`（`TURBO_RUNTIME` 清除與 native-review incomplete 案例） | 同步更新；native-review incomplete 案例改為以假 `codex` 執行 eval 的 Codex 收集，斷言 eval 目錄保留 incomplete structured report 與 raw log、收集失敗；`shared/skills/turbo/*` 路由隨目錄刪除；eval 與 schema 新路徑路由到 review-skill（`tests/review-primary-scope.py` 會執行 eval 並讀 schema），並以刪除實驗確認 consumer；route drift 須通過 |
-| 文件 | `README.md`「Turbo 自主執行」節；`STATUS.md` 的 item 3 Context 與 item 5 | README 節刪除；STATUS 為例外 |
+| 文件 | `README.md` 的 turbo 使用說明節；`STATUS.md` 的 item 3 Context 與 item 5 | README 節刪除；STATUS 為例外 |
 
 tests/turbo-mode.py 中與非 turbo 行為相關的案例及處置：
 

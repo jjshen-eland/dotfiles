@@ -1157,8 +1157,9 @@ subject／source snapshots；不能以 CLI exit 或模型自評 complete 判綠�
 - Packet／brief／subject drift、fake／reused reviewer、partial／duplicate sets 或 incomplete child 仍
   阻擋。Failed sets、原始 incomplete structured reports、raw logs 與已用 attempts 保持可查，不退票。
 
-機械重建：`python3 -B tests/review-primary-scope.py <repo-root>`；使用真正 controller／Git fixtures，
-fake transport 只驗 process／artifact-retention 邊界，不能冒稱 native acceptance。
+機械重建：`python3 -B tests/review-primary-scope.py <repo-root>`；使用真正 controller／Git fixtures。
+其中 fake `codex`／`claude` 只驗 eval 兩臂的收集、隔離參數、schema 傳遞與 artifact-retention 邊界，
+不能冒稱 native acceptance。
 Native opt-in 重建（每次使用新的 destination，既有失敗 batch 不搬移／重設）：
 
 ```text
@@ -1167,7 +1168,8 @@ python3 -B tests/review-primary-native-eval.py --destination <new-absolute-dir> 
 ```
 
 `two`／`three`／`interface`／`required` 使用同一份 fixture／oracle 跑雙端。Source bundle 排除 eval
-oracles；Codex 用正式 native-review，Claude 用 fresh readonly CLI sessions 與既有 off-mode collection。
+oracles，含共用的 `tests/fixtures/review-report.schema.json`；兩端都用 fresh readonly CLI sessions
+（Codex 為隔離的 `codex exec`，Claude 為 `claude -p`）收集後走一般 `finish`。
 各 packet 保留 source hashes、subject／Git metadata snapshots、CLI version、實際 argv、native
 identities、完整 reports／traces。只讀實際 evidence 判 coverage 與必要 facts，不為保證結果放寬 permissions。
 
@@ -1183,6 +1185,8 @@ identities、完整 reports／traces。只讀實際 evidence 判 coverage 與必
 | required readonly RED | — | a4 | part-2 寫出 ignored bytecode；snapshot guard BLOCKED，原 cache／reports／failed set 保留 |
 | two with initial-read barrier | c6 | a6 | 2 complete；首次僅讀完整 brief／packet，再 inspection；attempt=1、valid_sets=1、PASS |
 
+上表 Codex 欄 c1–c6 是以已移除的 controller `native-review` transport 收集（D-20261011-primary-scope-eval-cross-runtime）；
+之後以 eval 內的 `codex exec` 收集重跑時另列，不與這組直接比較 transport 行為。
 Roots 為 `/tmp/review-primary-native-20261007-<case>`。六個初始 positives 與 c4/a4 使用 primary
 修復版；a4 的實際 `-I`＋environment-only bytecode protection failure 取得 RED 後，brief
 新增 explicit `-B`／in-memory probe 限制。c5/a5 用全新 fixture 驗修後 readonly boundary，

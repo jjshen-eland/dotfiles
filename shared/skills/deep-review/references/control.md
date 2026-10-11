@@ -93,23 +93,6 @@ BLOCKED and no valid receipt. Original report text and raw severities are retain
 structured extraction must faithfully match them. The helper cannot certify a
 model's claim that it inspected a file or reported every finding.
 
-For a dispatch bound to active Codex turbo, use `native-review --state <file>
---ticket <already-dispatched-ticket>` instead of author-assembled `finish` results.
-This transport launches real fresh read-only Codex processes, retains raw JSONL,
-native thread IDs and report hashes, and admits only their complete current set.
-Failure or cancellation retains the spent attempt, original reports (including
-incomplete structured reports), raw logs and a failed-set record. An explicit native
-launch always requires its process proof, including when turbo is off.
-`--review-model` may carry an
-explicit reviewer model choice; otherwise use the native default. Off-mode review
-retains its ordinary collection protocol. Active Claude turbo keeps fresh native
-Agents; its synchronous `SubagentStop` collector saves each complete final report
-outside targets, bound to the native session, generation, dispatched ticket and
-reviewer identity. `finish` retains that exact native text as `raw_report` and
-references its capture artifact. A different author-submitted report remains a
-separately labelled `author_summary`, never the original. Missing captures block
-the spent attempt without refund; do not replace them with author recollection.
-
 Independently verify every new finding, then submit dispositions using controller
 finding IDs from `status` (not the reviewer's local `F1`):
 
@@ -202,25 +185,10 @@ instruction, then use `admit --reason initial`. Open earlier findings require
 revalidation and cannot silently disappear. A mode recommendation is separate
 from authorization to dispatch.
 
-The separate turbo `delegated-reentry` API consumes the original current-goal
-delegation through [Turbo exhausted review batches](../../turbo/references/workflow.md#exhausted-review-batches).
-It accepts `--input <request> --expected-state-sha <sha>` and the same `--state`;
-when changed scope is independently confirmed, include every new `--manifest`.
-Do not put an agent recommendation into ordinary `--authorization`.
-
-For an in-scope author acceptance repair outside the blocking-finding autofix
-transition, turbo may use `refresh-subject --state <file> --input <request>
---expected-state-sha <sha>` with a request bound to `refresh-subject`. It requires
-remaining primary capacity and no pending dispatch/repair, captures the same roots,
-selected paths and original baseline, revokes the old receipt and keeps all
-counters, findings and historical sets. It cannot refresh a historical range or
-refill a cap. Use `admit --reason initial` and independently verify the current
-subject; past low findings remain recorded and Goal acceptance remains separate.
-Changed-subject turbo renewal/refresh archives each open original disposition and
-requires its independent recheck. If the original trigger is already fixed in the
-captured current bytes, assess it as `resolved` with evidence; do not start a new
-repair merely to verify an already-fixed subject. A repair-finish still requires
-real delta and never refunds an incorrectly spent attempt.
+When an open finding is rechecked after an explicitly authorized scope change and its trigger is
+already fixed in the captured current bytes, assess it as `resolved` with evidence; do not start a new
+repair merely to verify an already-fixed subject. A repair-finish still requires real delta and never
+refunds an incorrectly spent attempt.
 
 After editing an authorized target, persist a stopped review with
 `terminal-record --state <file> --repo <repo> --reason blocking-findings` (or

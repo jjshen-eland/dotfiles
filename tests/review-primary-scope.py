@@ -1,5 +1,6 @@
 """Primary responsibility and aggregate integrity through the real controller CLI."""
 import copy
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -21,7 +22,7 @@ class PrimaryScope(unittest.TestCase):
         self.scripts = SCRIPTS
         self.env = dict(os.environ, DOTFILES_PRECOMMIT_OFF='1',
                         DEEP_REVIEW_STATE_DIR=str(self.root / 'evidence'), TMPDIR=str(self.root))
-        for key in ('CODEX_THREAD_ID', 'CODEX_SESSION_ID', 'CLAUDE_SESSION_ID', 'TURBO_RUNTIME'):
+        for key in ('CODEX_THREAD_ID', 'CODEX_SESSION_ID', 'CLAUDE_SESSION_ID'):
             self.env.pop(key, None)
         self.repo = self.make_repo('repo', 39)
 
@@ -198,32 +199,67 @@ class PrimaryScope(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(self.ctl('status', '--state', state)['attempts'], 1)
 
-    def test_native_incomplete_report_is_retained_with_failed_set(self):
-        # Fake transport tests artifact retention only; it is never native acceptance.
-        bin_dir = self.root / 'fake-bin'; bin_dir.mkdir()
-        executable = bin_dir / 'codex'
-        executable.write_text('#!' + sys.executable + '\n' + '''import json, sys, uuid
-sys.stdin.read()
-print(json.dumps({'type':'thread.started','thread_id':str(uuid.uuid4())}))
-review={'result':'incomplete','report':'Required execution fact could not be established.', 'findings':[]}
-print(json.dumps({'type':'item.completed','item':{'type':'agent_message','text':json.dumps(review)}}))
-''')
+    def eval_module(self):
+        spec = importlib.util.spec_from_file_location('primary_eval', ROOT / 'tests/review-primary-native-eval.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def fake(self, name, body):
+        bin_dir = self.root / 'fake-bin'; bin_dir.mkdir(exist_ok=True)
+        executable = bin_dir / name
+        executable.write_text('#!' + sys.executable + '\n' + body)
         executable.chmod(0o755)
         self.env['PATH'] = str(bin_dir) + os.pathsep + self.env['PATH']
-        state = self.open()
-        admitted = self.admit(state, self.partition())
-        self.ctl('dispatch', '--state', state, '--ticket', admitted['ticket'])
-        result = self.ctl('native-review', '--state', state, '--ticket', admitted['ticket'], ok=False)
-        self.assertNotEqual(result.returncode, 0)
-        reports = list(Path(state).parent.glob('native-*/*-report.json'))
-        self.assertEqual(len(reports), 3, 'original incomplete reports were discarded')
-        for report in reports:
-            self.assertEqual(json.loads(report.read_text())['result'], 'incomplete')
-        journal = json.loads(Path(state).read_text())
-        self.assertEqual(journal['attempts'], 1)
-        self.assertEqual(journal['verdict'], 'BLOCKED')
-        self.assertTrue(journal['failed_sets'][-1]['native_required'])
-        self.assertEqual(journal['failed_sets'][-1]['ticket'], admitted['ticket'])
+
+    def packet(self):
+        path = self.root / 'packet.json'
+        path.write_text(json.dumps({'primary_scope': [{'repo': str(self.repo)}], 'scope': [{'repo': str(self.repo)}]}))
+        return path
+
+    def test_codex_eval_arm_retains_incomplete_report_and_isolates_reviewer(self):
+        # Fake transport tests artifact retention and isolation only; it is never native acceptance.
+        record = self.root / 'codex-call.json'
+        self.fake('codex', 'import json, os, sys, uuid\n'
+                  'sys.stdin.read()\n'
+                  f'open({str(record)!r}, "w").write(json.dumps({{"argv": sys.argv[1:], '
+                  '"reviewer": os.environ.get("DEEP_REVIEW_REVIEWER_PROCESS")}))\n'
+                  'print(json.dumps({"type": "thread.started", "thread_id": str(uuid.uuid4())}))\n'
+                  'review = {"result": "incomplete", "report": "Required execution fact could not be established.", '
+                  '"findings": []}\n'
+                  'print(json.dumps({"type": "item.completed", "item": {"type": "agent_message", '
+                  '"text": json.dumps(review)}}))\n')
+        result = self.eval_module().codex_review(self.root, ROOT, self.packet(), 'part-0', self.env)
+        self.assertEqual(result['result'], 'incomplete')
+        retained = json.loads(Path(result['report']).read_text())
+        self.assertEqual(retained['report'], 'Required execution fact could not be established.')
+        self.assertTrue((self.root / 'codex-part-0/events.jsonl').read_text().strip())
+        call = json.loads(record.read_text())
+        self.assertEqual(call['reviewer'], '1')
+        for flag in ('--ephemeral', '--ignore-user-config', '--ignore-rules', 'hooks', 'plugins'):
+            self.assertIn(flag, call['argv'])
+        self.assertEqual(call['argv'][call['argv'].index('--output-schema') + 1],
+                         str(ROOT / 'tests/fixtures/review-report.schema.json'))
+
+    def test_codex_eval_arm_failure_keeps_raw_log(self):
+        self.fake('codex', 'import sys\nsys.stdin.read()\nprint("transport crashed")\nsys.exit(3)\n')
+        with self.assertRaises(RuntimeError):
+            self.eval_module().codex_review(self.root, ROOT, self.packet(), 'part-0', self.env)
+        self.assertIn('transport crashed', (self.root / 'codex-part-0/events.jsonl').read_text())
+        self.assertFalse((self.root / 'codex-part-0/report.json').exists())
+
+    def test_claude_eval_arm_passes_shared_schema(self):
+        record = self.root / 'claude-schema.txt'
+        self.fake('claude', 'import json, sys\n'
+                  'argv = sys.argv[1:]\nsys.stdin.read()\n'
+                  f'open({str(record)!r}, "w").write(argv[argv.index("--json-schema") + 1])\n'
+                  'session = argv[argv.index("--session-id") + 1]\n'
+                  'print(json.dumps({"type": "system", "subtype": "init", "session_id": session, "model": "fake"}))\n'
+                  'review = {"result": "complete", "report": "Reviewed.", "findings": []}\n'
+                  'print(json.dumps({"type": "result", "structured_output": review, "usage": {}}))\n')
+        result = self.eval_module().claude_review(self.root, ROOT, self.packet(), 'part-0', self.env)
+        self.assertEqual(result['result'], 'complete')
+        self.assertEqual(record.read_text(), (ROOT / 'tests/fixtures/review-report.schema.json').read_text())
 
     def test_incomplete_partial_duplicate_and_reused_results_block(self):
         for case in ('incomplete', 'partial', 'duplicate', 'reused'):
