@@ -136,6 +136,27 @@ class Controller(Fixture):
                 self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
                 self.assertIn('invalid choice', r.stderr)
 
+    def test_ticket_dispatched_under_retired_native_transport_cannot_finish_with_author_results(self):
+        for marker in ({'native_required': True},
+                       {'native_claude': {'runtime': 'claude', 'session': 's', 'generation': 1}}):
+            with self.subTest(marker=sorted(marker)):
+                self.setUp()
+                state = self.open('--route', 'ordinary')
+                a = self.ctl('admit', '--state', state, '--assignments', self.assignments(), '--reason', 'initial')
+                self.ctl('dispatch', '--state', state, '--ticket', a['ticket'])
+                journal = json.loads(Path(state).read_text())
+                journal['pending'].update(marker)
+                Path(state).write_text(json.dumps(journal))
+                report = self.root / 'report.txt'
+                report.write_text('[]')
+                results = self.data('results.json', [{'assignment': 'source', 'reviewer': 'author-summary',
+                                    'result': 'complete', 'report': str(report), 'findings': []}])
+                r = self.ctl('finish', '--state', state, '--ticket', a['ticket'], '--input', results, ok=False)
+                self.assertNotEqual(r.returncode, 0, r.stdout)
+                status = self.ctl('status', '--state', state)
+                self.assertEqual(status['verdict'], 'BLOCKED')
+                self.assertEqual(status['valid_sets'], 0)
+
     def test_fresh_validates_each_scope_once_and_rejects_drift(self):
         spec = importlib.util.spec_from_file_location('fresh_controller', SCRIPTS / 'review-control.py')
         module = importlib.util.module_from_spec(spec)

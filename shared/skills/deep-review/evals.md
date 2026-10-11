@@ -1168,8 +1168,8 @@ python3 -B tests/review-primary-native-eval.py --destination <new-absolute-dir> 
 ```
 
 `two`／`three`／`interface`／`required` 使用同一份 fixture／oracle 跑雙端。Source bundle 排除 eval
-oracles，含共用的 `tests/fixtures/review-report.schema.json`；兩端都用 fresh readonly CLI sessions
-（Codex 為隔離的 `codex exec`，Claude 為 `claude -p`）收集後走一般 `finish`。
+oracles，另複製共用的 `tests/fixtures/review-report.schema.json` 並納入 source hash；兩端都用 fresh readonly CLI sessions
+（Codex 為隔離的 `codex exec`，Claude 為 `claude -p`）收集後走一般 `finish`；收集失敗或中斷時以 BLOCKED 關閉該 attempt，中斷（Ctrl-C／SIGTERM／SIGHUP）會先停止仍在執行的 reviewer。
 各 packet 保留 source hashes、subject／Git metadata snapshots、CLI version、實際 argv、native
 identities、完整 reports／traces。只讀實際 evidence 判 coverage 與必要 facts，不為保證結果放寬 permissions。
 

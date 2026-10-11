@@ -5,10 +5,14 @@ import json
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import unittest
+from unittest import mock
 
 ROOT = Path(sys.argv.pop(1)).resolve()
 SCRIPTS = ROOT / 'shared/skills/deep-review/scripts'
@@ -220,10 +224,9 @@ class PrimaryScope(unittest.TestCase):
     def test_codex_eval_arm_retains_incomplete_report_and_isolates_reviewer(self):
         # Fake transport tests artifact retention and isolation only; it is never native acceptance.
         record = self.root / 'codex-call.json'
-        self.fake('codex', 'import json, os, sys, uuid\n'
+        self.fake('codex', 'import json, sys, uuid\n'
                   'sys.stdin.read()\n'
-                  f'open({str(record)!r}, "w").write(json.dumps({{"argv": sys.argv[1:], '
-                  '"reviewer": os.environ.get("DEEP_REVIEW_REVIEWER_PROCESS")}))\n'
+                  f'open({str(record)!r}, "w").write(json.dumps({{"argv": sys.argv[1:]}}))\n'
                   'print(json.dumps({"type": "thread.started", "thread_id": str(uuid.uuid4())}))\n'
                   'review = {"result": "incomplete", "report": "Required execution fact could not be established.", '
                   '"findings": []}\n'
@@ -235,10 +238,12 @@ class PrimaryScope(unittest.TestCase):
         self.assertEqual(retained['report'], 'Required execution fact could not be established.')
         self.assertTrue((self.root / 'codex-part-0/events.jsonl').read_text().strip())
         call = json.loads(record.read_text())
-        self.assertEqual(call['reviewer'], '1')
+        argv = call['argv']
+        self.assertEqual(argv[argv.index('-a') + 1], 'never')
+        self.assertEqual(argv[argv.index('-s') + 1], 'read-only')
         for flag in ('--ephemeral', '--ignore-user-config', '--ignore-rules', 'hooks', 'plugins'):
-            self.assertIn(flag, call['argv'])
-        self.assertEqual(call['argv'][call['argv'].index('--output-schema') + 1],
+            self.assertIn(flag, argv)
+        self.assertEqual(argv[argv.index('--output-schema') + 1],
                          str(ROOT / 'tests/fixtures/review-report.schema.json'))
 
     def test_codex_eval_arm_failure_keeps_raw_log(self):
@@ -247,6 +252,38 @@ class PrimaryScope(unittest.TestCase):
             self.eval_module().codex_review(self.root, ROOT, self.packet(), 'part-0', self.env)
         self.assertIn('transport crashed', (self.root / 'codex-part-0/events.jsonl').read_text())
         self.assertFalse((self.root / 'codex-part-0/report.json').exists())
+
+    def test_interrupted_eval_stops_reviewers_and_closes_the_attempt(self):
+        pids = self.root / 'reviewer-pids'
+        self.fake('codex', 'import json, os, sys, time, uuid\n'
+                  'if "--version" in sys.argv:\n    print("codex fake"); sys.exit(0)\n'
+                  'sys.stdin.read()\n'
+                  'print(json.dumps({"type": "thread.started", "thread_id": str(uuid.uuid4())}), flush=True)\n'
+                  f'open({str(pids)!r}, "a").write(str(os.getpid()) + "\\n")\n'
+                  'time.sleep(120)\n')
+        module = self.eval_module()
+
+        def interrupt():
+            deadline = time.monotonic() + 60
+            while time.monotonic() < deadline and len(pids.read_text().split() if pids.exists() else []) < 2:
+                time.sleep(0.05)
+            os.kill(os.getpid(), signal.SIGTERM)
+
+        with mock.patch.dict(os.environ, {'PATH': self.env['PATH'], 'TMPDIR': str(self.root)}):
+            fixture = module.prepare(self.root / 'eval', 'two', 'codex')
+            threading.Thread(target=interrupt, daemon=True).start()
+            started = time.monotonic()
+            module.run(*fixture, 'codex')
+        self.assertLess(time.monotonic() - started, 60)
+        for pid in map(int, pids.read_text().split()):
+            with self.assertRaises(ProcessLookupError):
+                os.kill(pid, 0)
+        root = fixture[0]
+        journal = json.loads(Path(json.loads((root / 'dispatch.json').read_text())['state']).read_text())
+        self.assertIsNone(journal['pending'])
+        self.assertEqual(len(journal['failed_sets']), 1)
+        self.assertIn('KeyboardInterrupt', json.loads((root / 'failure.json').read_text())['error'])
+        self.assertTrue((root / 'codex-part-0/events.jsonl').read_text().strip())
 
     def test_claude_eval_arm_passes_shared_schema(self):
         record = self.root / 'claude-schema.txt'
