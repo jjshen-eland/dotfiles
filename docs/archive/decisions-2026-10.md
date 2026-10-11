@@ -356,3 +356,8 @@
   - 放棄:改 `find` 去重別名（需改受信任 scanner 並對全機隊 rollout）;改寫決策紀錄措辭（違反 append-only，且是為過測試調內容）
   - 重議:出現別名與 canonical 內容不同的 compatibility link
   - 關聯:D-20261011-turbo-plan-nogo-proceed;STATUS item 5
+- **D-20261011-out-of-inventory-reminder-only · 2026-10-11 inventory 外終端只提醒、不列結案條件**:turbo 退役散佈時，原計畫把兩台 inventory 外 MacBook 的 brewup 與重開 session 列進 STATUS item 5 的 Acceptance Criteria，使該項須等常離線的筆電恢復使用才能結案。使用者指示 inventory 外的機器（現為兩台，日後可能更多）只要提醒、不列為結案對象。散佈類工作的結案以 `scripts/inventory.conf` 內主機（本機計一次）的逐台證據為準；inventory 外終端在結案回報中提醒其本機更新路徑（`docs/repo-guide.md`），不阻擋結案，也不宣稱已驗證。這延續 D-20260917-terminal-macbooks-outside-inventory 的自主更新模型。
+  - 日期來源:direct
+  - 放棄:等 inventory 外終端恢復並回報後才結案（結案時點取決於筆電何時開機，與變更本身無關）
+  - 重議:inventory 外終端改為受 fan-out 管理，或某項變更沒有本機收斂就會破壞那些終端的資料或安全
+  - 關聯:D-20260917-terminal-macbooks-outside-inventory;D-20261011-turbo-direct-deletion;STATUS item 5

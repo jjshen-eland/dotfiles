@@ -77,7 +77,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 ### 5. 移除 turbo skill 與其他 skill 的耦合
 
 - **Writer**：`claude:delivery-overhead`
-- **Workspace**：`branch=refactor/turbo-retirement`
+- **Workspace**：`branch=docs/turbo-distribution-closure`
 - **Write Scope**：shared/skills/turbo/, claude/skills/turbo/, codex/skills/turbo/, shared/skills/deep-plan/, shared/skills/deep-review/, shared/skills/project/references/ship-policy.md, shared/skills/project/references/spec-workflow.md, claude/settings.json（僅 turbo hooks）, codex/config.toml, claude/CLAUDE.md, codex/AGENTS.md, scripts/agent-turn-end-timestamp.sh, README.md, tests/, docs/plans/
 - **Dossier Steward**：`claude:delivery-overhead`
 - **寫入協調**：claude/settings.json 與 codex/config.toml 也在 item 2 的 Write Scope；item 2 的遷移目前停止且同一 writer，本項只改 turbo hooks。tests/、shared/skills/project/、review-control.py、review-state.py 也在 item 3 的 Write Scope；item 3 排在本項之後（D-20261011-record-volume-scope-narrowed）。claude/CLAUDE.md、codex/AGENTS.md、README.md、tests/ 也在 item 4 的 Write Scope，item 4 目前只剩工具歸屬核對、不改這些檔。三項依序進行，不平行寫入。
@@ -87,13 +87,14 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
   1. 三棵樹的 turbo skill 與其專屬測試移除；以 `git grep -il turbo` 檢查 tracked 檔，排除 docs/archive 後只剩 STATUS.md 與 docs/plans/。
   2. deep-plan `review-state.py` 與 deep-review `review-control.py` 移除 turbo checkpoint、`consume_request`、`delegated-reentry`、`refresh-subject`；`native-review` 子命令與 `native-review.py` 移除（D-20261011-turbo-retirement-choices）；primary-scope eval 保留 Codex 與 Claude 兩臂，Codex 收集移入 eval、schema 搬到 tests/fixtures，假 codex transport 測試守住 incomplete report 保留。對應 references 與 project 的 ship-policy、spec-workflow 移除 turbo 分支。非 turbo 路徑的既有測試全數照過；被移除的子命令經 argparse 判為 invalid choice（exit 2）。
   3. claude/settings.json 與 codex/config.toml 移除 turbo hooks；實作在獨立 worktree 進行，commit 不含主 checkout 的 runtime drift，並以乾淨 clone 驗證 settings JSON 合法、7 組 turbo hook 已移除。以臨時 HOME 證明 `ensure-codex-config.py` 會清掉既有主機設定中的 turbo hooks 並保留其他 hooks。`~/.claude/skills/turbo`、`~/.agents/skills/turbo` 殘留連結在獲授權的散佈步驟逐台刪除，只刪指向 dotfiles 的 symlink。
-  4. 一批刪除，含 turbo-state.py（D-20261011-turbo-direct-deletion）。散佈經授權：dotsync、逐台刪殘留連結、確認 Codex 設定不含 turbo 腳本路徑、重開各主機 session；agent 只 merge 與刪 remote branch，使用者關閉本機所有 session 後於終端機丟棄 settings drift、pull、跑 ensure-runtime.sh、刪殘留連結再開新 session；兩台 inventory 外 MacBook 恢復時跑 brewup 並重開。
+  4. 一批刪除，含 turbo-state.py（D-20261011-turbo-direct-deletion）。散佈經授權：dotsync、逐台刪殘留連結、確認 Codex 設定不含 turbo 腳本路徑、重開各主機 session；agent 只 merge 與刪 remote branch，使用者關閉本機所有 session 後於終端機丟棄 settings drift、pull、跑 ensure-runtime.sh、刪殘留連結再開新 session。inventory 外終端不列結案條件，結案回報時提醒其本機更新路徑（D-20261011-out-of-inventory-reminder-only）。
   5. claude/CLAUDE.md 與 codex/AGENTS.md 的 turbo 委任行移除，kernel managed block 不變；README、tests/suites.json 路由與 guidance／session 測試同步。
   6. 全套測試與 `doc-governance audit --ship` 通過。
 - **Constraints**：本 Spec 只授權寫 active contract，不授權 commit、push、PR、merge、dotsync 或任何主機操作。歷史紀錄 append-only 不改；docs/plans/2026-10-05-turbo-skill.md 已凍結不改，退役以新紀錄說明。claude/settings.json 的 runtime drift 不帶進 commit；未經權威 repo 修改並 push 的 drift 會在 dotsync／brewup 時丟棄，本機合併前依同樣做法丟棄。實作前先寫計畫並以 deep-plan 審查。
 - **進度**：2026-10-11 於 worktree 完成實作（D-20261011-turbo-retired）：三組 RED 轉綠、eval 兩臂與 schema 搬移、臨時 HOME 驗證 Codex 設定清除 7 個 turbo hook 且保留其他 hooks 與專案信任、刪除實驗確認 eval／schema 只由 review-skill 讀取。title-free recall ratchet 一度 6→5（本批決策紀錄把 canonical evals 擠出前 5 名、只剩 symlink 別名），改為以實體路徑判命中後回到 6/10（D-20261011-recall-alias-canonical）。
 - **審查**：deep-review full（3 位 fresh reviewer）PASS，0 阻斷；4 條 low 依使用者指示全修，各有先紅後綠測試與突變驗證：升級前以 native transport 派出的 ticket 在 `finish` 拒收、eval 移除無讀取者的 reviewer 標記並改斷言 `-a never`／`-s read-only`、eval 中斷時停止 reviewer process group 並關閉 attempt、evals.md 措辭。
-- **下一步**：依授權送出（本 branch 含 dossier 兩顆，一個 PR 即可），合併後依計畫「散佈」節切換本機與機隊。
+- **散佈**：PR #304 依使用者指示 rebase merge 至 `e6b4376`，remote 與本地 branch 已清。經授權 dotsync 後，inventory 內 13 台遠端主機皆在 `e6b4376`；逐台只刪除指向 dotfiles 的兩個殘留連結；Codex 設定與 Claude settings 的 turbo 計數皆為 0；這些主機沒有執行中的 tmux session。本機切換由使用者在關閉所有 session 後於終端機執行。
+- **下一步**：使用者完成本機切換、開新 session 後，確認本機在 `e6b4376` 以上、兩個連結不存在、turbo 計數為 0、無 hook 錯誤，即寫 milestone 結案。結案回報提醒 inventory 外終端恢復使用時跑 brewup 並重開 session。
 - **關聯**：D-20261005-turbo-delegated-controller；D-20261010-ci-controller-platform-evidence；item 2；item 3
 
 ## 暫停中

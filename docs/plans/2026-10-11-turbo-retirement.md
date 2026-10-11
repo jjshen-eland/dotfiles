@@ -124,8 +124,9 @@ Claude Code／Codex session，在一般終端機於主 checkout 依序執行：�
 3. 逐台確認 `~/.codex/config.toml` 不含 turbo 腳本路徑、兩個連結不存在。
 4. 使用者重開各主機上執行中的 Claude Code／Codex session，並在本機 Codex CLI 以 `/hooks` 確認保留的 hooks 仍受信任。
 
-兩台 inventory 外的 MacBook（D-20260917-terminal-macbooks-outside-inventory）恢復使用時跑 brewup（含
-`ensure-runtime.sh`）、刪除兩個連結並重開 session。任何主機出現 hook 找不到腳本的錯誤時，修復方式相同：
+inventory 外的終端（D-20260917-terminal-macbooks-outside-inventory）恢復使用時跑 brewup（含
+`ensure-runtime.sh`）、刪除兩個連結並重開 session；這只在結案回報中提醒，不列入完成條件
+（D-20261011-out-of-inventory-reminder-only）。任何主機出現 hook 找不到腳本的錯誤時，修復方式相同：
 跑 `ensure-runtime.sh` 後重開 session。
 
 ## 驗證與完成條件
