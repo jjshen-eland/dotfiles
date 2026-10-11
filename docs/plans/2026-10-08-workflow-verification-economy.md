@@ -41,7 +41,8 @@ D-20261011-delivery-measurement-next-targets）。第 4 項量測顯示寫紀錄
   規定在新版的位置，刻意修改者寫原因，無原因消失為 0；不另寫鎖定文字的測試。Claude 與 Codex 的 project skill 都連到 shared core，dotsync 後所有使用 `/project`／
   `$project` 的 repo 同時生效，其他 repo 沒有檔案變更。
 - dossier.md 在 Log 結案階段必讀（目前 10,900 B），讀規則文件已佔交付時間約 14%（第 4 項）；本項新增內容以
-  表格精簡呈現，並在 Phase 2 量測增加的讀取 bytes。
+  表格精簡呈現，並在 Phase 2 量測增加的讀取 bytes。`read-reference.py` 每段 12,000 B，改寫後全檔以不超過一段為
+  目標，超過時每次 Log 多一次 reader call，須在報告中列明。
 - 寫前重讀：`claude/CLAUDE.md` 與 `codex/AGENTS.md` 的非 kernel 區各加一行「寫 D／X／M 紀錄時，若 dossier.md
   規則段不在可用 context（新 session、只剩摘要），先讀
   `shared/skills/project/references/dossier.md`「記錄時機與 record schema」的部署路徑；仍在則沿用」。條件與
@@ -52,13 +53,15 @@ D-20261011-delivery-measurement-next-targets）。第 4 項量測顯示寫紀錄
   與既有全域指標（`claude/CLAUDE.md`「PR / Git」）同形；repo 相對路徑在 dotfiles 以外解析不到，而 dotfiles 的
   xref gate 仍會綠。依據是 Phase 0「寫入當下的脈絡」：10 月寫入者 92% 讀過 dossier.md，缺口是讀完後經
   compaction 才寫；always-on 指令在 compaction 後仍載入。只在規則段遺失時多讀一次，規則段須精簡並計入讀取
-  bytes。是否加入由 Phase 2 情境 e 決定。
+  bytes。是否加入由 Phase 2 情境 e 決定；既有實測顯示文字指標不一定生效（`docs/testing-contract.md` 的 G1c：
+  文字指標 0/2、原生 import 2/2），情境 e 即為此實測。若情境 e 判定這行無效，重新評估在 route block 指向的
+  `docs/document-governance.md` 加指標。
 - 不改：kernel managed block；受信任 scanner（fleet 逐 byte 相同）；各 repo 的 `docs/document-governance.md`
   （各 repo 自有、不逐 byte，寫入者實測經 dossier.md，不加指標）；既有紀錄（append-only，已知缺陷不回改；
   斷鏈與懸空引用如需更正，以新紀錄說明）；`steward-authority.py`。
 - 不採用：把規則做成逐 byte 複製進各受治理 repo 的檔案並在送出時比對。它讓沒有 skill 的寫入者也讀得到，但
-  Phase 0 沒有這種寫入者，成本卻是新比對機制與每次修訂逐 repo 同步。重議：任一受治理 repo 的 archive 出現
-  非使用者身分的作者，或 repo 移交給同事。
+  Phase 0 沒有這種寫入者，成本卻是新比對機制與每次修訂逐 repo 同步。重議：repo 移交給同事，或出現未載入
+  skill 的 runtime（例如 CI bot、雲端 agent）寫紀錄。agent 的 commit 也用使用者身分，作者身分不能作為訊號。
 - 流程規定的紀錄內容維持現行要求（D-20261011-protocol-records-to-workflow-simplification）：endpoint 未達成時
   milestone 的「implementation 已完成、endpoint pending」（`log-prepare.md` Step 2 第 3 點、`pressure-tests.md`
   對應情境）與移交時的 conditional owner decision（`transfer-workflow.md`、`dossier.md`「平行協作與
@@ -68,14 +71,14 @@ D-20261011-delivery-measurement-next-targets）。第 4 項量測顯示寫紀錄
   `templates/transfer-guide-template.md` 的 Current steward 等欄位屬移交指南。保留的是流程要求的內容，不是
   D-20261010-transfer-delivery-overhead 把指南欄位複製成子項的慣例。
 - 寫入協調：`shared/skills/project/`、`tests/`、`docs/testing-contract.md`、`claude/CLAUDE.md`、`codex/AGENTS.md`
-  在本項 Write Scope；item 4 的 Write Scope 也含這些路徑中的後四者，但其現行下一步只做工具歸屬核對、不改這些檔，
+  在本項 Write Scope；STATUS 工作項「Setup 工具與 agent shell 環境對齊」的 Write Scope 也含這些路徑中的後四者，但其現行下一步只做工具歸屬核對、不改這些檔，
   兩項依序進行。
 
 ### Phase 0：缺陷證據（2026-10-11，唯讀）
 
 dotfiles 2026-08～10 的 443 筆紀錄（a60d20d），依檔內位置等距抽 M 16、D 15、X 8 筆，另加 2026-10 最長的 M 5 筆、D 3 筆；
 人工判讀，另以 regex 統計全語料趨勢（只能看趨勢）。無實質缺陷：M 4/16、D 5/15、X 5/8；缺陷集中在 2026-10 與
-2026-09 下旬。M 篇幅中位 08→10 月為 1,477→1,713 B，p90 1,921→2,895 B；10 月出現約 20 種自創欄位名，08 月只有
+2026-09 下旬。M 篇幅中位 08→10 月為 1,477→1,713 B，p90 1,921→2,895 B；10 月出現約 40 種自創欄位名（regex 計），08 月只有
 規定的四種。範例良好紀錄：M-20260822-retrieval-source-diversity、D-20260822-portable-project-skill、
 D-20260917-terminal-macbooks-outside-inventory、X-20260823-retrieval-idf-and-h3-chunking。
 
@@ -231,8 +234,8 @@ transcript，Claude 舊 transcript 有缺；compaction 標記不等於規則內�
    代替同一情境重複執行。
    a–d 兩臂 query 與 fixture 逐字相同，只差 dossier.md 規則段；fixture 不含規則或答案。oracle 列出每情境的必寫項與
    禁止項，沒有語意歧義的（暫存路徑為唯一證據、位置式引用、自創欄位、缺子項、`#數字` 開頭標題）以腳本判，其餘
-   以盲評。授權過程與 session 狀態只用盲評：現有 90 筆紀錄含「授權」，許多以授權規則為主題；情境 a 依流程必須
-   寫 endpoint pending，字樣比對會把遵守流程判錯。盲評判準寫明流程規定的 endpoint 狀態不算違規。
+   以盲評。授權過程與 session 狀態只用盲評：現有紀錄首行含「授權」90 筆、全文 138 筆，許多以授權規則為主題；情境 a 依流程
+   可寫 endpoint pending，字樣比對會把遵守流程判錯。盲評判準寫明流程規定的 endpoint 狀態不算違規。
    RED 在 Sonnet 上逐條規則判定。一次試驗是同一情境兩臂各跑一次：改前違反且改後遵守為「正」，其餘（兩臂都遵守、
    都違反、只有改後違反）為「負」；同一規則在不同情境的觀察各算一次試驗。每條規則採五戰三勝：先取 3 次試驗，
    先達 3 正為有分歧、先達 3 負為無分歧，未分勝負時補到第 4、5 次，只補跑該規則所在的情境。無分歧的規則不加，
@@ -243,7 +246,7 @@ transcript，Claude 舊 transcript 有缺；compaction 標記不等於規則內�
    情境寫進 `shared/skills/project/references/pressure-tests.md`。
 3. **dotfiles 機檢**：`tests/content-checks.py` 對新增紀錄檢查可機械判定的規則。新增的判定沿用
    `scripts/doc-governance.py` 的 git 基準：取當前 branch 與 default branch 的 merge-base，基準時不存在的紀錄才
-   檢查；不依 ID 日期，補寫的舊日期紀錄同樣受檢，也不維護 ID 清單（清單本身會成為旁路）。CI 為完整歷史
+   檢查（`日期來源` 為 migration-entry／migration-cutover 的搬移紀錄除外，見第 4 點）；不依 ID 日期，補寫的舊日期紀錄同樣受檢，也不維護 ID 清單（清單本身會成為旁路）。CI 為完整歷史
    （`.github/workflows/test.yml` 的 `fetch-depth: 0`）；找不到基準時本機印出跳過說明，CI 上判失敗，不靜默
    通過。main 上跳過可接受，因為變更都經 PR，PR 一定有基準。先以暫存 repo 的 RED 對照取得證據：feature
    branch 新增違規紀錄為紅；同一筆違規紀錄在基準時已存在為綠；CI 環境無基準為紅。自創欄位檢查不設允許清單
@@ -261,7 +264,9 @@ transcript，Claude 舊 transcript 有缺；compaction 標記不等於規則內�
    - 含證據 token 的標題：874（H2，#246）、921（H2，2026-10-02）、748（H3）。
 
    實作時先以同一判準重掃確認清單（token 掃描會漏掉不帶日期或數字的敘述），再把這些位置改為規則加一句理由並以
-   ID 指向紀錄。沒有任何紀錄的位置逐處搬成一筆紀錄，依 `docs/doc-governance-rollout.md`「2. history 遷移」：原文
+   ID 指向紀錄。沒有任何紀錄的位置逐處搬成一筆紀錄（搬移紀錄依 rollout「NEVER distill, reword, or re-date a migrated
+   entry」保留原文，`日期來源` 為 migration-entry／migration-cutover 的紀錄不套用撰寫規則機檢，格式仍由 scanner
+   檢查），依 `docs/doc-governance-rollout.md`「2. history 遷移」：原文
    帶日期的（595、776）以原文日期標 `日期來源:migration-entry`；無日期的（224、373、592、754、764）以搬遷當天
    日期寫進標題，標 `migration-cutover`。只在 2026-08 legacy 區段或 milestones 前言的位置已在 history store、
    `find` 查得到，改指向該處，不另建紀錄。重掃確認後的位置清單（含新發現位置）寫回本點。搬移時逐處列對照表：
@@ -276,14 +281,14 @@ transcript，Claude 舊 transcript 有缺；compaction 標記不等於規則內�
    清單內；SHA 判準另只命中 577 行的 awk 範例 key `00000000000000`，清理時改寫為文字描述，規則不開例外。477、892
    以 issue 號作規則識別、874 為 H2，清理時改為 stable ID 或主題標題。先以含各類字樣的 fixture 取得 RED，另含
    全數字短 SHA 必須命中、紀錄 ID 不得命中兩個對照。同一測試另驗 testing-contract 中每個 D／X／M ID 都對應到既有紀錄（`xref_scan` 只驗檔案＋節名引用，
-   不驗 ID；原型掃 444 筆紀錄約 4.4 ms），以打錯的 ID fixture 取得 RED。不帶字樣的事件敘述（如 224 行）沒有
+   不驗 ID；原型掃 443 筆紀錄（a60d20d）約 4.4 ms），以打錯的 ID fixture 取得 RED。不帶字樣的事件敘述（如 224 行）沒有
    機檢；本次清理以重掃後的清單為準，之後新增的這類敘述不受機檢保護。
 6. 全套測試與 `doc-governance audit --ship`。
 
 ### Phase 3：送出與觀察
 
 一個 PR；合併後經授權 dotsync。觀察 dotfiles 之後 15 筆新紀錄，並抽查一個其他 adopted repo 的新紀錄，以
-Phase 0 同一標籤判讀缺陷率。
+Phase 0 同一標籤判讀缺陷率。某條規則對應的缺陷率未低於 Phase 0 時，重新檢討該規則（修改或移除），不視為完成。
 
 ### 驗收
 
