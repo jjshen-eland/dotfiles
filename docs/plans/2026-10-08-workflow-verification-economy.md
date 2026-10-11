@@ -81,6 +81,34 @@ D-20260917-terminal-macbooks-outside-inventory、X-20260823-retrieval-idf-and-h3
 （營運型 kapi-infra、服務型 krepo-judicial）2026-09～10 的紀錄，判定全機隊是否有同樣缺陷；缺陷率明顯低於
 dotfiles 時依該決策的重議條件重新評估範圍。
 
+結果（2026-10-11；kapi-infra `46d176c`、krepo-judicial `03087fb`；單一判讀者，每格樣本小）：缺陷型態與 dotfiles
+相同，不低於 dotfiles，重議條件未成立。無實質缺陷：kapi-infra M 0/8、D 3/8、X 1/4；krepo-judicial M 0/8、D 4/8、
+X 0/2（dotfiles M 4/16、D 5/15、X 5/8）。授權／否定式聲明在 M 為 6/8、7/8，原始量測／hash 兩邊 M 皆 5/8，
+krepo-judicial M 的 active-state 內容 5/8；暫存路徑與重議寫成下一步較少（kapi-infra M 幾乎不寫放棄／重議，
+293/300）。兩邊都有非標準子欄位（理由、邊界、採用、下一步、診斷、適用條件）。逐筆判定（ID | 缺陷編號，編號依
+上表列序：1 暫存路徑、2 授權聲明、3 原始量測、4 重議、5 標題、6 過程敘事、7 active-state、8 位置式引用、
+9 未定義術語、10 一筆多事件、11 缺子項、13 類型錯置）：
+
+- kapi-infra：M-20260913-shared-repository-role-contract 2,9,11；M-20260915-papp01-filesystem-permanent-convergence-complete 2,3,11；
+  M-20260916-pops01-reboot-preflight 2,3,8,11；M-20260928-kapi-infra-repository-rename 2,7,11；
+  M-20261002-kapi-entry-approval-candidate 2,3,6,11；M-20261004-judicial-runtime-installed-disabled 3,9,11；
+  M-20261005-issue113-tools-review-candidate 2,3,5,7,8,9,11；M-20261009-notification-center-kapi-deploy 6,11；
+  D-20260910-automate-host-certificate-renewal 無；D-20260913-use-shared-organization-role-teams 2；
+  D-20260915-expand-governance-surface-budget 無；D-20260928-kapi-repository-scope-boundary 無；
+  D-20261003-kapi-controller-plan-no-go 2,4,5,6,8,9；D-20261005-repair-infra-plan-approved 2,6,7；
+  D-20261007-infra113-golive-split 4,6,8,9；D-20261010-deprecation-window-tracking 6；
+  X-20260914-filesystem-dry-run-handoff-gate 1,2,3,11；X-20260917-ghcr-broker-macos-xattr-bundle 無；
+  X-20261003-review-admission-defect-classification 2,3,6,8,11,13；X-20261005-service-routing-review-retry 2,3,4,6。
+- krepo-judicial：M-20260912-judicial-writer-g2-preflight-blocked 2,3,9,11；M-20260918-judicial-final-cutoff-preflight-ready 2,3,11；
+  M-20260926-judicial-production-schedules-complete 11；M-20260929-judicial-four-repo-admission-local-complete 2,3,7,11；
+  M-20261003-judicial-audit-remediation-local-complete 2,3,6,7,9；M-20261004-judicial-adapter-integration-local 2,6,7,8；
+  M-20261004-formal-sdk-cancel-adoption 2,7,8；M-20261005-judicial-release-preparation-complete 2,3,5,6,7,8,9；
+  D-20260918-judicial-final-cutoff-updates-forward-only 無；D-20260929-judicial-g3-final-cutoff-indexable-key-joins 無；
+  D-20260929-kgi-retrieval-v1-operations 無；D-20260929-separate-publisher-first-run-followup 2；
+  D-20261002-judicial-case-strings-cursor-index 2,6,10；D-20261003-judicial-audit-isolated-repair 2,4,10；
+  D-20261009-judicial-gateway-leftovers-removed 7；D-20261009-domain-rest-removed 無；
+  X-20260923-judicial-g3-evidence-public-schema 2,3,11；X-20260929-kgi-party-pagination-id-tiebreaker 11。
+
 ### Phase 1：規則（候選）
 
 | 類 | 內容 |
