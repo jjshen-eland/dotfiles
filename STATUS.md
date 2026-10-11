@@ -92,7 +92,8 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
   6. 全套測試與 `doc-governance audit --ship` 通過。
 - **Constraints**：本 Spec 只授權寫 active contract，不授權 commit、push、PR、merge、dotsync 或任何主機操作。歷史紀錄 append-only 不改；docs/plans/2026-10-05-turbo-skill.md 已凍結不改，退役以新紀錄說明。claude/settings.json 的 runtime drift 不帶進 commit；未經權威 repo 修改並 push 的 drift 會在 dotsync／brewup 時丟棄，本機合併前依同樣做法丟棄。實作前先寫計畫並以 deep-plan 審查。
 - **進度**：2026-10-11 於 worktree 完成實作（D-20261011-turbo-retired）：三組 RED 轉綠、eval 兩臂與 schema 搬移、臨時 HOME 驗證 Codex 設定清除 7 個 turbo hook 且保留其他 hooks 與專案信任、刪除實驗確認 eval／schema 只由 review-skill 讀取。title-free recall ratchet 一度 6→5（本批決策紀錄把 canonical evals 擠出前 5 名、只剩 symlink 別名），改為以實體路徑判命中後回到 6/10（D-20261011-recall-alias-canonical）。
-- **下一步**：全套轉綠後以 deep-review 審查實際 diff，再依授權送出與散佈。
+- **審查**：deep-review full（3 位 fresh reviewer）PASS，0 阻斷；4 條 low 依使用者指示全修，各有先紅後綠測試與突變驗證：升級前以 native transport 派出的 ticket 在 `finish` 拒收、eval 移除無讀取者的 reviewer 標記並改斷言 `-a never`／`-s read-only`、eval 中斷時停止 reviewer process group 並關閉 attempt、evals.md 措辭。
+- **下一步**：依授權送出（本 branch 含 dossier 兩顆，一個 PR 即可），合併後依計畫「散佈」節切換本機與機隊。
 - **關聯**：D-20261005-turbo-delegated-controller；D-20261010-ci-controller-platform-evidence；item 2；item 3
 
 ## 暫停中
