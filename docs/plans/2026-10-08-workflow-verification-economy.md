@@ -75,7 +75,32 @@ D-20260917-terminal-macbooks-outside-inventory、X-20260823-retrieval-idf-and-h3
 | 類型錯置 | 2／1／1 | — | 必寫：類型定義 |
 | 關聯 ≥8 項 | 4／0／0 | M-09 23 筆 | 不使用的寫法 |
 
-限制：單一評分者、39 筆；regex 數字含誤報。分析腳本與抽樣原文在 session scratchpad，不入庫。
+限制：單一評分者、39 筆；regex 數字含誤報。分析腳本與抽樣原文在 session scratchpad，不入庫；持久證據是下列
+逐筆判定（ID | 缺陷編號；編號同下方其他 repo 補抽，另加 12 重複、14 關聯 ≥8、15 遷移佔位或非標準 label、
+16 斷鏈或會腐爛的引用、17 缺可驗證指標、18 缺理由；「長尾」為只在長尾組）：
+
+- M：M-20260815-project-blocked-routing 15,17；M-20260822-retrieval-source-diversity 無；
+  M-20260825-project-multi-repo-scope 8（輕微）；M-20260826-project-retired-steward-gate 9；
+  M-20260912-ci-run-34676591841-repair 無；M-20260915-b05-deep-plan-model-policy-reassessed 13,14；
+  M-20260918-antigravity-cli-provisioning 無；M-20260928-project-merge-production-red-captured 2,4,5,9；
+  M-20261002-session-skills-final-tree-verified 1,5,8,11,13,18；M-20261006-turbo-native-delivery-local 1,2,3,9,11；
+  M-20261006-runtime-cloud-sync-validated 1,2,3,4,6,10；M-20261009-ci-controller-test-layers-local 1,2,3,4,6,7,8,10,14；
+  長尾 M-20261008-ci-critical-path-measurement-complete 1,2,3,4,5,7,12；長尾 M-20261008-ci-controller-core-local 1,2,3,4,7,12,14；
+  長尾 M-20261008-workflow-verification-economy-local 1,2,3,5,6,7,14；長尾 M-20261008-workflow-verification-economy-delivery-measured 1,2,3,4,5,6,10。
+- D：D-20260819-dead-end-exit-modes 15,17；D-20260809-generated-docs-no-churn 9,15,17；D-20260822-portable-project-skill 無；
+  D-20260825-portable-root-cause-first 無；D-20260909-dossier-byte-budget-cjk 16（輕微）；
+  D-20260917-terminal-macbooks-outside-inventory 無；D-20260924-workflow-bounded-delivery 5,6,8；
+  D-20260925-instruction-quality-scope 9,10；D-20261003-deep-plan-controller-adoption 2,9；D-20261006-turbo-public-help 6,11；
+  D-20261008-ci-controller-adoption-local 2,5,6,7,8,12,13；D-20261011-turbo-direct-deletion 8,16（輕微）；
+  長尾 D-20261008-ci-core-controller-recommendation 1,3,5,12；長尾 D-20261010-transfer-delivery-overhead 8；
+  長尾 D-20261003-review-repair-controller-adoption 2,9。
+- X：X-20260815-backlog-archive-without-split 15；X-20260820-global-routing-tree 15；X-20260823-retrieval-idf-and-h3-chunking 無；
+  X-20260907-unreadable-tool-exclusion-argument 無；X-20260917-contract-eval-cwd-leak 16（輕微）；
+  X-20261003-review-checklist-ablation 1,2；X-20261005-legacy-disposition-native-sandbox 5,6,8,9,13；
+  X-20261006-turbo-help-copyable-commands 1,6。
+
+上方缺陷表的計數為初次彙總；與逐筆判定不一致處（例如 D-20261010-transfer-delivery-overhead 的位置式引用漏計）
+以逐筆判定為準。
 
 **其他 repo 補抽**（D-20261011-record-rules-fleet-wide）：以同一抽樣規則與缺陷標籤，抽兩個其他 adopted repo
 （營運型 kapi-infra、服務型 krepo-judicial）2026-09～10 的紀錄，判定全機隊是否有同樣缺陷；缺陷率明顯低於
@@ -141,7 +166,7 @@ krepo-judicial M 的 active-state 內容 5/8；暫存路徑與重議寫成下一
    - 含證據 token 的標題：874（H2，#246）、921（H2，2026-10-02）、748（H3）。
 
    實作時先以同一判準重掃確認清單（token 掃描會漏掉不帶日期或數字的敘述），再把這些位置改為規則加一句理由並以
-   ID 指向紀錄。沒有任何紀錄的位置逐處搬成一筆紀錄，依 `docs/doc-governance-rollout.md`「history 遷移」：原文
+   ID 指向紀錄。沒有任何紀錄的位置逐處搬成一筆紀錄，依 `docs/doc-governance-rollout.md`「2. history 遷移」：原文
    帶日期的（595、776）以原文日期標 `日期來源:migration-entry`；無日期的（224、373、592、754、764）以搬遷當天
    日期寫進標題，標 `migration-cutover`。只在 2026-08 legacy 區段或 milestones 前言的位置已在 history store、
    `find` 查得到，改指向該處，不另建紀錄。搬完再刪原文。兩個 H2
