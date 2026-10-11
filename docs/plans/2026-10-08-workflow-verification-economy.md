@@ -219,9 +219,9 @@ Phase 0 同一標籤判讀缺陷率。
 
 ### 驗收
 
-1. dossier.md 的規則段含四類規則，每條對應 Phase 0 的缺陷；Phase 2 成對實驗改前有分歧、改後兩端正式驗收通過。
+1. dossier.md 的規則段含四類規則，每條對應 Phase 0 的缺陷並有 Phase 1 對照表的情境涵蓋；Phase 2 成對實驗改前有分歧、改後兩端正式驗收通過。
 2. 重寫範例保留五項可還原資訊，`find` 命中名次不退步。
-3. dotfiles 機檢先紅後綠，舊紀錄以固定清單豁免。
+3. dotfiles 機檢的三個 RED 對照（新增違規紅、基準已存在綠、CI 無基準紅）先紅後綠。
 4. testing-contract 機檢先紅後綠、清理後零命中；計畫列出的每個位置都已改為規則加理由並指向紀錄；被移出的證據都有
    對應紀錄；recall ratchet 與 xref 通過。
 5. 全套測試、`doc-governance audit --ship` 通過；dossier.md 增加的 bytes 與讀取成本列入報告。
