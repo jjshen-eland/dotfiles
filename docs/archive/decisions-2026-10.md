@@ -371,3 +371,8 @@
   - 放棄:以時間為由撤下第 3 項（紀錄品質的需要與時間無關）；繼續以寫紀錄為主要縮時對象（佔比小）
   - 重議:新量測顯示寫紀錄佔扣等待後時間持續超過 25%
   - 關聯:D-20261011-record-rules-before-size-cap;Issue#285;STATUS item 3
+- **D-20261011-protocol-records-to-workflow-simplification · 2026-10-11 流程規定的紀錄內容留待 steward／transfer 流程簡化處理**:紀錄撰寫規則的計畫與兩種流程規定的紀錄衝突：endpoint 未達成時的 milestone（log-prepare 結案規則）與移交時的 conditional owner decision（transfer-workflow）。兩者都是把流程狀態寫進 append-only 歷史：前者因 milestone 與實作同 commit、早於 merge，後者的狀態原有 `docs/transfer.md` 可放。使用量顯示這套機制比實際工作模式重：自 2026-09-01，有 Writer 欄位的 106 個 STATUS 版本中 17 個同時有 2 個 writer，steward 始終只有 1 個；正式移交只發生 1 次（D-20261010-transfer-delivery-overhead），移交指南當天退役；約半數使用權限檢查的互動 session 遇到確認題（含開發該機制的 session，偏高）。使用者決定：紀錄規則不改這兩種紀錄的現行要求，另列 #285 的流程簡化工作項，依使用狀況改善 steward、writer、transfer 與 dossier 流程的工作體驗。
+  - 日期來源:direct
+  - 放棄:在紀錄規則中為流程紀錄設永久例外（兩套判準並存）；在紀錄規則工作中一併改 log-prepare 與 transfer（牽動 authority 檢查，需獨立規劃與審查）
+  - 重議:流程簡化工作項決定保留這兩種紀錄的現行寫法
+  - 關聯:D-20261011-record-volume-scope-narrowed;D-20261011-delivery-measurement-next-targets;D-20261010-transfer-delivery-overhead;Issue#285
