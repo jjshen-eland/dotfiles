@@ -69,11 +69,11 @@ D-20260917-terminal-macbooks-outside-inventory、X-20260823-retrieval-idf-and-h3
 | active-state／ownership 內容 | 4／1／0 | M-10 16 筆 | 不要寫 |
 | 位置式或相對引用（`STATUS item N`） | 3／3／1 | 11 處，8 處已懸空 | 不使用的寫法 |
 | 未定義術語或代碼 | 3／4／1 | — | 不使用的寫法 |
-| 一筆多事件 | 3／1／0 | 單一 issue 一日 10 筆 M | 不要寫 |
+| 一筆多事件 | 3／1／0 | —（單一 issue 一日 10 筆 M 是拆得過碎，方向相反，不作本列證據） | 不要寫 |
 | 缺放棄／重議欄 | 2／1／0 | 10 月 M＋D 缺放棄 23、缺重議 19 | 必寫（無則 none） |
-| 與其他紀錄重複 | 2／2／0 | — | 不用寫（引用 ID） |
-| 類型錯置 | 2／1／1 | — | 必寫：類型定義 |
-| 關聯 ≥8 項 | 4／0／0 | M-09 23 筆 | 不使用的寫法 |
+| 與其他紀錄重複 | 2／2／0 | — | 不立規則（見 Phase 1） |
+| 類型錯置 | 2／1／1 | — | 由必寫的 D／X／M 內容定義涵蓋 |
+| 關聯 ≥8 項 | 4／0／0 | M-09 23 筆 | 不立規則（見 Phase 1） |
 
 限制：單一評分者、39 筆；regex 數字含誤報。分析腳本與抽樣原文在 session scratchpad，不入庫；持久證據是下列
 逐筆判定（ID | 缺陷編號；編號同下方其他 repo 補抽，另加 12 重複、14 關聯 ≥8、15 遷移佔位或非標準 label、
@@ -138,18 +138,49 @@ krepo-judicial M 的 active-state 內容 5/8；暫存路徑與重議寫成下一
 
 | 類 | 內容 |
 |---|---|
-| 必寫 | 標題含主題詞，不以 issue 號或階段詞開頭。D：選了什麼、為什麼、適用範圍；X：試了什麼、為何放棄、證據；M：現在成立的結果與驗收證據。結果不完整時寫明範圍邊界，以肯定句描述（「只驗 Claude 端」），不用「不宣稱…」句型。決定來自使用者核定時寫明核定出處與核定的內容。證據指標須可持久查證（repo 路徑、commit、PR／issue、CI run）；暫存路徑只能附註，不能是唯一證據。四個子項都寫，無則 `none`；重議是可觀察的觸發條件。被取代時寫 `supersedes:<ID>`。流程規定的內容（endpoint 未達成的 milestone、移交的 conditional owner decision）依該流程現行要求。 |
-| 不用寫 | diff、commit 清單、PR 討論與 CI 耗時等 git／GitHub 已持久保存的事實（除非它就是量測結果本身）；已在其他紀錄或計畫中的內容（引用 ID 或路徑）；原始量測、環境版本、完整 hash（放計畫或 artifact，紀錄只寫結論數字與指標）。 |
+| 必寫 | 標題含主題詞，不以 issue 號或階段詞開頭。D：選了什麼、為什麼、適用範圍；X：試了什麼、為何放棄、證據；M：現在成立的結果與驗收證據。結果不完整時寫明範圍邊界，以肯定句描述（「只驗 Claude 端」），不用「不宣稱…」句型。決定來自使用者核定時寫明核定出處與核定的內容。證據指標須可持久查證（repo 路徑、commit、PR／issue、CI run）；暫存路徑只能附註，不能是唯一證據。四個子項都寫，無則 `none`；重議是可觀察的觸發條件。流程規定的內容（endpoint 未達成的 milestone、移交的 conditional owner decision）依該流程現行要求。 |
+| 不用寫 | 原始量測、環境版本、完整 hash、CI 耗時（放計畫或 artifact，紀錄只寫結論數字與指標）。 |
 | 不要寫 | Writer／Steward／branch／Write Scope 等 active-state；授權過程與 session 狀態（「已具名授權」「未 push」「尚未 commit」）；session 過程敘事（使用者選了選項幾、上一輪、本批如何進行）；下一步與待辦（屬 STATUS／backlog）；同一筆塞多個獨立事件。流程規定的內容不受此列限制。 |
-| 不使用的寫法 | 位置式或相對引用（`STATUS item N`、上一輪、本批、今天）；未定義的縮寫與代碼；四個子項以外的自創欄位；與本紀錄無直接相依的長串關聯。 |
+| 不使用的寫法 | 位置式或相對引用（`STATUS item N`、上一輪、本批、今天）；未定義的縮寫與代碼；四個子項以外的自創欄位。 |
+
+每條規則都要有成對實驗情境涵蓋，否則不進 dossier.md。dotfiles 機檢擋不住機隊其他 repo，所以只是 dotfiles
+的額外防線，不能取代情境；重寫範例是教材，不算驗證。情境代號見 Phase 2 第 2 點。
+
+| 規則 | 情境 | dotfiles 機檢 |
+|---|---|---|
+| 主題詞標題 | a–d（fixture 帶 #issue 脈絡） | `#數字` 開頭 |
+| D／X／M 內容（含類型判準） | b（D）、d（X）、a／c（M） | — |
+| 範圍邊界用肯定句 | a | — |
+| 核定出處與內容 | b | — |
+| 可持久查證的證據 | a | 暫存路徑為唯一證據 |
+| 四子項（無則 none） | a–d | 放棄／重議／關聯缺漏（日期來源已由 scanner 檢查） |
+| 重議為可觀察條件 | a、c | — |
+| 原始量測不用寫 | c | — |
+| active-state 不要寫 | a（fixture 帶 STATUS Writer／branch） | — |
+| 授權過程與 session 狀態不要寫 | a | — |
+| session 敘事不要寫 | b | — |
+| 下一步不要寫 | d | — |
+| 一筆多事件不要寫 | d（fixture 另含一個獨立結果） | — |
+| 位置式引用 | b | 有 |
+| 未定義縮寫 | b（fixture 帶內部代碼） | — |
+| 自創欄位 | a–d | 有 |
+
+考慮過但不立規則（每條規則都由機隊每次讀 dossier.md 永久付閱讀成本，沒有必要性的不加）：
+
+- supersedes：同一節已規定「翻案另寫新 record，`關聯` 加 `supersedes:<old-id>`」，scanner 也檢查目標存在；
+  Phase 0 沒有這類缺陷。
+- git／GitHub 已保存的事實：Phase 0 沒有獨立缺陷；其中 CI 耗時屬原始量測，已併入不用寫。
+- 類型錯置：抽樣 4 筆；必寫的 D／X／M 內容定義就是類型判準，不另立規則或情境。
+- 與其他紀錄重複：抽樣 4 筆、無全語料趨勢，代價只是篇幅。
+- 長串關聯：4 筆全在 dotfiles，不是機隊缺陷；「無直接相依」無法機判，也不從現況統計推數量門檻。
 
 ### Phase 2：驗證
 
 1. **重寫範例**：取 Phase 0 長尾 5 筆 M 與 3 筆 D，依規則重寫（不入庫）。逐筆核對 Phase 0 的五項可還原資訊
    是否保留，並以暫存語料比較原文與重寫版在 `doc-governance.py find` 對該主題查詢的命中名次。
 2. **成對實驗**：依 `claude/skill-building-guide.md` 與 `docs/skill-portability.md`。情境取 Phase 0 的實際形狀：
-   本地完成但 endpoint 未達、證據在暫存目錄的 milestone；使用者在編號選項中選定後的 decision；量測型
-   milestone；帶下一步的 dead end。兩臂 query 與 fixture 逐字相同，只差 dossier.md 規則段；fixture 不含規則或
+   (a) 本地完成但 endpoint 未達、證據在暫存目錄的 milestone；(b) 使用者在編號選項中選定後的 decision；
+   (c) 量測型 milestone；(d) 帶下一步的 dead end。各情境 fixture 須含 Phase 1 對照表列出的脈絡。兩臂 query 與 fixture 逐字相同，只差 dossier.md 規則段；fixture 不含規則或
    答案。oracle 列出每情境的必寫項與禁止項，能機械判定的（暫存路徑為唯一證據、位置式引用、自創欄位、缺子項、
    授權聲明字樣）以腳本判，其餘以盲評。先在 Sonnet 上取得改前分歧（RED）；任一情境改前無分歧，對應規則不加。
    之後在 Claude Code `opus[1m]` 與 Codex production model 正式驗收，記錄 alias、resolved model、effort 與 CLI 版本。
