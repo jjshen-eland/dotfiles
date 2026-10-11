@@ -207,7 +207,7 @@ transcript，Claude 舊 transcript 有缺；compaction 標記不等於規則內�
    (a) 本地完成但 endpoint 未達、證據在暫存目錄的 milestone；(b) 使用者在編號選項中選定後的 decision；
    (c) 量測型 milestone；(d) 帶下一步的 dead end；(e) 脈絡中沒有規則段（模擬 compaction 後）時寫一筆 milestone，
    兩臂只差 always-on 指令有無寫前重讀那一行，看是否重讀並遵守。各情境 fixture 須含 Phase 1 對照表列出的脈絡。
-   兩臂 query 與 fixture 逐字相同，只差 dossier.md 規則段；fixture 不含規則或答案。oracle 列出每情境的必寫項與
+   a–d 兩臂 query 與 fixture 逐字相同，只差 dossier.md 規則段；fixture 不含規則或答案。oracle 列出每情境的必寫項與
    禁止項，沒有語意歧義的（暫存路徑為唯一證據、位置式引用、自創欄位、缺子項、`#數字` 開頭標題）以腳本判，其餘
    以盲評。授權過程與 session 狀態只用盲評：現有 90 筆紀錄含「授權」，許多以授權規則為主題；情境 a 依流程必須
    寫 endpoint pending，字樣比對會把遵守流程判錯。盲評判準寫明流程規定的 endpoint 狀態不算違規。先在 Sonnet 上取得改前分歧（RED）；任一情境改前無分歧，對應規則不加。
