@@ -381,3 +381,8 @@
   - 放棄:只寫 dotfiles 專屬位置（其他 repo 用同一 skill 寫紀錄，缺陷來源相同）
   - 重議:其他 adopted repo 抽樣顯示缺陷率明顯低於 dotfiles
   - 關聯:supersedes:D-20261011-record-volume-scope-narrowed 的範圍限制;D-20261011-protocol-records-to-workflow-simplification;D-20261011-delivery-measurement-next-targets;Issue#285
+- **D-20261011-positional-refs-resolution · 2026-10-11 STATUS item 與 #285 項次引用的解讀對照**:下列紀錄以 STATUS 或計畫的項次指向工作項目，且未附計畫路徑；項次會隨 STATUS 增刪而懸空，故以本紀錄固定解讀。「STATUS item 5」與「item 5」指「移除 turbo skill 與其他 skill 的耦合」，計畫 docs/plans/2026-10-11-turbo-retirement.md，已由 M-20261011-turbo-retired 結案。「STATUS item 3」「第 3 項」「#285 第 3 項」指 docs/plans/2026-10-08-workflow-verification-economy.md「第 3 項：D／X／M 紀錄撰寫規則（全機隊，2026-10-11 修訂）」。「#285 第 1、2 項」指 D-20261010-delivery-overhead-spec 定義的 CI 路由補齊與平台無關 controller 只跑 Ubuntu。「#285 第 N 項」的編號屬該計畫，不是 Issue#285 本文「工作範圍」的條列編號。D-20261011-turbo-retirement-choices 的「item 2」指 STATUS 工作項「Runtime 目錄收斂與 legacy 遷移」。D-20261011-record-volume-plan-choices 的「本批」「本項」指上述計畫第 3 項的前一版草稿。
+  - 日期來源:direct
+  - 放棄:改寫原紀錄（已 commit 紀錄不改不刪）
+  - 重議:none
+  - 關聯:D-20261011-record-volume-plan-choices;D-20261011-record-volume-scope-narrowed;D-20261011-turbo-retirement-choices;D-20261011-turbo-direct-deletion;D-20261011-primary-scope-eval-cross-runtime;D-20261011-turbo-plan-nogo-proceed;D-20261011-turbo-retired;D-20261011-recall-alias-canonical;D-20261011-out-of-inventory-reminder-only;D-20261011-record-rules-before-size-cap;D-20261011-delivery-measurement-next-targets;M-20261011-ci-platform-matrix-merged
