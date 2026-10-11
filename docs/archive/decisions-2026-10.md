@@ -391,3 +391,8 @@
   - 放棄:dotfiles 新增紀錄撰寫規則機檢（例外與旁路持續增加，且只保護 dotfiles）
   - 重議:送出後觀察的新紀錄中，某條可機械判定的規則缺陷率未低於規則前，且該缺陷能以不誤擋合法證據的判準辨識
   - 關聯:D-20261011-record-rules-fleet-wide;D-20261011-record-volume-plan-choices;docs/plans/2026-10-08-workflow-verification-economy.md;Issue#285
+- **D-20261012-record-checks-two-precise · 2026-10-12 紀錄機檢恢復缺子項與引用本 branch commit 兩項**:使用者選定 #285 紀錄撰寫規則恢復兩項 dotfiles 新增紀錄機檢，判準是寫錯會永久損害（紀錄 append-only）且能精確判定。缺子項（放棄、重議、關聯，無則 none）是現行規則，2026 年 26 筆缺漏、24 筆在 10 月。引用本 branch commit 只比對 merge-base..HEAD 的 commit 前綴，CI run ID 與其他 repo 的 SHA 不會命中；2026 年紀錄引用的 SHA 有 20% 已在 GitHub 查不到；這項只在該規則經成對實驗採用後啟用。其餘不機檢：暫存路徑當唯一證據在 108 筆含暫存路徑的紀錄中只命中 1 筆，機器分不出關鍵證據；位置式引用會誤擋解讀它的更正紀錄；自創欄位與 #數字 標題不造成永久損害。
+  - 日期來源:direct
+  - 放棄:全部不機檢（缺子項與本 branch commit 的損害永久且可精確判定）；恢復暫存路徑唯一證據機檢（幾乎抓不到）
+  - 重議:Phase 3 觀察中暫存路徑或位置式引用的缺陷未低於規則前，且出現不誤擋的判準
+  - 關聯:supersedes:D-20261011-record-rules-no-record-check 的「不做任何新增紀錄機檢」;docs/plans/2026-10-08-workflow-verification-economy.md;Issue#285
