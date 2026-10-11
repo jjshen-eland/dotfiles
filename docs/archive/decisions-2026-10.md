@@ -346,3 +346,13 @@
   - 放棄:第 3 批計畫審查（預期繼續在新增細節上產生同型 finding）
   - 重議:deep-review 在實作 diff 上發現計畫層級的設計錯誤
   - 關聯:D-20261011-turbo-retirement-choices;D-20261011-turbo-direct-deletion;D-20261011-primary-scope-eval-cross-runtime;STATUS item 5
+- **D-20261011-turbo-retired · 2026-10-11 移除 turbo skill 與只服務它的 native-review**:turbo 與 deep-plan／deep-review／project 的耦合、7＋7 個 hooks、兩份全域指令行與 README 節一併移除；deep-review controller 不再有 delegated-reentry／refresh-subject／native-review，primary-scope eval 的 Codex 收集移入 eval。被刪的 skill prose 只在已啟用 turbo 委任時生效，移除後該前提不存在；一般流程的行為不變，由 controller 機械測試守住，因此不重跑 behavior eval。
+  - 日期來源:direct
+  - 放棄:保留 turbo 但拆出耦合（使用者判斷其配合本身即增加複雜度）
+  - 重議:出現需要跨回合自主續跑到交付的明確需求
+  - 關聯:supersedes:D-20261005-turbo-delegated-controller;supersedes:D-20261006-turbo-native-evidence-transitions;supersedes:D-20261006-turbo-native-report-collection;supersedes:D-20261006-turbo-public-help;supersedes:D-20261010-ci-controller-platform-evidence 中 turbo 只跑 Ubuntu 的部分;D-20261011-turbo-retirement-choices;D-20261011-primary-scope-eval-cross-runtime;STATUS item 5
+- **D-20261011-recall-alias-canonical · 2026-10-11 title-free recall 以實體路徑判命中**:「開工前的計畫審查什麼時候值得跑」的前 5 名中，canonical `shared/skills/deep-plan/evals.md` 被新決策紀錄擠出，只剩指向同檔的 `claude/skills/deep-plan/evals.md`，ratchet 由 6/10 退到 5/10。使用者選擇讓測試把 compatibility link 解析成實體檔再判定；字面路徑命中仍照算。只有這一題改判，其餘 9 題不變；拿掉解析即回到 5/10。
+  - 日期來源:direct
+  - 放棄:改 `find` 去重別名（需改受信任 scanner 並對全機隊 rollout）;改寫決策紀錄措辭（違反 append-only，且是為過測試調內容）
+  - 重議:出現別名與 canonical 內容不同的 compatibility link
+  - 關聯:D-20261011-turbo-plan-nogo-proceed;STATUS item 5

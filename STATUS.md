@@ -91,8 +91,8 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
   5. claude/CLAUDE.md 與 codex/AGENTS.md 的 turbo 委任行移除，kernel managed block 不變；README、tests/suites.json 路由與 guidance／session 測試同步。
   6. 全套測試與 `doc-governance audit --ship` 通過。
 - **Constraints**：本 Spec 只授權寫 active contract，不授權 commit、push、PR、merge、dotsync 或任何主機操作。歷史紀錄 append-only 不改；docs/plans/2026-10-05-turbo-skill.md 已凍結不改，退役以新紀錄說明。claude/settings.json 的 runtime drift 不帶進 commit；未經權威 repo 修改並 push 的 drift 會在 dotsync／brewup 時丟棄，本機合併前依同樣做法丟棄。實作前先寫計畫並以 deep-plan 審查。
-- **進度**：2026-10-11 已完成唯讀盤點，Spec 與[計畫](docs/plans/2026-10-11-turbo-retirement.md)建立。
-- **下一步**：deep-plan 審查計畫，通過後依計畫實作。
+- **進度**：2026-10-11 於 worktree 完成實作（D-20261011-turbo-retired）：三組 RED 轉綠、eval 兩臂與 schema 搬移、臨時 HOME 驗證 Codex 設定清除 7 個 turbo hook 且保留其他 hooks 與專案信任、刪除實驗確認 eval／schema 只由 review-skill 讀取。title-free recall ratchet 一度 6→5（本批決策紀錄把 canonical evals 擠出前 5 名、只剩 symlink 別名），改為以實體路徑判命中後回到 6/10（D-20261011-recall-alias-canonical）。
+- **下一步**：全套轉綠後以 deep-review 審查實際 diff，再依授權送出與散佈。
 - **關聯**：D-20261005-turbo-delegated-controller；D-20261010-ci-controller-platform-evidence；item 2；item 3
 
 ## 暫停中
