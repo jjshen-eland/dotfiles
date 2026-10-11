@@ -40,15 +40,24 @@ D-20261011-delivery-measurement-next-targets）。第 4 項量測顯示寫紀錄
   `$project` 的 repo 同時生效，其他 repo 沒有檔案變更。
 - dossier.md 在 Log 結案階段必讀（目前 10,900 B），讀規則文件已佔交付時間約 14%（第 4 項）；本項新增內容以
   表格精簡呈現，並在 Phase 2 量測增加的讀取 bytes。
-- 不改：kernel managed block、`docs/document-governance.md` 與受信任 scanner（fleet 逐 byte 相同）、既有紀錄
-  （append-only，已知缺陷不回改；斷鏈與懸空引用如需更正，以新紀錄說明）、`steward-authority.py`。
+- 寫前重讀：`claude/CLAUDE.md` 與 `codex/AGENTS.md` 的非 kernel 區各加一行「寫 D／X／M 紀錄前，重讀
+  `shared/skills/project/references/dossier.md`「記錄時機與 record schema」」。依據是 Phase 0「寫入當下的脈絡」：寫入者幾乎都讀過 dossier.md，
+  缺口是讀完後經 compaction 才寫；always-on 指令在 compaction 後仍載入。每次寫紀錄多讀一次規則段，規則段須
+  精簡並計入讀取 bytes。是否加入由 Phase 2 情境 e 決定。
+- 不改：kernel managed block；受信任 scanner（fleet 逐 byte 相同）；各 repo 的 `docs/document-governance.md`
+  （各 repo 自有、不逐 byte，寫入者實測經 dossier.md，不加指標）；既有紀錄（append-only，已知缺陷不回改；
+  斷鏈與懸空引用如需更正，以新紀錄說明）；`steward-authority.py`。
+- 不採用：把規則做成逐 byte 複製進各受治理 repo 的檔案並在送出時比對。它讓沒有 skill 的寫入者也讀得到，但
+  Phase 0 沒有這種寫入者，成本卻是新比對機制與每次修訂逐 repo 同步。重議：任一受治理 repo 的 archive 出現
+  非使用者身分的作者，或 repo 移交給同事。
 - 流程規定的紀錄內容維持現行要求（D-20261011-protocol-records-to-workflow-simplification）：endpoint 未達成時
   milestone 的「implementation 已完成、endpoint pending」（`log-prepare.md` Step 2 第 3 點、`pressure-tests.md`
   對應情境）與移交時的 conditional owner decision（`transfer-workflow.md`、`dossier.md`「平行協作與
   stewardship」、`templates/transfer-guide-template.md`）。規則寫明以這些流程為準，並列為第 6 項流程簡化的相依，
   不是永久例外；實作時核對這些檔與規則段沒有互相矛盾，成對實驗不以相反的 oracle 判分。
-- 寫入協調：`shared/skills/project/`、`tests/`、`docs/testing-contract.md` 在本項 Write Scope；item 4 的 Write
-  Scope 也含 `tests/`、`docs/testing-contract.md`，但其現行下一步只做工具歸屬核對、不改這兩處，兩項依序進行。
+- 寫入協調：`shared/skills/project/`、`tests/`、`docs/testing-contract.md`、`claude/CLAUDE.md`、`codex/AGENTS.md`
+  在本項 Write Scope；item 4 的 Write Scope 也含這些路徑中的後四者，但其現行下一步只做工具歸屬核對、不改這些檔，
+  兩項依序進行。
 
 ### Phase 0：缺陷證據（2026-10-11，唯讀）
 
@@ -134,6 +143,21 @@ krepo-judicial M 的 active-state 內容 5/8；暫存路徑與重議寫成下一
   D-20261009-judicial-gateway-leftovers-removed 7；D-20261009-domain-rest-removed 無；
   X-20260923-judicial-g3-evidence-public-schema 2,3,11；X-20260929-kgi-party-pagination-id-tiebreaker 11。
 
+**寫入當下的脈絡**（2026-10-11，本機 Claude／Codex transcript）：只計寫入真實 repo 且紀錄存在於該 repo HEAD
+的首次寫入，共 879 次寫入、1,023 筆紀錄、11 個 repo、81 個 session。分類：A 讀過 dossier.md 且之後未 compaction；
+B 讀過但之後 compaction；C 只讀過 `document-governance.md`；D 兩者皆無。
+
+| 月份 | A | B | C | D |
+|---|---|---|---|---|
+| 08 | 36% | 11% | 51% | 0% |
+| 09 | 47% | 27% | 23% | 1% |
+| 10 | 38% | 54% | 5% | 1% |
+
+與上方逐筆判定交叉：現行 schema 已規定的四子項，A 組缺漏 1/23、B 組 7/24（只看 10 月 1/9 對 7/22）；無缺陷
+A 7/23、B 1/24。dotfiles 2026-08 起改 archive 的 252 個 commit 作者都是使用者本人的身分。限制：只有本機
+transcript，Claude 舊 transcript 有缺；compaction 標記不等於規則內容遺失；B 組多為 10 月長 session，可能混雜；
+單一判讀者、樣本小，只作方向證據。
+
 ### Phase 1：規則（候選）
 
 | 類 | 內容 |
@@ -164,6 +188,7 @@ krepo-judicial M 的 active-state 內容 5/8；暫存路徑與重議寫成下一
 | 位置式引用 | b | 有 |
 | 未定義縮寫 | b（fixture 帶內部代碼） | — |
 | 自創欄位 | a–d | 有 |
+| 寫前重讀規則段（always-on 指令） | e | — |
 
 考慮過但不立規則（每條規則都由機隊每次讀 dossier.md 永久付閱讀成本，沒有必要性的不加）：
 
@@ -180,7 +205,8 @@ krepo-judicial M 的 active-state 內容 5/8；暫存路徑與重議寫成下一
    是否保留，並以暫存語料比較原文與重寫版在 `doc-governance.py find` 對該主題查詢的命中名次。
 2. **成對實驗**：依 `claude/skill-building-guide.md` 與 `docs/skill-portability.md`。情境取 Phase 0 的實際形狀：
    (a) 本地完成但 endpoint 未達、證據在暫存目錄的 milestone；(b) 使用者在編號選項中選定後的 decision；
-   (c) 量測型 milestone；(d) 帶下一步的 dead end。各情境 fixture 須含 Phase 1 對照表列出的脈絡。
+   (c) 量測型 milestone；(d) 帶下一步的 dead end；(e) 脈絡中沒有規則段（模擬 compaction 後）時寫一筆 milestone，
+   兩臂只差 always-on 指令有無寫前重讀那一行，看是否重讀並遵守。各情境 fixture 須含 Phase 1 對照表列出的脈絡。
    兩臂 query 與 fixture 逐字相同，只差 dossier.md 規則段；fixture 不含規則或答案。oracle 列出每情境的必寫項與
    禁止項，沒有語意歧義的（暫存路徑為唯一證據、位置式引用、自創欄位、缺子項、`#數字` 開頭標題）以腳本判，其餘
    以盲評。授權過程與 session 狀態只用盲評：現有 90 筆紀錄含「授權」，許多以授權規則為主題；情境 a 依流程必須
