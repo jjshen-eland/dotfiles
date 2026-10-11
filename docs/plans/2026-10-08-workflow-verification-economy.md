@@ -42,6 +42,11 @@ D-20261011-delivery-measurement-next-targets）。第 4 項量測顯示寫紀錄
   表格精簡呈現，並在 Phase 2 量測增加的讀取 bytes。
 - 不改：kernel managed block、`docs/document-governance.md` 與受信任 scanner（fleet 逐 byte 相同）、既有紀錄
   （append-only，已知缺陷不回改；斷鏈與懸空引用如需更正，以新紀錄說明）、`steward-authority.py`。
+- 流程規定的紀錄內容維持現行要求（D-20261011-protocol-records-to-workflow-simplification）：endpoint 未達成時
+  milestone 的「implementation 已完成、endpoint pending」（`log-prepare.md` Step 2 第 3 點、`pressure-tests.md`
+  對應情境）與移交時的 conditional owner decision（`transfer-workflow.md`、`dossier.md`「平行協作與
+  stewardship」、`templates/transfer-guide-template.md`）。規則寫明以這些流程為準，並列為第 6 項流程簡化的相依，
+  不是永久例外；實作時核對這些檔與規則段沒有互相矛盾，成對實驗不以相反的 oracle 判分。
 - 寫入協調：`shared/skills/project/`、`tests/`、`docs/testing-contract.md` 在本項 Write Scope；item 4 的 Write
   Scope 也含 `tests/`、`docs/testing-contract.md`，但其現行下一步只做工具歸屬核對、不改這兩處，兩項依序進行。
 
