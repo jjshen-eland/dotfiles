@@ -40,13 +40,17 @@ D-20261011-delivery-measurement-next-targets）。第 4 項量測顯示寫紀錄
   `$project` 的 repo 同時生效，其他 repo 沒有檔案變更。
 - dossier.md 在 Log 結案階段必讀（目前 10,900 B），讀規則文件已佔交付時間約 14%（第 4 項）；本項新增內容以
   表格精簡呈現，並在 Phase 2 量測增加的讀取 bytes。
-- 寫前重讀：`claude/CLAUDE.md` 與 `codex/AGENTS.md` 的非 kernel 區各加一行「寫 D／X／M 紀錄前，重讀
-  `shared/skills/project/references/dossier.md`「記錄時機與 record schema」的部署路徑」。兩檔部署為全機隊全域指令，路徑寫部署後位置：Claude 寫
+- 寫前重讀：`claude/CLAUDE.md` 與 `codex/AGENTS.md` 的非 kernel 區各加一行「寫 D／X／M 紀錄時，若 dossier.md
+  規則段不在可用 context（新 session、只剩摘要），先讀
+  `shared/skills/project/references/dossier.md`「記錄時機與 record schema」的部署路徑；仍在則沿用」。條件與
+  `shared/skills/project/references/workflow.md` 的 reference 沿用規則（同 session 完整讀過、仍在 context 且
+  SHA 未變則沿用，只剩摘要才重讀）一致，實作時核對兩處用語；該規則只在 `/project` 內載入，事件當下寫紀錄時
+  讀不到，所以仍需要這行。兩檔部署為全機隊全域指令，路徑寫部署後位置：Claude 寫
   `~/.claude/skills/project/references/dossier.md`、Codex 寫 `~/.agents/skills/project/references/dossier.md`，
   與既有全域指標（`claude/CLAUDE.md`「PR / Git」）同形；repo 相對路徑在 dotfiles 以外解析不到，而 dotfiles 的
-  xref gate 仍會綠。依據是 Phase 0「寫入當下的脈絡」：寫入者幾乎都讀過 dossier.md，
-  缺口是讀完後經 compaction 才寫；always-on 指令在 compaction 後仍載入。每次寫紀錄多讀一次規則段，規則段須
-  精簡並計入讀取 bytes。是否加入由 Phase 2 情境 e 決定。
+  xref gate 仍會綠。依據是 Phase 0「寫入當下的脈絡」：10 月寫入者 92% 讀過 dossier.md，缺口是讀完後經
+  compaction 才寫；always-on 指令在 compaction 後仍載入。只在規則段遺失時多讀一次，規則段須精簡並計入讀取
+  bytes。是否加入由 Phase 2 情境 e 決定。
 - 不改：kernel managed block；受信任 scanner（fleet 逐 byte 相同）；各 repo 的 `docs/document-governance.md`
   （各 repo 自有、不逐 byte，寫入者實測經 dossier.md，不加指標）；既有紀錄（append-only，已知缺陷不回改；
   斷鏈與懸空引用如需更正，以新紀錄說明）；`steward-authority.py`。
