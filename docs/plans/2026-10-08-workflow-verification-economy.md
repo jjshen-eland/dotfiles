@@ -154,9 +154,12 @@ krepo-judicial M 的 active-state 內容 5/8；暫存路徑與重議寫成下一
    授權聲明字樣）以腳本判，其餘以盲評。先在 Sonnet 上取得改前分歧（RED）；任一情境改前無分歧，對應規則不加。
    之後在 Claude Code `opus[1m]` 與 Codex production model 正式驗收，記錄 alias、resolved model、effort 與 CLI 版本。
    情境寫進 `shared/skills/project/references/pressure-tests.md`。
-3. **dotfiles 機檢**：`tests/content-checks.py` 對生效後新增的紀錄檢查可機械判定的規則；生效判定以實作當下
-   既有紀錄 ID 的固定清單排除舊紀錄（清單只減不增，任何新增都在 diff 中可見），不依 ID 日期，避免補寫的舊日期
-   紀錄被豁免。先以違規 fixture 取得 RED。
+3. **dotfiles 機檢**：`tests/content-checks.py` 對新增紀錄檢查可機械判定的規則。新增的判定沿用
+   `scripts/doc-governance.py` 的 git 基準：取當前 branch 與 default branch 的 merge-base，基準時不存在的紀錄才
+   檢查；不依 ID 日期，補寫的舊日期紀錄同樣受檢，也不維護 ID 清單（清單本身會成為旁路）。CI 為完整歷史
+   （`.github/workflows/test.yml` 的 `fetch-depth: 0`）；找不到基準時本機印出跳過說明，CI 上判失敗，不靜默
+   通過。main 上跳過可接受，因為變更都經 PR，PR 一定有基準。先以暫存 repo 的 RED 對照取得證據：feature
+   branch 新增違規紀錄為紅；同一筆違規紀錄在基準時已存在為綠；CI 環境無基準為紅。
 4. **testing-contract**：事件證據指敘述特定一次發生的事（日期、PR／issue、run、commit、主機、該次實測結果），
    規則、指向計畫的路徑與作為規則識別的 stable ID 不算。以 a60d20d 的行號，Phase 0 判讀的位置為：
    - 已有 D／X／M 紀錄：131、165、171、359、477、566、584、911。
