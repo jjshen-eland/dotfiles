@@ -53,12 +53,12 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **Acceptance Criteria**：
   1. CI 路由：`docs/testing-contract.md` 等說明文件走 content；`tests/<x>.py` 與 `scripts/*` 對應到擁有它的模組；只有 runner／workflow／共用 lib 或無法解析的路徑才跑全套。漏選、未知路徑、新增／刪除／rename 先有 RED controls 再 GREEN；以近 8 次 PR 的實際 diff 重放，列出每次選中的模組，非 runner 類改動不再全套。
   2. 平台矩陣：以行為證據（例如兩平台結果一致、程式沒有平台分支）證明上述 controller 模組平台無關後，只在 Ubuntu 跑；macOS 保留平台敏感模組，required check 名稱不變。普通腳本改動的最慢 job 有 hosted before／after。
-  3. 紀錄規則（D-20261011-record-rules-before-size-cap、D-20261011-delivery-measurement-next-targets）：目標是紀錄品質與可追溯性，不以省時間為理由、不設長度上限。定義 D／X／M 紀錄的規則、內容格式、必要資訊與書寫原則，並以既有長紀錄的重寫範例驗證規則足以保留可追溯資訊、title-free recall 不退步。docs/testing-contract.md 只寫規則與一句理由，既有事件證據移入 D／M 紀錄（缺的先補）。規則放 dotfiles 專屬位置或全機隊共用的 skill 條文，在計畫決定。
+  3. 紀錄規則（D-20261011-record-rules-before-size-cap、D-20261011-delivery-measurement-next-targets）：目標是紀錄品質與可追溯性，不以省時間為理由、不設長度上限。在全機隊共用的 `shared/skills/project/references/dossier.md` 定義 D／X／M 紀錄的必寫、不用寫、不要寫與不使用的寫法，每條對應實際觀察到的缺陷；以成對實驗（改前有分歧、改後兩端正式驗收）與既有長紀錄的重寫範例驗證，可還原資訊不減、`find` 命中不退步。dotfiles 以機檢守住可機械判定的規則。docs/testing-contract.md 只寫規則與一句理由，既有事件證據移入 D／M 紀錄（缺的先補）。細節見本項計畫「第 3 項：D／X／M 紀錄撰寫規則」。
   4. 端到端：固定一個同規模的小改動（普通腳本加測試），量改善前後「交付指令→最終回報」的總時間與分段（開 PR 前／紀錄撰寫／CI／merge／回報）；local、hosted、真實交付分開報告。另以既有 session 紀錄回溯真實交付的同一分段，量紀錄撰寫佔比。
   5. 流程開銷：交付時讀流程 reference（中位 94 秒）與狀態偵測（中位 86 秒）的縮時，先找出重複讀取與重複偵測，再以同一回溯方法量改善前後。
 - **Constraints**：本版驗收取代 2026-10-09 版（D-20261010-delivery-overhead-spec）。不靠降低錯誤攔截取得 GREEN；選測錯誤或空集合不得假綠。不改 `scripts/doc-governance.py` 受信任 scanner（fleet byte-identical 契約）；branch protection 與 required checks 調整需另經具名授權。claude/settings.json 的 runtime drift 不帶進 commit（dotsync／brewup 會丟棄）。item 2／4 不在本項範圍。本 Spec 未授權任何 commit、push、PR、merge 或部署。
 - **進度**：第 1、2 項已合併（M-20261011-ci-platform-matrix-merged）：全套觸發檔 201→50，controller 三模組只跑 Ubuntu，全套 PR 的 macOS job 3 分 02 秒→2 分 28 秒。測試模組 pipe-to-grep 早退偽紅已清零並合併（M-20261011-pipe-grep-herestring-local）。
-- **下一步**：第 4 項已完成回溯、local 與 hosted 量測（見本項計畫「第 4 項：端到端量測」），只剩改善後的真實交付一筆，於下次真實小改動送出時順便量。接著規劃第 3 項紀錄規則（含放置位置；若改全機隊 skill 條文則跑 deep-plan），再規劃第 5 項。
+- **下一步**：第 3 項計畫已修訂（全機隊、四類規則），以 deep-plan 審查；通過後實作。第 4 項只剩改善後的真實交付一筆，於下次真實小改動送出時順便量。之後規劃第 5 項。
 - **關聯**：[本項計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285; GitHub #279; PR #288; PR #298; PR #299; D-20261010-delivery-overhead-spec; D-20261010-transfer-delivery-overhead; D-20261009-ci-system-redesign; M-20261009-ci-modular-redesign-local; B-20260924-workflow-verification-economy
 
 ### 4. Setup 工具與 agent shell 環境對齊
