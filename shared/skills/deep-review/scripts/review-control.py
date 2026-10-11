@@ -394,6 +394,10 @@ def finish(state, args):
     # Invalid/partial results close the attempt as BLOCKED and retain original evidence.
     try:
         require(current(state) == p['scope'], 'result scope drift')
+        # A journal dispatched before the native transport retired required its process proof,
+        # which no longer exists; author-submitted results must not stand in for it.
+        require(not (p.get('native_required') or p.get('native_claude')),
+                'ticket was dispatched under the retired native transport; its reviewer evidence cannot be verified')
         packets_fresh(p)
         reports = read(args.input)
         require(isinstance(reports, list), 'results must be a list')
