@@ -2616,6 +2616,14 @@ class RealRetrievalCorpusTests(unittest.TestCase):
         with fixture.open(encoding="utf-8", newline="") as handle:
             return [row for row in csv.reader(handle, delimiter="\t") if row and not row[0].startswith("#")]
 
+    @staticmethod
+    def canonical_path(path: str) -> str:
+        resolved = (ROOT / path).resolve()
+        try:
+            return resolved.relative_to(ROOT.resolve()).as_posix()
+        except ValueError:
+            return path
+
     def test_title_free_queries_do_not_leak_the_target(self) -> None:
         # 這組 query 的價值就在「不知道標題也找得到」。一旦 query 抄了檔名或 H1，
         # 量到的是字串比對，不是召回。
@@ -2645,7 +2653,11 @@ class RealRetrievalCorpusTests(unittest.TestCase):
             )
             heads = [line for line in found.stdout.splitlines() if line and not line.startswith("  ")]
             paths = [head.split(":", 1)[0] for head in heads]
-            hits += any(path.startswith(expected) for path in paths)
+            # compatibility link 與它指向的 canonical 是同一份文件；只認路徑字面會把
+            # 「找到了，但列在別名下」算成沒召回。
+            hits += any(
+                path.startswith(expected) or self.canonical_path(path).startswith(expected) for path in paths
+            )
             top = max((paths.count(path) for path in set(paths)), default=0)
             slots.append(top)
             sweeps += top >= 5
