@@ -180,9 +180,11 @@ krepo-judicial M 的 active-state 內容 5/8；暫存路徑與重議寫成下一
    是否保留，並以暫存語料比較原文與重寫版在 `doc-governance.py find` 對該主題查詢的命中名次。
 2. **成對實驗**：依 `claude/skill-building-guide.md` 與 `docs/skill-portability.md`。情境取 Phase 0 的實際形狀：
    (a) 本地完成但 endpoint 未達、證據在暫存目錄的 milestone；(b) 使用者在編號選項中選定後的 decision；
-   (c) 量測型 milestone；(d) 帶下一步的 dead end。各情境 fixture 須含 Phase 1 對照表列出的脈絡。兩臂 query 與 fixture 逐字相同，只差 dossier.md 規則段；fixture 不含規則或
-   答案。oracle 列出每情境的必寫項與禁止項，能機械判定的（暫存路徑為唯一證據、位置式引用、自創欄位、缺子項、
-   授權聲明字樣）以腳本判，其餘以盲評。先在 Sonnet 上取得改前分歧（RED）；任一情境改前無分歧，對應規則不加。
+   (c) 量測型 milestone；(d) 帶下一步的 dead end。各情境 fixture 須含 Phase 1 對照表列出的脈絡。
+   兩臂 query 與 fixture 逐字相同，只差 dossier.md 規則段；fixture 不含規則或答案。oracle 列出每情境的必寫項與
+   禁止項，沒有語意歧義的（暫存路徑為唯一證據、位置式引用、自創欄位、缺子項、`#數字` 開頭標題）以腳本判，其餘
+   以盲評。授權過程與 session 狀態只用盲評：現有 90 筆紀錄含「授權」，許多以授權規則為主題；情境 a 依流程必須
+   寫 endpoint pending，字樣比對會把遵守流程判錯。盲評判準寫明流程規定的 endpoint 狀態不算違規。先在 Sonnet 上取得改前分歧（RED）；任一情境改前無分歧，對應規則不加。
    之後在 Claude Code `opus[1m]` 與 Codex production model 正式驗收，記錄 alias、resolved model、effort 與 CLI 版本。
    情境寫進 `shared/skills/project/references/pressure-tests.md`。
 3. **dotfiles 機檢**：`tests/content-checks.py` 對新增紀錄檢查可機械判定的規則。新增的判定沿用
