@@ -93,8 +93,8 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
   4. P4：kernel「Shared work」段依使用者核定的逐字內容改寫，`kernel-gate.py` 先紅後綠。
   5. P5：必讀 reference 讀取量與一筆真實交付耗時改善前後已量測。
 - **Constraints**：不新增接續相關的機檢或 gate；不改受信任 scanner；kernel 安全底線不動；各 repo 的 push／PR／merge 須另經具名批次授權；P2 實作前跑一批 deep-plan。claude/settings.json 的 runtime drift 不帶進 commit。本 Spec 未授權任何 commit、push、PR、merge 或部署。
-- **進度**：評估完成，使用者選定 D-20261012-content-continuity-model、D-20261012-handover-to-colleague-focus、D-20261012-kernel-shared-work-rewrite；計畫為 draft。
-- **下一步**：取得 P1 各 repo 的批次授權範圍（push／PR／merge），再逐 repo 關閉 `active_item_contract`。
+- **進度**：評估完成，使用者選定 D-20261012-content-continuity-model、D-20261012-handover-to-colleague-focus、D-20261012-kernel-shared-work-rewrite；計畫為 draft。P1 已合併 7 個 repo（kapi-protocol #36、krepo-common #85、krepo-company #61、krepo-judicial #139、krepo-mops-major-news #98、krepo-tej-export #11、krepo #192），各 repo authority 回 `NOT_APPLICABLE`、`audit --ship` OK、`unit-tests` 通過。kapi-infra #179 停在 PR：org 與 repo ruleset 要求 `unit-tests`，但該 repo workflow 的 job 名為 `static-checks`，required check 不會出現（既有設定落差）；krepo-mops-disclosure #115 停在 PR：ruleset 要求 1 個核准。krepo-mops-financial-statements 因工作樹有未 commit 的他人工作未處理。
+- **下一步**：kapi-infra、krepo-mops-disclosure 待使用者決定處置；之後進 P2（shared skill 移除身分授權層，實作前跑一批 deep-plan）。
 - **關聯**：[本項計畫](docs/plans/2026-10-12-content-continuity-redesign.md); GitHub #309; item 3 #285 第 5 步依賴 P2
 
 ## 暫停中
