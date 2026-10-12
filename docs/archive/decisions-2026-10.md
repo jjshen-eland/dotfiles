@@ -441,3 +441,8 @@
   - 放棄:直接修改原紀錄（已 commit 的紀錄不可改）
   - 重議:核對各 repo CI workflow 後發現 required checks 未涵蓋本機測試
   - 關聯:supersedes:D-20261012-test-evidence-removal 的「會在 merge 前攔下未執行的測試」;docs/plans/2026-10-12-project-process-reduction.md
+- **D-20261012-ship-state-stops-kept · 2026-10-12 ship-state 的 STOP 與 wait-required-enrollment 清點後全部保留**:使用者選定 #285 第 3 步不移除任何 STOP。依 transcript 統計實際執行輸出，其他受治理 repo 中 doc-governance STOP 是常用的文件 gate；bootstrap 類罕見但防的是新 repo 首推把錯的 branch 當 default 的不可逆後果；review-terminal 兼有真攔截（審查以 blocking-findings／blocked-review 收場後又送出）與已有結案路徑的 legacy 訊號；`wait-required-enrollment.sh` 是等待 required check 出現的工具，實際回 ENROLLED 33 次，評估時記為「0 次攔截」是用錯衡量方式。狀態偵測的耗時主要在讀取與解讀輸出，移除 STOP 省時有限，改由縮減 reference 處理。
+  - 日期來源:direct
+  - 放棄:移除 enrollment helper（會讓等待 CI 啟動回到 prose 判斷）；開測試 PR 實測 GitHub 行為（helper 的功能不依賴該結果）；逐筆判讀 review-terminal 的實地 STOP 再決定（現有分類已足以判定保留）
+  - 重議:某一 STOP 的實地誤擋明顯多於攔截且有其他機制涵蓋同一風險；或 enrollment helper 的 UNOBSERVED／QUERY_ERROR 成為 merge 的主要阻礙
+  - 關聯:D-20261012-project-reduction-scope;docs/plans/2026-10-12-project-process-reduction.md;shared/skills/project/scripts/ship-state.sh;shared/skills/project/scripts/wait-required-enrollment.sh

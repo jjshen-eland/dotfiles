@@ -47,7 +47,8 @@ gate 只放在「錯了代價高、實際發生過、能機械判定」的地方
   - 全域 pre-commit guard：transcript 中至少 2 次實地擋下在 main commit（2026-09-14 kgi-judicial、10-09 kapi-infra）。
   - steward-authority：實地 3 次，都是自家漏建 active steward；M-20260928-project-merge-production-red-captured 記錄
     10 次 `$project --merge` 中 8 次在 shipping 前停下，來源是 3 個 repo-set 與 7 個 actor／workline／resume 問題（不全是 steward-authority）。
-  - wait-required-enrollment：0 次攔截、3 次誤擋已授權 merge。
+  - wait-required-enrollment：archive 記錄 3 次誤擋已授權 merge；它是等待工具而非攔截 gate，2026-10-12 補量實際
+    執行時 ENROLLED 33 次（見第 3 步），先前「0 次攔截」的說法用錯衡量方式。
   - branch-first.sh：未找到實地攔截。
   - test-evidence：archive 記錄的 2 次 NEED_TEST 均未抓到失敗測試；1 次以新 snapshot 配舊 log 判 REUSE 後撤回（全部
     verdict 次數見「第 2 步細節」，兩者範圍不同：此處是攔下失敗，彼處是判定次數）。
@@ -72,11 +73,14 @@ Claude Code 與 Codex 各實跑一次 Log，比對改前改後的行為、reader
    STATUS 現有四欄位暫保留（無害），第 4 步調整 dossier 規定時一併決定。回退：還原該行。
 2. **移除 test-evidence 沿用協定**（D-20261012-test-evidence-removal）：Log 收尾一律在最終 commit set 上執行
    target repo 的測試指令，不沿用先前結果；細節見下節「第 2 步細節」。
-3. **ship-state STOP 與 enrollment 逐條清點**：列出每個 STOP 的實地攔截／誤擋紀錄；0 攔截且有其他機制涵蓋者移除。
-   `wait-required-enrollment.sh` 先實測 GitHub 在 required checks 未回報前是否拒絕 merge（需另經具名授權開測試
-   PR）；拒絕則移除 helper。保留 default branch、protection、doc audit、trusted core mismatch。驗收：每個移除項
-   附攔截紀錄與涵蓋機制；ship-state 測試對保留的 STOP 仍有 RED。enrollment 的實測需涵蓋 helper 實際接住的分支
-   （exact empty-required 訊息時等待，而非誤停或改走 `--admin`），以及非 dotfiles 的 protection 形態（未開 enforce_admins）。
+3. **ship-state STOP 與 enrollment 逐條清點（已完成，不移除；D-20261012-ship-state-stops-kept）**：2026-10-12 以
+   transcript 統計實際執行 `ship-state.sh`／`wait-required-enrollment.sh` 的輸出（排除 eval sandbox；dotfiles 數字含開發
+   fixture 雜訊，以其他 repo 為準）。doc-governance STOP 在 krepo-common 18 次、ais-infra 5 次；bootstrap 類只在新 repo
+   出現少數幾次，防的是首推把錯的 branch 當 default 的不可逆後果；review-terminal 在其他 repo 11 次，含 krepo-common
+   在審查以 blocking-findings／blocked-review 收場後的攔截，以及 krepo-mops-disclosure、kapi-infra 的 legacy 訊號
+   （已有 #267 結案路徑）；enrollment helper 回 ENROLLED 33 次（成功等到 required check 後才 merge）、UNOBSERVED 5、
+   QUERY_ERROR 12、HEAD_CHANGED 4。各組都有實際功能，狀態偵測的時間主要在讀取與解讀輸出而非 STOP 本身，故不移除；
+   讀取量改由第 5 步處理。
 4. **紀錄減量**：PR 已承載的實作結果不另寫 M；merge 後的結案不另開補記 PR（併入下一個 PR 或省略）；D／X 照舊。
    同步調整 `log-prepare.md`、`dossier.md` 與流程規定的紀錄（endpoint 未達成的 milestone、移交 conditional owner）。
    驗收：固定小改動的 Log 不再產生紀錄專屬 commit／PR；`find` 對既有主題的命中不退步。
@@ -175,7 +179,7 @@ revert 該 PR 即恢復 helper、測試與指令；無資料遷移。
 
 ## 審查路由
 
-步驟 2–4 會改變 `/project` 的放行／攔下行為，符合 deep-plan §1a，實作前各跑一批；NO-GO 若是文件措辭或細節，
+步驟 2、4 會改變 `/project` 的放行／攔下行為，符合 deep-plan §1a，實作前各跑一批（第 3 步清點後不改程式）；NO-GO 若是文件措辭或細節，
 修進計畫後直接實作，以 RED 測試加 deep-review 審實際 diff 承接，不 restart（D-20261012-deep-plan-full-review-routing）。
 步驟 1、5、6 不需完整審查。
 
