@@ -451,3 +451,18 @@
   - 放棄:照原計畫規劃並跑 deep-plan（收益小、牽動 kernel 與 managed block）；只刪 dotfiles STATUS 的四個 coordination 欄位（無機械後果，也無實際成本）
   - 重議:merge 後另開的紀錄專屬 PR 再次成為常態，或 steward 機制重設計（GitHub #309）改變 STATUS 欄位
   - 關聯:D-20261012-project-reduction-scope;D-20261012-dotfiles-active-item-contract-off;docs/plans/2026-10-12-project-process-reduction.md
+- **D-20261012-content-continuity-model · 2026-10-12 跨 runtime 與跨 session 的接續改以內容契約承擔，移除 steward 身分授權**:使用者選定把 `/project` 的 steward／writer 機制改為內容契約：停手時 STATUS 工作項的目標、驗收、進度、下一步正確，未合併的工作已 commit 並 push；任何 runtime、session、主機都可接手，不需要 actor 身分、改派或 Transfer 狀態機。依據是 2026-08-25 起 179 件授權確認題中使用者直接同意 92%、選停止 0 件，112 件是同一 session 對同一 steward 重複提問，量不到任何擋下不該寫入的案例，且 helper 只認 workline 名稱、分不出兩個 session 同時工作；11 個受治理 repo 177 個工作項中跨 runtime 接續 5 項，Workspace 指向的 branch 289／299 已不存在。遷移順序：先在各受治理 repo 以 config 關閉 `active_item_contract`，再改 shared skill，最後處理移交與 kernel。量測方法與範圍見 `docs/plans/2026-10-12-content-continuity-redesign.md`。
+  - 日期來源:direct
+  - 放棄:保留身分模型、只把確認題改為提示（仍保留每次 Log 約 28 KB 的讀取量與名稱對不上的簿記）；先改 skill 再關各 repo config（期間 scanner 仍要求四欄）
+  - 重議:出現兩個以上真人同時寫同一 repo 的共享紀錄；或內容契約下的接手實測出現 STATUS 與 git 都找不到的必要狀態
+  - 關聯:GitHub#309;D-20260824-cross-runtime-dossier-stewardship;D-20260824-project-steward-authority;D-20261012-dotfiles-active-item-contract-off;docs/plans/2026-10-12-content-continuity-redesign.md
+- **D-20261012-handover-to-colleague-focus · 2026-10-12 移交改為讓接手同事掌握全貌的流程，列為重點**:使用者選定保留並強化「移交給新同事」：移交處理後的 repo 要讓接收者只靠 repo 掌握系統組成、環境建置與驗證、部署排程與維運、外部帳號與 credential 存放位置、進行中的工作、決策與死路入口、已知風險與支援期限；並以移交人列出的接手驗收題組在 fresh clone 環境中由接手者或 fresh-context agent 作答、以腳本判分。移除 actor 狀態機（BLOCKED／PREPARED／TRANSFERRED、conditional owner、active-item mapping、remote ancestry），保留 portable-knowledge audit、credential 分離與 metadata helper，authorization 不隨移交。
+  - 日期來源:direct
+  - 放棄:完全移除移交流程（已有移交給同事的規劃）；維持現行狀態機（為多方擁有權設計，實際兩次都是 agent 對 agent，其中一次約 5.6 小時）；以人工主觀檢查判定接手者是否掌握全貌
+  - 重議:第一次實際移交給同事後，接手者仍需移交人口頭補充 repo 未記載的必要資訊
+  - 關聯:GitHub#309;D-20260824-memory-independent-transfer;D-20261010-transfer-delivery-overhead;docs/plans/2026-10-12-content-continuity-redesign.md
+- **D-20261012-kernel-shared-work-rewrite · 2026-10-12 kernel「Shared work」段隨內容契約改寫**:使用者選定在移除 steward 身分授權時一併改寫三份 kernel 的「Shared work and durable project state」段：保留一個工作項一個 writer、平行 writer 用不同 branch／worktree 與既有安全底線，移除 Dossier Steward、Dossier delta、cherry-pick 整合與 steward 移交相關句。三份 kernel 是手動逐字維護、由 `tests/kernel-gate.py` 驗漂移，並無同步工具；`AGENTS.md` 中「由工具維護」的說明不實，一併更正。逐字內容由使用者核定後才修改。
+  - 日期來源:direct
+  - 放棄:先不動 kernel、接受與新流程暫時矛盾
+  - 重議:none
+  - 關聯:GitHub#309;D-20261012-content-continuity-model;tests/kernel-gate.py;docs/plans/2026-10-12-content-continuity-redesign.md
