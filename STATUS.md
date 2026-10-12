@@ -35,7 +35,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - 「Setup 工具與 agent shell 環境對齊」的結案與 14 台驗收：[M-20261010-setup-fleet-complete](docs/archive/milestones-2026-10.md)；未做的 adopt／keep 整理見 D-20261012-setup-adopt-review-dropped。
 - 「Runtime 目錄收斂與 legacy 遷移」的結案與 14 台驗收：[M-20261012-runtime-layout-complete](docs/archive/milestones-2026-10.md)；計畫 `docs/plans/2026-10-06-runtime-layout-convergence.md` 已凍結。
 - 「`~/.agents` 狀態目錄治理與審查紀錄搬出 repo／`/tmp`」的結案與 14 台驗收：[M-20261012-agents-state-registry-complete](docs/archive/milestones-2026-10.md)；登記表在 `docs/repo-guide.md`。
-- 「審查診斷的執行隔離（#315）」的結案契約與驗收：[M-20261013-review-execution-snapshot-local](docs/archive/milestones-2026-10.md)；決策 D-20261013-review-execution-snapshot，情境為 deep-review `evals.md` P24。
+- 「審查診斷的執行隔離（#315）」的結案契約與驗收：[M-20261013-review-execution-snapshot-local](docs/archive/milestones-2026-10.md)，合併與 14 台散佈驗收見 [M-20261013-review-execution-snapshot-fleet](docs/archive/milestones-2026-10.md)；決策 D-20261013-review-execution-snapshot，情境為 deep-review `evals.md` P24。
 - 無路徑線索時執行 `scripts/doc-governance.py find '自然語言問題或 stable ID'`；人工 pointer 不作為可檢索性的代理。
 
 ## 待辦入口

@@ -762,3 +762,8 @@
   - 放棄:none
   - 重議:未另量「只改 brief、不加 materialize」的對照臂；快照排除 ignored 依賴與 submodule 的邊界在實際 repo 造成大量 incomplete 時重評
   - 關聯:Issue#315;D-20261013-review-execution-snapshot;X-20261013-review-import-write-in-target;shared/skills/deep-review/evals.md
+- **M-20261013-review-execution-snapshot-fleet · 2026-10-13 #315 審查執行隔離合併並散佈 14 台**:PR #326 以 rebase 合併為 `9b7637f`／`691d32a`（required macOS／Ubuntu CI 通過），#315 隨合併關閉。依使用者授權以 dotsync 散佈 inventory 14 台：本機 runtime layout unchanged，遠端 14／14 ✅、0 失敗。逐台 SSH 驗收（本機同）：revision 皆為 `691d32a`、dotfiles 工作樹乾淨；Claude `deep-review` 與 Codex `repo-review` 入口的 `review-scope.sh` 皆有 `materialize`、`review-control.py` 皆產生 `validation_snapshot`、brief 皆含新規則；在各台暫存 repo 實跑 capture → materialize，快照取得 worktree 內容且不含 ignored `logs/`，target 目錄列表前後一致（git 2.54–2.56）。探測腳本先以插入一次 target 寫入確認會判失敗。inventory 外兩部 MacBook 下次 brewup 才取得新版，本 session 未取得其機器輸出。
+  - 日期來源:direct
+  - 放棄:none
+  - 重議:任一主機的審查在 target 內執行 target 程式碼，或 materialize 在實際 repo 失敗
+  - 關聯:Issue#315;PR#326;M-20261013-review-execution-snapshot-local;D-20261013-review-execution-snapshot
