@@ -282,6 +282,17 @@ P2 移除 actor 狀態機後，移交改為「讓接手的人掌握全貌」：
   獨有的事實（主機、credential 存放處）從整份指南移除後，對應的 Q2、Q5 失敗（3／5），作答者照實回答 repo 查不到。
 - 在途工作：原 `transfer` case 在 Sonnet 跑 3 次，3 次都把未合併 commit 寫進指南與缺項（P2 修正後同 case 為 3 次中
   1 次明確抓到）；加上 fixture 那次共 4／4。
+- deep-review（full，2 位 fresh reviewer，1b8c873..924c15d）：FAIL。兩位獨立指出同一阻斷根因：`command` 題答案以
+  shell 在移交人完整環境執行（reviewer 實測可寫出 clone 外檔案、繼承 75 個環境變數仍 PASS），而流程要求題組涵蓋
+  部署或排程，部署指令會在判分時真的執行。另有 11 條 low。依使用者指示修正：`command` 題限唯讀本地驗證、部署與
+  排程改問答題；判分未加 `--allow-exec` 只列出指令並 exit 3，執行時只給最小環境、暫存 HOME、無 stdin、timeout；輸出
+  容錯解碼、`paths` 限 clone 內、`command` 題必須有 `stdout_contains`（新增 7 項測試，修前皆紅）；在途工作改以
+  fetch 後的 `origin/<default>` 比對並檢查本地 default 有無未 push；判分在移交人 repo 根目錄執行；fixture 移入
+  `tests/handover-acceptance-eval.py`。修正由作者驗證，未再派 reviewer。
+- 修正後重跑發現兩個驗收設計問題：判分檔要求答案引用題目沒要求的路徑（完整版 4／5），流程補上「判分檔的每項檢查都要
+  在題目講明」；負對照只改 clone 工作樹，作答者以 `git diff` 讀回被刪的事實而 5／5 通過（第一次實跑的 3／5 是因為
+  作答者剛好沒查 diff），改為交付無歷史的單一 commit 快照。再次重跑：完整版 5／5、負對照 3／5（Q2 主機、Q4
+  credential 存放處失敗；作答者曾執行 `git log --all` 仍查不到）。
 
 
 ### P5：縮減必讀 reference 與端到端量測

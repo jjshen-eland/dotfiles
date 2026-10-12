@@ -2,16 +2,22 @@
 """Grade a recipient's handover acceptance answers against the giver's grading spec.
 
 usage: grade-handover.py --spec <transfer-acceptance.json> --answers <answers.json> --clone <fresh-clone>
+                         [--allow-exec] [--timeout SECONDS]
 
-Run only against a disposable fresh clone: `command` questions execute the recipient's answer there.
-Exit 0 = every question passed, 1 = at least one failed, 2 = malformed input (verdict: BROKEN).
+`command` answers are recipient-supplied shell commands. Without --allow-exec they are only listed
+(exit 3, verdict: NEEDS_CONFIRMATION) so the giver can check they are read-only local checks first.
+With --allow-exec each runs in the clone with a minimal environment (no caller variables, a throwaway
+HOME, no stdin) and a timeout. Run only against a disposable clone.
+Exit 0 = every question passed, 1 = at least one failed, 2 = malformed input, 3 = confirmation needed.
 """
 
 import argparse
 import json
+import os
 import pathlib
 import subprocess
 import sys
+import tempfile
 
 KINDS = {"command", "answer"}
 
@@ -55,17 +61,27 @@ def validate(spec):
             checks = [string_list(question, key) for key in ("contains", "paths", "ids")]
             if not any(checks):
                 broken(f"{qid}: answer question needs contains, paths or ids")
-        elif "stdout_contains" in question and not isinstance(question["stdout_contains"], str):
-            broken(f"{qid}: stdout_contains must be a string")
+            for rel in checks[1]:
+                parts = pathlib.PurePosixPath(rel).parts
+                if rel.startswith("/") or ".." in parts:
+                    broken(f"{qid}: path must stay inside the clone: {rel}")
+        else:
+            expected = question.get("stdout_contains")
+            if not isinstance(expected, str) or not expected:
+                broken(f"{qid}: command question needs a non-empty stdout_contains")
 
 
-def grade_command(question, answer, clone):
-    result = subprocess.run(answer, shell=True, cwd=clone, capture_output=True, text=True)
+def grade_command(question, answer, clone, timeout, home):
+    env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": home, "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"}
+    try:
+        result = subprocess.run(answer, shell=True, cwd=clone, env=env, stdin=subprocess.DEVNULL,
+                                capture_output=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return f"timed out after {timeout}s"
     if result.returncode != 0:
         return f"command exited {result.returncode}"
-    expected = question.get("stdout_contains")
-    if expected and expected not in result.stdout:
-        return f"output lacks {expected!r}"
+    if question["stdout_contains"] not in result.stdout.decode("utf-8", errors="replace"):
+        return f"output lacks {question['stdout_contains']!r}"
     return None
 
 
@@ -86,30 +102,40 @@ def main():
     parser.add_argument("--spec", required=True)
     parser.add_argument("--answers", required=True)
     parser.add_argument("--clone", required=True)
+    parser.add_argument("--allow-exec", action="store_true")
+    parser.add_argument("--timeout", type=int, default=300)
     args = parser.parse_args()
     spec = load(args.spec, "spec")
     validate(spec)
     answers = load(args.answers, "answers")
     if not isinstance(answers, dict):
         broken("answers must be an object of id -> answer")
-    clone = pathlib.Path(args.clone)
+    clone = pathlib.Path(args.clone).resolve()
     if not clone.is_dir():
         broken("clone directory does not exist")
+    commands = [(q["id"], answers.get(q["id"])) for q in spec["questions"] if q["kind"] == "command"]
+    if commands and not args.allow_exec:
+        for qid, answer in commands:
+            print(f"{qid}: COMMAND {answer!r}")
+        print("reason: command answers run only after the giver checks they are read-only local checks")
+        print("verdict: NEEDS_CONFIRMATION")
+        sys.exit(3)
     failed = 0
-    for question in spec["questions"]:
-        qid = question["id"]
-        answer = answers.get(qid)
-        if not isinstance(answer, str) or not answer.strip():
-            problem = "unanswered"
-        elif question["kind"] == "command":
-            problem = grade_command(question, answer, clone)
-        else:
-            problem = grade_answer(question, answer, clone)
-        if problem:
-            failed += 1
-            print(f"{qid}: FAIL ({problem})")
-        else:
-            print(f"{qid}: PASS")
+    with tempfile.TemporaryDirectory(prefix="handover-home-") as home:
+        for question in spec["questions"]:
+            qid = question["id"]
+            answer = answers.get(qid)
+            if not isinstance(answer, str) or not answer.strip():
+                problem = "unanswered"
+            elif question["kind"] == "command":
+                problem = grade_command(question, answer, clone, args.timeout, home)
+            else:
+                problem = grade_answer(question, answer, clone)
+            if problem:
+                failed += 1
+                print(f"{qid}: FAIL ({problem})")
+            else:
+                print(f"{qid}: PASS")
     print(f"passed: {len(spec['questions']) - failed}/{len(spec['questions'])}")
     print("verdict: " + ("FAIL" if failed else "PASS"))
     sys.exit(1 if failed else 0)

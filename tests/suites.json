@@ -66,7 +66,7 @@
     {"paths": ["tests/review-readonly.py"], "modules": ["review-scope"]},
     {"paths": ["tests/fixtures/etc-hosts-before", "tests/fixtures/ssh-config-before"], "modules": ["inventory"]},
     {"paths": ["tests/deep-plan-document-eval.py", "tests/deep-plan-model-eval.py", "tests/review-skills-model-eval.py"], "modules": ["deep-plan"]},
-    {"paths": ["tests/project-push-model-eval.py", "tests/project-reference-eval.py", "tests/project-reference-host-mcp.py", "tests/project-reference-metrics.py", "tests/project-routing-provider.py", "tests/fixtures/project-reference-candidates/*", "tests/fixtures/doc-governance/b27-current-baseline.tsv", "tests/root-cause-first-model-eval.py", "tests/session-skills-host-mcp.py", "tests/session-skills-model-eval.py"], "modules": ["hooks", "project"]},
+    {"paths": ["tests/handover-acceptance-eval.py", "tests/project-push-model-eval.py", "tests/project-reference-eval.py", "tests/project-reference-host-mcp.py", "tests/project-reference-metrics.py", "tests/project-routing-provider.py", "tests/fixtures/project-reference-candidates/*", "tests/fixtures/doc-governance/b27-current-baseline.tsv", "tests/root-cause-first-model-eval.py", "tests/session-skills-host-mcp.py", "tests/session-skills-model-eval.py"], "modules": ["hooks", "project"]},
     {"paths": ["scripts/check-claude-auto-mode-drift.sh", "scripts/outward-action-gate.py"], "modules": ["hooks"]},
     {"paths": ["scripts/check-supported-platform.sh", "scripts/claude-plugin-install-hints.sh"], "modules": ["platform"]},
     {"paths": ["scripts/agent-turn-end-timestamp.sh"], "modules": ["session"]},
