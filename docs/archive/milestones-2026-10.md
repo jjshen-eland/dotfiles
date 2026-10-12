@@ -741,3 +741,8 @@
   - 放棄:none
   - 重議:Codex 的真實送出出現後，若讀取 reference 仍是最大固定成本，再評估縮減 log-prepare.md
   - 關聯:GitHub#285;GitHub#309;docs/plans/2026-10-12-project-process-reduction.md;D-20261012-dotfiles-active-item-contract-off;D-20261012-test-evidence-removal;D-20261012-ship-state-stops-kept;D-20261012-record-reduction-dropped;B-20260924-workflow-verification-economy
+- **M-20261012-runtime-layout-complete · 2026-10-12 Runtime 目錄收斂結案：handoff 舊 store fallback 移除並散佈 14 台**:PR #320 合併 `be6db65` 後，依使用者授權以 dotsync 散佈 inventory 14 台：本機與 14 台全部 ✅、本機 runtime layout unchanged。逐台 SSH 唯讀驗收：14 台 revision 皆為 `be6db65`，`handoff-anchor.sh store` 皆回 CANONICAL、exit 0，`~/.claude/handoffs` 皆不存在；本機亦為 CANONICAL。正式結構、共用部署 helper、handoff 遷移與日常部署摘要已由先前各批完成（M-20261007-macs-runtime-layout-accepted、M-20261007-inventory-handoff-cleanup-ready 等），本批完成最後一項 legacy fallback 清理（D-20261012-handoff-store-fallback-removed）。inventory 外兩部 MacBook 依使用者告知已手動遷移，本 session 未取得其機器輸出；它們下次 brewup 才取得新版，若仍有舊 store 會回報 NEEDS_UPGRADE 並停下。
+  - 日期來源:direct
+  - 放棄:none
+  - 重議:任一主機回報 NEEDS_UPGRADE，或新機安裝後 store 不是 CANONICAL
+  - 關聯:docs/plans/2026-10-06-runtime-layout-convergence.md;D-20261012-handoff-store-fallback-removed;D-20260917-terminal-macbooks-outside-inventory;M-20261007-macs-runtime-layout-accepted;M-20261007-inventory-handoff-cleanup-ready;#271

@@ -2,7 +2,7 @@
 
 - 工作項：runtime-layout-convergence
 - 日期：2026-10-06
-- 狀態：in-progress
+- 狀態：implemented
 - 種類：implementation plan
 - 需求來源：使用者要求同版 dotfiles 的新裝／升級／重跑得到相同受管理 runtime 結構，並於 2026-10-06 指示「開工」。
 - Writer／Dossier Steward：`claude:delivery-overhead`（2026-10-10 經 PR #299 移交生效，見 D-20261010-transfer-delivery-overhead）
