@@ -9,8 +9,6 @@ description: "Manages a work item's repository-resident lifecycle in three expli
 
 1. 把 `$project` 後面的文字原樣記為 **normalized invocation arguments**；不要自行補字、改寫 endpoint
    或猜漏掉的 token。
-   提供 shared workflow 的 runtime actor prefix 固定是 `codex`；不得改成 Git author、GitHub login 或
-   使用者自述的姓名。
 2. 以本 `SKILL.md` 的實際位置解析 skill directory；`references/`、`scripts/` 與 `templates/` 是指向
    neutral shared core 的 links。若從 worktree 測試，必須使用 worktree 這份，不得跳去其他 checkout。
 3. 先用 `<skill-dir>/scripts/read-reference.py` 逐段讀取 `workflow.md`，每次 tool call 只呼叫 reader 取得一個 chunk，不合併其他命令或結果；看見該檔 `EOF` 前不得執行任何 repo mutation。

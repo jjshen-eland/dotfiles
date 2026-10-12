@@ -264,17 +264,16 @@ kg_reverse_markers() {  # $1=檔案；$2=block 名。保留各一個 marker，�
         "$file" && rm -f "$file.bak"
 }
 
-# 合法 body（GREEN 基準）：八條以上，並帶齊跨 runtime dossier 的必要行為指紋。
+# 合法 body（GREEN 基準）：八條以上，並帶齊內容契約接續的必要行為指紋。
 # shellcheck disable=SC2016  # backtick 是餵給 gate 的 Markdown 字面，不是 command substitution。
 kg_body='- rule 1
 - rule 2
 - rule 3
 - **Container-network collision safety.** Before first attach, prove its CIDR avoids host/LAN/VPN/production routes; inline/E2E included. NEVER copy production/LAN CIDRs to preserve IP literals—use auto allocation plus DNS/test config. If unproven, STOP. On macOS/OrbStack, cleanup is incomplete until the isolation table is checked for collisions; report them, never auto-delete unrelated entries.
 - One writer per work item.
-- Use a separate branch/worktree for another writer.
-- The Dossier Steward owns shared state.
-- A worker returns a Dossier delta.
-- The steward uses `git cherry-pick` for integration.
+- Each session works in its own worktree or clone.
+- Continuity lives in the repo, not in an actor identity.
+- Reviewers never promote themselves into writers.
 - Do NOT create a dossier when none exists.'
 
 rm -rf "$KG"; kg_make "$KG/green" "$kg_body"
@@ -344,9 +343,9 @@ kg_red "$KG/route-empty" '\[ROUTE_EMPTY\]' "gate 自檢：route 空 block → �
 kg_make "$KG/hollow" "- rule 1"
 kg_red "$KG/hollow" '規則行' "gate 自檢：三份同時掏空 → 命中（空==空 的假綠）" "gate 自檢：掏空未命中——這是最關鍵的假綠"
 
-# 條目數足夠、三份也一致，但拿掉 stewardship 語意仍須紅，否則可用 filler 騙過下限。
-kg_make "$KG/required-rule" "$(printf '%s\n' "$kg_body" | sed 's/Dossier delta/worker report/')"
-kg_red "$KG/required-rule" '\[KERNEL_REQUIRED_RULE\]' "gate 自檢：kernel 缺 stewardship 必要規則 → 命中" "gate 自檢：kernel required-rule 分支未命中"
+# 條目數足夠、三份也一致，但拿掉接續語意仍須紅，否則可用 filler 騙過下限。
+kg_make "$KG/required-rule" "$(printf '%s\n' "$kg_body" | sed 's/Continuity lives in the repo/Work continues somewhere/')"
+kg_red "$KG/required-rule" '\[KERNEL_REQUIRED_RULE\]' "gate 自檢：kernel 缺內容契約接續必要規則 → 命中" "gate 自檢：kernel required-rule 分支未命中"
 
 # 安全規則本身也須有可證偽 fixture；三份完全同步仍不得以 filler 騙過 required-rule gate。
 kg_make "$KG/required-network-rule" "$(printf '%s\n' "$kg_body" | sed 's/production\/LAN CIDRs/test CIDRs/')"
@@ -580,14 +579,3 @@ else
 fi
 
 
-# ACTOR_RE 是刻意的複本：doc-governance.py 逐字 vendored 進每個受治理的 repo，不能 import
-# skill tree 的東西；steward-authority.py 只活在 project skill 裡。兩份規則一旦漂移，
-# audit 與 authority gate 就會對同一個 STATUS.md 給出相反答案——而那正是本 gate 要防的事
-# （實地：被裝飾過的 Dossier Steward 讓 audit --ship 全綠、authority gate 回 exit 2 BROKEN）。
-actor_re_scanner="$(sed -n 's/^ACTOR_RE = re\.compile(\(.*\))$/\1/p' "$ROOT/scripts/doc-governance.py")"
-actor_re_authority="$(sed -n 's/^ACTOR_RE = re\.compile(\(.*\))$/\1/p' "$ROOT/claude/skills/project/scripts/steward-authority.py")"
-if [ -n "$actor_re_scanner" ] && [ "$actor_re_scanner" = "$actor_re_authority" ]; then
-    ok "ACTOR_RE 兩份複本逐字相同（audit 與 authority gate 判準一致）"
-else
-    bad "ACTOR_RE 複本漂移：scanner=[${actor_re_scanner}] authority=[${actor_re_authority}]"
-fi

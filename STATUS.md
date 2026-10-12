@@ -14,14 +14,6 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ### 2. Runtime 目錄收斂與 legacy 遷移 🆕
 
-- **Writer**：`claude:delivery-overhead`
-- **Workspace**：`branch=fix/delivery-overhead-runtime-layout`
-- **Write Scope**：scripts/ensure-runtime-layout.py, scripts/ensure-runtime.sh, scripts/ensure-codex-config.py, scripts/ensure-codex-guidance.sh, claude/settings.json, codex/config.toml, shared/skills/handoff/, claude/skills/handoff/, codex/skills/handoff/, codex/README.md, docs/add-new-host.md, docs/skill-portability.md
-- **Dossier Steward**：`claude:delivery-overhead`
-- **寫入協調**：2026-10-07 使用者確認原 writer 已停止，將 macOS 打包預設這一批的重疊檔案寫入權與 dossier 維護交由 `codex:macos-archive-metadata`。本項原 runtime 遷移工作不在本批續作；打包預設的本地驗收已完成，見 M-20261007-macos-archive-metadata-local，後續 runtime 寫入仍依原範圍與 reassignment 規則。2026-10-08 使用者將 CI 候選三檔 tests/run.sh、tests/shard-manifest.tsv、docs/testing-contract.md 的本批寫入交由同一 steward，已完成本地採用驗收，見 M-20261008-ci-controller-core-local；Runtime 其餘實作不接續，後續寫入仍須依 reassignment 規則。
-- **本批寫入交接**：2026-10-08 使用者確認原 writer／steward 已停止，將 brewup bun 全域更新這一批的 scripts/brewup.sh、tests/run.sh、tests/shard-manifest.tsv、README.md、docs/repo-guide.md、docs/testing-contract.md 與 dossier／history 維護交由 `codex:brewup-bun-global-update`。本批本地修改與完整驗收已完成，見 M-20261008-brewup-bun-global-update-local。原 Runtime 工作不接續；原 writer／workspace 僅保留既有項目的歷史 assignment，後續另依 reassignment 規則。
-- **#285 寫入交接**：2026-10-08 使用者確認原 Runtime writer 保持停止，將本批必要 tests/ 與 docs/testing-contract.md 寫入交由 #285 的 `codex:brewup-bun-global-update`。本項 Write Scope 暫移除這兩個共享範圍；原 Runtime writer／workspace 與產品目標保留，原遷移不續作，後續需要這些路徑時另依 assignment 規則協調。
-- **Setup 本批協調**：2026-10-09 使用者將 setup 工具分層、shell 環境、npm 措辭與既有主機對齊實作交由現任 steward；原 Runtime writer 仍停止。本項暫收窄 Write Scope，setup／一般部署清單與相關文件由下方 item 4 接續；其餘 Runtime 目標不變，恢復寫入前重新協調。
 - **Context**：同一版 dotfiles 的新裝與既有主機升級尚未收斂：setup 與 dotsync 的 runtime 部署涵蓋不同，本機 Claude skills 曾需手動補入口；Codex rules 有整目錄連結與保留本機授權紀錄的共存形式；handoff 仍依 canonical／legacy 目錄存在情況選擇 store。使用者要求把歷史差異集中遷移，減少各腳本與 skill 的永久相容分支。
 - **Goal**：同一版 dotfiles 在 macOS／Linux 的乾淨新裝、既有環境升級與重跑部署後，得到相同的受管理 runtime 結構、資料位置與可觀察行為；保留原生／第三方內容與明示 override，完成納管主機遷移後清理本項可移除的 legacy 執行分支。
 - **Acceptance Criteria**：
@@ -44,11 +36,6 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ### 3. /project 流程減量與驗證成本（#285）
 
-- **Writer**：`claude:delivery-overhead`
-- **Workspace**：`branch=docs/pin-scenario-38-source`
-- **Write Scope**：.doc-governance.json, shared/skills/project/, claude/skills/project/, codex/skills/project/, tests/, docs/testing-contract.md, docs/plans/2026-10-12-project-process-reduction.md, docs/archive/, AGENTS.md（僅計畫第 2 步細節第 5 點那一句）
-- **Dossier Steward**：`claude:delivery-overhead`
-- **寫入協調**：2026-10-12 使用者依序指派新 session 接續本項，前任 session 已停止；沿用同一 workline 代號；Workspace 隨每步實作 branch 更新。
 - **Context**：2026-10-12 依風險分層的唯讀評估顯示，2026-09-01 起工時約 53% 在流程本身、產品與機隊部署約 12%；逃到機隊的事故都由部署輸出、canary 或使用者發現，沒有被流程 gate 攔下；多數流程 gate 的實地紀錄誤擋多於攔截。證據與方法見計畫「評估摘要」。
 - **Goal**：gate 只放在錯了代價高、實際發生過、能機械判定之處，把 `/project` 流程壓到支撐部署腳本、agent 契約與受信任 scanner 的最小量，降低小幅變更「交付指令→最終回報」的耗時與讀取量。
 - **Acceptance Criteria**：
@@ -66,10 +53,6 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ### 4. Setup 工具與 agent shell 環境對齊
 
-- **Writer**：`claude:delivery-overhead`
-- **Workspace**：`branch=chore/delivery-overhead-setup`
-- **Write Scope**：setup-mac-env.sh, setup-linux-env.sh, scripts/dev-tools.sh, scripts/dev-tools.tsv, scripts/dev-env.sh, scripts/align-dev-environment.sh, scripts/ensure-shell-env.py, scripts/dotfiles-sync.sh, scripts/brewup.sh, shell/, tests/, README.md, docs/repo-guide.md, docs/testing-contract.md, claude/CLAUDE.md, codex/AGENTS.md
-- **Dossier Steward**：`claude:delivery-overhead`
 - **Context**：現有 setup 混合必要與互動便利工具，brew 失敗被吞掉；環境依賴各平台生成的 shell 設定。使用者要求按 Codex／Claude Code 需求改版，統一 npm 措辭，提供 14 台既有主機免重跑 setup 的對齊方式。
 - **Goal**：新裝與增量更新共用工具宣告及受管理 shell 環境，必要工具失敗可見，保留個人設定與既有額外工具；使用者追加要求明確區分 setup 納管與主機自行安裝，只有前者依新定義新增／移除，後者不升級、不移除、不接管。
 - **Acceptance Criteria**：core／workstation 分層、新增 actionlint／ast-grep；plan／apply／check 可觀察且重跑收斂；必要安裝及驗證失敗回非零；雙 shell 無互動命令可讀相同環境，保留專案／個人 PATH 優先權與覆寫；npm／bun 以專案 lockfile 為準；隔離新裝／升級／失敗／重跑測試與完整 suite 通過；14 台 rollout 有逐台預演、revision、驗收與回復路徑。2026-10-10 使用者接受兩端全域工具指引精簡化：只保留高價值工具與適用任務、可用性與按需安裝原則，不複製完整安裝清單；兩端短段落需機檢一致。
@@ -78,12 +61,8 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **下一步**：先讀 M-20261010-setup-fleet-complete，將待辦限制在歷史工具歸屬／用途核對；依已有 plan／ledger 的非秘密事實列出需使用者判定的 adopt／keep，沒有當批授權不做 SSH／更新／移除。
 - **關聯**：item 2 Runtime 目錄收斂；item 3 #285；[環境使用說明](docs/repo-guide.md)
 
-### 5. steward 機制改為內容契約，移交給同事為重點（#309）
+### 5. steward 機制改為內容契約；transfer 模式改以移交給同事為重點（#309）
 
-- **Writer**：`claude:delivery-overhead`
-- **Workspace**：`branch=refactor/remove-steward-identity`
-- **Write Scope**：shared/skills/project/, claude/skills/project/, codex/skills/project/, tests/, claude/evals/, docs/testing-contract.md, docs/project-spec.md, docs/document-governance.md, AGENTS.md, claude/CLAUDE.md, codex/AGENTS.md（kernel 段需使用者核定）, docs/plans/2026-10-12-content-continuity-redesign.md, docs/archive/；P1 另含各受治理 repo 的 .doc-governance.json
-- **Dossier Steward**：`claude:delivery-overhead`
 - **Context**：使用者同時用 Codex 與 Claude，現行 steward 機制以 actor 身分授權，造成大量無判斷價值的確認題，卻不檢查接手真正需要的內容；移交給同事的需求即將出現。評估見計畫「評估摘要」。
 - **Goal**：任何 runtime、session、主機只靠 repo 接續進行中的工作；移交給新同事後，repo 足以讓接手者掌握全貌並通過可機械判定的接手驗收。
 - **Acceptance Criteria**：
@@ -92,21 +71,14 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
   3. P3：移交指南改為讓接手者掌握全貌，含接手驗收題組；fixture repo 實跑一次移交，題組由 fresh-context agent 作答並以腳本判分全數通過。
   4. P5：必讀 reference 讀取量與一筆真實交付耗時改善前後已量測。
 - **Constraints**：不新增接續相關的機檢或 gate；不改受信任 scanner；kernel 安全底線不動；各 repo 的 push／PR／merge 須另經具名批次授權；P2 實作前跑一批 deep-plan。claude/settings.json 的 runtime drift 不帶進 commit。本 Spec 未授權任何 commit、push、PR、merge 或部署。
-- **進度**：評估完成，使用者選定 D-20261012-content-continuity-model、D-20261012-handover-to-colleague-focus、D-20261012-kernel-shared-work-rewrite；計畫為 draft。P1 已合併 9 個 repo（kapi-infra #179、kapi-protocol #36、krepo-common #85、krepo-company #61、krepo-judicial #139、krepo-mops-disclosure #115、krepo-mops-major-news #98、krepo-tej-export #11、krepo #192），各 repo authority 回 `NOT_APPLICABLE`、`audit --ship` OK、`unit-tests` 通過；krepo-mops-disclosure 的 ruleset 要求 1 個核准，依使用者指示以 bypass merge（`--admin`）合併。krepo-mops-financial-statements 因工作樹有未 commit 的他人工作未處理。
-- **下一步**：P2 細節已寫進計畫（含 kernel 草稿），跑一批 deep-plan；kernel 逐字內容於 deep-plan 後請使用者核定，再實作。
+- **進度**：評估完成，使用者選定 D-20261012-content-continuity-model、D-20261012-handover-to-colleague-focus、D-20261012-kernel-shared-work-rewrite；計畫為 draft。P1 已合併 9 個 repo（kapi-infra #179、kapi-protocol #36、krepo-common #85、krepo-company #61、krepo-judicial #139、krepo-mops-disclosure #115、krepo-mops-major-news #98、krepo-tej-export #11、krepo #192），各 repo authority 回 `NOT_APPLICABLE`、`audit --ship` OK、`unit-tests` 通過；krepo-mops-disclosure 的 ruleset 要求 1 個核准，依使用者指示以 bypass merge（`--admin`）合併。krepo-mops-financial-statements 因工作樹有未 commit 的他人工作未處理。P2 已在 branch refactor/remove-steward-identity 實作並 commit、未 push（D-20261012-steward-identity-removed；驗證結果見計畫 P2「實作結果」）。
+- **下一步**：在 branch refactor/remove-steward-identity 以 deep-review 審 P2 的實際 diff，修完後由使用者以 `/project` 送出；P2 合併後做 P2b（其他受治理 repo 的 kernel、測試與 STATUS 欄位，需另經批次授權），再做 P3。
 - **關聯**：[本項計畫](docs/plans/2026-10-12-content-continuity-redesign.md); GitHub #309; item 3 #285 第 5 步依賴 P2
 
 ## 暫停中
 
 - **B-20260902-gh-account-autoswitch**：pending；維持 backlog 既有觸發條件，在條件實際發生前不開發、
   不結案。**恢復條件**：跨帳號操作成為常態，或相同症狀再次被查錯方向。
-- **B-20260824-remote-human-contributor-path**：pending；現行 feature branch／PR 可作為 Git 傳遞媒介，
-  Project authority gate 也能在 steward 評估 candidate commit 時列出 shared-surface 越界；但既有 worker
-  契約仍不允許自行 push，PR CI 亦不依 contributor 身分判斷 stewardship。可取得的 dotfiles 與三個已 rollout
-  repo 的 PR／commit 紀錄沒有 remote-human contributor 實例，未觀察到傳遞阻塞或 authority drift，故不新增
-  程序、eval 或 provider gate。**恢復條件**：第一位具名、跨主機真人 contributor 需要交付 commit，或首次出現
-  非 steward PR；保留其 exact SHA、declared scope 與 Dossier delta，實測 steward fetch／shared-surface 檢查／
-  cherry-pick。任一步受阻，或越權 shared dossier mutation 未被攔下，才以該事件取得 RED 並做最小修正。
 
 ## 歷史入口
 

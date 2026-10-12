@@ -11,7 +11,7 @@ assert_rc "session skill eval transport：私人路徑 probe 不執行／fixture
 PJS_CLAUDE="$ROOT/claude/skills/project"
 PJS_CODEX="$ROOT/codex/skills/project"
 project_scripts_shared=1
-for script_name in bootstrap-baseline.sh branch-first.sh cleanup-stale-branch.sh doc-governance.py read-reference.py ship-state.sh steward-authority.py wait-required-enrollment.sh; do
+for script_name in bootstrap-baseline.sh branch-first.sh cleanup-stale-branch.sh doc-governance.py read-reference.py ship-state.sh wait-required-enrollment.sh; do
     [ "$PJS_CLAUDE/scripts/$script_name" -ef "$ROOT/shared/skills/project/scripts/$script_name" ] \
         && [ "$PJS_CODEX/scripts/$script_name" -ef "$ROOT/shared/skills/project/scripts/$script_name" ] \
         || project_scripts_shared=0
@@ -42,7 +42,7 @@ if grep -q 'Scenario 36 — Spec 後的 multi-repo' \
     && grep -q 'closed repo-set evidence' <<< "$project_step0" \
     && grep -q '完全相同.*不顯示.*確認路徑' <<< "$project_step0" \
     && grep -q '只詢問 repo-set delta' <<< "$project_step0" \
-    && grep -q '不得授予.*authority.*shipping authorization' <<< "$project_step0"; then
+    && grep -q '不得授予 shipping authorization' <<< "$project_step0"; then
     ok "project Step 0 沿用已重驗且未變的 closed repo set"
 else bad "project Step 0 未沿用已重驗且未變的 closed repo set"; fi
 pjs_codex_frontmatter="$(awk 'NR == 1 { next } /^---$/ { exit } { print }' "$PJS_CODEX/SKILL.md")"
@@ -71,56 +71,19 @@ if grep -q 'repo contract.*優先' "$PJS_CLAUDE/references/log-prepare.md" \
         "$PJS_CLAUDE/scripts/branch-first.sh" "$PJS_CLAUDE/scripts/ship-state.sh"; then
     ok "project commit／PR title 以 target repo convention 優先"
 else bad "project commit／PR title 未明定 repo convention 優先與 fallback"; fi
-if grep -q '## 平行協作與 stewardship' "$PJS_CLAUDE/references/dossier.md" \
-    && grep -q 'Dossier delta' "$PJS_CLAUDE/references/dossier.md" \
-    && grep -q 'authority actor 必須等於所有 active items' "$PJS_CLAUDE/references/log-prepare.md" \
-    && grep -q 'Worker 呼叫 Log 時立即 STOP' "$PJS_CLAUDE/references/log-prepare.md" \
-    && grep -q 'active_item_contract' "$PJS_CLAUDE/references/spec-workflow.md"; then
-    ok "project shared workflow 區分 dossier steward 與 isolated worker"
-else bad "project shared workflow 缺 stewardship／worker STOP 契約"; fi
-if grep -q 'Scenario 24 — 身分宣稱不得冒充 steward actor' "$PJS_CLAUDE/references/pressure-tests.md" \
-    && grep -q 'ordinary identity claim.*not.*delegation' "$PJS_CLAUDE/references/log-prepare.md" \
-    && grep -q 'explicit-bounded-human-delegation' "$PJS_CLAUDE/references/log-prepare.md" \
-    && grep -q 'executor actor.*durable steward.*authority source' "$PJS_CLAUDE/references/log-prepare.md" \
-    && grep -q 'resume=.*same runtime' "$PJS_CLAUDE/references/log-prepare.md" \
-    && grep -q 'candidate-shared-surface' "$PJS_CLAUDE/references/log-prepare.md" \
-    && grep -q '本輪稍後由合法 steward 新建' "$PJS_CLAUDE/references/log-prepare.md"; then
-    ok "project stewardship gate 區分自然語言身分、workline resume 與 bounded human delegation"
-else bad "project stewardship gate 仍可能把『我是 owner』誤當 actor authority"; fi
+project_continuity="$(sed -n '/^## 接續（內容契約）/,/^## /p' "$PJS_CLAUDE/references/dossier.md")"
+if grep -q '不靠 actor 身分' <<< "$project_continuity" \
+    && grep -q 'Goal.、.進度.、.下一步' <<< "$project_continuity" \
+    && grep -q 'branch 不存在或已合併' <<< "$project_continuity" \
+    && grep -q '邀請，不是佔用' <<< "$project_continuity"; then
+    ok "project 接續以 active state 內容契約承擔，不依 actor 身分"
+else bad "project 接續缺內容契約（Goal／進度／下一步、branch 核對、下一步不是佔用）"; fi
 
-PJS_STEWARD_GATE="$PJS_CLAUDE/scripts/steward-authority.py"
-if python3 "$ROOT/tests/project-sequential-assignment.py" "$PJS_STEWARD_GATE" >"$TMP/project-sequential-assignment.out" 2>&1; then
-    ok "project sequential assignment：明示指派與dirty／conflict／snapshot邊界"
-else
-    cat "$TMP/project-sequential-assignment.out"
-    bad "project sequential assignment regression"
-fi
-if python3 "$ROOT/tests/project-session-binding.py" "$PJS_STEWARD_GATE" >"$TMP/project-session-binding.out" 2>&1; then
-    ok "project session binding：正常接續與 assignment／HEAD／runtime 邊界"
-else
-    cat "$TMP/project-session-binding.out"
-    bad "project session binding regression"
-fi
 project_step2_and_3="$(sed -n '/^## Step 2：/,/^## Step 4：/p' \
     "$PJS_CLAUDE/references/log-prepare.md")"
-if grep -q 'Scenario 36 — Spec 後的 multi-repo' "$PJS_CLAUDE/references/pressure-tests.md" \
-    && grep -q 'shared dossier.*candidate 前.*authority' <<< "$project_step2_and_3" \
-    && grep -q -- '--candidate-parent' <<< "$project_step2_and_3" \
-    && grep -q 'candidate-rebuild: READY' <<< "$project_step2_and_3" \
-    && grep -q '當前 logical Project invocation' <<< "$project_step2_and_3" \
-    && grep -q '直接子 commit' <<< "$project_step2_and_3" \
-    && grep -q '尚未 push.*尚未開 PR' <<< "$project_step2_and_3" \
-    && grep -q '不得冒稱' <<< "$project_step2_and_3" \
-    && grep -q 'formal transfer' <<< "$project_step2_and_3" \
-    && grep -q '使用者.*worker.*混入.*STOP' <<< "$project_step2_and_3"; then
-    ok "project candidate provenance 在寫入前解析，錯 actor local candidate 僅有界重建"
-else bad "project candidate provenance 仍可能延後成使用者決策或無界重寫"; fi
-if grep -q -- '--completion-parent' <<< "$project_step2_and_3" \
-    && grep -q 'completion-candidate: READY' <<< "$project_step2_and_3" \
-    && grep -q 'plain.*no-active-items.*不得.*PASS' <<< "$project_step2_and_3" \
-    && grep -q 'endpoint.*未達成.*不得.*shipped' <<< "$project_step2_and_3"; then
-    ok "project completion candidate 以 parent authority 驗證且不提前宣稱 shipped"
-else bad "project completion candidate 可在移除 active item 後洗掉 authority 或提前宣稱 shipped"; fi
+if grep -q 'endpoint 尚未達成時不得.*shipped' <<< "$project_step2_and_3"; then
+    ok "project milestone 不在 endpoint 達成前宣稱 shipped"
+else bad "project milestone 可在 endpoint 達成前宣稱 shipped"; fi
 project_step4="$(sed -n '/^## Step 4：/,/^## Step 5：/p' \
     "$PJS_CLAUDE/references/log-prepare.md")"
 if grep -q 'summary-emitted: yes' <<< "$project_step4" \
@@ -141,141 +104,6 @@ if grep -q '進入條件' <<< "$project_step5" \
     && grep -q '不滿足.*不得進入.*outward' <<< "$project_step5"; then
     ok "project Step 5 以緊鄰 literal Ship 摘要作為 outward entry condition"
 else bad "project Step 5 可把一般 gate 狀態更新誤當成送出前摘要"; fi
-PSG="$TMP/project-steward-gate"
-mkdir -p "$PSG/repo/docs/archive" "$PSG/repo/src"
-git init -q -b main "$PSG/repo"
-git -C "$PSG/repo" config user.name test
-git -C "$PSG/repo" config user.email test@example.com
-printf '%s\n' '{"status_schema":{"path":"STATUS.md","active_item_contract":{"required_fields":["Writer","Workspace","Write Scope","Dossier Steward"],"uniform_fields":["Dossier Steward"]}},"history_paths":{"decision":"docs/archive/decisions-{YYYY-MM}.md","dead_end":"docs/archive/dead-ends-{YYYY-MM}.md","milestone":"docs/archive/milestones-{YYYY-MM}.md"},"plan_dir":"docs/plans"}' > "$PSG/repo/.doc-governance.json"
-printf '%s\n' '# Status' '' '## 進行中' '' '### Contract sync' '' '- **Writer**：codex:agent-contract-sync' '- **Workspace**：branch=docs/agent-contract-sync' '- **Write Scope**：AGENTS.md, CLAUDE.md, tests/' '- **Dossier Steward**：owner:repo-maintainer' '' '## 暫停中' > "$PSG/repo/STATUS.md"
-printf '%s\n' '# Milestones' > "$PSG/repo/docs/archive/milestones-2026-08.md"
-git -C "$PSG/repo" add .doc-governance.json STATUS.md docs/archive/milestones-2026-08.md
-git -C "$PSG/repo" commit -qm "chore: seed authority fixture"
-git -C "$PSG/repo" switch -qc docs/agent-contract-sync
-printf '%s\n' 'implemented = true' > "$PSG/repo/src/change.py"
-printf '%s\n' '' '- worker wrote steward-only milestone' >> "$PSG/repo/docs/archive/milestones-2026-08.md"
-git -C "$PSG/repo" add src/change.py docs/archive/milestones-2026-08.md
-git -C "$PSG/repo" commit -qm "docs: sync contract"
-psg_commit="$(git -C "$PSG/repo" rev-parse HEAD)"
-
-psg_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --commit "$psg_commit" 2>"$PSG/err")"
-psg_rc=$?
-assert_rc "steward gate：owner 身分未顯式 delegation → STOP" 1 "$psg_rc"
-if grep -q '^executor-actor: codex:agent-contract-sync$' <<< "$psg_out" \
-    && grep -q '^durable-steward: owner:repo-maintainer$' <<< "$psg_out" \
-    && grep -q '^authority-source: active-writer-workspace-match$' <<< "$psg_out" \
-    && grep -q '^verdict: STOP$' <<< "$psg_out"; then
-    ok "steward gate 不把普通『我是 repo owner』身分宣稱映射成 owner actor"
-else bad "steward gate actor／steward／authority evidence 不完整"; fi
-if grep -q '^candidate-shared-surface: docs/archive/milestones-2026-08.md$' <<< "$psg_out"; then
-    ok "steward gate 揭露 worker commit 越界 milestone surface"
-else bad "steward gate 未揭露 worker 的 shared-surface 越界"; fi
-if grep -q '^recovery-kind: confirm-human-delegation$' <<< "$psg_out" \
-    && grep -q '^recovery-actor: owner:repo-maintainer$' <<< "$psg_out"; then
-    ok "steward gate 對唯一 human steward 提供 deterministic guided recovery"
-else bad "steward gate 未分類可確認的 human delegation recovery"; fi
-
-psg_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --as-human owner:repo-maintainer --commit "$psg_commit" 2>"$PSG/err")"
-psg_rc=$?
-assert_rc "steward gate：exact human delegation → PASS" 0 "$psg_rc"
-if grep -q '^authority-actor: owner:repo-maintainer$' <<< "$psg_out" \
-    && grep -q '^authority-source: explicit-bounded-human-delegation$' <<< "$psg_out" \
-    && grep -q '^verdict: PASS$' <<< "$psg_out"; then
-    ok "steward gate 保留 runtime executor 並以 bounded human delegation 放行"
-else bad "steward gate human delegation evidence 不完整"; fi
-psg_head="$(git -C "$PSG/repo" rev-parse HEAD)"
-psg_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --confirmed-human owner:repo-maintainer --commit "$psg_commit" --expected-head "$psg_head" 2>"$PSG/err")"
-assert_rc "steward gate：prompt-bound exact human confirmation → PASS" 0 $?
-if grep -q '^authority-source: prompt-bound-human-delegation$' <<< "$psg_out" \
-    && grep -q "^repository-head: $psg_head$" <<< "$psg_out" \
-    && grep -q "^candidate-commit: $psg_commit$" <<< "$psg_out"; then
-    ok "steward gate human confirmation 綁定 full HEAD／candidate snapshot"
-else bad "steward gate human confirmation 缺 prompt-bound provenance 或 snapshot"; fi
-psg_stale_head="$(git -C "$PSG/repo" rev-parse HEAD^)"
-python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --confirmed-human owner:repo-maintainer --expected-head "$psg_stale_head" >"$PSG/stale.out" 2>"$PSG/err"
-assert_rc "steward gate：prompt snapshot stale → STOP" 1 $?
-if grep -q '^authority-source: stale-prompt-snapshot$' "$PSG/stale.out" \
-    && grep -q '^recovery-kind: none$' "$PSG/stale.out"; then
-    ok "steward gate 不沿用 stale prompt confirmation"
-else bad "steward gate stale prompt 未 fail closed"; fi
-python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --confirmed-human owner:repo-maintainer >/dev/null 2>&1
-assert_rc "steward gate：prompt-bound flag 缺 exact snapshot → usage error" 2 $?
-
-python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --as-human owner:someone-else >/dev/null 2>&1
-assert_rc "steward gate：human delegation actor 非 durable steward → STOP" 1 $?
-python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --as-human codex:integration >/dev/null 2>&1
-assert_rc "steward gate：as= 不得代理 agent actor" 2 $?
-python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --resume-actor owner:repo-maintainer >/dev/null 2>&1
-assert_rc "steward gate：resume= 不得冒充 human actor" 2 $?
-
-sed -i.bak 's/owner:repo-maintainer/codex:cross-runtime-dossier-rollout/' "$PSG/repo/STATUS.md" && rm -f "$PSG/repo/STATUS.md.bak"
-psg_resume_prompt_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --commit "$psg_commit" 2>"$PSG/err")"
-assert_rc "steward gate：same-runtime steward 未確認前仍 STOP" 1 $?
-if grep -q '^recovery-kind: confirm-same-runtime-resume$' <<< "$psg_resume_prompt_out" \
-    && grep -q '^recovery-actor: codex:cross-runtime-dossier-rollout$' <<< "$psg_resume_prompt_out"; then
-    ok "steward gate 對唯一 same-runtime steward 提供 deterministic guided recovery"
-else bad "steward gate 未分類可確認的 same-runtime resume recovery"; fi
-psg_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --resume-actor codex:cross-runtime-dossier-rollout 2>"$PSG/err")"
-psg_rc=$?
-assert_rc "steward gate：same-runtime exact workline resume → PASS" 0 "$psg_rc"
-if grep -q '^executor-actor: codex:cross-runtime-dossier-rollout$' <<< "$psg_out" \
-    && grep -q '^authority-source: explicit-same-runtime-resume$' <<< "$psg_out"; then
-    ok "steward gate resume evidence 精確指向 durable workline"
-else bad "steward gate resume evidence 不完整"; fi
-psg_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --confirmed-resume-actor codex:cross-runtime-dossier-rollout --expected-head "$psg_head" 2>"$PSG/err")"
-assert_rc "steward gate：prompt-bound same-runtime confirmation → PASS" 0 $?
-if grep -q '^authority-source: prompt-bound-same-runtime-resume$' <<< "$psg_out"; then
-    ok "steward gate same-runtime confirmation 使用獨立 provenance"
-else bad "steward gate same-runtime confirmation provenance 不完整"; fi
-sed -i.bak 's/codex:cross-runtime-dossier-rollout/claude:foreign-workline/' "$PSG/repo/STATUS.md" && rm -f "$PSG/repo/STATUS.md.bak"
-psg_cross_runtime_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG/repo" --runtime codex --commit "$psg_commit" 2>"$PSG/err")"
-assert_rc "steward gate：cross-runtime steward mismatch → STOP" 1 $?
-if grep -q '^recovery-kind: none$' <<< "$psg_cross_runtime_out" \
-    && ! grep -q '^recovery-actor:' <<< "$psg_cross_runtime_out"; then
-    ok "steward gate 不為 cross-runtime actor 提供 guided takeover"
-else bad "steward gate 不得把 cross-runtime mismatch 分類成可確認 recovery"; fi
-
-PSG_EMPTY="$TMP/project-steward-empty"
-mkdir -p "$PSG_EMPTY/repo/docs/archive"
-git init -q -b main "$PSG_EMPTY/repo"
-git -C "$PSG_EMPTY/repo" config user.name test
-git -C "$PSG_EMPTY/repo" config user.email test@example.com
-cp "$PSG/repo/.doc-governance.json" "$PSG_EMPTY/repo/.doc-governance.json"
-printf '%s\n' '# Status' '' '## 進行中' '' '目前無進行中項目。' '' '## 暫停中' > "$PSG_EMPTY/repo/STATUS.md"
-printf '%s\n' '# Milestones' > "$PSG_EMPTY/repo/docs/archive/milestones-2026-08.md"
-git -C "$PSG_EMPTY/repo" add .doc-governance.json STATUS.md docs/archive/milestones-2026-08.md
-git -C "$PSG_EMPTY/repo" commit -qm "chore: seed empty authority fixture"
-git -C "$PSG_EMPTY/repo" switch -qc docs/no-steward-history
-printf '%s\n' '' '- milestone without a steward' >> "$PSG_EMPTY/repo/docs/archive/milestones-2026-08.md"
-git -C "$PSG_EMPTY/repo" add docs/archive/milestones-2026-08.md
-git -C "$PSG_EMPTY/repo" commit -qm "docs: write ownerless milestone"
-psg_empty_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG_EMPTY/repo" --runtime codex --commit HEAD 2>"$PSG_EMPTY/err")"
-assert_rc "steward gate：current／parent 零 steward 的 shared history candidate → STOP" 1 $?
-if grep -q '^authority-source: no-durable-steward-for-shared-surface$' <<< "$psg_empty_out" \
-    && grep -q '^candidate-shared-surface: docs/archive/milestones-2026-08.md$' <<< "$psg_empty_out"; then
-    ok "steward gate 不把零 active item 當成 shared-history 免責"
-else bad "steward gate 未攔下無 durable steward 的 shared history"; fi
-if grep -q '^recovery-kind: confirm-create-active-contract$' <<< "$psg_empty_out" \
-    && grep -q '^recovery-actor: codex:no-steward-history$' <<< "$psg_empty_out"; then
-    ok "steward gate 對零 steward 的明確 shared candidate 提供 Spec recovery"
-else bad "steward gate 未分類可確認的 active-contract recovery"; fi
-psg_empty_head="$(git -C "$PSG_EMPTY/repo" rev-parse HEAD)"
-printf '%s\n' '# Status' '' '## 進行中' '' '### Adopt local candidate' '' '- **Writer**：codex:no-steward-history' '- **Workspace**：branch=docs/no-steward-history' '- **Write Scope**：docs/archive/' '- **Dossier Steward**：codex:no-steward-history' '' '## 暫停中' > "$PSG_EMPTY/repo/STATUS.md"
-psg_empty_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG_EMPTY/repo" --runtime codex --confirmed-new-steward codex:no-steward-history --commit "$psg_empty_head" --expected-head "$psg_empty_head" 2>"$PSG_EMPTY/err")"
-assert_rc "steward gate：Spec subflow 後 prompt-bound new steward → PASS" 0 $?
-if grep -q '^authority-source: prompt-bound-new-workline-confirmation$' <<< "$psg_empty_out" \
-    && grep -q '^durable-steward: codex:no-steward-history$' <<< "$psg_empty_out"; then
-    ok "steward gate 新 workline confirmation 只在 durable contract 落地後放行"
-else bad "steward gate new-workline confirmation 未重驗 durable contract"; fi
-
-project_authority_recovery="$(sed -n '/^## Prompt-bound authority recovery/,/^## /p' "$PJS_CLAUDE/references/log-prepare.md")"
-if grep -q 'Scenario 26 — 可安全修復的 authority STOP 改用綁定式確認續行' "$PJS_CLAUDE/references/pressure-tests.md" \
-    && grep -q 'normalized invocation arguments' <<< "$project_authority_recovery" \
-    && grep -q '同一個 logical Project invocation' <<< "$project_authority_recovery" \
-    && grep -q '取消.*零 mutation' <<< "$project_authority_recovery" \
-    && grep -q '不得授予.*endpoint' <<< "$project_authority_recovery"; then
-    ok "project authority recovery 以 prompt-bound 選項續行且不擴張授權"
-else bad "project authority recovery 尚未形成可確認、可取消且不重建 invocation 的契約"; fi
 
 project_runtime_adapter="$(sed -n '/^## Runtime adapter/,/^## /p' "$PJS_CLAUDE/references/workflow.md")"
 if grep -q 'Scenario 35 — 文字 fallback 保留完整編號選項' "$PJS_CLAUDE/references/pressure-tests.md" \
@@ -288,71 +116,13 @@ if grep -q 'Scenario 35 — 文字 fallback 保留完整編號選項' "$PJS_CLAU
 else bad "project 文字 fallback 仍可退化成確認／停止關鍵字或擴張預檢"; fi
 
 project_spec_completion="$(sed -n '/^### Spec 成功後的 Log invocation 提示/,/^## /p' "$PJS_CLAUDE/references/spec-workflow.md")"
-if grep -q 'Scenario 27 — Spec 收尾同時提示短版與 exact resume 明確版' "$PJS_CLAUDE/references/pressure-tests.md" \
-    && grep -q '不帶任何' <<< "$project_spec_completion" \
-    && grep -q 'resume=.*as=' <<< "$project_spec_completion" \
-    && grep -q 'active-writer-workspace-match' <<< "$project_spec_completion" \
-    && grep -qF "\$project --merge" <<< "$project_spec_completion" \
-    && grep -qF '/project --merge' <<< "$project_spec_completion" \
-    && grep -q 'resume=<exact-actor>' <<< "$project_spec_completion" \
+if grep -qF "\$project --merge" <<< "$project_spec_completion" \
+    && grep -qF "Claude Code adapter 將 \`\$project\` 換成 \`/project\`" <<< "$project_spec_completion" \
     && grep -q 'endpoint authorization' <<< "$project_spec_completion" \
     && grep -q '不 carry' <<< "$project_spec_completion" \
-    && grep -q 'BROKEN.*recovery-kind.*scope mismatch' <<< "$project_spec_completion"; then
-    ok "project Spec 收尾只在 helper 精確證明時同列短版與 resume 明確版"
-else bad "project Spec 收尾未安全區分短版 invocation、workline binding 與新 endpoint 授權"; fi
-project_log_authority="$(sed -n '/^## Step 2：/,/^### Runtime steward retirement gate/p' \
-    "$PJS_CLAUDE/references/log-prepare.md")"
-if grep -q 'Scenario 36 — Spec 後的 multi-repo' "$PJS_CLAUDE/references/pressure-tests.md" \
-    && grep -q 'current-session binding packet' <<< "$project_spec_completion" \
-    && grep -q 'Spec.*新建.*active contract.*current-session workline assignment' <<< "$project_spec_completion" \
-    && grep -q -- '--session-resume-actor' <<< "$project_spec_completion" \
-    && grep -q '不要求.*resume=' <<< "$project_spec_completion" \
-    && grep -q 'canonical repo root' <<< "$project_spec_completion" \
-    && grep -q 'exact actor' <<< "$project_spec_completion" \
-    && grep -q 'assignment fingerprint' <<< "$project_spec_completion" \
-    && grep -q '先消費.*binding packet.*branch-derived actor' <<< "$project_log_authority" \
-    && grep -q '重驗通過.*不詢問.*resume=' <<< "$project_log_authority" \
-    && grep -q 'binding delta' <<< "$project_log_authority" \
-    && grep -q '套用既有 recovery' <<< "$project_log_authority" \
-    && grep -q '不得授予.*shipping endpoint' <<< "$project_spec_completion"; then
-    ok "project Log 消費同 session Spec workline binding，無 delta 不重問 resume"
-else bad "project Log 未可靠消費同 session Spec workline binding"; fi
-
-PSG_PARENT="$TMP/project-steward-parent"
-mkdir -p "$PSG_PARENT/repo/docs/archive"
-git init -q -b main "$PSG_PARENT/repo"
-git -C "$PSG_PARENT/repo" config user.name test
-git -C "$PSG_PARENT/repo" config user.email test@example.com
-cp "$PSG/repo/.doc-governance.json" "$PSG_PARENT/repo/.doc-governance.json"
-printf '%s\n' '# Status' '' '## 進行中' '' '### Completing item' '' '- **Writer**：codex:integration' '- **Workspace**：branch=docs/completed-item' '- **Write Scope**：docs/' '- **Dossier Steward**：codex:integration' '' '## 暫停中' > "$PSG_PARENT/repo/STATUS.md"
-printf '%s\n' '# Milestones' > "$PSG_PARENT/repo/docs/archive/milestones-2026-08.md"
-git -C "$PSG_PARENT/repo" add .doc-governance.json STATUS.md docs/archive/milestones-2026-08.md
-git -C "$PSG_PARENT/repo" commit -qm "chore: seed completing item"
-git -C "$PSG_PARENT/repo" switch -qc docs/completed-item
-printf '%s\n' '# Status' '' '## 進行中' '' '目前無進行中項目。' '' '## 暫停中' > "$PSG_PARENT/repo/STATUS.md"
-printf '%s\n' '' '- completed item milestone' >> "$PSG_PARENT/repo/docs/archive/milestones-2026-08.md"
-git -C "$PSG_PARENT/repo" add STATUS.md docs/archive/milestones-2026-08.md
-git -C "$PSG_PARENT/repo" commit -qm "docs: complete item"
-psg_parent_out="$(python3 "$PJS_STEWARD_GATE" --root "$PSG_PARENT/repo" --runtime codex --resume-actor codex:integration --commit HEAD 2>"$PSG_PARENT/err")"
-assert_rc "steward gate：completed candidate 從 parent STATUS 恢復 steward → PASS" 0 $?
-if grep -q '^durable-steward: codex:integration$' <<< "$psg_parent_out" \
-    && grep -q '^durable-steward-source: commit-parent-active-state$' <<< "$psg_parent_out" \
-    && grep -q '^verdict: PASS$' <<< "$psg_parent_out"; then
-    ok "steward gate 保留 completed-item 跨 session shipping liveness"
-else bad "steward gate 無法從 candidate parent 恢復 completed-item steward"; fi
-project_retired_steward_gate="$(sed -n '/^### Runtime steward retirement gate/,/^## /p' "$PJS_CLAUDE/references/log-prepare.md")"
-if grep -q 'Scenario 28 — runtime steward workline 結案不得留下 active dead reference' "$PJS_CLAUDE/references/pressure-tests.md" \
-    && grep -q 'Step 0.*完整.*repo' <<< "$project_retired_steward_gate" \
-    && grep -q 'completion milestone.*移除' <<< "$project_retired_steward_gate" \
-    && grep -q 'claude:\*.*codex:\*' <<< "$project_retired_steward_gate" \
-    && grep -q 'owner:\*.*human:\*' <<< "$project_retired_steward_gate" \
-    && grep -q '明示 successor' <<< "$project_retired_steward_gate" \
-    && grep -q 'PREPARED' <<< "$project_retired_steward_gate" \
-    && grep -q '所有.*active items' <<< "$project_retired_steward_gate" \
-    && grep -q '同一.*lifecycle commit' <<< "$project_retired_steward_gate" \
-    && grep -q '不得宣告.*完成' <<< "$project_retired_steward_gate"; then
-    ok "project Log 在 runtime steward workline 結案前消除跨 repo dead references"
-else bad "project Log 仍可能讓已結案 runtime actor 留在 active steward contract"; fi
+    && grep -q '未選定就不得自行預填' <<< "$project_spec_completion"; then
+    ok "project Spec 收尾只提示命令，不 carry 已結束 invocation 的 endpoint 授權"
+else bad "project Spec 收尾未區分命令提示與新 endpoint 授權"; fi
 project_check_routing="$(sed -n '/^### merge 受阻時的分流/,/^## PR title/p' "$PJS_CLAUDE/references/merge-workflow.md")"
 project_no_checks_scenario="$(sed -n '/^## Scenario 29 /,/^## Scenario 30 /p' "$PJS_CLAUDE/references/pressure-tests.md")"
 project_eval_root="$TMP/project-no-checks-eval"
@@ -702,17 +472,14 @@ if grep -q 'Scenario 30 — 空 repo 首次 merge 不得把 feature branch 升�
     && grep -q '重新取得.*required-policy' "$PJS_CLAUDE/references/log-prepare.md"; then
     ok "project 空 repo bootstrap 採確認型 baseline UX、effective policy 與 post-push re-detection"
 else bad "project 空 repo bootstrap contract 未完整接上 #153 state machine"; fi
-if grep -q 'BLOCKED.*PREPARED.*TRANSFERRED' "$PJS_CLAUDE/references/transfer-workflow.md" \
-    && grep -q 'portable-knowledge' "$PJS_CLAUDE/references/transfer-workflow.md" \
-    && grep -q 'canonical handover endpoint' "$PJS_CLAUDE/references/transfer-workflow.md" \
-    && grep -q '所有 active items' "$PJS_CLAUDE/references/transfer-workflow.md" \
-    && grep -q 'in-flight.*未整合' "$PJS_CLAUDE/references/transfer-workflow.md" \
-    && grep -q 'conditional pending values' "$PJS_CLAUDE/references/transfer-workflow.md" \
-    && grep -q 'remote-visible ancestry' "$PJS_CLAUDE/references/log-prepare.md" \
-    && grep -q 'authorization.*不.*移交' "$PJS_CLAUDE/references/transfer-workflow.md" \
-    && grep -q 'Scenario 23' "$PJS_CLAUDE/references/pressure-tests.md"; then
-    ok "project transfer 有 portable-knowledge hard gate 與原子 stewardship 狀態機"
-else bad "project transfer 缺 BLOCKED/PREPARED/TRANSFERRED、可攜知識或原子切換契約"; fi
+project_transfer="$PJS_CLAUDE/references/transfer-workflow.md"
+if grep -q 'portable-knowledge' "$project_transfer" \
+    && grep -q '不 commit、不 push、不 merge' "$project_transfer" \
+    && grep -q '未指名接手者' "$project_transfer" \
+    && grep -q '在途工作未合併也未明確放棄' "$project_transfer" \
+    && grep -q 'authorization 不隨移交' "$project_transfer"; then
+    ok "project transfer 以 portable-knowledge audit 與移交未完成條件產出草稿，不 commit"
+else bad "project transfer 缺 portable-knowledge audit、移交未完成條件或 no-commit 邊界"; fi
 project_spec_sig="\$project spec"
 project_transfer_sig="\$project transfer"
 ready4quit_sig="\$ready4quit"

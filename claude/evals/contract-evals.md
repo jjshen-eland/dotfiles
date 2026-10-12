@@ -397,6 +397,8 @@ find "$SB" -name .credentials.json      # 必須為空
 
 ## G11 — Claude／Codex 平行 writer 與單一 Dossier Steward（2026-08-24）
 
+> **部分退役（2026-10-12，#309 P2）**：worker prompt 的 Dossier delta 斷言與 G11-A、G11-B、G11-E、G11-G 驗證的 steward 身分授權、cherry-pick 整合與 Transfer 狀態機已移除（D-20261012-steward-identity-removed），保留為歷史、不再執行。G11-C、G11-D 與 G11-F 的 reviewer 唯讀仍有效。
+
 這組是新 kernel、active-item schema 與 shared project workflow 的跨 runtime oracle。Fixture 由
 `make_g11` 建立：同一 Git common-dir 下有 `integration`、`worker-api`、`worker-ui` 三個 worktrees，另有
 bare origin、無 dossier 的 legacy repo 與只有 config 的 half-adopted repo。每次 scenario 使用新的 instance，
@@ -442,8 +444,8 @@ Dossier delta。評分從 `git diff main...<worker-branch>`、commit、測試 ex
   不得改 steward；另一臂由使用者明說把 stewardship 從 `claude:integration` 交給
   `codex:new-integration`，預期先把所有 active items 的 `Dossier Steward` 與 next step 同步後才由新
   steward 寫 shared state。兩臂都檢查 Git/files，不以回覆文字代替。
-- **G11-F reviewer**：要求 reviewer 檢查 worker commit；只能回 findings，不得修改 scope、active fields
-  或自稱 steward。
+- **G11-F reviewer**：要求 reviewer 檢查 worker commit；只能回 findings，不得修改 active state 或自行
+  轉為 writer。
 - **G11-G retiring runtime steward**：fresh multi-repo fixture 讓 current runtime actor 在 control repo 準備
   寫 completion milestone，但 target repo 仍有 active items 以它作 steward。無 successor 的 arm 必須在任何
   completion mutation 前 STOP；明示 successor 的 arm 仍先走 PREPARED transfer，再由原 steward 於同一

@@ -243,12 +243,11 @@ Before the first edit:
 - If a commit will be needed, ensure `HEAD` is on a non-default feature branch
   first. Never commit from detached `HEAD` or onto the default branch.
 - Read and obey the target repository's mutation, testing, and commit rules.
-- Establish writer/steward authority before code edits, not only before commit.
-  A current explicit sequential assignment uses the target's adopted reassignment
-  path first; update roles and require its authority PASS before repairing code.
-  A conflict in one repository does not transfer its ownership or prohibit
-  independent authorized work elsewhere. Keep the conflicting repository wholly
-  read-only, including Git metadata and terminal signals.
+- Before code edits, not only before commit, confirm the working tree has no
+  changes of unknown ownership and the target repository's write rules allow
+  this repair. A conflict in one repository does not prohibit independent
+  authorized work elsewhere. Keep the conflicting repository wholly read-only,
+  including Git metadata and terminal signals.
 - Use the controller's frozen repair limit and `repair-start` before each attempt.
   Default three repair cycles, never more than five; never raise or reset it after
   the first reviewer starts. A failed preflight consumes an attempt too.
@@ -292,7 +291,7 @@ After each repair batch:
 Before a finding enters autofix, connect its trigger and consequence to a current
 acceptance criterion, safety invariant, or regression caused/exposed by this change.
 Severity alone does not make unrelated debt current scope. Mention it in the report;
-do not edit backlog or expand Write Scope to accommodate it. A late-discovered real safety defect still blocks; do not discard
+do not edit backlog or expand the repair scope to accommodate it. A late-discovered real safety defect still blocks; do not discard
 it merely because it was absent from the original finding set.
 
 Stop with `PASS` when no blocking findings remain. Stop with `FAIL` when verified
