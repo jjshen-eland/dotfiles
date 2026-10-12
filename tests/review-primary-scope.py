@@ -298,6 +298,40 @@ class PrimaryScope(unittest.TestCase):
         self.assertEqual(result['result'], 'complete')
         self.assertEqual(record.read_text(), (ROOT / 'tests/fixtures/review-report.schema.json').read_text())
 
+    def test_packet_validation_snapshot_command_materializes_every_repo(self):
+        other = self.make_repo('other', 2)
+        state = self.open([self.repo, other])
+        admitted = self.admit(state, [self.assignment('part-0', {str(self.repo): [f'file-{i:02}.py' for i in range(39)],
+                                                                  str(other): ['file-00.py', 'file-01.py']})])
+        packet = json.loads(Path(admitted['packets'][0]).read_text())
+        commands = {entry['repo']: entry['command'] for entry in packet['validation_snapshot']}
+        self.assertEqual(set(commands), {str(self.repo), str(other)})
+        for repo, command in commands.items():
+            with self.subTest(repo=repo):
+                self.assertEqual(command[-1], '<new directory outside every review target>')
+                dest = self.root / ('snap-' + Path(repo).name)
+                result = self.run_cmd([*command[:-1], dest])
+                self.assertIn('verdict: MATERIALIZED', result.stdout)
+                self.assertEqual((dest / 'file-01.py').read_text(), 'value = 2\n')
+
+    def test_import_write_fixture_snapshot_catches_executed_import_only(self):
+        # The native oracle must see empty ignored directories and appended ignored files, not just tracked bytes.
+        module = self.eval_module()
+        expected = {'import-absent': {'logs', 'logs/app.log', 'logs/locks'}, 'import-present': {'logs/app.log'}}
+        for case, changed in expected.items():
+            with self.subTest(case=case):
+                root, _source, repos, env = module.prepare(self.root / case, case, 'codex')
+                repo = repos[0]
+                self.assertEqual(json.loads((root / 'fixture.json').read_text())['codex_sandbox'], 'workspace-write')
+                before = module.snapshot(repo)
+                self.env['GIT_OPTIONAL_LOCKS'] = '0'  # the brief's Git inspection setting
+                for argv in (['git', 'status', '--short', '--ignored'], ['git', 'diff'], ['cat', 'app/periods.py']):
+                    self.run_cmd(argv, cwd=repo)
+                self.assertEqual(module.snapshot(repo), before)
+                self.run_cmd([sys.executable, '-B', '-m', 'unittest', 'discover', '-s', 'tests', '-t', '.'], cwd=repo)
+                after = module.snapshot(repo)
+                self.assertEqual({k for k in set(before) | set(after) if before.get(k) != after.get(k)}, changed)
+
     def test_incomplete_partial_duplicate_and_reused_results_block(self):
         for case in ('incomplete', 'partial', 'duplicate', 'reused'):
             with self.subTest(case=case):

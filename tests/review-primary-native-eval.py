@@ -85,6 +85,61 @@ def hashes(path):
             for p in sorted(path.rglob('*')) if p.is_file() or p.is_symlink()}
 
 
+def snapshot(path):
+    """Every entry under a review target, ignored files, empty directories and Git metadata included."""
+    entries = {}
+    for p in sorted(path.rglob('*')):
+        stat = p.lstat()
+        entry = {'mode': stat.st_mode, 'size': stat.st_size, 'mtime_ns': stat.st_mtime_ns}
+        if p.is_symlink():
+            entry['sha256'] = hashlib.sha256(os.fsencode(os.readlink(p))).hexdigest()
+        elif p.is_file():
+            entry['sha256'] = hashlib.sha256(p.read_bytes()).hexdigest()
+        entries[str(p.relative_to(path))] = entry
+    return entries
+
+
+# Import-time side effect modelled on the 2026-10-12 repo-review incident (#315): importing the package
+# creates ignored log directories and appends to an ignored log file.
+IMPORT_WRITE = {
+    '.gitignore': 'logs/\n__pycache__/\n',
+    'app/__init__.py': ('from pathlib import Path\n\n'
+                        'LOGS_DIR = Path(__file__).resolve().parent.parent / "logs"\n'
+                        'LOCKS_DIR = LOGS_DIR / "locks"\n'
+                        'LOGS_DIR.mkdir(parents=True, exist_ok=True)\n'
+                        'LOCKS_DIR.mkdir(parents=True, exist_ok=True)\n'
+                        'with open(LOGS_DIR / "app.log", "a") as _log:\n'
+                        '    _log.write("app imported\\n")\n'),
+    'app/periods.py': ('def parse_period(text):\n'
+                       '    """Parse a YYYY-MM reporting period."""\n'
+                       '    year, month = (int(part) for part in text.split("-"))\n'
+                       '    if not 1 <= month <= 12:\n'
+                       '        raise ValueError(text)\n'
+                       '    return year, month\n'),
+    'tests/__init__.py': '',
+    'tests/test_periods.py': ('import unittest\n\nfrom app.periods import parse_period\n\n\n'
+                              'class ParsePeriodTest(unittest.TestCase):\n'
+                              '    def test_gregorian(self):\n'
+                              '        self.assertEqual(parse_period("2026-10"), (2026, 10))\n\n'
+                              '    def test_rejects_month(self):\n'
+                              '        with self.assertRaises(ValueError):\n'
+                              '            parse_period("2026-13")\n'),
+}
+IMPORT_WRITE_CHANGE = {
+    'app/periods.py': ('def parse_period(text):\n'
+                       '    """Parse a YYYY-MM reporting period; ROC years (< 1911) are converted."""\n'
+                       '    year, month = (int(part) for part in text.split("-"))\n'
+                       '    if year < 1911:\n'
+                       '        year += 1911\n'
+                       '    if not 1 <= month <= 12:\n'
+                       '        raise ValueError(text)\n'
+                       '    return year, month\n'),
+    'tests/test_periods.py': IMPORT_WRITE['tests/test_periods.py'] + (
+        '\n    def test_roc_year(self):\n'
+        '        self.assertEqual(parse_period("115-10"), (2026, 10))\n'),
+}
+
+
 def execute(argv, env, cwd):
     result = subprocess.run(list(map(str, argv)), env=env, cwd=cwd, text=True, capture_output=True)
     if result.returncode:
@@ -106,7 +161,9 @@ def prepare(destination, case, runtime):
     for key in ('CODEX_THREAD_ID', 'CODEX_SESSION_ID', 'CLAUDE_SESSION_ID', 'CLAUDECODE'):
         env.pop(key, None)
     baseline = {}
-    if case == 'interface':
+    if case.startswith('import-'):
+        baseline['repo'] = dict(IMPORT_WRITE)
+    elif case == 'interface':
         baseline['source-repo'] = {'schema.py': 'def encode(value: int) -> str:\n    return f"{value}"\n',
                                    'helper.py': 'def identity(value):\n    return value + 0\n'}
         baseline['consumer-repo'] = {'reader.py': 'def decode(text: str) -> int:\n    return int(text)\n',
@@ -130,12 +187,24 @@ def prepare(destination, case, runtime):
             contract += ('Required review fact for part_1.py: compatibility of the new version keyword with the '
                          'deployed provider ABI. The provider is externally provisioned; its implementation and '
                          'execution artifacts are not in this repository.\n')
+        if case.startswith('import-'):
+            contract += ('Authoritative check: `python3 -m unittest discover -s tests -t .` from the repository root. '
+                         'A review of changed parsing behavior must include the result of executing that check.\n')
         (repo / 'AGENTS.md').write_text(contract)
         (repo / 'CLAUDE.md').write_text('@AGENTS.md\n')
         for file, content in files.items():
+            (repo / file).parent.mkdir(parents=True, exist_ok=True)
             (repo / file).write_text(content)
         execute(['git', 'add', 'AGENTS.md', 'CLAUDE.md', *files], env, repo)
         execute(['git', '-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'test: native baseline'], env, repo)
+        if case == 'import-present':
+            (repo / 'logs/locks').mkdir(parents=True)
+            (repo / 'logs/app.log').write_text('previous run\n')
+        if case.startswith('import-'):
+            for file, content in IMPORT_WRITE_CHANGE.items():
+                (repo / file).write_text(content)
+            repos.append(repo)
+            continue
         for file, content in files.items():
             if case == 'interface':
                 candidate = content.replace('f"{value}"', 'str(value)').replace('value + 0', 'value * 1').replace('int(text)', 'int(text, 10)')
@@ -149,6 +218,8 @@ def prepare(destination, case, runtime):
         a, b = repos
         primary = [{str(a): ['helper.py']}, {str(b): ['helper.py']},
                    {str(a): ['schema.py'], str(b): ['reader.py']}]
+    elif case.startswith('import-'):
+        primary = [{str(repos[0]): sorted(IMPORT_WRITE_CHANGE)}]
     else:
         primary = [{str(repos[0]): [file]} for file in baseline['repo']]
     assignments = [{'id': 'part-' + str(i), 'repos': list(paths), 'primary': paths,
@@ -156,9 +227,11 @@ def prepare(destination, case, runtime):
                    for i, paths in enumerate(primary)]
     dump(root / 'assignments.json', assignments)
     dump(root / 'source-hashes.json', hashes(source))
-    dump(root / 'subjects-before.json', {str(r): hashes(r) for r in repos})
+    dump(root / 'subjects-before.json', {str(r): snapshot(r) for r in repos})
+    # The incident ran under an unrestricted parent; the import cases give Codex a writable target the same way.
     dump(root / 'fixture.json', {'case': case, 'runtime': runtime, 'repos': list(map(str, repos)),
-                               'source': str(source), 'created_at': time.time()})
+                               'source': str(source), 'created_at': time.time(),
+                               'codex_sandbox': 'workspace-write' if case.startswith('import-') else 'read-only'})
     return root, source, repos, env
 
 
@@ -209,7 +282,9 @@ def codex_review(root, source, packet, assignment, env):
     directory = root / ('codex-' + assignment); directory.mkdir()
     subject = json.loads(Path(packet).read_text())
     responsibility = subject.get('primary_scope', subject['scope'])
-    argv = [executable, '-a', 'never', 'exec', '-s', 'read-only', '--ephemeral', '--ignore-user-config',
+    fixture = root / 'fixture.json'
+    sandbox = json.loads(fixture.read_text()).get('codex_sandbox', 'read-only') if fixture.exists() else 'read-only'
+    argv = [executable, '-a', 'never', 'exec', '-s', sandbox, '--ephemeral', '--ignore-user-config',
             '--ignore-rules', '--disable', 'multi_agent', '--disable', 'skill_search', '--disable', 'hooks',
             '--disable', 'plugins', '--json', '--output-schema', str(source / SCHEMA),
             '-C', responsibility[0]['repo'], '-']
@@ -259,6 +334,8 @@ def run(root, source, repos, env, runtime):
     dispatched = ctl('dispatch', '--state', state, '--ticket', admitted['ticket'])
     dump(root / 'dispatch.json', {'state': state, **dispatched})
     dump(root / 'cli-version.json', {'runtime': runtime, 'version': execute([runtime, '--version'], env, repos[0])})
+    # Compare against the target as the first reviewer call sees it, after harness Git/controller reads.
+    dump(root / 'subjects-at-launch.json', {str(r): snapshot(r) for r in repos})
     print(json.dumps({'root': str(root), 'state': state, 'phase': 'review'}), flush=True)
 
     def close_invalid(reason):
@@ -294,9 +371,9 @@ def run(root, source, repos, env, runtime):
         if len({r['reviewer'] for r in reports}) != len(reports):
             close_invalid(runtime + ' reviewer contexts not independent')
         dump(root / 'results.json', reports)
-        subject_after = {str(r): hashes(r) for r in repos}
+        subject_after = {str(r): snapshot(r) for r in repos}
         source_after = hashes(source)
-        if (subject_after != json.loads((root / 'subjects-before.json').read_text())
+        if (subject_after != json.loads((root / 'subjects-at-launch.json').read_text())
                 or source_after != json.loads((root / 'source-hashes.json').read_text())):
             dump(root / 'mutation.json', {'subjects_after': subject_after, 'source_after': source_after})
             close_invalid(runtime + ' reviewer subject or input mutation')
@@ -306,7 +383,7 @@ def run(root, source, repos, env, runtime):
         dump(root / 'failure.json', {'error': str(error)})
         print(json.dumps({'root': str(root), 'phase': 'blocked', 'error': str(error)}), flush=True)
     finally:
-        dump(root / 'subjects-after.json', {str(r): hashes(r) for r in repos})
+        dump(root / 'subjects-after.json', {str(r): snapshot(r) for r in repos})
         dump(root / 'source-hashes-after.json', hashes(source))
     print(json.dumps({'root': str(root), 'phase': 'retained'}), flush=True)
 
@@ -315,7 +392,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--destination', required=True)
     parser.add_argument('--runtime', choices=['codex', 'claude'], required=True)
-    parser.add_argument('--case', choices=['two', 'three', 'interface', 'required'], required=True)
+    parser.add_argument('--case', choices=['two', 'three', 'interface', 'required', 'import-absent', 'import-present'], required=True)
     parser.add_argument('--prepare-only', action='store_true')
     args = parser.parse_args()
     fixture = prepare(args.destination, args.case, args.runtime)

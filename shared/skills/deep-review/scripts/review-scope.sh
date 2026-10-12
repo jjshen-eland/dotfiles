@@ -20,6 +20,7 @@ usage:
   review-scope.sh verify --manifest <directory>
   review-scope.sh autofix-check --manifest <directory>
   review-scope.sh show --manifest <directory>
+  review-scope.sh materialize --manifest <directory> --dest <new-directory-outside-the-target>
 EOF
     exit 2
 }
@@ -387,10 +388,73 @@ show_manifest() {
     done < "$manifest/guidance.nul"
 }
 
+# Executing target code (imports, tests, CLIs) can write anywhere that code chooses, ignored paths
+# included. Rebuild the reviewed subject in a new directory outside the target so execution happens there:
+# the head tree through a private index, then the worktree content of the selected changes.
+materialize() {
+    local manifest="" dest="" repo mode head git_dir parent work list file count=0
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            --manifest) [ "$#" -ge 2 ] || usage; manifest="$2"; shift 2 ;;
+            --dest) [ "$#" -ge 2 ] || usage; dest="$2"; shift 2 ;;
+            *) usage ;;
+        esac
+    done
+    [ -n "$manifest" ] && [ -n "$dest" ] || usage
+    validate_manifest "$manifest"
+    verify "$manifest" >/dev/null || {
+        echo "verdict: BLOCKED"; echo "reason: review scope is not fresh"; return 5;
+    }
+    repo="$(read_value "$manifest" repo)"; mode="$(read_value "$manifest" mode)"
+    head="$(read_value "$manifest" head)"; load_paths "$manifest/paths.nul"
+    if [ -e "$dest" ] || [ -L "$dest" ]; then
+        echo "error: --dest must be a new path: $dest" >&2; return 2
+    fi
+    parent="$(CDPATH='' cd -- "$(dirname -- "$dest")" 2>/dev/null && pwd -P)" || {
+        echo "error: parent of --dest does not exist: $dest" >&2; return 2;
+    }
+    dest="$parent/$(basename -- "$dest")"
+    git_dir="$(git -C "$repo" rev-parse --path-format=absolute --git-common-dir)"
+    git_dir="$(CDPATH='' cd -- "$git_dir" && pwd -P)"
+    case "$dest/" in
+        "$repo"/*|"$git_dir"/*) echo "error: --dest must be outside the review target: $dest" >&2; return 2 ;;
+    esac
+    mkdir "$dest"
+    work="$(mktemp -d "${TMPDIR:-/tmp}/deep-review-materialize.XXXXXX")"
+    GIT_INDEX_FILE="$work/index" git -C "$repo" read-tree "$head"
+    GIT_INDEX_FILE="$work/index" git -C "$repo" checkout-index -a --prefix="$dest/"
+    if [ "$mode" != range ]; then
+        list="$work/changed"
+        if [ "${#PATHS[@]}" -gt 0 ]; then
+            git -C "$repo" diff --name-only -z --no-renames "$head" -- "${PATHS[@]}" > "$list"
+            git -C "$repo" ls-files -z --others --exclude-standard -- "${PATHS[@]}" >> "$list"
+        else
+            git -C "$repo" diff --name-only -z --no-renames "$head" > "$list"
+            git -C "$repo" ls-files -z --others --exclude-standard >> "$list"
+        fi
+        while IFS= read -r -d '' file; do
+            rm -f "$dest/$file"
+            if [ -L "$repo/$file" ] || [ -f "$repo/$file" ]; then
+                mkdir -p "$(dirname -- "$dest/$file")"
+                cp -P -p "$repo/$file" "$dest/$file"
+            fi
+            count=$((count + 1))
+        done < "$list"
+    fi
+    rm -rf "$work"
+    verify "$manifest" >/dev/null || {
+        echo "verdict: BLOCKED"; echo "reason: review scope drifted while materializing"; return 5;
+    }
+    printf 'verdict: MATERIALIZED\nsnapshot: %s\nrepo: %s\nhead: %s\nworktree-overlay: %s\n' \
+        "$dest" "$repo" "$head" "$count"
+    echo "excluded: ignored files, submodule contents, and dirty files outside the selected paths"
+}
+
 [ "$#" -gt 0 ] || usage
 command="$1"; shift
 case "$command" in
     capture) capture "$@" ;;
+    materialize) materialize "$@" ;;
     verify|autofix-check|show)
         [ "$#" -eq 2 ] && [ "$1" = --manifest ] || usage
         case "$command" in verify) verify "$2" ;; autofix-check) autofix_check "$2" ;; show) show_manifest "$2" ;; esac
