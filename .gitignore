@@ -10,3 +10,12 @@
 # 環境變數（含 secrets）
 .env
 .env.local
+
+# 通用忽略基線：暫存目錄與工具快取，任何 repo 都不 commit
+tmp/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
