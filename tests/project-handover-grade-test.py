@@ -1,6 +1,7 @@
 """Deterministic checks for the handover acceptance grader."""
 
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -35,13 +36,14 @@ class GradeHandoverTest(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def grade(self):
+    def grade(self, *extra, allow_exec=True, env=None):
         self.spec_path.write_text(json.dumps(self.spec))
         self.answers_path.write_text(json.dumps(self.answers))
+        flags = ["--allow-exec"] if allow_exec else []
         return subprocess.run(
             [sys.executable, "-B", str(GRADER), "--spec", str(self.spec_path),
-             "--answers", str(self.answers_path), "--clone", str(self.clone)],
-            capture_output=True, text=True)
+             "--answers", str(self.answers_path), "--clone", str(self.clone), *flags, *extra],
+            capture_output=True, text=True, env=env)
 
     def test_all_questions_pass(self):
         result = self.grade()
@@ -76,9 +78,47 @@ class GradeHandoverTest(unittest.TestCase):
         self.assertEqual(self.grade().returncode, 1)
 
     def test_command_runs_inside_clone(self):
-        self.spec["questions"][0] = {"id": "Q1", "kind": "command"}
-        self.answers["Q1"] = "test -f deploy/crontab"
+        self.answers["Q1"] = "test -f deploy/crontab && echo ok"
         self.assertEqual(self.grade().returncode, 0)
+
+    def test_commands_need_explicit_confirmation(self):
+        self.answers["Q1"] = "touch executed-marker && echo ok"
+        result = self.grade(allow_exec=False)
+        self.assertEqual(result.returncode, 3, result.stdout)
+        self.assertIn("touch executed-marker && echo ok", result.stdout)
+        self.assertIn("verdict: NEEDS_CONFIRMATION", result.stdout)
+        self.assertFalse((self.clone / "executed-marker").exists())
+
+    def test_command_does_not_inherit_caller_environment(self):
+        env = dict(os.environ, HANDOVER_TEST_SECRET="leak")
+        self.answers["Q1"] = 'test -z "$HANDOVER_TEST_SECRET" && test "$HOME" != "%s" && echo ok' % os.path.expanduser("~")
+        result = self.grade(env=env)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_command_times_out(self):
+        self.answers["Q1"] = "sleep 5; echo ok"
+        result = self.grade("--timeout", "1")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("timed out", result.stdout)
+
+    def test_command_reads_no_stdin(self):
+        self.answers["Q1"] = "cat; echo ok"
+        self.assertEqual(self.grade("--timeout", "5").returncode, 0)
+
+    def test_non_utf8_output_is_graded_not_crashed(self):
+        self.answers["Q1"] = "printf '\\377 ok'"
+        result = self.grade()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("verdict: PASS", result.stdout)
+
+    def test_paths_outside_clone_are_broken(self):
+        for bad in ("../escape", "/etc/hosts"):
+            self.spec["questions"][1]["paths"] = [bad]
+            self.assertEqual(self.grade().returncode, 2, bad)
+
+    def test_command_question_requires_expected_output(self):
+        self.spec["questions"][0] = {"id": "Q1", "kind": "command"}
+        self.assertEqual(self.grade().returncode, 2)
 
     def test_unanswered_question_fails(self):
         del self.answers["Q2"]

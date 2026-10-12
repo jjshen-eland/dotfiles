@@ -87,10 +87,11 @@
 - 從模板產出移交指南草稿；待決策事項留給移交雙方拍板，不代填
 - 未指名接手者、credential plan 未完成（無安全交付管道，或 local artifact 未通過 metadata helper）、adopted repo 的
   audit 未通過或仍有硬編碼 secret、fresh clone 無法 setup／跑 QA、仍有只存在對話或私人記憶的專案事實、在途工作
-  未合併也未明確放棄，任一成立即維持草稿並列出缺項
+  未合併也未明確放棄、接手驗收題組或判分檔未建立（或判分檔未 gitignore、已 tracked），任一成立即維持草稿並列出缺項
 - 指南涵蓋系統組成、環境與驗證、部署排程維運、帳號與 credential 清單（只記名稱與存放處）、進行中工作、決策與死路入口、
   風險與技術債、支援期限；附接手驗收題組，預期答案存 gitignored 的 `tmp/transfer-acceptance.json`，接手者以 fresh clone
-  作答後由 `grade-handover.py` 判分
+  作答後由 `grade-handover.py` 判分；指令題只限唯讀本地驗證，執行前須移交人確認（`--allow-exec`），以最小環境與
+  timeout 執行
 - 本模式不 commit、不 push、不 merge、不改 repo 權限；產物由之後的 Log 送出
 
 ## 硬需求（Hard requirements — 違反即設計不合格）
