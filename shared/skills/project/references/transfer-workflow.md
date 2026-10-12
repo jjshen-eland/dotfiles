@@ -35,14 +35,20 @@ draft guide，並把缺接手者／安全交付管道列為缺項。不得因拒
 5. 以 fresh clone 可取得的 contract、docs、commands 與非秘密 fixture 驗證接手者能 setup、跑 QA、定位 active
    state 與歷史；不把「兩邊 memory 都開著」當作完整的證據。
 6. 在途工作（未合併的 branch、未 commit 的變更）逐項判定：已合併，或以 decision record 明確放棄並記理由；只留在
-   feature branch／worktree 的工作列為缺項。
+   feature branch／worktree 的工作列為缺項。本次 Transfer 自己產出、尚待 Log 送出的指南與紀錄不算在途工作。
 
 ### 產物與移交未完成條件
 
 1. 從 `<project-templates>/transfer-guide-template.md` 建立或更新 `<repo>/docs/transfer.md`，記接手者、
    portable-knowledge audit 結果、credentials separation、進行中工作的指標與缺項清單。
-2. 下列任一成立時，移交未完成，指南維持草稿並逐項列出缺項：未指名接手者；`verify-transfer-credential.sh`
-   非 PASS；仍有只存在對話或私人記憶的專案事實；在途工作未合併也未明確放棄。缺項解除前不得在指南或歷史紀錄
-   宣稱移交完成。
+2. 下列任一成立時，移交未完成，指南維持草稿並逐項列出缺項：
+   - 未指名接手者（取自 invocation 的 `to=<recipient>` 或使用者同輪明說；這個 token 不交給 repo resolver）；
+   - credential plan 未完成：沒有安全交付管道，或選了 repo-local artifact 而 `verify-transfer-credential.sh` 非 PASS；
+   - adopted repo 的 `audit --ship` 未通過，或程式碼與 tracked 檔仍有硬編碼 secret；
+   - fresh clone 無法只靠 repo 內的指引 setup、跑 QA、定位 active state 與歷史；
+   - 仍有只存在對話或私人記憶的專案事實；
+   - 在途工作未合併也未明確放棄。
+
+   缺項解除前不得在指南或歷史紀錄宣稱移交完成。
 3. 指南與 audit 補寫的紀錄由之後明確叫用的 `$project log`／`/project log` 送出，Log／shipping 的既有授權
    gate 完整適用。Repo 權限調整由人完成，本 workflow 不代做。

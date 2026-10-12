@@ -701,8 +701,7 @@ repo token；本 session 已在 `dotfiles`、`krepo`、`krepo-common` 留下待 
   normalized invocation arguments。
 - 使用者選「只處理指定 repos」時才收窄既有集合；選「補充其他 repos」時才解析新增 repo。顯式 repo
   token 的既有行為不變：一開始就鎖定該 repo，跳過多 repo 偵測互動。
-- 範圍確認只回答「處理哪些 repo」，不授予原 invocation 沒有的 `as=`／`resume=`，也不覆蓋任何
-  `verdict: STOP`、shipping authorization 或 merge gate。
+- 範圍確認只回答「處理哪些 repo」，不覆蓋任何 `verdict: STOP`、shipping authorization 或 merge gate。
 
 **FAIL 訊號**：把「全部偵測到」解讀為必須重新以明確 repo paths 叫用；只提供列名而沒有全選路徑；
 選全部後重跑一次相同 detection；自行把 detected set 擴成掃描 `~/Projects/`；把全選當成 authority delegation。
@@ -1145,7 +1144,7 @@ native收尾仍有多餘invocation／shipping提示；不宣稱所有UX、完整
 
 ## Scenario 36 — Spec 後的 multi-repo `--merge` 沿用已驗證範圍與 workline
 
-> **部分退役（2026-10-12，#309 P2）**：workline binding／resume 與 candidate actor 的部分隨 steward 身分授權移除（D-20261012-steward-identity-removed）；multi-repo closed repo-set 沿用仍有效。
+> **部分退役（2026-10-12，#309 P2）**：workline binding／resume 與 candidate actor 的部分隨 steward 身分授權移除（D-20261012-steward-identity-removed）；multi-repo closed repo-set 沿用仍有效。仍執行：closed repo-set 重驗一致時不再確認、只詢問 repo-set delta；不再執行：Expected／Delta／Safety／Acceptance 中關於 Writer、Workspace、steward、resume、binding 與 PREPARED 的斷言。
 
 **Observed production RED（2026-09-25–28，#229）**：同一 Codex session 從 `krepo-common`
 執行 KB Platform 八 repo workline。使用者明確輸入 10 次 `$project --merge`，8 次在實際

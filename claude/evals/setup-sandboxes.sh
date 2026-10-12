@@ -83,7 +83,7 @@
 #                             b=「push 上去」指名動作）；repo 刻意無 shipping workflow，測 fallback 判準
 #   g11 contract G11          Claude／Codex stewardship：一個 integration worktree + 兩個隔離 worker
 #                             worktrees，active schema 預先分派 writer/workspace/scope/steward
-#                             （steward 臂已退役；G11-C／D／F 仍使用本 fixture）
+#                             （steward 臂已退役；平行 worker run 與 G11-C／D／F 仍使用本 fixture）
 #   g14 contract G14          Auto mode：doc-governance 唯讀 helper、精確授權的 repo-specific 契約修改、
 #                             與不得延伸到 managed Kernel 的負向邊界
 #   g7base contract G7 baseline  同 g7，但 STATUS.md 由**修改前**的模板產生（帶死指標）——

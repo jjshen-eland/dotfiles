@@ -471,3 +471,8 @@
   - 放棄:保留 helper、只把 STOP 改為提示（仍需維護 actor 名稱與每次 Log 的讀取量）；Transfer 保留 PREPARED／TRANSFERRED（為多方擁有權設計，接手者需要的是內容而非狀態名）
   - 重議:出現兩個以上真人同時寫同一 repo 的共享紀錄；或內容契約下的接手實測出現 STATUS 與 git 都找不到的必要狀態
   - 關聯:supersedes:D-20260824-cross-runtime-dossier-stewardship;supersedes:D-20260824-project-steward-authority;supersedes:D-20260825-project-prompt-bound-authority-recovery;supersedes:D-20260923-project-session-workline-binding;supersedes:D-20260923-project-local-reassignment;supersedes:D-20260824-memory-independent-transfer 的 Transfer 狀態機部分;supersedes:D-20261012-content-continuity-model 的「commit 並 push」措辭;B-20260928-project-merge-continuation;B-20260824-remote-human-contributor-path;GitHub#309;docs/plans/2026-10-12-content-continuity-redesign.md
+- **D-20261012-goal-contract-reenabled · 2026-10-12 dotfiles 以只要求 Goal 的 active-item contract 重新啟用**:#309 P2 刪除 steward 身分授權後，dotfiles `.doc-governance.json` 以 `{"required_fields":["Goal"],"uniform_fields":[]}` 重新啟用 `status_schema.active_item_contract`，恢復「進行中項目標題帶完成標記」與「進行中區段有 H3 以外內容」兩項 scanner 檢查；不再要求 Writer／Workspace／Write Scope／Dossier Steward。這推翻 D-20261012-dotfiles-active-item-contract-off 的關閉部分；該決策的理由（四欄與 steward 授權的成本）仍成立，已由欄位刪除處理。本紀錄補上 D-20261012-steward-identity-removed 漏寫的 supersedes，由 deep-review 指出。
+  - 日期來源:direct
+  - 放棄:維持關閉（失去兩項完成狀態檢查，而它們不依賴身分欄位）
+  - 重議:Goal 必填在其他受治理 repo 造成誤擋，或需要更多必填欄位
+  - 關聯:supersedes:D-20261012-dotfiles-active-item-contract-off 的關閉部分;D-20261012-steward-identity-removed;GitHub#309;docs/plans/2026-10-12-content-continuity-redesign.md
