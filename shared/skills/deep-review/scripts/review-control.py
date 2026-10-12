@@ -388,6 +388,9 @@ def admit(state, args):
                   'scope': [{k: s[k] for k in ('repo', 'mode', 'base', 'head', 'paths', 'guidance',
                                               'subject_files', 'working_tree_included', 'fingerprint')} for s in state['scopes']],
                   'primary_scope': [{'repo': r, 'subject_files': paths} for r, paths in assignment['primary'].items()],
+                  'validation_snapshot': [{'repo': s['repo'], 'command': [
+                      'bash', str(SCRIPTS / 'review-scope.sh'), 'materialize', '--manifest', s['manifest'],
+                      '--dest', '<new directory outside every review target>']} for s in state['scopes']],
                   'concern': assignment['concern'], 'language': args.language}
         if mode == 'focused':
             packet['repair'] = state.get('repair_packet', {'original_findings': [f['raw'] for f in state['findings']]})

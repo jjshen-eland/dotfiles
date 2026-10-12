@@ -258,3 +258,9 @@
   - 放棄:把一個省掉的 evidence call 當整體 latency 修復；採用未見淨收益的指引；繼續重跑相同案例直到較快
   - 重議:有更上游的流程成本證據或工具能力恢復後的具體新候選時；目前先續行已授權 #279 的紀錄文件 CI 路徑
   - 關聯:Issue#285;D-20261009-small-change-delivery-spec;docs/plans/2026-10-08-workflow-verification-economy.md
+- **X-20261013-review-import-write-in-target · 2026-10-13 唯讀審查靠逐工具旗標防寫入，擋不住 target 程式碼自己的寫入**:#315 第三次同型（前兩次 X-20261007-review-python-isolated-bytecode、X-20261007-review-git-status-index-mtime 都以補 brief 一句收斂）。這次寫入不是工具產生的 cache，而是被審 repo 在 import 時自己 `mkdir`／寫 log，`-B`、停用 pytest cache、乾淨 Git status 與 FRESH fingerprint 都不相關。修前 native eval（fixture：`app/__init__.py` import 時建 ignored `logs/`、`logs/locks/` 並 append `logs/app.log`；repo contract 要求審查附上實際執行測試的結果）：Codex 在 workspace-write sandbox 下 2/2 RED——同一批命令裡先 `cat app/__init__.py` 就直接在 target 跑 `python3 -B -m unittest`，absent 建出三個 entry 且仍回 complete，present 讓 app.log 13→26 bytes 後回 incomplete；Claude opus 2/2 未紅，兩次都自行複製到外部目錄才執行。
+  - 日期來源:direct
+  - 證據:session scratchpad `native/{c-absent-r2,c-present-r1,a-absent-r1,a-present-r1}`（mutation.json、subjects-at-launch.json、原始 events.jsonl）；c-absent-r1 是 Codex 模型容量不足的 transport 失敗，不計入。暫存遺失不補造。
+  - 放棄:再補一條「先讀 `__init__` 再執行」或「加 `-B`」的 brief 句子（每次只擋當次的寫入來源，target 程式碼的寫入點是開放集合）；以 reviewer 自評或 Git status 判唯讀
+  - 重議:修後 native eval 在任一 runtime 重現 target 寫入時，保留原批次再判是否需要 runtime 層的檔案系統保護
+  - 關聯:Issue#315;X-20261007-review-python-isolated-bytecode;X-20261007-review-git-status-index-mtime;D-20261013-review-execution-snapshot;tests/review-primary-native-eval.py

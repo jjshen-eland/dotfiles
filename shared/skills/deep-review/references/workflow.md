@@ -213,6 +213,9 @@ diagnosis of the repair method and dependency coverage before another patch.
 Run the target repository's authoritative relevant checks. Preserve their exit
 codes. If no meaningful check exists, report `UNVERIFIED`; do not invent a
 project-specific command or call a green unrelated test proof of correctness.
+In read-only mode, run them in a snapshot from
+`review-scope.sh materialize --manifest <manifest> --dest <new directory outside every target>`,
+under the brief's target-execution rule.
 
 Before accepting the review, verify every manifest:
 

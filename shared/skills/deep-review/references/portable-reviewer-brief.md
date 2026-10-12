@@ -91,10 +91,17 @@ state what it prevented you from establishing. If a necessary execution fact rem
 unresolved, return incomplete; otherwise state the static or artifact evidence and
 its boundary without claiming the denied test passed.
 
-For Python probes that load repository modules, pass `-B` explicitly or compile
-source in memory. `-I` ignores `PYTHONDONTWRITEBYTECODE`; an environment-only
-setting can still write ignored `__pycache__` files. Ignored files are target files
-too, so preserve them rather than treating a clean Git status as proof of no writes.
+Never execute target code inside a review target: importing its modules, running
+its tests, CLIs or builds can write wherever that code chooses, including ignored
+paths. `-B`, disabled test caches, a clean Git status or a fresh scope fingerprint
+do not prevent or disprove such writes. Ignored files are target files too. When
+execution is necessary, run the packet's `validation_snapshot` command with a new
+`--dest` outside every review target, then execute only inside that snapshot with
+caches and temporary files outside the targets. Record the snapshot path and its
+exclusions. If the snapshot cannot be created, or the check needs something it
+excludes, do not fall back to the target: state that boundary. Static probes that
+only read files, such as in-memory compilation without importing repository
+modules, may still run against the target.
 
 For each finding provide:
 
