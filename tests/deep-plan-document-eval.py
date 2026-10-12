@@ -91,8 +91,6 @@ def setup(root):
             discovery = work / (".claude" if runtime == "claude" else ".agents") / "skills"
             discovery.mkdir(parents=True)
             (discovery / "deep-plan").symlink_to(source / runtime / "skills/deep-plan", target_is_directory=True)
-            with (work / ".git/info/exclude").open("a") as out:
-                out.write(".plan.md.review/\n")
             dump(p / "fixture.json", {"case": case, "model": model, "runtime": runtime,
                 "source": str(source), "roots": [str(work), str(other)]})
             dump(p / "fixture-identity.json", {str(repo): capture.state(repo) for repo in (work, other)})
@@ -207,6 +205,8 @@ def main():
     parser.add_argument("--dispositions", type=Path, help="author-verified packet for one blind case with existing blockers; no automatic disposition")
     args = parser.parse_args()
     root = args.root.resolve()
+    # Journals persist across setup/run invocations inside the experiment, not in the user's store.
+    os.environ["DEEP_PLAN_STATE_DIR"] = str(root / "journals")
     if args.action == "setup":
         setup(root)
         return

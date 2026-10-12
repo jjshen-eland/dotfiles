@@ -30,7 +30,8 @@
 # CODEX_EXEC_* 環境變數為測試掛鉤（tests/run.sh 注入 fixture 用），正常使用不設。
 set -uo pipefail
 
-JOB_ROOT="${CODEX_EXEC_REVIEW_DIR:-$HOME/.claude/deep-review/codex}"
+JOB_ROOT="${CODEX_EXEC_REVIEW_DIR:-$HOME/.agents/deep-review/codex}"
+JOB_RETENTION_DAYS=30
 SESSIONS_DIR="${CODEX_EXEC_SESSIONS_DIR:-$HOME/.codex/sessions}"
 
 # 審查者需要跑會建立暫存/cache 的測試，但 repo 必須保持唯讀。permission profile 從
@@ -115,6 +116,21 @@ meta_get() {   # meta_get <job_dir> <key>
 prepare_review_tmp() {   # prepare_review_tmp <job_dir>
     mkdir -p "$1/tmp/uv" "$1/tmp/pytest" \
         || die_env "無法建立 reviewer 暫存目錄：$1/tmp"
+}
+
+# 保留期登記在 docs/repo-guide.md：開新 run 時清掉最後更新超過 JOB_RETENTION_DAYS 的舊 job，
+# 摘要走 stderr（stdout 第一行必須是 job-dir:）。本輪的 repo 目錄即使暫時是空的也保留。
+prune_stale_jobs() {   # prune_stale_jobs <current_job_parent_real>
+    local root stale pruned=0
+    root="$(cd "$JOB_ROOT" && pwd -P)" || return 0
+    while IFS= read -r stale; do
+        rm -rf "$stale" && pruned=$((pruned + 1))
+    done < <(find "$root" -mindepth 2 -maxdepth 2 -type d -mtime "+$JOB_RETENTION_DAYS" 2>/dev/null)
+    find "$root" -mindepth 1 -maxdepth 1 -type d -empty ! -path "$1" -delete 2>/dev/null
+    if [ "$pruned" -gt 0 ]; then
+        echo "pruned: 已清 ${pruned} 個超過 ${JOB_RETENTION_DAYS} 天的舊 job" >&2
+    fi
+    return 0
 }
 
 # 印一段耗時；ended 未寫入表示該階段仍在執行
@@ -202,6 +218,7 @@ cmd_run() {
             die_env "reviewer 暫存目錄不得位於受審 repo 內：$job_parent_real" ;;
     esac
     job_parent="$job_parent_real"
+    prune_stale_jobs "$job_parent"
     # mktemp 保證唯一：同一秒內的兩次 run（C{N} 重跑、多 repo 併發）若共用目錄，
     # 會把上一輪殘留的 report.md 當成本輪產出回報 → 假成功。NEVER derive job dir from timestamp alone.
     job="$(mktemp -d "$job_parent/$round-$started-XXXXXX")" || die_env "無法建立 job 目錄：$job_parent"

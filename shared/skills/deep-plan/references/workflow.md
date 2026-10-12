@@ -20,7 +20,7 @@
 
 確認輸入是既有且尚未實作的 plan/spec，並辨識所有目標 repo。已寫 code 改走 code review；要產生 plan 改走 planning workflow。
 
-Reviewer 必須能從檔案讀取計畫：已有 canonical plan 就直接使用；只在對話中時遵循目標 repo 的文件慣例，否則放在不會隨 repo ship 的明確 scratch artifact。不得用 heredoc、echo 或 printf 寫入使用者提供的 plan text。落點跟目標 repo，不跟目前 cwd。
+Reviewer 必須能從檔案讀取計畫：已有 canonical plan 就直接使用；只在對話中時遵循目標 repo 的文件慣例，否則放在目標 repo 工作樹之外的明確 scratch artifact（例如當前 session 的暫存目錄），不在 repo 內留下 untracked 檔。不得用 heredoc、echo 或 printf 寫入使用者提供的 plan text。落點跟目標 repo，不跟目前 cwd。
 
 多 repo 計畫交給同一組 reviewers，讓每位 reviewer 查跨 repo 一致性。
 

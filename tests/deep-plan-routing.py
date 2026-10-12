@@ -1,4 +1,5 @@
 """Behavior tests for bounded plan review; no model calls."""
+import fcntl
 import importlib.util
 import json
 import os
@@ -6,12 +7,16 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "shared/skills/deep-plan/scripts/review-state.py"
 LAUNCHER = ROOT / "codex/skills/deep-plan/scripts/launch-reviewers.py"
+# Keep fixture journals out of the user's machine-local store; child processes inherit it.
+STATE = tempfile.TemporaryDirectory(prefix="deep-plan-state-")
+os.environ["DEEP_PLAN_STATE_DIR"] = STATE.name
 
 
 def load(path):
@@ -876,6 +881,75 @@ class NativeDocumentFixture(unittest.TestCase):
                     runner.run_case(root, "gpt-6.1-sol", "control", "baseline")
         finally:
             sys.dont_write_bytecode = previous
+
+
+class StateLocation(unittest.TestCase):
+    """Journals live in the registered machine-local store, never in the plan's worktree."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name).resolve()
+        self.repo, _, _ = seed(self.root)
+        self.plan = self.repo / "docs/plans/p.md"
+        self.plan.parent.mkdir(parents=True)
+        self.plan.write_text("# Plan\nReturn orders and count.\n")
+        self.home = self.root / "home"
+        self.home.mkdir()
+        self.store = self.home / ".agents/deep-plan"
+        self.env = {k: v for k, v in os.environ.items() if k != "DEEP_PLAN_STATE_DIR"}
+        self.env["HOME"] = str(self.home)
+
+    def cli(self, action):
+        extra = ["--repo", str(self.repo)] if action == "open" else []
+        r = subprocess.run([sys.executable, str(SCRIPT), action, "--plan", str(self.plan), *extra],
+                           capture_output=True, text=True, env=self.env)
+        return r.returncode, json.loads(r.stdout)
+
+    def stale(self, name, days):
+        entry = self.store / name
+        entry.mkdir(parents=True)
+        (entry / "lock").touch()
+        control = entry / "control.json"
+        control.write_text("{}")
+        stamp = time.time() - days * 86400
+        os.utime(control, (stamp, stamp))
+        return entry
+
+    def test_default_store_keeps_the_worktree_clean(self):
+        code, out = self.cli("open")
+        self.assertEqual((code, out["ok"]), (0, True), out)
+        journals = list(self.store.glob("*/control.json"))
+        self.assertEqual(len(journals), 1)
+        self.assertEqual(json.loads(journals[0].read_text())["plan"], str(self.plan))
+        status = subprocess.run(["git", "-C", str(self.repo), "status", "--porcelain", "--untracked-files=all"],
+                                capture_output=True, text=True, check=True).stdout
+        self.assertEqual(status, "?? docs/plans/p.md\n")
+
+    def test_legacy_journal_beside_the_plan_stops_without_migration(self):
+        legacy = self.plan.parent / ".p.md.review"
+        legacy.mkdir()
+        (legacy / "control.json").write_text("{}")
+        for action in ("open", "status"):
+            code, out = self.cli(action)
+            self.assertEqual(code, 1, out)
+            self.assertTrue(out["reason"].startswith("legacy-plan-journal"), out)
+            self.assertIn(str(legacy), out["reason"])
+        self.assertEqual((legacy / "control.json").read_text(), "{}")
+        self.assertFalse(self.store.exists())
+
+    def test_open_prunes_only_stale_unlocked_journals(self):
+        old = self.stale("old.md-0123456789abcdef", 31)
+        recent = self.stale("recent.md-fedcba9876543210", 29)
+        busy = self.stale("busy.md-00112233445566aa", 31)
+        foreign = self.stale("notes", 31)
+        with (busy / "lock").open("a") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            code, out = self.cli("open")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(out["pruned_journals"], [old.name])
+        self.assertFalse(old.exists())
+        self.assertTrue(recent.exists() and busy.exists() and foreign.exists())
 
 
 if __name__ == "__main__":

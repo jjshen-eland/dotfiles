@@ -9,6 +9,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -570,6 +571,38 @@ class Policy(Fixture):
         self.assertEqual(self.ctl('status', '--state', state)['attempts'], 1)
 
 
+class StateStore(Fixture):
+    def batch(self, name, days):
+        directory = self.root / 'evidence' / name
+        directory.mkdir(parents=True)
+        state = directory / 'state.json'
+        state.write_text('{}')
+        stamp = time.time() - days * 86400
+        os.utime(state, (stamp, stamp))
+        return directory
+
+    def test_default_store_is_the_registered_agents_directory(self):
+        spec = importlib.util.spec_from_file_location('review_control', SCRIPTS / 'review-control.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        env = {k: v for k, v in os.environ.items() if k != 'DEEP_REVIEW_STATE_DIR'}
+        with mock.patch.dict(os.environ, dict(env, HOME=str(self.root / 'home')), clear=True):
+            self.assertEqual(module.storage(), (self.root / 'home/.agents/deep-review/control').resolve())
+
+    def test_open_prunes_stale_batches_and_their_index_entries(self):
+        old = self.batch('a' * 32, 31)
+        recent = self.batch('b' * 32, 29)
+        foreign = self.batch('notes', 31)
+        index = self.root / 'evidence/index.json'
+        index.write_text(json.dumps({'/old/repo': str(old / 'state.json'), '/recent/repo': str(recent / 'state.json')}))
+        result = self.ctl('open', '--manifest', self.capture())
+        self.assertEqual(result['pruned_batches'], [old.name])
+        self.assertFalse(old.exists())
+        self.assertTrue(recent.exists() and foreign.exists())
+        kept = json.loads(index.read_text())
+        self.assertNotIn('/old/repo', kept)
+        self.assertEqual(kept['/recent/repo'], str(recent / 'state.json'))
+        self.assertIn(str(self.repo.resolve()), kept)
 
 
 if __name__ == '__main__':

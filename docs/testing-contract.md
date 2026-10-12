@@ -425,6 +425,8 @@ shared helper 回傳，ownership 仍由 workflow 依可觀察來源判定。
 且 paths／endpoints／dirty content 均覆蓋舊 signal；legacy ancestry-only clear 改為保留 signal。
 這是實際合成反例支持的收緊，不以更新舊 assertion 當行為證據；controller test 另驗可清除的正向路徑。
 它不自動判斷自然語言處置的真實性，也不證明 native agent 實際使用 gate；後者以 frozen native trace 驗收。
+`StateStore` 守預設 store 為登記的 `~/.agents/deep-review/control/`，`open` 清掉超過保留期的 batch 並同步移除
+指向它們的 index 項目（index 以 resolved path 比對）。
 
 Controller 的 scope 漂移、跨程序重開、Git metadata、terminal receipt 等 15 個案例保留真實 CLI／Git
 整合。另 8 個 Policy 案例在已驗證 scope adapter 的前提下直接呼叫 production main，
@@ -461,11 +463,13 @@ Claude round 同樣 fail closed：必須恰有 N 份可歸因的完整 results�
 欄位缺漏都不得進 synthesis。Eval oracle 不得殘留 Codex 已退役的 `fork_turns`／spawn／wait backend。
 Shared workflow 判定為放行／攔下判準類計畫時，Codex adapter 必須用顯式 flag 讓 launcher 加入同一份
 impact-grid reviewer 要求；其他計畫不得誤加。Repo 外 scratch plan 仍是合法 artifact，不得被 launcher 拒絕。
-以上 in-memory 限制約束 raw reviewer transport；跨 session 的 bounded admission 另用 plan companion journal，
+以上 in-memory 限制約束 raw reviewer transport；跨 session 的 bounded admission 另用 plan 的本機 journal，
 由 shared `review-state.py` 保留一次性 ticket、版本與既有結果。Public launcher CLI 必須先 claim ticket，
 完成後才寫有效 result set；Claude adapter 使用同一 controller。兩層分別驗證，不能把 transport 測試當 admission
 已接線。`tests/deep-plan-routing.py` 守預設兩輪跨 runtime 不清零、focused 第三輪修正前提、scope／evidence
 STOP、fresh IDs、artifact drift、explicit restart 留歷史與有效基線、budget 不進受控 prompt／packet。
+`StateLocation` 另守 journal 預設落在登記的 `~/.agents/deep-plan/`、repo 工作樹保持乾淨、plan 旁舊 journal
+一律 STOP 且不被搬動，以及 `open` 只清超過保留期且未被鎖住的 journal。
 Repo scope 驗證採集合但 prompt 順序採 ticket 的 canonical order，輸入順序不得使相同多 repo 範圍誤失敗。
 兩端 reviewer prompt 必須由同一份 `references/reviewer-prompt.txt` 產生；除 path 與 shared criteria prompt
 placeholder 外不得重組、縮短或加入 runtime/tool 指令，P14 oracle 也不得殘留退役的 Codex spawn/wait backend。
@@ -635,6 +639,8 @@ fetch 真的失敗時 base 建議**仍要出**、但須帶「可能已過期」�
 ## 17. codex-exec-review.sh exit 契約與 job 產物
 
 codex 用**會模擬 clap argv 拒絕**的 stub。
+預設 job root 以隔離 `HOME` 驗證落在 `~/.agents/deep-review/codex/`，開新 run 只清超過保留期的舊 job，
+摘要走 stderr，stdout 第一行仍是 `job-dir:`。
 
 ## 19. review-anchor.sh 錨點生命週期 / squash-cmd / codex-next
 

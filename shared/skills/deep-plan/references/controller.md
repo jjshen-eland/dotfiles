@@ -17,9 +17,12 @@ SPEC／STATUS 等直接相依文件；canonical plan 自動包含，不用額外
 
 多 repo 重複 `--repo`；使用者明示增加 reviewer 時，`open` 帶 `--count N`。控制器預設是現行兩輪盲審；
 使用者選擇修後 focused 時加 `--policy focused`；只有明示選擇三輪才加 `--max-rounds 3`。
-同一 plan 的 companion journal 位於 plan 旁 `.<plan-name>.review/control.json`，跨 session／runtime 沿用。
-`open` 對既有 journal 不清零，也不更換 policy／limit／scope。這是本次 review 的 operational artifact，
-不要提交其私人路徑／raw reviews，跨主機續作須依目標 repo 慣例攜帶審查證據。
+同一 plan 的 journal 位於本機 `~/.agents/deep-plan/<plan-name>-<路徑雜湊>/`，跨 session／runtime 沿用；
+位置、保留期與清理見 dotfiles `docs/repo-guide.md` 的 `~/.agents` 登記表。`DEEP_PLAN_STATE_DIR` 只供隔離 fixture，
+不得用來重置或搬移進行中的 journal。plan 旁仍有舊 `.<plan-name>.review/` 時 controller 停下並印出路徑：
+它不會被搬移或沿用，由使用者審完或刪除後再開。`open` 對既有 journal 不清零，也不更換 policy／limit／scope；
+它會清掉其他超過保留期且未被鎖住的 journal，並以 `pruned_journals` 回報。這是本次 review 的 operational
+artifact，不要提交其私人路徑／raw reviews，跨主機續作須依目標 repo 慣例攜帶審查證據。
 
 狀態、輪次、上限、ticket、authorization evidence 都只交給 orchestrator。
 NEVER include controller output, progress, remaining opportunities or a predicted verdict in reviewer input.

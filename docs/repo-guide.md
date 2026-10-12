@@ -41,6 +41,26 @@ home alias 或路徑進入 repo 時，兩個 helper 一併跳過，其他安全 
 handoff resolver 已不再沿用舊的 `~/.claude/handoffs`：它仍以獨立實體存在時 `store` 回報 `NEEDS_UPGRADE` 並停下，執行共用部署入口（`scripts/ensure-runtime.sh`，dotsync／brewup 會呼叫）完成遷移後再用；舊 archive 命名的 reader 保留。
 不須逐台重跑完整 setup 或安裝 CLI。套件、登入、trust、plugins 與 config.local.toml 不由 layout 遷移。
 
+### `~/.agents` 登記表
+
+`~/.agents` 放兩個 runtime 共用、要跨 session 保留的本機資料。每個子目錄都要先登記在下表，寫明誰寫入、存什麼、
+何時結束、保留多久、誰清；沒有登記的不得新增。資料只在本機，不跨主機同步，也不是權威來源（kernel「Runtime-local
+memory」條）。清理由寫入工具在下次被呼叫時順便執行並回報，不另排 cron；沒在用的機器不清也無害。
+審查紀錄會限制審查輪數，提早刪除等於重置上限，所以只清最後更新超過保留期的紀錄，保留期必須遠長於一次正常審查。
+跟 repo 綁定的狀態放該 repo 的 `.git/`（例如 deep-review anchor），單次執行的暫存檔放 `$TMPDIR`，兩者都不放這裡。
+
+| 位置 | 寫入者 | 內容 | 結束 | 保留與清理 |
+| --- | --- | --- | --- | --- |
+| `skills/` | `scripts/ensure-runtime.sh` | Codex adapters 的逐項連結 | 跟 repo 版本走 | 部署時重新對齊；無期限 |
+| `handoffs/` | handoff skill | active 交接檔與 `archive/` | resume 消費即歸檔 | active 超過 7 天標 EXPIRED；archive 超過 30 天由 `survey` 刪除 |
+| `deep-review/control/` | deep-review `review-control.py` | 審查批次 journal 與 `index.json` | 批次 PASS／BLOCKED 或被取代 | 最後更新超過 30 天由 `open` 刪除並回報 `pruned_batches`，同步移除 index 項目 |
+| `deep-review/codex/` | deep-review `codex-exec-review.sh` | Codex 審查工作的輸出、log 與續跑資料 | 進程結束且報告已收 | 最後更新超過 30 天由 `run` 刪除，摘要印在 stderr |
+| `deep-plan/` | deep-plan `review-state.py` | 每份計畫的審查 journal、ticket 與 prompt | 計畫審查終局或改走實作 | 最後更新超過 30 天且未被鎖住者由 `open` 刪除並回報 `pruned_journals` |
+
+30 天沒有實測依據，比照 handoff archive 的保留期（D-20261012-agents-state-registry）。舊位置不搬移也不讀取：
+deep-plan 遇到 plan 旁的 `.<plan>.review/` 會停下並印出路徑；`/tmp/deep-review-<uid>/` 與
+`~/.claude/deep-review/codex/` 留在原地，由使用者自行刪除。
+
 權威 `claude/settings.json` 設 `syncClaudeAiSkills: false`，停用 claude.ai skills 的下載與載入；
 `~/.claude/settings.json` 維持連到該檔的 symlink。已識別的 cloud cache 清理須先確認無 writer，
 移出 repo 與 discovery 路徑並留可回復備份，不刪未知第三方。設定語意見

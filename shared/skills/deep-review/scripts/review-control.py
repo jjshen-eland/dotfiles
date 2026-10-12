@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import stat
 import subprocess
@@ -25,6 +26,7 @@ SCRIPTS = Path(__file__).resolve().parent
 ENV = dict(os.environ, GIT_OPTIONAL_LOCKS='0', PYTHONDONTWRITEBYTECODE='1')
 SEVERITIES = {'critical', 'high', 'medium', 'low'}
 RELATIONS = {'independent', 'unresolved-original', 'repair-introduced', 'repair-exposed', 'unknown'}
+RETENTION_DAYS = 30
 
 
 class Blocked(Exception):
@@ -156,9 +158,28 @@ def actual_delta(before, after):
 
 
 def storage():
-    # Fixed system-temp location, independent of runtime and per-session TMPDIR.
+    # Registered machine-local store (docs/repo-guide.md), shared by both runtimes.
     # An override is for isolated fixtures; relocating a live journal is not resume.
-    return Path(os.environ.get('DEEP_REVIEW_STATE_DIR', '/tmp/deep-review-' + str(os.getuid()))).resolve()
+    default = Path.home() / '.agents' / 'deep-review' / 'control'
+    return Path(os.environ.get('DEEP_REVIEW_STATE_DIR') or default).resolve()
+
+
+def prune_stale(root):
+    """Drop batches untouched for RETENTION_DAYS and their index entries; caller holds the root lock."""
+    cutoff = time.time() - RETENTION_DAYS * 86400
+    pruned = []
+    for entry in sorted(root.iterdir()):
+        state = entry / 'state.json'
+        if (entry.is_symlink() or not re.fullmatch(r'[0-9a-f]{32}', entry.name)
+                or not state.is_file() or state.stat().st_mtime >= cutoff):
+            continue
+        shutil.rmtree(entry)
+        pruned.append(entry.name)
+    index_path = root / 'index.json'
+    if pruned and index_path.exists():
+        gone = {root / name / 'state.json' for name in pruned}
+        write(index_path, {repo: state for repo, state in read(index_path).items() if Path(state).resolve() not in gone})
+    return pruned
 
 
 @contextlib.contextmanager
@@ -806,7 +827,10 @@ def main():
             outside(root, [load_scope(p) for p in args.manifest])
         with locked(root):
             if args.action == 'open':
+                pruned = prune_stale(root)
                 result = open_batch(args, root)
+                if pruned:
+                    result = dict(result, pruned_batches=pruned)
             else:
                 require(args.state, '--state required')
                 path = Path(args.state).resolve()
