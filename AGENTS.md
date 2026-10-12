@@ -98,8 +98,7 @@ this pattern. Everything else points.
   基線必須涵蓋本批全部變更，不能只取最後一顆 commit。未知影響、untracked、mode／link 變動
   或無法證明範圍時 runner 自動回全套；沒有可用基線就跑 `./tests/run.sh`。
   `--module <name>` 是開發時的定向檢查，不冒充整批驗收。以 exit code 判綠紅；必要模組與
-  執行理由由 runner 列出。同一份程式／測試輸入已驗過，不因收尾紀錄文字變更再重跑程式全套；
-  文件仍驗當前內容。`run-parallel.sh` 與 `run.sh` 共用同一執行器，不是兩份須依序重跑的驗收。
+  執行理由由 runner 列出。`run-parallel.sh` 與 `run.sh` 共用同一執行器，不是兩份須依序重跑的驗收。
   改 runner／選測規則時驗全套、漏跑／失敗／取消 controls；改測試判準前讀 `docs/testing-contract.md`。
 - **本 repo 的額外約束**：`~/.dotfiles` 同時是多台機器的部署來源，`scripts/` 底下的改動會經
   `dotsync` / `brewup` 散佈出去。散佈類變更的前提是**變更已進 `origin/main`**——本地 branch 未 push

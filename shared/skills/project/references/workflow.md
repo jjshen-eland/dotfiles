@@ -45,7 +45,7 @@ Log 的盤點是唯讀；即使引數是 `--merge`，也先盤點，不預載未
 | 階段／觸發 | 先完整讀取 | 接著做 |
 |---|---|---|
 | Log 盤點 | [log-workflow.md](log-workflow.md)、[ship-policy.md](ship-policy.md) | Step 0/1 唯讀偵測；真的無工作就結束 |
-| Log 有變更或 docs-only 工作 | [authority.md](authority.md)、[dossier.md](dossier.md)、[log-prepare.md](log-prepare.md) | branch-first、authority、文件、測試證據、commit、摘要準備 |
+| Log 有變更或 docs-only 工作 | [authority.md](authority.md)、[dossier.md](dossier.md)、[log-prepare.md](log-prepare.md) | branch-first、authority、文件、commit、測試、摘要準備 |
 | Log 準備送出摘要 | [ship-paths.md](ship-paths.md) | 讀完再印 Step 4 Ship 摘要，依授權終點執行 Step 5 |
 | Log 的終點含 merge | 另讀 [merge-workflow.md](merge-workflow.md) | CI、merge、自己分支 cleanup；在第一個 outward call 前讀完 |
 | Spec／Log 的合法 Spec subflow | [authority.md](authority.md)、[dossier.md](dossier.md)、[spec-workflow.md](spec-workflow.md) | 只寫 active contract，不 commit |

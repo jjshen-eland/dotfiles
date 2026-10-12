@@ -61,7 +61,7 @@
     {"paths": ["tests/test_doc_governance.py", "tests/fixtures/doc-governance/retrieval.tsv", "tests/fixtures/doc-governance/title-free-recall.tsv"], "modules": ["document-regression", "content", "selection"]},
     {"paths": ["tests/content-checks.py", "tests/kernel-gate.py", "tests/xref-gate.py"], "modules": ["content", "document-contract", "selection"]},
     {"paths": ["tests/deep-plan-routing.py", "tests/deep-plan-repair-context.py", "tests/fixtures/deep-plan-hanging-stub.py", "tests/fixtures/deep-plan-cleanup-fault/*", "tests/fixtures/deep-plan-wait-guard/*"], "modules": ["deep-plan"]},
-    {"paths": ["tests/project-reference-metrics-test.py", "tests/project-sequential-assignment.py", "tests/project-session-binding.py", "tests/project-test-evidence-test.py", "tests/session-skills-host-mcp-test.py"], "modules": ["project"]},
+    {"paths": ["tests/project-reference-metrics-test.py", "tests/project-sequential-assignment.py", "tests/project-session-binding.py", "tests/session-skills-host-mcp-test.py"], "modules": ["project"]},
     {"paths": ["tests/project-push-command-test.py"], "modules": ["hooks"]},
     {"paths": ["tests/review-primary-scope.py", "tests/review-primary-native-eval.py", "tests/fixtures/review-report.schema.json"], "modules": ["review-skill"]},
     {"paths": ["tests/review-readonly.py"], "modules": ["review-scope"]},
