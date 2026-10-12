@@ -446,3 +446,8 @@
   - 放棄:移除 enrollment helper（會讓等待 CI 啟動回到 prose 判斷）；開測試 PR 實測 GitHub 行為（helper 的功能不依賴該結果）；逐筆判讀 review-terminal 的實地 STOP 再決定（現有分類已足以判定保留）
   - 重議:某一 STOP 的實地誤擋明顯多於攔截且有其他機制涵蓋同一風險；或 enrollment helper 的 UNOBSERVED／QUERY_ERROR 成為 merge 的主要阻礙
   - 關聯:D-20261012-project-reduction-scope;docs/plans/2026-10-12-project-process-reduction.md;shared/skills/project/scripts/ship-state.sh;shared/skills/project/scripts/wait-required-enrollment.sh
+- **D-20261012-record-reduction-dropped · 2026-10-12 #285 第 4 步紀錄減量不做**:使用者選定不做「PR 已承載的實作結果不另寫 milestone、merge 後不另開補記 PR」。依 PR 標題與檔案分類，2026-07 起 46 個只改紀錄的 PR 多為獨立的 backlog 結案、機隊部署結果與早期 STATUS 整理；merge 後另開 PR 補 milestone 在 2026-10 只有 #305 一次，因 log-prepare 已要求 milestone 隨實作 PR 寫成 endpoint pending。這一步會牽動 kernel「milestones at event time」與由工具維護的 `AGENTS.md` portable managed block，代價高於收益。STATUS 的 Writer／Workspace／Write Scope／Dossier Steward 欄位照舊保留。
+  - 日期來源:direct
+  - 放棄:照原計畫規劃並跑 deep-plan（收益小、牽動 kernel 與 managed block）；只刪 dotfiles STATUS 的四個 coordination 欄位（無機械後果，也無實際成本）
+  - 重議:merge 後另開的紀錄專屬 PR 再次成為常態，或 steward 機制重設計（GitHub #309）改變 STATUS 欄位
+  - 關聯:D-20261012-project-reduction-scope;D-20261012-dotfiles-active-item-contract-off;docs/plans/2026-10-12-project-process-reduction.md
