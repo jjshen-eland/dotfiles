@@ -45,7 +45,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 ### 3. /project 流程減量與驗證成本（#285）
 
 - **Writer**：`claude:delivery-overhead`
-- **Workspace**：`branch=refactor/project-test-evidence-removal`
+- **Workspace**：`branch=docs/pin-scenario-38-source`
 - **Write Scope**：.doc-governance.json, shared/skills/project/, claude/skills/project/, codex/skills/project/, tests/, docs/testing-contract.md, docs/plans/2026-10-12-project-process-reduction.md, docs/archive/, AGENTS.md（僅計畫第 2 步細節第 5 點那一句）
 - **Dossier Steward**：`claude:delivery-overhead`
 - **寫入協調**：2026-10-12 使用者依序指派新 session 接續本項，前任 session 已停止；沿用同一 workline 代號；Workspace 隨每步實作 branch 更新。
@@ -54,14 +54,14 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **Acceptance Criteria**：
   1. dotfiles 關閉 active-item contract：`audit --ship` OK、`steward-authority.py` 回 `NOT_APPLICABLE`、`./tests/run.sh --base origin/main` 通過。
   2. 移除 test-evidence 沿用協定：Log 在最終 commit set 執行 repo 宣告的測試與檢查（有選測時涵蓋整批），以 exit code 判定、非零不送出；選測錯誤或空集合不得假綠；改判準後的 tested 類 native case 依計畫判準通過。
-  3. ship-state 每個 STOP 與 wait-required-enrollment 附實地攔截／誤擋紀錄與涵蓋機制，0 攔截且已涵蓋者移除；保留項仍有 RED。
+  3. ship-state 每個 STOP 與 wait-required-enrollment 附實地攔截／誤擋紀錄與涵蓋機制，0 攔截且已涵蓋者移除；保留項仍有 RED。（已完成：清點後全部保留，D-20261012-ship-state-stops-kept）
   4. PR 已承載的實作結果不另寫 milestone、merge 後不另開補記 PR，D／X 照舊；`find` 命中不退步。
   5. 依前述移除縮減 `/project` 必讀 reference，以同一回溯方法量讀取量與耗時改善前後。
   6. 改善後一筆真實小改動交付與 51 次基線（扣等待中位 760 秒）比較。
   7. 會改共用 skill 的第 2–5 項重跑受影響 eval，Claude Code 與 Codex 各實跑一次 Log 比對行為、reader bytes 與耗時。
 - **Constraints**：不新增 gate 或機檢；不改 `scripts/doc-governance.py` 受信任 scanner（fleet byte-identical）與 kernel managed block；controller 測試隨所測腳本移除，不單獨刪；branch protection 與 required checks 調整需另經具名授權。claude/settings.json 的 runtime drift 不帶進 commit（dotsync／brewup 會丟棄）。item 2／4 不在本項範圍。本 Spec 未授權任何 commit、push、PR、merge 或部署。
-- **進度**：原計畫第 1、2 項已合併（M-20261011-ci-platform-matrix-merged）；第 3 項不實作（D-20261012-record-rules-dropped）；第 5、6 項合併為本版驗收（D-20261012-project-reduction-scope）；deep-plan 路由見 D-20261012-deep-plan-full-review-routing。第 1 項已在本 branch 完成本地驗收：刪除 `.doc-governance.json` 的 `status_schema.active_item_contract` 後，`audit --ship` OK、`steward-authority.py` 回 `NOT_APPLICABLE`、全套測試通過；四個 coordination 欄位暫保留，第 4 項調整 dossier 規定時一併決定。另已退役 title-free 召回 ratchet（D-20261012-title-free-recall-ratchet-retired），真實語料排名測試維持現狀（D-20261012-live-corpus-ranking-tests-kept）。
-- **下一步**：第 2 項已在本 branch 實作：全套測試通過，`tested`／`test-unknown`／`docs-mixed` 在 Sonnet 與 Codex 各通過一次（`pressure-tests.md` Scenario 38）；deep-plan 第一輪 findings 已修進計畫、未跑第二輪；deep-review（唯讀）結論 FAIL，唯一阻斷為 Scenario 38 docs 類 baseline 筆數，已由作者修正並驗證、未再經獨立 review。合併後開始第 3 項（ship-state STOP 與 enrollment 逐條清點）。
+- **進度**：原計畫第 1、2 項已合併（M-20261011-ci-platform-matrix-merged）；第 3 項不實作（D-20261012-record-rules-dropped）；第 5、6 項合併為本版驗收（D-20261012-project-reduction-scope）；deep-plan 路由見 D-20261012-deep-plan-full-review-routing。第 1 項已合併（PR #310，關閉 active-item contract；四個 coordination 欄位暫保留，第 4 項調整 dossier 規定時一併決定）；第 2 項已合併（PR #312，收尾改為在最終 commit set 執行測試，D-20261012-test-evidence-removal）；第 3 項清點後全部保留（D-20261012-ship-state-stops-kept）。另已退役 title-free 召回 ratchet（D-20261012-title-free-recall-ratchet-retired），真實語料排名測試維持現狀（D-20261012-live-corpus-ranking-tests-kept）。
+- **下一步**：第 2 項已合併（PR #312）；第 3 項清點後不移除（D-20261012-ship-state-stops-kept）。接著規劃第 4 項（紀錄減量），實作前依審查路由跑一批 deep-plan。
 - **關聯**：[本項計畫](docs/plans/2026-10-12-project-process-reduction.md); [前一版計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285; D-20261012-dotfiles-active-item-contract-off; D-20261010-delivery-overhead-spec; M-20261009-ci-modular-redesign-local; B-20260924-workflow-verification-economy
 
 ### 4. Setup 工具與 agent shell 環境對齊
