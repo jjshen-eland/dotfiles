@@ -1,6 +1,12 @@
-# 不複製標題的召回量測（ratchet，不是全綠 oracle）。query<TAB>expected_path_prefix
-# ⚠️ 要提高門檻只能用**新寫的** query 重新量；把既有 query 調到能過，量到的是調參不是召回。
-# ⚠️ query 一律不得包含目標檔的檔名、H1 或條目標題——那是把答案塞回問題。
+# 不複製標題的召回量測工具，不是 gate（D-20261012-title-free-recall-ratchet-retired）。query<TAB>expected_path_prefix
+# 用途：改 `find` 排序時，在同一個 commit 的語料上量改前／改後；不同時間的語料不可比，新紀錄會改變排名。
+# ⚠️ query 一律不得包含目標檔的檔名、H1 或條目標題——那是把答案塞回問題（test_title_free_queries_do_not_leak_the_target 守）。
+# ⚠️ 2026-10-12 檢討：第 2、3、7、9、10 列的預期已不適用（前提過時；已決定不修的跨語言落差；同一規則另有權威檔；
+#    前綴過寬造成假命中；該主題已有直接回答的決策紀錄），使用前先改寫。改寫用新 query，不把既有 query 調到能過。
+# 手動量測（repo root 執行；去掉下三行行首的 `# ` 後貼上）：
+# grep -v '^#' tests/fixtures/doc-governance/title-free-recall.tsv | while IFS="$(printf '\t')" read -r q e; do
+#   [ -n "$q" ] || continue; p=$(python3 scripts/doc-governance.py find "$q" | grep -v '^  ' | cut -d: -f1)
+#   case "$p" in *"$e"*) echo "HIT  $q";; *) echo "MISS $q";; esac; done
 交叉引用的守門分不出「在用」和「在討論」時該怎麼辦	docs/testing-contract.md
 改動節名之後要跑哪一套才知道有沒有指標斷掉	docs/testing-contract.md
 治理面的位元組上限撞到了可以怎麼處置	docs/document-governance.md
