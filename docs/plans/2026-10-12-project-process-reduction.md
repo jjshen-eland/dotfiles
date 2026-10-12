@@ -81,11 +81,10 @@ Claude Code 與 Codex 各實跑一次 Log，比對改前改後的行為、reader
    （已有 #267 結案路徑）；enrollment helper 回 ENROLLED 33 次（成功等到 required check 後才 merge）、UNOBSERVED 5、
    QUERY_ERROR 12、HEAD_CHANGED 4。各組都有實際功能，狀態偵測的時間主要在讀取與解讀輸出而非 STOP 本身，故不移除；
    讀取量改由第 5 步處理。
-4. **紀錄減量**：PR 已承載的實作結果不另寫 M；merge 後的結案不另開補記 PR（併入下一個 PR 或省略）；D／X 照舊。
-   同步調整 `log-prepare.md`、`dossier.md` 與流程規定的紀錄（endpoint 未達成的 milestone、移交 conditional owner）。
-   驗收：固定小改動的 Log 不再產生紀錄專屬 commit／PR；`find` 對既有主題的命中不退步。
-   相依：`AGENTS.md` portable managed block 的「Debt & known gaps 解決或放棄時移除並寫 history record」、
-   kernel「milestones at event time」與 `shared/skills/project/references/dossier.md`「解決時寫 `M-*`」，規劃時一併處理。
+4. **紀錄減量（不做；D-20261012-record-reduction-dropped）**：2026-07 起 46 個只改紀錄的 PR 多為獨立的 backlog 結案、
+   機隊部署結果（git 以外的事件）與早期 STATUS 整理；「merge 後另開 PR 補 milestone」在 2026-10 只有 #305 一次，因現行
+   log-prepare 已要求 milestone 隨實作 PR 寫成 endpoint pending。收益小且會牽動 kernel「milestones at event time」與
+   `AGENTS.md` portable managed block，不做；STATUS 的四個 coordination 欄位照舊保留。
 5. **縮減 reference**：依前四步移除的分支縮減 `/project` 必讀 reference（現為 92–108 KB，`log-prepare.md`
    49,941 B 最大）。驗收：以評估同一回溯方法量改善前後的讀取量與耗時。
 6. **端到端量測**：沿用原第 4 項方法，取改善後一筆真實小改動交付（不為量測製造交付），與 51 次基線比較。
@@ -179,7 +178,7 @@ revert 該 PR 即恢復 helper、測試與指令；無資料遷移。
 
 ## 審查路由
 
-步驟 2、4 會改變 `/project` 的放行／攔下行為，符合 deep-plan §1a，實作前各跑一批（第 3 步清點後不改程式）；NO-GO 若是文件措辭或細節，
+步驟 2 會改變 `/project` 的放行／攔下行為，符合 deep-plan §1a，實作前跑一批（第 3 步清點後不改程式，第 4 步不做）；NO-GO 若是文件措辭或細節，
 修進計畫後直接實作，以 RED 測試加 deep-review 審實際 diff 承接，不 restart（D-20261012-deep-plan-full-review-routing）。
 步驟 1、5、6 不需完整審查。
 
