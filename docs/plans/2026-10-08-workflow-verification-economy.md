@@ -2,7 +2,8 @@
 
 - 日期：2026-10-08
 - 工作項：issue-285-workflow-verification-economy
-- 狀態：in-progress
+- 狀態：superseded
+- 取代計畫: docs/plans/2026-10-12-project-process-reduction.md（第 1、2 項已合併；第 3 項不實作，見 D-20261012-record-rules-dropped；第 4 項剩餘量測與第 5、6 項移入取代計畫）
 - 種類：implementation
 - Writer／Dossier Steward：`claude:delivery-overhead`（2026-10-10 經 PR #299 移交生效，見 D-20261010-transfer-delivery-overhead）
 - Workspace：`branch=perf/delivery-overhead-verification`

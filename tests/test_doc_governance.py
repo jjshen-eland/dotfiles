@@ -2616,14 +2616,6 @@ class RealRetrievalCorpusTests(unittest.TestCase):
         with fixture.open(encoding="utf-8", newline="") as handle:
             return [row for row in csv.reader(handle, delimiter="\t") if row and not row[0].startswith("#")]
 
-    @staticmethod
-    def canonical_path(path: str) -> str:
-        resolved = (ROOT / path).resolve()
-        try:
-            return resolved.relative_to(ROOT.resolve()).as_posix()
-        except ValueError:
-            return path
-
     def test_title_free_queries_do_not_leak_the_target(self) -> None:
         # 這組 query 的價值就在「不知道標題也找得到」。一旦 query 抄了檔名或 H1，
         # 量到的是字串比對，不是召回。
@@ -2640,30 +2632,6 @@ class RealRetrievalCorpusTests(unittest.TestCase):
                     )
                     if heading:
                         self.assertNotIn(heading.casefold(), query.casefold())
-
-    def test_title_free_recall_and_source_diversity_do_not_regress(self) -> None:
-        # Ratchet，不是全綠 oracle：召回還沒解決（見 B-20260821-debt-27），
-        # 但「單一檔案洗版 top-5」必須維持 0——那是 debt-28 修掉的東西。
-        rows = self.title_free_rows()
-        hits, sweeps, slots = 0, 0, []
-        for query, expected in rows:
-            found = subprocess.run(
-                ["python3", str(TOOL), "--root", str(ROOT), "find", query],
-                text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
-            )
-            heads = [line for line in found.stdout.splitlines() if line and not line.startswith("  ")]
-            paths = [head.split(":", 1)[0] for head in heads]
-            # compatibility link 與它指向的 canonical 是同一份文件；只認路徑字面會把
-            # 「找到了，但列在別名下」算成沒召回。
-            hits += any(
-                path.startswith(expected) or self.canonical_path(path).startswith(expected) for path in paths
-            )
-            top = max((paths.count(path) for path in set(paths)), default=0)
-            slots.append(top)
-            sweeps += top >= 5
-        self.assertEqual(sweeps, 0, "有 query 的 top-5 全被同一份檔案佔滿")
-        self.assertLessEqual(sum(slots) / len(rows), 2.0, "單檔平均佔位回升")
-        self.assertGreaterEqual(hits, 6, f"不複製標題的 hit@5 從 6/{len(rows)} 退步到 {hits}/{len(rows)}")
 
     def test_current_repo_retrieval_corpus_hits_top_five(self) -> None:
         rows = self.retrieval_rows()

@@ -401,3 +401,33 @@
   - 放棄:保留兩項機檢（覆蓋不完整且帶出新例外）
   - 重議:Phase 3 比較中缺子項或失效 commit 引用的缺陷未低於生效前，且出現不依 merge-base、不與 append-only 衝突的判準
   - 關聯:supersedes:D-20261012-record-checks-two-precise;D-20261011-record-rules-no-record-check;docs/plans/2026-10-08-workflow-verification-economy.md;Issue#285
+- **D-20261012-record-rules-dropped · 2026-10-12 D／X／M 紀錄撰寫規則不實作，紀錄缺陷不再監測**:使用者依風險分層評估選定結束 #285 第 3 項，不新增撰寫規則、不做成對實驗與 Phase 3 觀察、不清理 `docs/testing-contract.md` 的事件敘述。評估找到的實際後果都來自規則文件或 skill 寫錯，沒有 D／X／M 格式缺陷導致做錯事的實例；計畫經 deep-plan 6 批 8 輪全 NO-GO（約 4.5 小時 active）。Phase 3 以 15 筆人工判讀比較，統計上無法判定規則有效，先前「不做機檢」所依賴的補償並不存在；使用者在此前提下接受紀錄缺陷不被監測的取捨。
+  - 日期來源:direct
+  - 放棄:照原計畫的成對實驗與 Phase 3 觀察（成本高且無法判定）；只寫一條持久指標指引而不跑成對實驗（不符 skill 規則變更的證據門檻）
+  - 重議:出現因 D／X／M 紀錄缺陷而做錯事的具體事件
+  - 關聯:supersedes:D-20261011-record-rules-fleet-wide;D-20261012-record-checks-reverted;D-20261011-record-rules-no-record-check;docs/plans/2026-10-12-project-process-reduction.md;Issue#285
+- **D-20261012-dotfiles-active-item-contract-off · 2026-10-12 dotfiles 關閉 STATUS active-item contract**:使用者選定刪除 dotfiles `.doc-governance.json` 的 `status_schema.active_item_contract`，讓 steward-authority 回 `NOT_APPLICABLE`、scanner 不再要求 Writer／Workspace／Write Scope／Dossier Steward。2026-09-01 起 261 個 STATUS 版本只有 17 版同時有兩位 Writer、steward 都是同一使用者的 session 代號、正式移交 1 次；steward-authority 實地攔下 3 次（皆為漏建 active steward），另有 10 次 merge 中 8 次 false STOP 的紀錄。實際發生過的平行寫入事故（`git add -A` 誤收他線工作）由 kernel 安全底線的 foreign changes STOP 接住，不依賴這些欄位。不改 scanner、skill 或 kernel；其他受治理 repo 各自決定。
+  - 日期來源:direct
+  - 放棄:維持現行四欄位與 steward 授權檢查（成本集中在確認題與欄位維護，攔截都是自身簿記）
+  - 重議:dotfiles 出現第二位真人 contributor、正式移交，或平行 session 造成 STATUS／history 寫入衝突
+  - 關聯:D-20261011-protocol-records-to-workflow-simplification;D-20261010-transfer-delivery-overhead;M-20260928-project-merge-production-red-captured;docs/plans/2026-10-12-project-process-reduction.md
+- **D-20261012-project-reduction-scope · 2026-10-12 #285 第 5、6 項合併為 /project 流程減量**:使用者選定把流程開銷與流程簡化合併成一項，依序移除 test-evidence 沿用協定、逐條清點 ship-state STOP 與 wait-required-enrollment、PR 已承載的實作結果不另寫 milestone 也不另開補記 PR、最後縮減必讀 reference，每步量測且可回退；不新增 gate、不改受信任 scanner 與 kernel。依據是 51 次真實送出扣等待後中位 760 秒，其中讀 reference 約 15%、狀態偵測約 12%、本地測試與證據約 27%；test-evidence 與 enrollment 沒有攔下過失敗，enrollment 有 3 次誤擋已授權 merge。
+  - 日期來源:direct
+  - 放棄:只做零／低風險三步其餘暫停；兩項都終止
+  - 重議:任一步改後的真實交付耗時或讀取量沒有下降，或移除的 gate 所防風險實際發生
+  - 關聯:supersedes:D-20261011-delivery-measurement-next-targets 的「第 5 項另列」;D-20261011-protocol-records-to-workflow-simplification;docs/plans/2026-10-12-project-process-reduction.md;Issue#285
+- **D-20261012-deep-plan-full-review-routing · 2026-10-12 deep-plan 完整審查限高風險計畫，NO-GO 後不 restart**:使用者同意 agent 給 deep-plan 路由建議時，只在計畫含不可逆步驟、機隊部署或符合 deep-plan workflow §1a 時建議完整審查。一批 NO-GO 後，findings 是文件措辭或細節就修進計畫直接實作，以 RED 測試加 deep-review 審實際 diff 承接；顯示設計不成立就請使用者縮小或放棄；只有指向未查明事實時才查明後再審。#285 第 3 項 6 批 8 輪全 NO-GO，每批多在修上一批新增的機制；turbo 移除計畫 4 輪 NO-GO 後改由 code review 承接，code review 實際找到需修正的問題。不改 deep-plan skill 本體。
+  - 日期來源:direct
+  - 放棄:計畫連帶權威檔就建議完整審查、猶豫就跑（成本主要是使用者時間而非 token）；把 NO-GO 後的預設寫進 skill（缺成對實驗證據）
+  - 重議:依此路由略過或提前結束審查的計畫，在實作或部署後出現審查本可攔下的設計錯誤；或再次出現連續 restart
+  - 關聯:D-20261011-turbo-plan-nogo-proceed;D-20261012-record-rules-dropped;shared/skills/deep-plan/references/workflow.md
+- **D-20261012-title-free-recall-ratchet-retired · 2026-10-12 退役 title-free 召回 ratchet，題組改為手動量測工具**:使用者選定刪除 `tests/test_doc_governance.py` 中對當下語料量 hit@5 與單檔佔位的 ratchet；`tests/fixtures/doc-governance/title-free-recall.tsv` 改標為改 `find` 排序時在同一 commit 語料上手動量改前改後的工具，保留題目不洩漏標題的檢查。逐題檢討：10 題中 5 題的預期不再適用（前提已被模組化選測改變、已決定不修的跨語言落差、同一規則另有 kernel 權威檔、前綴涵蓋整個 `shared/skills` 造成假命中、主題已有直接回答的決策紀錄），原門檻 6 含 1 題假命中；門檻是 2026-08-22 當時的命中數，原服務的 B-20260821-debt-27 已於 2026-09-15 結案。兩天內兩次變紅都是合法、正好回答該題的新紀錄擠掉唯一正解，未找到攔下 scanner 退步的實例；討論該測試的紀錄引用題目原文而排到第 1，污染量測。scanner 的排序行為由 synthetic 測試承接（標題自查第 1、每檔佔位上限與回填、history 標題邊界、reason boost）。
+  - 日期來源:direct
+  - 放棄:門檻降到 5（未檢討題目、結構誤擋仍在）；改寫新紀錄措辭以過測試；重寫題組後續當 gate（單一正解與自我污染仍在）；替判準加入決策紀錄命中等機制
+  - 重議:`find` 的排序在真實語料上出現 synthetic 測試未攔下、且影響實際查找的退步
+  - 關聯:supersedes:D-20261011-recall-alias-canonical;M-20260915-b27-title-free-recall-revalidated;D-20260915-b27-cross-language-boundary;tests/test_doc_governance.py;tests/fixtures/doc-governance/title-free-recall.tsv
+- **D-20261012-live-corpus-ranking-tests-kept · 2026-10-12 真實語料排名測試維持在 content 模組**:檢討 `retrieval.tsv` 的 top-5 命中與 unique title 第 1 名兩項後，使用者選擇維持現狀。兩項目前未找到攔截也未誤擋，每次 content 約 10 秒；結構上同樣是單一正解對當下語料，有 3 題排在第 3–4 名。移到 `document-regression` 不適合：該模組也由 project／deep-plan／deep-review／handoff skill 變動與全套選到，#301–#307 重放仍有 3／7 會執行；scanner 本身是全套觸發檔，content 已涵蓋 scanner 變動；且違反 `docs/testing-contract.md` 中 document-regression 只跑 synthetic、不重跑 corpus 的設計。
+  - 日期來源:direct
+  - 放棄:移到 document-regression（減量有限、無新增保護、推翻 synthetic／corpus 分工）；比照 title-free 立即退役（尚無誤擋，沒有實際痛點）
+  - 重議:任一項因語料變動而非 scanner 退步變紅，即比照 D-20261012-title-free-recall-ratchet-retired 退役
+  - 關聯:D-20261012-title-free-recall-ratchet-retired;tests/fixtures/doc-governance/retrieval.tsv;docs/testing-contract.md

@@ -6,7 +6,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 # STATUS.md
 
-個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-10-11)
+個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-10-12)
 
 ---
 
@@ -42,25 +42,27 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **下一步**：定位 D-20260917-terminal-macbooks-outside-inventory 及 STATUS 的未完成驗收；先取得兩部額外 MacBook 的識別／revision／legacy store 依賴事實，再決定原 plan 的 cleanup 前提，不能直接部署或刪除。
 - **關聯**：#271; D-20260823-portable-handoff-skill; D-20260912-neutral-portable-skill-core; D-20260912-codex-config-three-layer-merge; M-20260912-codex-config-and-dotsync-exit; M-20261001-handoff-frontmatter-anchor-verify; D-20261007-claude-model-default-unset; M-20261007-claude-native-default-verified; M-20261007-macs-runtime-layout-accepted
 
-### 3. 小幅變更的驗證與交付成本改善（#285）
+### 3. /project 流程減量與驗證成本（#285）
 
 - **Writer**：`claude:delivery-overhead`
-- **Workspace**：`branch=perf/delivery-overhead-verification`
-- **Write Scope**：tests/, shared/skills/project/, shared/skills/deep-review/scripts/review-control.py, shared/skills/deep-plan/scripts/review-state.py, AGENTS.md, docs/testing-contract.md, docs/document-governance.md, .github/workflows/test.yml, claude/CLAUDE.md, codex/AGENTS.md
+- **Workspace**：`branch=docs/process-redesign-assessment`
+- **Write Scope**：.doc-governance.json, shared/skills/project/, claude/skills/project/, codex/skills/project/, tests/, docs/testing-contract.md, docs/plans/2026-10-12-project-process-reduction.md
 - **Dossier Steward**：`claude:delivery-overhead`
-- **Context**：2026-10-10 唯讀診斷：小改動交付的最大段是指令到開 PR（#286／#288 約 590 秒），PR 到 merge 約 3–7 分鐘。CI 近 8 次有 7 次退回全套，其中 5 次因 `docs/testing-contract.md` 未路由；414 個 tracked 檔有 201 個未路由，含模組自己的測試檔。macOS 全套的關鍵路徑是平台無關的 deep-plan／review-controller／ship-state／turbo（各 91–116 秒）。紀錄成本：兩週內 STATUS.md 改 111 次，近 40 個 commit 有 15 個只改紀錄，包含獨立補記 PR（#288、#298）。模組化選測的前段成果見 M-20261009-ci-modular-redesign-local。
-- **Goal**：降低小幅變更從交付指令到最終回報的完整耗時：CI 只跑受影響且必要的模組與平台，交付流程不再為紀錄本身多產生 commit、PR 或長篇文字。
+- **寫入協調**：2026-10-12 使用者依序指派新 session 接續本項，前任 session 已停止；沿用同一 workline 代號，Workspace 由已刪除的 `perf/delivery-overhead-verification` 改為本 branch。
+- **Context**：2026-10-12 依風險分層的唯讀評估顯示，2026-09-01 起工時約 53% 在流程本身、產品與機隊部署約 12%；逃到機隊的事故都由部署輸出、canary 或使用者發現，沒有被流程 gate 攔下；多數流程 gate 的實地紀錄誤擋多於攔截。證據與方法見計畫「評估摘要」。
+- **Goal**：gate 只放在錯了代價高、實際發生過、能機械判定之處，把 `/project` 流程壓到支撐部署腳本、agent 契約與受信任 scanner 的最小量，降低小幅變更「交付指令→最終回報」的耗時與讀取量。
 - **Acceptance Criteria**：
-  1. CI 路由：`docs/testing-contract.md` 等說明文件走 content；`tests/<x>.py` 與 `scripts/*` 對應到擁有它的模組；只有 runner／workflow／共用 lib 或無法解析的路徑才跑全套。漏選、未知路徑、新增／刪除／rename 先有 RED controls 再 GREEN；以近 8 次 PR 的實際 diff 重放，列出每次選中的模組，非 runner 類改動不再全套。
-  2. 平台矩陣：以行為證據（例如兩平台結果一致、程式沒有平台分支）證明上述 controller 模組平台無關後，只在 Ubuntu 跑；macOS 保留平台敏感模組，required check 名稱不變。普通腳本改動的最慢 job 有 hosted before／after。
-  3. 紀錄規則（D-20261011-record-rules-before-size-cap、D-20261011-delivery-measurement-next-targets）：目標是紀錄品質與可追溯性，不以省時間為理由、不設長度上限。在全機隊共用的 `shared/skills/project/references/dossier.md` 定義 D／X／M 紀錄的必寫、不用寫、不要寫與不使用的寫法，每條對應實際觀察到的缺陷；以成對實驗（逐條規則改前有分歧、改後兩端正式驗收）與既有長紀錄的重寫範例驗證，可還原資訊不減、`find` 命中不退步；紀錄撰寫規則不做機檢（D-20261012-record-checks-reverted），送出後觀察 15 筆新紀錄並與規則草稿前的 Phase 0 等距抽樣比較，明顯未改善的規則重跑成對實驗決定去留，觀察報告完成才結案。docs/testing-contract.md 只寫規則與一句理由，既有事件證據移入 D／M 紀錄（缺的先補），並整份機檢事件字樣。細節見本項計畫「第 3 項：D／X／M 紀錄撰寫規則」。
-  4. 端到端：固定一個同規模的小改動（普通腳本加測試），量改善前後「交付指令→最終回報」的總時間與分段（開 PR 前／紀錄撰寫／CI／merge／回報）；local、hosted、真實交付分開報告。另以既有 session 紀錄回溯真實交付的同一分段，量紀錄撰寫佔比。
-  5. 流程開銷：交付時讀流程 reference（中位 94 秒）與狀態偵測（中位 86 秒）的縮時，先找出重複讀取與重複偵測，再以同一回溯方法量改善前後。
-  6. 流程簡化（D-20261011-protocol-records-to-workflow-simplification）：依實際使用狀況簡化 steward、writer、transfer 與 dossier 流程，改善工作體驗；含 endpoint 未達成的 milestone 與移交 owner decision 是否改由 PR 與 `docs/transfer.md` 承載、減少確認題。會改 authority 相關 skill 與檢查程式，獨立規劃並跑 deep-plan；可與第 5 項合併規劃。
-- **Constraints**：本版驗收取代 2026-10-09 版（D-20261010-delivery-overhead-spec）。不靠降低錯誤攔截取得 GREEN；選測錯誤或空集合不得假綠。不改 `scripts/doc-governance.py` 受信任 scanner（fleet byte-identical 契約）；branch protection 與 required checks 調整需另經具名授權。claude/settings.json 的 runtime drift 不帶進 commit（dotsync／brewup 會丟棄）。item 2／4 不在本項範圍。本 Spec 未授權任何 commit、push、PR、merge 或部署。
-- **進度**：第 1、2 項已合併（M-20261011-ci-platform-matrix-merged）：全套觸發檔 201→50，controller 三模組只跑 Ubuntu，全套 PR 的 macOS job 3 分 02 秒→2 分 28 秒。測試模組 pipe-to-grep 早退偽紅已清零並合併（M-20261011-pipe-grep-herestring-local）。
-- **下一步**：第 3 項計畫經 deep-plan 第 6 批兩輪仍 NO-GO（阻斷集中在 Phase 3 無法以 15 筆人工判讀判定規則有效性）；選 A（不做紀錄機檢）時所依賴的 Phase 3 補償本就不成立，A 須在此前提下重新確認，計畫未實作。2026-10-12 使用者另要求以新 session 從頭評估本 repo 的提交、驗證與 CI 流程應有的樣貌（依風險分層），第 3 項與第 5、6 項的去留待該評估。第 4 項只剩改善後的真實交付一筆。
-- **關聯**：[本項計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285; GitHub #279; PR #288; PR #298; PR #299; D-20261010-delivery-overhead-spec; D-20261010-transfer-delivery-overhead; D-20261009-ci-system-redesign; M-20261009-ci-modular-redesign-local; B-20260924-workflow-verification-economy
+  1. dotfiles 關閉 active-item contract：`audit --ship` OK、`steward-authority.py` 回 `NOT_APPLICABLE`、`./tests/run.sh --base origin/main` 通過。
+  2. 移除 test-evidence 沿用協定，`/project` 一律重跑選中模組；選測錯誤或空集合不得假綠。
+  3. ship-state 每個 STOP 與 wait-required-enrollment 附實地攔截／誤擋紀錄與涵蓋機制，0 攔截且已涵蓋者移除；保留項仍有 RED。
+  4. PR 已承載的實作結果不另寫 milestone、merge 後不另開補記 PR，D／X 照舊；`find` 命中不退步。
+  5. 依前述移除縮減 `/project` 必讀 reference，以同一回溯方法量讀取量與耗時改善前後。
+  6. 改善後一筆真實小改動交付與 51 次基線（扣等待中位 760 秒）比較。
+  7. 會改共用 skill 的第 2–5 項重跑受影響 eval，Claude Code 與 Codex 各實跑一次 Log 比對行為、reader bytes 與耗時。
+- **Constraints**：不新增 gate 或機檢；不改 `scripts/doc-governance.py` 受信任 scanner（fleet byte-identical）與 kernel managed block；controller 測試隨所測腳本移除，不單獨刪；branch protection 與 required checks 調整需另經具名授權。claude/settings.json 的 runtime drift 不帶進 commit（dotsync／brewup 會丟棄）。item 2／4 不在本項範圍。本 Spec 未授權任何 commit、push、PR、merge 或部署。
+- **進度**：原計畫第 1、2 項已合併（M-20261011-ci-platform-matrix-merged）；第 3 項不實作（D-20261012-record-rules-dropped）；第 5、6 項合併為本版驗收（D-20261012-project-reduction-scope）；deep-plan 路由見 D-20261012-deep-plan-full-review-routing。計畫已核定，尚未實作。本批另退役 title-free 召回 ratchet（D-20261012-title-free-recall-ratchet-retired），真實語料排名測試維持現狀（D-20261012-live-corpus-ranking-tests-kept）。
+- **下一步**：第 1 項另開 branch 修改 `.doc-governance.json` 並驗收。
+- **關聯**：[本項計畫](docs/plans/2026-10-12-project-process-reduction.md); [前一版計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285; D-20261012-dotfiles-active-item-contract-off; D-20261010-delivery-overhead-spec; M-20261009-ci-modular-redesign-local; B-20260924-workflow-verification-economy
 
 ### 4. Setup 工具與 agent shell 環境對齊
 
