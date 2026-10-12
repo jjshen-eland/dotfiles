@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Portable review admission and evidence projection. Python standard library only.
 
-The plan's companion journal is operational evidence, not authorization. Semantic
+The plan's machine-local journal is operational evidence, not authorization. Semantic
 scope and disposition evidence remain the caller's responsibility. No model calls.
 """
 from __future__ import annotations
@@ -15,14 +15,19 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import stat
 import subprocess
 import sys
+import time
 import uuid
 
 DEFAULT_POLICY = "blind"
 DEFAULT_LIMIT = 2
 REFS = Path(__file__).resolve().parent.parent / "references"
+STATE_ENV = "DEEP_PLAN_STATE_DIR"
+RETENTION_DAYS = 30
+JOURNAL_NAME = re.compile(r".+-[0-9a-f]{16}")
 
 
 # Known workflow-pressure forms, not a general semantic/injection detector.
@@ -48,18 +53,52 @@ def absolute(value, directory=False):
     return path
 
 
+def state_root():
+    # Registered machine-local store (docs/repo-guide.md); the override isolates fixtures.
+    return Path(os.environ.get(STATE_ENV) or Path.home() / ".agents" / "deep-plan").resolve()
+
+
 def control_path(plan):
     plan = absolute(plan)
-    return plan.parent / ("." + plan.name + ".review") / "control.json"
+    legacy = plan.parent / ("." + plan.name + ".review")
+    if legacy.exists() or legacy.is_symlink():
+        raise ValueError(f"legacy-plan-journal: {legacy} is not migrated; finish or delete it first")
+    return state_root() / (plan.name + "-" + digest(str(plan))[:16]) / "control.json"
 
 
 @contextmanager
 def locked(plan):
     path = control_path(plan)
-    path.parent.mkdir(exist_ok=True)
+    path.parent.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if path.parent.parent.stat().st_uid != os.getuid():
+        raise ValueError("state-root-has-another-owner")
+    path.parent.mkdir(mode=0o700, exist_ok=True)
     with (path.parent / "lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         yield path
+
+
+def prune_stale(plan):
+    """Remove other journals untouched for RETENTION_DAYS; a held lock means a live writer."""
+    keep = control_path(plan).parent
+    root = keep.parent
+    if not root.is_dir():
+        return []
+    cutoff = time.time() - RETENTION_DAYS * 86400
+    pruned = []
+    for entry in sorted(root.iterdir()):
+        control = entry / "control.json"
+        if (entry == keep or entry.is_symlink() or not JOURNAL_NAME.fullmatch(entry.name)
+                or not control.is_file() or control.stat().st_mtime >= cutoff):
+            continue
+        with (entry / "lock").open("a") as lock:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                continue
+            shutil.rmtree(entry)
+        pruned.append(entry.name)
+    return pruned
 
 
 def save(path, value):
@@ -682,7 +721,10 @@ def main():
     p.add_argument("--expected-state-sha")
     a = p.parse_args()
     if a.action == "open":
+        pruned = prune_stale(a.plan)
         result = open_review(a.plan, a.repo or [], a.policy, a.max_rounds, a.count, a.repair_document)
+        if pruned:
+            result = dict(result, pruned_journals=pruned)
     elif a.action == "prepare":
         result = prepare(a.plan, a.reason, read(a.repair) if a.repair else None, a.criteria_impact_review)
     elif a.action == "claim":

@@ -12,7 +12,17 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-目前無進行中項目。
+### 1. `~/.agents` 狀態目錄治理與審查紀錄搬出 repo／`/tmp` 🆕
+
+- **Goal**：工具產生、要跨 session 保留的本機狀態一律放 `~/.agents/<skill>/`，每個目錄都有登記的寫入者、內容、保留期與清理者；deep-plan 審查紀錄不再落在 repo 工作樹，deep-review 審查紀錄不再依賴系統清理 `/tmp`。
+- **Acceptance Criteria**：
+  1. `docs/repo-guide.md` 的 runtime 表成為 `~/.agents` 登記表：skills、handoffs、deep-review（控制紀錄與 Codex 工作）、deep-plan 各列寫入者、內容、結束條件、保留期與清理者；新增子目錄須先登記。
+  2. deep-plan 審查紀錄改存 `~/.agents/deep-plan/`，以計畫絕對路徑區分；計畫旁仍有舊 `.<plan>.review/` 時停下並印出路徑，不搬移、不沿用。
+  3. deep-review 控制紀錄改存 `~/.agents/deep-review/control/`，Codex 審查工作改存 `~/.agents/deep-review/codex/`；舊位置不再讀取、不自動刪除。測試用的位置覆寫維持可用。
+  4. 三處都由寫入工具在開新審查時清掉最後更新超過 30 天的紀錄並回報；清理不碰正在被鎖住的紀錄，deep-review 同步移除索引中指向已清紀錄的項目。
+  5. 先寫會紅的重現測試，再實作；`./tests/run.sh --base origin/main` 通過，文件稽核通過，並記決策紀錄。
+- **Constraints**：使用者以「可以開工」授權本地實作，push／PR／merge 與機隊散佈另依當批具名授權。不改審查判準、輪數上限與 review anchor（`.git/deep-review/`）、mktemp 暫存檔的位置。30 天沒有實測依據，比照 handoff archive 保留期。
+- **下一步**：branch `refactor/agents-state-lifecycle` 已完成實作、測試與決策紀錄（D-20261012-agents-state-registry）；送出合併需當批具名授權。合併後經授權散佈到機隊，再寫 milestone 並結案本項。
 
 ## 暫停中
 

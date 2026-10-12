@@ -23,13 +23,16 @@ The returned `state` is shared by both runtime entries. `open` locates an existi
 batch by canonical target roots, rejects omitted repos or changed scope/policy,
 and never resets counters. Use `status` on that state when resuming after edits;
 do not recapture to replace its baseline. Store the path with the existing task's
-evidence when continuity is needed. Default artifacts are under the same user's
-fixed system-temp `deep-review-<uid>` directory, outside every target and `.git`.
-`DEEP_REVIEW_STATE_DIR` is an isolated-fixture override, never a way to resume or
-reset a live batch. Do not delete/relocate journals to evade limits. Missing or
-unavailable evidence is BLOCKED, not permission to reconstruct a PASS from memory.
-Artifacts are local review evidence; they do not carry action authority to another
-session, runtime or host, and are not a new project dossier.
+evidence when continuity is needed. Default artifacts are under the machine-local
+`~/.agents/deep-review/control/` directory, outside every target and `.git`; its
+retention and cleanup are registered in the dotfiles `docs/repo-guide.md`. `open`
+removes batches past that retention and reports them as `pruned_batches`. Journals
+under the former `/tmp/deep-review-<uid>` are not read. `DEEP_REVIEW_STATE_DIR` is an
+isolated-fixture override, never a way to resume or reset a live batch. Do not
+delete/relocate journals to evade limits. Missing or unavailable evidence is BLOCKED,
+not permission to reconstruct a PASS from memory. Artifacts are local review
+evidence; they do not carry action authority to another session, runtime or host,
+and are not a new project dossier.
 
 ## Dispatch and collect
 

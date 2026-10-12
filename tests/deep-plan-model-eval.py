@@ -358,6 +358,8 @@ def main():
     parser.add_argument("--models", nargs="+", choices=capture.MODELS, default=capture.MODELS)
     args = parser.parse_args()
     root = Path(args.root).resolve()
+    # Journals persist across invocations inside the experiment, not in the user's store.
+    os.environ["DEEP_PLAN_STATE_DIR"] = str(root / "journals")
     if args.action == "routing-setup":
         routing_setup(root)
     elif args.action == "routing-run":

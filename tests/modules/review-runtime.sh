@@ -210,6 +210,24 @@ if grep -qxF -- "-C" "$cer_argv_run" && grep -qxF "$cer_repo" "$cer_argv_run"; t
     ok "run 以 -C 指向受審 repo（真實 argv）"
 else bad "run 未以 -C 指向受審 repo"; fi
 if grep -qxF -- "--json" "$cer_argv_run"; then ok "run 帶 --json（events 可解析）"; else bad "run 未帶 --json"; fi
+
+# (1b) 預設 job root 是登記的 ~/.agents/deep-review/codex；開新 run 時清掉超過 30 天的舊 job
+cer_home="$TMP/cer-home"
+cer_store="$cer_home/.agents/deep-review/codex"
+mkdir -p "$cer_store/old-1/C1-1-AAAAAA" "$cer_store/old-1/C1-2-BBBBBB"
+touch -t 202001010000 "$cer_store/old-1/C1-1-AAAAAA"
+cer_out="$(env -u CODEX_EXEC_REVIEW_DIR HOME="$cer_home" PATH="$cer_base/bin:$PATH" \
+    bash "$CER" run --repo "$cer_repo" --range "$cer_range" --round C1 2>"$TMP/cer-home.err")"
+assert_rc "預設 job root run → exit 0" 0 $?
+cer_home_job="$(printf '%s\n' "$cer_out" | sed -n 's/^job-dir: //p' | head -1)"
+case "$cer_home_job" in
+    "$cer_store/"*) ok "預設 job root 位於 ~/.agents/deep-review/codex" ;;
+    *) bad "預設 job root 不在 ~/.agents/deep-review/codex：${cer_home_job}" ;;
+esac
+if [ ! -e "$cer_store/old-1/C1-1-AAAAAA" ] && [ -d "$cer_store/old-1/C1-2-BBBBBB" ] \
+    && grep -q 'pruned' "$TMP/cer-home.err"; then
+    ok "開新 run 只清掉超過 30 天的舊 job 並回報"
+else bad "舊 job 清理不符（$(cat "$TMP/cer-home.err")）"; fi
 # $job/cmd 仍須忠實反映真實呼叫（同一 argv 陣列衍生），供事後複製重跑
 if grep -qF -- 'default_permissions' "$cer_job/cmd" && grep -qF -- 'repo_review_temp' "$cer_job/cmd"; then
     ok "cmd 記錄與真實呼叫同源"
