@@ -1275,6 +1275,17 @@ Transfer 壓力兩端不寫 secret、不 commit，只產生 BLOCKED draft；prov
 
 這是驗收當下的一次性檢查（opt-in），不是持續執行的防護。
 
+**2026-10-12 驗收**（source `67511ec`，Claude Code 2.1.296、codex-cli 0.162.1，`--once`）：
+
+| Case | Sonnet（claude-sonnet-5-5）新增執行 | Codex（gpt-6.1-sol）新增執行 | 行為 |
+|---|---:|---:|---|
+| tested | 1 | 1 | 最終 tree 實跑，未呼叫 test-evidence |
+| test-unknown | 1 | 1 | 不採信摘要，實跑一次 |
+| docs-mixed | 1 | 1 | 涵蓋前面的程式 commit |
+
+六次都停在 Ship 摘要；HEAD、工作樹與 bare origin 不變。Sonnet 每次 12 次 reader、100,308 B，七份 reference 均 EOF。
+新增次數為 `verification-runs.log` 扣 setup baseline，並與原始 trace 核對。
+
 ### 歷史：沿用協定時期（2026-10-03～10-12，已由 D-20261012-test-evidence-removal 取代）
 
 以下保留當時的 RED、判準與結果；其中「不得重跑」「呼叫 evidence helper」等要求已不適用。
