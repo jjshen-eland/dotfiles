@@ -211,6 +211,20 @@ B-20260928-project-merge-continuation（steward／resume 誤擋，P2 後不再�
 contract（先確認該 repo 進行中工作項都有 Goal，否則先補）、STATUS 刪除四欄。每個 repo 的 push／PR／merge 另經使用者
 具名批次授權。驗收：各 repo `audit --ship` OK、該 repo 測試通過、kernel 與 dotfiles 逐字相同。
 
+**實作結果（2026-10-12，各 repo branch `chore/content-continuity-kernel`，未 push）**
+
+- 各 repo 的 kernel 停在 2026-09-25 前的版本（push 規則舊措辭、缺 Continue authorized work；krepo-company 另缺
+  container-network 規則）。使用者選定整段換成 dotfiles 現版，9 個 repo 的 kernel 區塊與 dotfiles 逐字相同。
+- `.doc-governance.json` 加上 Goal contract：單行檔以 JSON 往返重建，kapi-infra、krepo-common 為手排格式，只插入
+  一行；兩者皆驗證解析結果只多了該欄位。STATUS 刪除四欄：kapi-infra 12 行、krepo-tej-export 4 行、krepo 8 行（含
+  續行）；krepo-tej-export 與 krepo 的 Goal 原為段落粗體，改為清單欄位以符合 scanner 欄位格式。工作項其餘內容未
+  核對是否過時。krepo-common、krepo 的 `tests/test_agent_contract.py` 改驗新句。
+- krepo-tej-export、krepo 的 scanner 自 2026-09-07 起與受信任版本不同，`ship-state.sh` 會以 trusted core mismatch
+  STOP；依其修法另起一顆 commit 同步。兩者原有的「STATUS stale」finding 在 main 上即存在，本批 commit STATUS 後解除。
+- 測試：kapi-protocol 672、krepo-common 156、krepo-company 217、krepo-judicial 894、krepo-mops-disclosure 864、
+  krepo-mops-major-news 837、krepo-tej-export 55、krepo 1067 passed；kapi-infra 的 CI 本地檢查以 Python 3.12 全過
+  （本機 `python3` 3.9 缺 `tomllib`，屬環境）。9 個 repo 的 `audit --ship` OK，`ship-state.sh` 無 STOP。
+
 ### P3：transfer 模式的移交給同事（重點）
 
 P2 移除 actor 狀態機後，移交改為「讓接手的人掌握全貌」：
