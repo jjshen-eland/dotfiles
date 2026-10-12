@@ -86,27 +86,47 @@ else bad "新安裝 store 路徑、狀態或目錄建立錯誤（${out}）"; fi
 
 rm -rf "$HFS_HOME/.agents/handoffs"
 mkdir -p "$HFS_HOME/.claude/handoffs"
-out="$(HOME="$HFS_HOME" "$HFS_SCRIPT" store)"
-assert_rc "store 只有 legacy 資料 → exit 0" 0 $?
-if grep -qF "handoff-dir: $HFS_HOME/.claude/handoffs" <<< "$out" \
-    && grep -q '^store-status: LEGACY$' <<< "$out"; then
-    ok "既有 handoff 採 legacy-compatible store（不遺失資料）"
-else bad "legacy store 未被安全沿用（${out}）"; fi
+printf '%s\n' 'legacy note' > "$HFS_HOME/.claude/handoffs/keep.md"
+out="$(HOME="$HFS_HOME" "$HFS_SCRIPT" store 2>&1)"
+assert_rc "store 只剩舊 store → exit 1" 1 $?
+if grep -q '^store-status: NEEDS_UPGRADE$' <<< "$out" \
+    && grep -qF "$HFS_HOME/.claude/handoffs" <<< "$out" \
+    && grep -q 'ensure-runtime' <<< "$out" \
+    && [ ! -e "$HFS_HOME/.agents/handoffs" ] \
+    && [ "$(cat "$HFS_HOME/.claude/handoffs/keep.md")" = "legacy note" ]; then
+    ok "舊 store 不再被沿用：回報需要升級並指向遷移入口，不建立正式 store、不動舊資料"
+else bad "舊 store 仍被沿用或處置不明（${out}）"; fi
 
 mkdir -p "$HFS_HOME/.agents/handoffs"
 out="$(HOME="$HFS_HOME" "$HFS_SCRIPT" store 2>&1)"
-assert_rc "canonical 與 legacy 分裂 → exit 1" 1 $?
-if grep -q '^store-status: SPLIT$' <<< "$out"; then
-    ok "兩份獨立 store → STOP，避免跨 harness split-brain"
-else bad "split store 未被明確攔截（${out}）"; fi
+assert_rc "正式與舊 store 同時存在 → exit 1" 1 $?
+if grep -q '^store-status: NEEDS_UPGRADE$' <<< "$out"; then
+    ok "兩份獨立 store → 需要升級，不自行選邊"
+else bad "兩份獨立 store 未被攔截（${out}）"; fi
+
+out="$(HOME="$HFS_HOME" HANDOFF_DIR="$HFS_HOME/explicit" "$HFS_SCRIPT" store 2>&1)"
+assert_rc "HANDOFF_DIR override 不受舊 store 影響 → exit 0" 0 $?
+if grep -q '^store-status: OVERRIDE$' <<< "$out"; then
+    ok "HANDOFF_DIR 仍是合法 override"
+else bad "HANDOFF_DIR override 被舊 store 擋下（${out}）"; fi
 
 rm -rf "$HFS_HOME/.agents/handoffs"
 ln -s ../.claude/handoffs "$HFS_HOME/.agents/handoffs"
 out="$(HOME="$HFS_HOME" "$HFS_SCRIPT" store)"
-assert_rc "canonical symlink 指向 legacy → exit 0" 0 $?
+assert_rc "canonical symlink 指向舊路徑 → exit 0" 0 $?
 if grep -q '^store-status: SHARED$' <<< "$out"; then
-    ok "同一實體 store 可由兩個相容路徑共同使用"
-else bad "同實體 store 被誤判 split（${out}）"; fi
+    ok "同一實體 store 可由兩個路徑共同使用"
+else bad "同實體 store 被誤判（${out}）"; fi
+
+rm -f "$HFS_HOME/.agents/handoffs"
+mv "$HFS_HOME/.claude/handoffs" "$HFS_HOME/.agents/handoffs"
+ln -s ../.agents/handoffs "$HFS_HOME/.claude/handoffs"
+out="$(HOME="$HFS_HOME" "$HFS_SCRIPT" store)"
+assert_rc "舊路徑 symlink 指向正式 store → exit 0" 0 $?
+if grep -qF "handoff-dir: $HFS_HOME/.agents/handoffs" <<< "$out" \
+    && grep -q '^store-status: SHARED$' <<< "$out"; then
+    ok "舊路徑只是指向正式 store 的 alias 時照常使用正式 store"
+else bad "舊路徑 alias 被誤判需要升級（${out}）"; fi
 
 
 echo "▶ 13. handoff-anchor.sh 錨點驗證與生命週期判定"

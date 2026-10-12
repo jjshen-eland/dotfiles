@@ -38,7 +38,7 @@ home alias 或路徑進入 repo 時，兩個 helper 一併跳過，其他安全 
 | `${CODEX_HOME:-~/.codex}/rules` | 實體 root；repo default 為 `dotfiles.rules`，其他為 `dotfiles-<name>`；`default.rules` 是可寫的個人規則檔 |
 | `~/.agents/handoffs` | 正式實體 store，保留 active／archive／附檔及 mode／mtime；明示 HANDOFF_DIR 仍由 skill 處理 |
 
-目前交付 migration 階段；handoff resolver 的 legacy fallback 保留至 fleet 遷移驗收完成。
+handoff resolver 已不再沿用舊的 `~/.claude/handoffs`：它仍以獨立實體存在時 `store` 回報 `NEEDS_UPGRADE` 並停下，執行共用部署入口（`scripts/ensure-runtime.sh`，dotsync／brewup 會呼叫）完成遷移後再用；舊 archive 命名的 reader 保留。
 不須逐台重跑完整 setup 或安裝 CLI。套件、登入、trust、plugins 與 config.local.toml 不由 layout 遷移。
 
 權威 `claude/settings.json` 設 `syncClaudeAiSkills: false`，停用 claude.ai skills 的下載與載入；
