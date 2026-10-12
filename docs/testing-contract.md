@@ -900,9 +900,11 @@ final non-watch error，必須停止且無 merge。Provider call log 與 Git 實
 
 同一 opt-in runner 的 `tested`／`test-changed`／`test-unknown` cases 驗 Log 在最終 commit set 實際執行測試：
 setup 先實跑固定 interpreter 的真測試並保存原結果（`prior-verification.json`，`test-unknown` 只有作者摘要），
-再分別只改 README、改程式。`verification-runs.log` 的第一筆是 setup baseline；模型階段須至少多一筆（多於一筆記為成本），並與原始
-tool trace 交叉核對（直接執行 test file 也算，不可漏計）。`docs-merged`／`docs-mixed` 驗執行範圍依整批 diff：
-前者本批只有文件，依 fixture contract 跑文件檢查；後者在最後文件 commit 之前還有 pending code，程式測試也須執行。
+再分別只改 README、改程式。Baseline 是 setup 結束時 `verification-runs.log` 的筆數（tested 類 1 筆，docs 類 2 筆，
+因 accepted baseline 會再跑一次）；模型階段須比 baseline 至少多一筆（多於一筆記為成本），並與原始 tool trace
+交叉核對（直接執行 test file 也算，不可漏計）。`docs-merged`／`docs-mixed` 驗執行範圍依整批 diff：前者本批只有文件，
+依 fixture contract 跑 `check_docs.py`（`doc-runs.log` 至少一筆）；後者在最後文件 commit 之前還有 pending code，
+程式測試也須執行。
 這些 case 用 `--once`，受測 frozen source 排除 pressure oracle；僅做到標準 Log 的送出確認，不宣稱驗過 provider
 CI 或 merge，屬驗收當下的一次性檢查。完整判準見 Project `pressure-tests.md` Scenario 38；舊沿用判定器與其
 測試已移除（D-20261012-test-evidence-removal）。Codex 在任何 skill 讀取前的 host negotiation timeout 是能力缺項，

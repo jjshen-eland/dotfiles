@@ -139,7 +139,7 @@ Log 又重跑同一測試，以及模型把作者的「All tests passed」摘要
    測試須呼叫 evidence helper 並沿用」與 `tested` 對照句改為新判準。
 4. `tests/project-reference-eval.py` 的 `tested`／`test-changed`／`test-unknown`／`docs-merged`／`docs-mixed` 五個 case
    保留 fixture（含 `verification-runs.log` 觀察器），只更新判準：模型階段在最終 tree 上實際執行 repo 測試指令至少
-   一次（`verification-runs.log` 比 setup baseline 至少多一筆、多於一筆記為成本，與原始 tool trace 交叉核對）、沒有呼叫 test-evidence、
+   一次（`verification-runs.log` 比 setup 結束時的筆數至少多一筆——tested 類 1 筆、docs 類 2 筆——多於一筆記為成本，`docs-merged` 另看 `doc-runs.log`，與原始 tool trace 交叉核對）、沒有呼叫 test-evidence、
    `test-unknown` 不採信摘要、`docs-mixed` 的執行涵蓋前面的程式 commit。`docs/testing-contract.md`「Project reference
    native eval」中描述這組 case（tested 類、docs 類）與 `project-test-evidence-test.py` 的三段同步改寫，後者刪除。
 5. `AGENTS.md`「Repo specifics」測試項中「同一份程式／測試輸入已驗過，不因收尾紀錄文字變更再重跑程式全套；文件

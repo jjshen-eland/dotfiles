@@ -46,7 +46,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 - **Writer**：`claude:delivery-overhead`
 - **Workspace**：`branch=refactor/project-test-evidence-removal`
-- **Write Scope**：.doc-governance.json, shared/skills/project/, claude/skills/project/, codex/skills/project/, tests/, docs/testing-contract.md, docs/plans/2026-10-12-project-process-reduction.md, AGENTS.md（僅計畫第 2 步細節第 5 點那一句）
+- **Write Scope**：.doc-governance.json, shared/skills/project/, claude/skills/project/, codex/skills/project/, tests/, docs/testing-contract.md, docs/plans/2026-10-12-project-process-reduction.md, docs/archive/, AGENTS.md（僅計畫第 2 步細節第 5 點那一句）
 - **Dossier Steward**：`claude:delivery-overhead`
 - **寫入協調**：2026-10-12 使用者依序指派新 session 接續本項，前任 session 已停止；沿用同一 workline 代號；Workspace 隨每步實作 branch 更新。
 - **Context**：2026-10-12 依風險分層的唯讀評估顯示，2026-09-01 起工時約 53% 在流程本身、產品與機隊部署約 12%；逃到機隊的事故都由部署輸出、canary 或使用者發現，沒有被流程 gate 攔下；多數流程 gate 的實地紀錄誤擋多於攔截。證據與方法見計畫「評估摘要」。
