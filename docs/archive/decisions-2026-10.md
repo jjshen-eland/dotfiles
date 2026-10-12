@@ -486,3 +486,8 @@
   - 放棄:繼續沿用舊 store（兩個 runtime 可能各讀一邊）；偵測到舊 store 時自動搬移（搬移應交給有 transaction 與備份的遷移工具）
   - 重議:出現無法執行共用部署入口、只能沿用舊 store 的機器；或舊 archive 命名有了無歧義轉換方法
   - 關聯:supersedes:D-20260823-portable-handoff-skill 的預設 store fallback 部分;D-20260917-terminal-macbooks-outside-inventory;M-20261007-inventory-handoff-cleanup-ready;M-20261007-macs-runtime-layout-accepted;docs/plans/2026-10-06-runtime-layout-convergence.md;shared/skills/handoff/scripts/handoff-anchor.sh
+- **D-20261012-repo-ignore-baseline · 2026-10-12 暫存目錄與工具快取由全域與各 repo 兩層都忽略**:使用者定下原則：慣例上沒有人會 commit 的位置（暫存目錄、工具快取），全域 gitignore 必須守住，各 repo 的 `.gitignore` 也預設加入。基線為 `tmp/`、`__pycache__/`、`*.py[cod]`、`.pytest_cache/`、`.ruff_cache/`、`.mypy_cache/`、`.venv/`、`.DS_Store`、`.env`；`git/gitignore_global` 補上原本沒有的 `tmp/` 與三個測試／lint 快取。各 repo 只補缺項、不改既有規則；krepo 已全數涵蓋。起因是盤點時發現 12 個 repo 只有 2 個忽略 `tmp/`：transfer 的判分檔與 credential 檔放在 `tmp/` 時會變成 untracked，造成 `--base` 選測退回全套、移交判不過，也有隨 Log 被 commit 的風險；只靠全域規則時，沒有這份全域設定的同事 clone 會重新暴露同樣問題。兩層都設之後，transfer 現有的「必須被忽略且未 tracked」檢查在各 repo 可以通過，判分檔與 credential 檔不必搬出 repo。探測缺項時只看 root `.gitignore`：pytest 與 ruff 會在快取目錄裡放自己的 `.gitignore`，直接在工作樹探測會誤判為已忽略。
+  - 日期來源:direct
+  - 放棄:只靠全域 gitignore（移交給同事或新主機時失效）；把 transfer 判分檔與 credential 檔搬到 repo 外（`tmp/` 被忽略後不再需要）；把 `node_modules/` 等語言專屬項目放進基線（各 repo 依語言自行加入，全域已涵蓋）
+  - 重議:出現需要 commit 到 `tmp/` 或上述快取路徑的正當用途
+  - 關聯:git/gitignore_global;.gitignore;docs/plans/2026-10-12-content-continuity-redesign.md;shared/skills/project/references/transfer-workflow.md

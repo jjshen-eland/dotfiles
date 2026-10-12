@@ -34,6 +34,9 @@ __pycache__/
 *.egg-info/
 venv/
 .venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 
 # 資料庫
 *.sqlite
@@ -44,6 +47,7 @@ venv/
 .codex
 
 # 其他
+tmp/
 *.log
 .cache/
 

@@ -208,10 +208,11 @@ B-20260928-project-merge-continuation（steward／resume 誤擋，P2 後不再�
 
 - krepo-mops-financial-statements：已採用文件治理、仍是舊 kernel 與四欄 contract。觸發條件：使用者告知其開發完成、
   工作樹淨空。屆時一次做完 P1 與 P2b（kernel 換 dotfiles 現版、Goal contract、STATUS 刪四欄、scanner 與受信任版本
-  一致）。
+  一致）。同批補 D-20261012-repo-ignore-baseline 的缺項：`.mypy_cache/`、`.DS_Store`。
 - kapi-nc-v2：2026-10-12 尚未採用文件治理（無 `.doc-governance.json`、scanner 與 kernel 區塊），準備在通過驗證後
   取代現行 NC 成為生產 repo。觸發條件：該 repo 上線並採用文件治理時，直接套 dotfiles 現版 kernel 與只要求 `Goal` 的
-  contract，沒有舊 contract 需要關閉。
+  contract，沒有舊 contract 需要關閉。同批補 D-20261012-repo-ignore-baseline：default branch 還沒有 `.gitignore`，
+  feature branch 的版本缺 `tmp/`、`.env`（`.env` 目前只靠本機全域 gitignore 擋住）。
 
 ### P2b：其他受治理 repo 同步（P2 合併後緊接）
 
