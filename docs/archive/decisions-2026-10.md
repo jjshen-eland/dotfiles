@@ -476,3 +476,8 @@
   - 放棄:維持關閉（失去兩項完成狀態檢查，而它們不依賴身分欄位）
   - 重議:Goal 必填在其他受治理 repo 造成誤擋，或需要更多必填欄位
   - 關聯:supersedes:D-20261012-dotfiles-active-item-contract-off 的關閉部分;D-20261012-steward-identity-removed;GitHub#309;docs/plans/2026-10-12-content-continuity-redesign.md
+- **D-20261012-setup-adopt-review-dropped · 2026-10-12 Setup 工具對齊結案，不做既有自裝工具的 adopt／keep 整理**:使用者選定 STATUS「Setup 工具與 agent shell 環境對齊」以 M-20261010-setup-fleet-complete 結案（14／14 主機部署與重跑驗收、PR #297 合併），原列為下一步的「歷史工具歸屬／用途核對，列出需使用者判定的 adopt／keep」不做。該項不屬原驗收條件，且 Constraints 已定預設：未經確認的既有工具不納管、不移除、不升級，不整理時現狀仍安全。
+  - 日期來源:direct
+  - 放棄:改成 backlog 等觸發（使用者選擇不保留）；逐台列出自裝工具交使用者判定（需 SSH 盤點，無對應痛點）
+  - 重議:有主機需要把自裝工具納入 setup 管理，或自裝工具與 setup 納管工具發生衝突
+  - 關聯:M-20261010-setup-fleet-complete;docs/repo-guide.md
