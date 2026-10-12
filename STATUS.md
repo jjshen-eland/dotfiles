@@ -61,7 +61,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
   7. 會改共用 skill 的第 2–5 項重跑受影響 eval，Claude Code 與 Codex 各實跑一次 Log 比對行為、reader bytes 與耗時。
 - **Constraints**：不新增 gate 或機檢；不改 `scripts/doc-governance.py` 受信任 scanner（fleet byte-identical）與 kernel managed block；controller 測試隨所測腳本移除，不單獨刪；branch protection 與 required checks 調整需另經具名授權。claude/settings.json 的 runtime drift 不帶進 commit（dotsync／brewup 會丟棄）。item 2／4 不在本項範圍。本 Spec 未授權任何 commit、push、PR、merge 或部署。
 - **進度**：原計畫第 1、2 項已合併（M-20261011-ci-platform-matrix-merged）；第 3 項不實作（D-20261012-record-rules-dropped）；第 5、6 項合併為本版驗收（D-20261012-project-reduction-scope）；deep-plan 路由見 D-20261012-deep-plan-full-review-routing。第 1 項已合併（PR #310，關閉 active-item contract；四個 coordination 欄位暫保留，第 4 項調整 dossier 規定時一併決定）；第 2 項已合併（PR #312，收尾改為在最終 commit set 執行測試，D-20261012-test-evidence-removal）；第 3 項清點後全部保留（D-20261012-ship-state-stops-kept）；第 4 項不做（D-20261012-record-reduction-dropped）。另已退役 title-free 召回 ratchet（D-20261012-title-free-recall-ratchet-retired），真實語料排名測試維持現狀（D-20261012-live-corpus-ranking-tests-kept）。
-- **下一步**：第 2 項已合併（PR #312）；第 3 項清點後不移除（D-20261012-ship-state-stops-kept）。第 4 項不做（D-20261012-record-reduction-dropped）；接著做第 5 項（縮減必讀 reference），先量測各段讀取量。
+- **下一步**：第 2 項已合併（PR #312）；第 3 項清點後不移除（D-20261012-ship-state-stops-kept）。第 4 項不做（D-20261012-record-reduction-dropped）；第 5 項（縮減必讀 reference）的主要部分是 steward 文字，依使用者選擇先做 #309（item 5）再處理。
 - **關聯**：[本項計畫](docs/plans/2026-10-12-project-process-reduction.md); [前一版計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285; D-20261012-dotfiles-active-item-contract-off; D-20261010-delivery-overhead-spec; M-20261009-ci-modular-redesign-local; B-20260924-workflow-verification-economy
 
 ### 4. Setup 工具與 agent shell 環境對齊
@@ -77,6 +77,25 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **進度**：PR #297 已 rebase merge 至 `792f154`（修復 manifest stdin 消耗與未使用的 build dependencies 誤擋）；新 HEAD macOS／Ubuntu CI 3m29s／2m04s 全綠，39 個工具／shell 隔離測試通過。14 台 source 與雙端全域指引均同步此版本，core check 掃足 22 項全過。eagle03／db01／ap01／ap02／m4mini／fe01／be01 已完成 plan、限定憑證更新、apply／check／apply／check、原內容保全及 CLI probes；m4mini／be01 新增 Claude Code 2.1.295。七台 ca-certificates 活躍 opt target 均為 2026-09-25，其餘既有套件版本不變、舊憑證 keg 留存；shell 原內容／mode 與 settings hash 保留。macmini 已完成 fresh inventory、plan、apply／check／apply／check，新增 actionlint 1.7.12／ast-grep 0.50.0；92 個既有 Homebrew 套件（含 ca-certificates 2026-08-13）版本不變，雙 shell CLI probes 通過，第二次完整 snapshot 相同。
 - **下一步**：先讀 M-20261010-setup-fleet-complete，將待辦限制在歷史工具歸屬／用途核對；依已有 plan／ledger 的非秘密事實列出需使用者判定的 adopt／keep，沒有當批授權不做 SSH／更新／移除。
 - **關聯**：item 2 Runtime 目錄收斂；item 3 #285；[環境使用說明](docs/repo-guide.md)
+
+### 5. steward 機制改為內容契約，移交給同事為重點（#309）
+
+- **Writer**：`claude:delivery-overhead`
+- **Workspace**：`branch=docs/issue-309-continuity-plan`
+- **Write Scope**：shared/skills/project/, claude/skills/project/, codex/skills/project/, tests/, claude/evals/, docs/testing-contract.md, docs/project-spec.md, docs/document-governance.md, AGENTS.md, claude/CLAUDE.md, codex/AGENTS.md（kernel 段需使用者核定）, docs/plans/2026-10-12-content-continuity-redesign.md, docs/archive/；P1 另含各受治理 repo 的 .doc-governance.json
+- **Dossier Steward**：`claude:delivery-overhead`
+- **Context**：使用者同時用 Codex 與 Claude，現行 steward 機制以 actor 身分授權，造成大量無判斷價值的確認題，卻不檢查接手真正需要的內容；移交給同事的需求即將出現。評估見計畫「評估摘要」。
+- **Goal**：任何 runtime、session、主機只靠 repo 接續進行中的工作；移交給新同事後，repo 足以讓接手者掌握全貌並通過可機械判定的接手驗收。
+- **Acceptance Criteria**：
+  1. P1：各啟用 contract 的受治理 repo 關閉 `active_item_contract`，`steward-authority.py` 回 `NOT_APPLICABLE`、`audit --ship` OK、該 repo 測試通過。
+  2. P2：shared skill 移除身分授權層，接續改為內容契約；全套測試通過；native case 不出授權確認題且到達原終點；跨 runtime 接續 fixture 通過。
+  3. P3：移交流程與指南改為讓接手者掌握全貌，含接手驗收題組；fixture repo 實跑一次移交，題組由 fresh-context agent 作答並以腳本判分全數通過。
+  4. P4：kernel「Shared work」段依使用者核定的逐字內容改寫，`kernel-gate.py` 先紅後綠。
+  5. P5：必讀 reference 讀取量與一筆真實交付耗時改善前後已量測。
+- **Constraints**：不新增接續相關的機檢或 gate；不改受信任 scanner；kernel 安全底線不動；各 repo 的 push／PR／merge 須另經具名批次授權；P2 實作前跑一批 deep-plan。claude/settings.json 的 runtime drift 不帶進 commit。本 Spec 未授權任何 commit、push、PR、merge 或部署。
+- **進度**：評估完成，使用者選定 D-20261012-content-continuity-model、D-20261012-handover-to-colleague-focus、D-20261012-kernel-shared-work-rewrite；計畫為 draft。
+- **下一步**：取得 P1 各 repo 的批次授權範圍（push／PR／merge），再逐 repo 關閉 `active_item_contract`。
+- **關聯**：[本項計畫](docs/plans/2026-10-12-content-continuity-redesign.md); GitHub #309; item 3 #285 第 5 步依賴 P2
 
 ## 暫停中
 
