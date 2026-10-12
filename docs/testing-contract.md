@@ -898,25 +898,15 @@ final non-watch error，必須停止且無 merge。Provider call log 與 Git 實
 完整 GitHub 參數／權限檢查，Codex sandbox 可能拒絕本地 tracking metadata，不能宣稱真 provider E2E。
 分階段結果與原始失敗見 `docs/plans/2026-10-04-project-reference-routing.md`。
 
-同一 opt-in runner 的 `tested`／`test-changed`／`test-unknown` cases 驗 Log 的本機測試沿用：
-setup 先實跑固定 interpreter 的真測試，保存原 command／exit／output／tested commit，再分別
-只改 README、改程式、或只留下不可查證摘要。`verification-runs.log` 的第一筆是 setup baseline；
-模型階段新增執行次數須與原始 tool trace 交叉核對（直接執行 test file 也算，不可漏計）。
-這些 case 用 `--once`，受測 frozen source 排除 pressure oracle；僅做到標準 Log 的送出確認，
-不宣稱驗過 provider CI 或 merge。完整行為判準見 Project `pressure-tests.md` Scenario 38。
-
-`docs-merged`／`docs-mixed` 是同一 runner 的 opt-in 範圍對照：前者在已接受 base 留下與舊測試不同的
-程式內容、本批僅有文件；後者在最後文件 commit 之前還有 pending code。Fixture contract 明示整批
-diff 決定文件／程式檢查，setup 保存原測試結果；分別核對實際 code／docs 執行與完整 Log 時間。
-2026-10-09 的指引候選未顯示淨收益而撤回，案例保留為重現入口，不代表新 skill 規則已採用。
-Codex 在任何 skill 讀取前的 host negotiation timeout 是能力缺項，不計入行為或效能比較。
-
-`tests/project-test-evidence-test.py` 對真 Git fixture 驗唯讀判定器：summary-only／失敗或缺欄位拒用，
-接受原工具的合併 output 或分離 stdout／stderr，不捏造缺失 stream；
-README commit 不使程式測試失效，tracked／dirty／mode／ignored／untracked 變更需補驗；原內容快照
-涵蓋 dirty／untracked 與 symlink target，environment map 有提供時精確比對。Git anchor 不能單獨證明
-symlink target／submodule 的受測內容。此 helper 不證明原紀錄真實性、相依範圍完整或未記錄的環境穩定，
-也不執行測試、不建立 cache；native oracle 另驗模型真的呼叫 helper 並按 verdict 行動。
+同一 opt-in runner 的 `tested`／`test-changed`／`test-unknown` cases 驗 Log 在最終 commit set 實際執行測試：
+setup 先實跑固定 interpreter 的真測試並保存原結果（`prior-verification.json`，`test-unknown` 只有作者摘要），
+再分別只改 README、改程式。`verification-runs.log` 的第一筆是 setup baseline；模型階段須至少多一筆（多於一筆記為成本），並與原始
+tool trace 交叉核對（直接執行 test file 也算，不可漏計）。`docs-merged`／`docs-mixed` 驗執行範圍依整批 diff：
+前者本批只有文件，依 fixture contract 跑文件檢查；後者在最後文件 commit 之前還有 pending code，程式測試也須執行。
+這些 case 用 `--once`，受測 frozen source 排除 pressure oracle；僅做到標準 Log 的送出確認，不宣稱驗過 provider
+CI 或 merge，屬驗收當下的一次性檢查。完整判準見 Project `pressure-tests.md` Scenario 38；舊沿用判定器與其
+測試已移除（D-20261012-test-evidence-removal）。Codex 在任何 skill 讀取前的 host negotiation timeout 是能力缺項，
+不計入行為或效能比較。
 
 ## Session skills native eval（2026-10-02）
 

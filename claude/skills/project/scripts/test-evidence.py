@@ -1,1 +1,0 @@
-../../../../shared/skills/project/scripts/test-evidence.py

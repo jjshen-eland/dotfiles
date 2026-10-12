@@ -431,3 +431,8 @@
   - 放棄:移到 document-regression（減量有限、無新增保護、推翻 synthetic／corpus 分工）；比照 title-free 立即退役（尚無誤擋，沒有實際痛點）
   - 重議:任一項因語料變動而非 scanner 退步變紅，即比照 D-20261012-title-free-recall-ratchet-retired 退役
   - 關聯:D-20261012-title-free-recall-ratchet-retired;tests/fixtures/doc-governance/retrieval.tsv;docs/testing-contract.md
+- **D-20261012-test-evidence-removal · 2026-10-12 Project 收尾改為在最終 commit set 一律執行測試，移除 test-evidence 沿用協定**:使用者在量測後選定移除。2026-10-04 起 9 個 repo、96 個 Log run 中 38 個使用協定：協定成本約 76.6 分鐘，主要是組指令與 evidence JSON 的模型生成時間；REUSE 扣除剛跑完同一測試的情形後實際省下約 10.0 分鐘；NEED_TEST 73 次協定照付、測試照跑。改為一律執行後，48 個原本沒跑測試的 run 估計新增約 19.5 分鐘；合計淨效益約 −47 分鐘，9 個 repo 中 8 個為負，krepo-judicial 約 +0.4 分鐘、接近打平。各 repo 全套測試耗時中位數 11–62 秒。D-20261004-project-reuse-mechanical-adoption 的重議條件要求遇到錯用或重跑時優先補機械 oracle；本次量測顯示成本來自協定本身而非錯用，故改為移除而非加強。作者摘要冒充證據與引用未重跑的非測試結果，在新規則下都只靠 prose；使用者接受這兩項殘留風險，依據是 9 個 repo 中 8 個有 required status checks 會在 merge 前攔下未執行的測試，改判準後的 native case 只是驗收當下的一次性檢查。量測方法、非測試沿用的成員與變更範圍見 `docs/plans/2026-10-12-project-process-reduction.md`「第 2 步細節」。
+  - 日期來源:direct
+  - 放棄:保留協定（9 個 repo 中 8 個淨效益為負）；只在 dotfiles 移除（協定位於全機隊共用 skill）；量測前照原計畫移除（前提只在 dotfiles 驗證過）；移除 tested 類 native case（會失去觀察摘要冒充證據的唯一入口）
+  - 重議:出現全套測試耗時遠高於協定成本的受治理 repo，且收尾重跑成為該 repo 交付的主要成本；或改判準後的 native case 顯示模型以摘要或先前結果代替執行
+  - 關聯:supersedes:D-20261003-project-test-evidence-reuse;supersedes:D-20261004-project-reuse-mechanical-check;supersedes:D-20261004-project-reuse-mechanical-adoption;D-20261003-project-reuse-evidence-boundary;M-20261004-project-test-evidence-reuse;docs/plans/2026-10-12-project-process-reduction.md

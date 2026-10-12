@@ -5,8 +5,8 @@
 - 狀態：approved
 - 種類：implementation plan
 - Writer／Dossier Steward：`claude:delivery-overhead`（前任 session 已停止，使用者依序指派本 session 接續）
-- Workspace：`branch=docs/process-redesign-assessment`（本計畫與決策紀錄）；各步實作另開 branch
-- 基線：origin/main `8c31ebd`
+- Workspace：各步實作各開 branch，現行 branch 以 STATUS.md 第 3 項為準
+- 基線：評估於 origin/main `8c31ebd`；第 1 步合併後為 `362db97`
 - 需求來源：使用者 2026-10-12 要求以資深工程師從頭設計的角度評估本 repo 的提交、驗證與 CI 流程（依風險分層），
   並決定 #285 第 3、5、6 項去留；評估後選定 D-20261012-record-rules-dropped、
   D-20261012-dotfiles-active-item-contract-off、D-20261012-project-reduction-scope、
@@ -35,7 +35,7 @@ gate 只放在「錯了代價高、實際發生過、能機械判定」的地方
   fix 有 112 顆修流程；281 個 merged PR 中 46 個只改紀錄。方法：`git log --first-parent --numstat origin/main`
   依路徑分類；`gh pr list --state merged --json files`。
 - 工時：Codex／Claude 本機 transcript 以「user 訊息到下一則 user 訊息」分段（959 段），扣 >30 分鐘間隔，依修改
-  路徑與觸發詞分類；誤差 ±5–10 個百分點，Claude 10-10 前無本機 transcript。
+  路徑與觸發詞分類；誤差 ±5–10 個百分點；cwd 為 dotfiles 的 Claude session 在 2026-10-10 以前本機只有零星空 session。
 - 送出成本：51 次真實 `/project`／`$project` 送出，扣 CI 與使用者等待後中位 760 秒；讀 reference 87 秒
   （14.7%）、狀態偵測 96 秒（11.7%）、寫紀錄 47 秒（5.7–8.9%）、本地測試與證據 179 秒（27%）；每次實讀流程
   reference 中位 142 KB、16 次 reader call。10-08 後 Codex 送出中位 338 秒，讀 reference 75 秒成為最大固定成本。
@@ -46,10 +46,11 @@ gate 只放在「錯了代價高、實際發生過、能機械判定」的地方
 - gate 攔截紀錄（archive、issue／PR、transcript）：
   - 全域 pre-commit guard：transcript 中至少 2 次實地擋下在 main commit（2026-09-14 kgi-judicial、10-09 kapi-infra）。
   - steward-authority：實地 3 次，都是自家漏建 active steward；M-20260928-project-merge-production-red-captured 記錄
-    10 次 merge 中 8 次 false STOP。
+    10 次 `$project --merge` 中 8 次在 shipping 前停下，來源是 3 個 repo-set 與 7 個 actor／workline／resume 問題（不全是 steward-authority）。
   - wait-required-enrollment：0 次攔截、3 次誤擋已授權 merge。
   - branch-first.sh：未找到實地攔截。
-  - test-evidence：2 次 NEED_TEST，均未抓到失敗測試；1 次以新 snapshot 配舊 log 判 REUSE 後撤回。
+  - test-evidence：archive 記錄的 2 次 NEED_TEST 均未抓到失敗測試；1 次以新 snapshot 配舊 log 判 REUSE 後撤回（全部
+    verdict 次數見「第 2 步細節」，兩者範圍不同：此處是攔下失敗，彼處是判定次數）。
   - loaded／surface budget：0 次攔截，3 次觸發都調高上限。
   - deep-review 審實際 diff：有真實程式 bug（測試會 `rm -rf` repo、secret 洩漏、handoff 整檔覆寫）。
   - deep-plan：文件型計畫不收斂（第 3 項 6 批 8 輪全 NO-GO，約 4.5 小時 active，reviewer 只佔約 1.1 小時）。
@@ -69,19 +70,99 @@ Claude Code 與 Codex 各實跑一次 Log，比對改前改後的行為、reader
 1. **dotfiles 關閉 active-item contract**：刪除 `.doc-governance.json` 的 `status_schema.active_item_contract`。
    驗收：`audit --ship` OK、`steward-authority.py` 回 `NOT_APPLICABLE`、`./tests/run.sh --base origin/main` 通過。
    STATUS 現有四欄位暫保留（無害），第 4 步調整 dossier 規定時一併決定。回退：還原該行。
-2. **移除 test-evidence 沿用協定**：`/project` 改為一律重跑選中模組（小改動約 19 秒），移除 REUSE／NEED_TEST
-   判定與 snapshot 核對步驟及其專屬測試。驗收：同一固定小改動的 Log 耗時與 reader bytes 下降，測試仍以 exit code
-   判綠紅、選測錯誤或空集合不得假綠。
+2. **移除 test-evidence 沿用協定**（D-20261012-test-evidence-removal）：Log 收尾一律在最終 commit set 上執行
+   target repo 的測試指令，不沿用先前結果；細節見下節「第 2 步細節」。
 3. **ship-state STOP 與 enrollment 逐條清點**：列出每個 STOP 的實地攔截／誤擋紀錄；0 攔截且有其他機制涵蓋者移除。
    `wait-required-enrollment.sh` 先實測 GitHub 在 required checks 未回報前是否拒絕 merge（需另經具名授權開測試
    PR）；拒絕則移除 helper。保留 default branch、protection、doc audit、trusted core mismatch。驗收：每個移除項
-   附攔截紀錄與涵蓋機制；ship-state 測試對保留的 STOP 仍有 RED。
+   附攔截紀錄與涵蓋機制；ship-state 測試對保留的 STOP 仍有 RED。enrollment 的實測需涵蓋 helper 實際接住的分支
+   （exact empty-required 訊息時等待，而非誤停或改走 `--admin`），以及非 dotfiles 的 protection 形態（未開 enforce_admins）。
 4. **紀錄減量**：PR 已承載的實作結果不另寫 M；merge 後的結案不另開補記 PR（併入下一個 PR 或省略）；D／X 照舊。
    同步調整 `log-prepare.md`、`dossier.md` 與流程規定的紀錄（endpoint 未達成的 milestone、移交 conditional owner）。
    驗收：固定小改動的 Log 不再產生紀錄專屬 commit／PR；`find` 對既有主題的命中不退步。
+   相依：`AGENTS.md` portable managed block 的「Debt & known gaps 解決或放棄時移除並寫 history record」、
+   kernel「milestones at event time」與 `shared/skills/project/references/dossier.md`「解決時寫 `M-*`」，規劃時一併處理。
 5. **縮減 reference**：依前四步移除的分支縮減 `/project` 必讀 reference（現為 92–108 KB，`log-prepare.md`
    49,941 B 最大）。驗收：以評估同一回溯方法量改善前後的讀取量與耗時。
 6. **端到端量測**：沿用原第 4 項方法，取改善後一筆真實小改動交付（不為量測製造交付），與 51 次基線比較。
+
+## 第 2 步細節：移除 test-evidence 沿用協定
+
+### 依據（2026-10-12 量測，唯讀、啟發式）
+
+2026-10-04 起真實 repo 的 Codex／Claude session（排除 eval sandbox 與 `codex exec`；兩個 runtime 都自 2026-10-04 起
+納入，含 kapi-infra 的 Claude session）中，9 個 repo 的 96 個 Log run 有 38 個使用協定。協定成本約 76.6 分鐘（其中
+約 72 分鐘是組指令與 evidence JSON 的模型生成時間，helper 執行每次約 0.2–1 秒）；64 次 REUSE 中 34 次發生在剛跑完
+同一測試之後，扣除後實際省下約 10.0 分鐘；73 次 NEED_TEST 協定照付、測試照跑。
+
+改為一律執行後新增的成本：48 個沒用協定、run 內也沒跑測試的 Log run，以各 repo 全套測試耗時中位數計約 19.5 分鐘
+（dotfiles 20 個約 10.7 分鐘，含刪除 `AGENTS.md` 收尾不重跑句的影響；noop／spec 類 run 也計入，屬高估）。合計淨效益
+約 −47 分鐘（前置間隔上限 120 秒時約 −37 分鐘）；9 個 repo 中 8 個為負，krepo-judicial 約 +0.4 分鐘、接近打平。
+各 repo 全套測試耗時中位數 11–62 秒，dotfiles 32 秒。
+
+64 次 REUSE 中有 31 次沿用的結果無法對應到可估耗時的測試：doc-governance `audit --ship`（收尾本來就重跑）、ruff、
+actionlint、`bash -n`、`uv sync`、docker compose config、deploy `--dry-run`、clean-clone suite、dotfiles 的 native
+probe（`/tmp` 下的 clone-native-probe 與 runtime model defaults validation），另約 12 次無法辨識被沿用的指令。
+
+方法：run 起點為含 `$project`／`/project` 的短 user 訊息、終點為下一則真正 user 訊息；協定成本＝helper 呼叫與組
+evidence 指令的前置間隔（上限 600 秒）加執行時間；REUSE 省下的時間取同 repo 同一測試指令的實測耗時中位數，同 run
+內已跑過者計 0。分析腳本與逐筆輸出在評估 session scratchpad，不入庫；暫存遺失時以此方法重算，不補造。
+
+協定的採用依據是 D-20261003-project-test-evidence-reuse、D-20261003-project-reuse-evidence-boundary、
+D-20261004-project-reuse-mechanical-check 與 D-20261004-project-reuse-mechanical-adoption，要解決兩件事：實作已全綠後
+Log 又重跑同一測試，以及模型把作者的「All tests passed」摘要當證據（Sonnet 在 prose 修正後仍犯，見
+`pressure-tests.md` Scenario 38）。後者在新規則下仍是 prose；改判準後的 native case 只是驗收當下的一次性檢查（opt-in，不會持續執行），不宣稱已消除。
+
+使用者核定接受的殘留風險（2026-10-12）：(1) agent 未實際執行就以摘要宣稱通過——舊 helper 只在 agent 主動送證據時才作用，
+不是新增風險；受影響的 9 個 repo 中 8 個有 required status checks（dotfiles 為 classic protection，其餘 7 個為 ruleset），
+未執行的測試在 merge 前由 CI 攔下，僅 kapi-nc-v2 沒有 ruleset 與 workflow；CI 內容與本機測試是否相同未逐一核對。
+(2) 未在本次 Log 重跑的非測試結果被當成驗收引用——影響紀錄與摘要而非送出的程式；規則要求附當時 commit，讀者可以
+`git diff` 核對，但沒有機械檢查。兩者要機械消除都需新增機制（Log 由腳本執行各 repo 測試，或恢復 helper），不採用。
+
+### 變更
+
+1. 刪除 `shared/skills/project/scripts/test-evidence.py`、`claude/skills/project/scripts/test-evidence.py`（逐檔連結；
+   Codex 端是整目錄連結，隨之消失）、`tests/project-test-evidence-test.py`，以及 `tests/modules/project.sh` 的對應
+   檢查與共用腳本清單項、`tests/suites.json` route 中的該路徑。
+2. `shared/skills/project/references/log-prepare.md` Step 3 的「先沿用可用的測試證據，再補驗」段改為：
+   - 在送出的最終 commit set 上執行 target repo contract 宣告的測試與檢查指令（repo 提供選測時依其規則涵蓋整批
+     變更，不只最後一顆 commit），以 exit code 判定；不沿用先前結果，也不以作者摘要代替執行。
+   - repo 沒有宣告時依專案既有測試入口；都沒有就在摘要寫明未驗。
+   - 任一指令非零：不進 Step 4，先修正本批引入的問題並重跑；超出本批範圍則停下回報。
+   - 未在本次 Log 重跑的結果（opt-in native eval／probe、部署 dry-run、clean clone 等）只能附上當時執行的 commit
+     引用，不寫成本批驗收。opt-in native eval 不在 Log 重跑，除非 repo contract 要求。
+   - 保留 kernel「混檔拆分後 clean clone」的條件式驗證與當前 PR HEAD 的 required CI。
+   同步修改：同一 Step 的「核對／補驗完成後……摘要仍交代沿用或補驗的結果」改為交代本次執行的指令與結果；
+   `workflow.md` 階段表 Log 列的「測試證據」改為「測試」。
+3. `shared/skills/project/references/pressure-tests.md`：Scenario 38 改寫為「收尾在最終 commit set 實際執行測試，
+   不以摘要或先前結果代替」，舊判分保留為歷史段並指向 D-20261012-test-evidence-removal；Scenario 39 中「既有有效
+   測試須呼叫 evidence helper 並沿用」與 `tested` 對照句改為新判準。
+4. `tests/project-reference-eval.py` 的 `tested`／`test-changed`／`test-unknown`／`docs-merged`／`docs-mixed` 五個 case
+   保留 fixture（含 `verification-runs.log` 觀察器），只更新判準：模型階段在最終 tree 上實際執行 repo 測試指令至少
+   一次（`verification-runs.log` 比 setup baseline 至少多一筆、多於一筆記為成本，與原始 tool trace 交叉核對）、沒有呼叫 test-evidence、
+   `test-unknown` 不採信摘要、`docs-mixed` 的執行涵蓋前面的程式 commit。`docs/testing-contract.md`「Project reference
+   native eval」中描述這組 case（tested 類、docs 類）與 `project-test-evidence-test.py` 的三段同步改寫，後者刪除。
+5. `AGENTS.md`「Repo specifics」測試項中「同一份程式／測試輸入已驗過，不因收尾紀錄文字變更再重跑程式全套；文件
+   仍驗當前內容。」一句刪除（需使用者核定此處措辭；以 Edit 修改，不動 managed blocks）。刪除後收尾依同項既有規則
+   以 `./tests/run.sh --base <本批基線>` 驗整批差異。
+
+### 驗收
+
+- `rg -n 'test-evidence|REUSE|NEED_TEST|input_snapshot|tested_commit|evidence helper|沿用或補驗|測試證據'`（排除
+  `docs/archive/`、`docs/plans/`）只剩：Scenario 38 歷史段與 `pressure-tests.md` 其他場景既有的驗收歷史敘述、
+  STATUS.md 第 2 項的歷史敘述，以及 `project-reference-eval.py` fixture 中作為誘餌的舊格式先前結果（`prior-verification.json` 欄位）；逐筆列入報告。
+- `./tests/run.sh --base origin/main` 通過、`audit --ship` OK；`log-prepare.md` 改前改後 bytes 列入報告。
+- 行為：改後以 `tests/project-reference-eval.py` 的 `tested`、`test-unknown`、`docs-mixed` 三個 case，各跑 Claude Code
+  樓層模型（Sonnet，依 `claude/evals/README.md` 模型樓層政策）與 Codex production model 一次，依上列判準判分；
+  改前行為以 Scenario 38 既有紀錄為對照（`tested` 額外執行 0 次）。記錄 alias、resolved model、effort、CLI 版本、
+  reader bytes 與耗時。
+- 散佈：本機 `~/.claude/skills`、`~/.agents/skills` 連到主 checkout，實作 branch 在主 checkout checkout 時即對本機
+  所有 session 生效；其他主機於合併並 dotsync 後生效。生效前已載入舊指令的 session 呼叫不存在的 helper 會得到
+  exit 2，舊文字會解讀成檢查錯誤而停下，屬暫時、會自行消失的影響，不另做相容殼。
+
+### 回退
+
+revert 該 PR 即恢復 helper、測試與指令；無資料遷移。
 
 ## 不做
 
@@ -101,5 +182,6 @@ Claude Code 與 Codex 各實跑一次 Log，比對改前改後的行為、reader
 ## 寫入範圍
 
 `.doc-governance.json`、`shared/skills/project/`、`claude/skills/project/`、`codex/skills/project/`、`tests/`、
-`docs/testing-contract.md`、本計畫、STATUS.md 第 3 項、`docs/archive/`。`tests/` 與 `docs/testing-contract.md` 與
+`docs/testing-contract.md`、`AGENTS.md`（僅第 2 步細節第 5 點那一句，需使用者核定）、本計畫、STATUS.md 第 3 項、
+`docs/archive/`。`tests/` 與 `docs/testing-contract.md` 與
 STATUS 工作項「Setup 工具與 agent shell 環境對齊」重疊，同一 steward 依序進行。
