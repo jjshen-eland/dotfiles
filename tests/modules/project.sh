@@ -397,6 +397,23 @@ if [ -x "$project_transfer_credential_audit" ]; then
     project_credential_out="$("$project_transfer_credential_audit" \
         "$project_s10/work" unignored-credentials.md 2>&1)"
     assert_rc "project transfer credential artifact 未 ignore → STOP" 1 $?
+    if grep -q '^reason: artifact-is-not-ignored$' <<< "$project_credential_out"; then
+        ok "project credential audit 未 ignore 的停止原因正確"
+    else bad "project credential audit 未 ignore 的停止原因不符（${project_credential_out}）"; fi
+
+    # tmp/ 已被 ignore，但被 git add -f 收進 index：仍須擋下，且先於 ignore 判定
+    printf 'fixture-only-tracked-secret\n' > "$project_s10/work/tmp/tracked-credentials.md"
+    chmod 0600 "$project_s10/work/tmp/tracked-credentials.md"
+    git -C "$project_s10/work" add -f tmp/tracked-credentials.md
+    project_credential_out="$("$project_transfer_credential_audit" \
+        "$project_s10/work" tmp/tracked-credentials.md 2>&1)"
+    project_credential_rc=$?
+    git -C "$project_s10/work" rm -q --cached tmp/tracked-credentials.md
+    assert_rc "project transfer credential artifact 已 tracked → STOP" 1 "$project_credential_rc"
+    if grep -q '^reason: artifact-is-tracked$' <<< "$project_credential_out" \
+        && ! grep -q 'fixture-only-' <<< "$project_credential_out"; then
+        ok "project credential audit 已 tracked 的停止原因正確且不洩漏值"
+    else bad "project credential audit 已 tracked 的停止原因不符（${project_credential_out}）"; fi
 
     ln -s ../.env "$project_s10/work/tmp/symlink-credentials.md"
     project_credential_out="$("$project_transfer_credential_audit" \

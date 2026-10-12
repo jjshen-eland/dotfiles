@@ -8,6 +8,7 @@ usage: grade-handover.py --spec <transfer-acceptance.json> --answers <answers.js
 (exit 3, verdict: NEEDS_CONFIRMATION) so the giver can check they are read-only local checks first.
 With --allow-exec each runs in the clone with a minimal environment (no caller variables, a throwaway
 HOME, no stdin) and a timeout. Run only against a disposable clone.
+A spec inside a git repo must be gitignored and untracked, otherwise the run is BROKEN.
 Exit 0 = every question passed, 1 = at least one failed, 2 = malformed input, 3 = confirmation needed.
 """
 
@@ -26,6 +27,22 @@ def broken(reason):
     print(f"reason: {reason}")
     print("verdict: BROKEN")
     sys.exit(2)
+
+
+def require_private_spec(path):
+    """Expected answers must never reach git: inside a repo the spec is gitignored and untracked."""
+    spec = pathlib.Path(path).resolve()
+    top = subprocess.run(["git", "-C", str(spec.parent), "rev-parse", "--show-toplevel"],
+                         capture_output=True, text=True)
+    if top.returncode != 0:
+        return
+    root = pathlib.Path(top.stdout.strip()).resolve()
+    rel = str(spec.relative_to(root))
+    if subprocess.run(["git", "-C", str(root), "ls-files", "--error-unmatch", "--", rel],
+                      capture_output=True).returncode == 0:
+        broken("spec is tracked by git")
+    if subprocess.run(["git", "-C", str(root), "check-ignore", "-q", "--", rel]).returncode != 0:
+        broken("spec is inside a git repo but not gitignored")
 
 
 def load(path, what):
@@ -105,6 +122,7 @@ def main():
     parser.add_argument("--allow-exec", action="store_true")
     parser.add_argument("--timeout", type=int, default=300)
     args = parser.parse_args()
+    require_private_spec(args.spec)
     spec = load(args.spec, "spec")
     validate(spec)
     answers = load(args.answers, "answers")

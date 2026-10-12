@@ -136,6 +136,40 @@ class GradeHandoverTest(unittest.TestCase):
         self.spec["questions"].append({"id": "Q1", "kind": "answer", "contains": ["x"]})
         self.assertEqual(self.grade().returncode, 2)
 
+    def giver_spec(self, ignore_tmp):
+        # A host without any global or XDG excludes: only the repo's own .gitignore counts.
+        root = pathlib.Path(self.tmp.name)
+        repo = root / "giver"
+        env = dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1",
+                   XDG_CONFIG_HOME=str(root / "xdg"))
+        git = ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@example.invalid"]
+        subprocess.run(["git", "init", "-q", str(repo)], check=True, env=env)
+        (repo / ".gitignore").write_text("tmp/\n" if ignore_tmp else "")
+        subprocess.run(git + ["add", ".gitignore"], check=True, env=env)
+        subprocess.run(git + ["commit", "-qm", "seed"], check=True, env=env)
+        self.spec_path = repo / "tmp/transfer-acceptance.json"
+        self.spec_path.parent.mkdir()
+        return repo, git, env
+
+    def test_spec_inside_repo_must_be_gitignored(self):
+        _, _, env = self.giver_spec(ignore_tmp=False)
+        result = self.grade(env=env)
+        self.assertEqual(result.returncode, 2, result.stdout)
+        self.assertIn("reason: spec is inside a git repo but not gitignored", result.stdout)
+
+    def test_tracked_spec_is_broken(self):
+        _, git, env = self.giver_spec(ignore_tmp=True)
+        self.spec_path.write_text(json.dumps(self.spec))
+        subprocess.run(git + ["add", "-f", "tmp/transfer-acceptance.json"], check=True, env=env)
+        result = self.grade(env=env)
+        self.assertEqual(result.returncode, 2, result.stdout)
+        self.assertIn("reason: spec is tracked by git", result.stdout)
+
+    def test_ignored_untracked_spec_inside_repo_grades(self):
+        _, _, env = self.giver_spec(ignore_tmp=True)
+        result = self.grade(env=env)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
