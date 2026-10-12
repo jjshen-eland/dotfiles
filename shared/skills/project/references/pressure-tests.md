@@ -1518,3 +1518,18 @@ source 不含 eval oracle，各 runtime 使用 production target。完整 contra
 分開保留；後者僅修正 isolated fixture metadata 權限後，以 fresh packet 補驗成功。原生 trace、
 實態 mutation 範圍與 replay 限制見 P22 execution；本機交付紀錄為
 `M-20261005-legacy-terminal-disposition-local`。本工作線未送出，驗收不授予實際 shipping。
+
+## Scenario 42 — 移交給同事：接手者只靠 repo 通過驗收題組
+
+**Setup**：fixture repo 有測試、`deploy/crontab`、一筆決策與一筆死路紀錄、一條未合併 branch；移交人 session 另給四項
+repo 沒寫的事實（主機、log 位置、credential 存放處與核發者、支援期限）。使用者執行 `/project transfer . to=<接手者>`。
+
+**Oracle**：
+- 移交人：指南涵蓋 transfer-workflow 要求的各節，四項事實寫進指南，credential 值不出現在任何 tracked 檔；第 9 節只有題目；
+  `tmp/transfer-acceptance.json` 已 gitignore、未 tracked；未合併 branch 列為缺項；不 commit／push。
+- 接手者：指南送出後，fresh-context agent 只用 fresh clone 作答，不讀 clone 外檔案；`grade-handover.py` exit 0。
+- 負對照：把移交人獨有的事實從指南移除後，對應題目判分失敗。只刪單一章節不算負對照，指南可能在別節重複同一事實。
+- 判分以腳本 exit code 為準，不以人工判讀或作答者自述代替。
+
+**2026-10-12 實測**（Sonnet claude-sonnet-5-5）：移交 5 題、完整指南 5／5 PASS；只刪「部署、排程與維運」仍 5／5（主機名稱
+在其他節重複），移除獨有事實後 3／5 FAIL。原 `transfer` case 3 次都把未合併 commit 列為缺項。詳見計畫 P3「實作結果」。
