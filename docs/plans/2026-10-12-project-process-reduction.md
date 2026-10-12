@@ -2,7 +2,7 @@
 
 - 日期：2026-10-12
 - 工作項：issue-285-project-process-reduction
-- 狀態：approved
+- 狀態：implemented
 - 種類：implementation plan
 - Writer／Dossier Steward：`claude:delivery-overhead`（前任 session 已停止，使用者依序指派本 session 接續）
 - Workspace：各步實作各開 branch，現行 branch 以 STATUS.md 第 3 項為準

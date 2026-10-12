@@ -736,3 +736,8 @@
   - 日期來源:direct
   - 重議:出現需要跨回合自主續跑到交付的明確需求
   - 關聯:D-20261011-turbo-retired;D-20261011-turbo-direct-deletion;D-20261011-out-of-inventory-reminder-only;PR#304;Issue#285
+- **M-20261012-project-process-reduction-complete · 2026-10-12 #285 /project 流程減量結案**:依風險分層的評估後，原計畫第 1、2 項（模組化選測、CI 平台矩陣）與本版第 1 步（dotfiles 關閉 active-item contract，PR #310）、第 2 步（移除 test-evidence 沿用協定、改在最終 commit set 執行測試，PR #312）已合併；第 3 步清點後全部保留（D-20261012-ship-state-stops-kept），第 4 步不做（D-20261012-record-reduction-dropped）；第 5、6 步由 #309 P5 承擔並完成量測：Log 路徑必讀 reference 由 91,284 B 降為 64,867 B，同一 fixture 的 Sonnet `tested` case 由 12 次 reader／100,308 B 降為 9 次／約 71.3 KB、整輪 60–69 秒降為 52–56 秒；Codex 樣本看不出變快；P2 後真實小改動交付 PR #318 淨耗時 220 秒（51 次基線中位 760 秒），但同 session 在 P2 前已約 200 秒，差距不能歸因於本次改動。第 7 步的 Claude／Codex Log 比對以 #309 P2 的 native eval trace 完成。量測細節見 docs/plans/2026-10-12-content-continuity-redesign.md「P5 量測結果」。
+  - 日期來源:direct
+  - 放棄:none
+  - 重議:Codex 的真實送出出現後，若讀取 reference 仍是最大固定成本，再評估縮減 log-prepare.md
+  - 關聯:GitHub#285;GitHub#309;docs/plans/2026-10-12-project-process-reduction.md;D-20261012-dotfiles-active-item-contract-off;D-20261012-test-evidence-removal;D-20261012-ship-state-stops-kept;D-20261012-record-reduction-dropped;B-20260924-workflow-verification-economy
