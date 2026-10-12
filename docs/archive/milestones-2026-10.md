@@ -751,3 +751,8 @@
   - 放棄:none
   - 重議:任一主機的 deep-plan／deep-review 仍寫入舊位置，或 `~/.agents` 出現未登記的子目錄
   - 關聯:D-20261012-agents-state-registry;D-20261012-repo-ignore-baseline;docs/repo-guide.md;#322;#323
+- **M-20261013-transfer-ignore-guards-tested · 2026-10-13 transfer 的「不得進 git」檢查補上測試，判分器改為機械擋下**:補完 2026-10-12 缺口盤點最後一項（fixture 沿用了與多數實際 repo 不同的 ignore 設定，未進 git 的檢查因此沒被驗到）。`verify-transfer-credential.sh` 原有「未 ignore」測試只看 exit code，補上停止原因 `artifact-is-not-ignored` 的斷言，並新增「`tmp/` 已 ignore 但被 `git add -f` 收進 index」的情境，確認回報 `artifact-is-tracked` 且不洩漏值。判分檔原本只有流程文字要求 gitignored 且未 tracked，`grade-handover.py` 不檢查；現在判分檔位於 git repo 內時，未被忽略或已 tracked 都以 exit 2／BROKEN 停下，測試以停用全域與 XDG excludes 的環境重現沒有全域 gitignore 的主機，實作前兩個新測試皆紅。另補記：M-20261012-agents-state-registry-complete 所述仍保留的本機 `/tmp/deep-review-502/`，已於 2026-10-12 依使用者指示整個刪除；kapi-nc-v2 session 改以新位置開新批次審查。
+  - 日期來源:direct
+  - 放棄:none
+  - 重議:判分檔改放 repo 外，或 transfer 改由工具自動維護 `.gitignore`
+  - 關聯:M-20261012-agents-state-registry-complete;D-20261012-repo-ignore-baseline;shared/skills/project/scripts/grade-handover.py;shared/skills/project/scripts/verify-transfer-credential.sh;tests/project-handover-grade-test.py;tests/modules/project.sh
