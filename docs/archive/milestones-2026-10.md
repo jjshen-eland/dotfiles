@@ -746,3 +746,8 @@
   - 放棄:none
   - 重議:任一主機回報 NEEDS_UPGRADE，或新機安裝後 store 不是 CANONICAL
   - 關聯:docs/plans/2026-10-06-runtime-layout-convergence.md;D-20261012-handoff-store-fallback-removed;D-20260917-terminal-macbooks-outside-inventory;M-20261007-macs-runtime-layout-accepted;M-20261007-inventory-handoff-cleanup-ready;#271
+- **M-20261012-agents-state-registry-complete · 2026-10-12 `~/.agents` 狀態登記與審查紀錄搬移結案，並與 ignore 基線一起散佈 14 台**:PR #323 合併為 `dad1d73`（D-20261012-agents-state-registry），連同先前 PR #322 的全域 gitignore 基線（D-20261012-repo-ignore-baseline），依使用者授權以 dotsync 散佈 inventory 14 台：本機 runtime layout unchanged，遠端 14／14 ✅、0 失敗。逐台唯讀驗收：14 台 revision 皆為 `dad1d73`、dotfiles 工作樹乾淨；以未設覆寫變數的實際函式確認 deep-plan 預設 store 為 `~/.agents/deep-plan`、deep-review 控制紀錄為 `~/.agents/deep-review/control`，`codex-exec-review.sh` 預設 job root 為 `~/.agents/deep-review/codex`；Claude 與 Codex 的 deep-plan／deep-review 入口皆指向 repo 的同一份 shared script；在暫存新 repo 以 `git check-ignore -v` 確認 `tmp/` 與 pytest／ruff／mypy 快取皆由 `~/.gitignore_global` 忽略。首輪以 `git config --global core.excludesFile` 探測時 5 台（eagle07、eagle08、eagle09、fe01、be01）誤判為缺規則：它們經 `include.path` 引入 dotfiles `git/config`，而 `--global` 讀取預設不跟 include；改用實際行為探測後 14 台全數通過。上線前已處理舊資料：本機 `~/.claude/deep-review/`（35 MB、127 個 Codex 工作）與 `/tmp/deep-review-502/` 中 14 個已結束或只剩空殼的批次依使用者指示刪除，索引同步移除對應項目；krepo-mops-financial-statements 的 plan 旁舊 journal 由該 session 確認審查已完成後自行刪除。驗收後依使用者指示刪除 macmini 的 `~/.claude/deep-review/`（1.3 MB）。仍保留的舊位置資料只剩本機 `/tmp/deep-review-502/` 的 kapi-nc-v2-integration FAIL 批次（2.7 MB，新版不再讀取，修完需重開審查），由使用者自行刪除。
+  - 日期來源:direct
+  - 放棄:none
+  - 重議:任一主機的 deep-plan／deep-review 仍寫入舊位置，或 `~/.agents` 出現未登記的子目錄
+  - 關聯:D-20261012-agents-state-registry;D-20261012-repo-ignore-baseline;docs/repo-guide.md;#322;#323

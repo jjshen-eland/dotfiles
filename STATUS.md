@@ -12,17 +12,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-### 1. `~/.agents` 狀態目錄治理與審查紀錄搬出 repo／`/tmp` 🆕
-
-- **Goal**：工具產生、要跨 session 保留的本機狀態一律放 `~/.agents/<skill>/`，每個目錄都有登記的寫入者、內容、保留期與清理者；deep-plan 審查紀錄不再落在 repo 工作樹，deep-review 審查紀錄不再依賴系統清理 `/tmp`。
-- **Acceptance Criteria**：
-  1. `docs/repo-guide.md` 的 runtime 表成為 `~/.agents` 登記表：skills、handoffs、deep-review（控制紀錄與 Codex 工作）、deep-plan 各列寫入者、內容、結束條件、保留期與清理者；新增子目錄須先登記。
-  2. deep-plan 審查紀錄改存 `~/.agents/deep-plan/`，以計畫絕對路徑區分；計畫旁仍有舊 `.<plan>.review/` 時停下並印出路徑，不搬移、不沿用。
-  3. deep-review 控制紀錄改存 `~/.agents/deep-review/control/`，Codex 審查工作改存 `~/.agents/deep-review/codex/`；舊位置不再讀取、不自動刪除。測試用的位置覆寫維持可用。
-  4. 三處都由寫入工具在開新審查時清掉最後更新超過 30 天的紀錄並回報；清理不碰正在被鎖住的紀錄，deep-review 同步移除索引中指向已清紀錄的項目。
-  5. 先寫會紅的重現測試，再實作；`./tests/run.sh --base origin/main` 通過，文件稽核通過，並記決策紀錄。
-- **Constraints**：使用者以「可以開工」授權本地實作，push／PR／merge 與機隊散佈另依當批具名授權。不改審查判準、輪數上限與 review anchor（`.git/deep-review/`）、mktemp 暫存檔的位置。30 天沒有實測依據，比照 handoff archive 保留期。
-- **下一步**：branch `refactor/agents-state-lifecycle` 已完成實作、測試與決策紀錄（D-20261012-agents-state-registry）；送出合併需當批具名授權。合併後經授權散佈到機隊，再寫 milestone 並結案本項。
+目前無進行中項目。
 
 ## 暫停中
 
@@ -44,6 +34,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - 「/project 流程減量與驗證成本（#285）」的結案與量測：[M-20261012-project-process-reduction-complete](docs/archive/milestones-2026-10.md)；計畫 `docs/plans/2026-10-12-project-process-reduction.md` 已凍結。
 - 「Setup 工具與 agent shell 環境對齊」的結案與 14 台驗收：[M-20261010-setup-fleet-complete](docs/archive/milestones-2026-10.md)；未做的 adopt／keep 整理見 D-20261012-setup-adopt-review-dropped。
 - 「Runtime 目錄收斂與 legacy 遷移」的結案與 14 台驗收：[M-20261012-runtime-layout-complete](docs/archive/milestones-2026-10.md)；計畫 `docs/plans/2026-10-06-runtime-layout-convergence.md` 已凍結。
+- 「`~/.agents` 狀態目錄治理與審查紀錄搬出 repo／`/tmp`」的結案與 14 台驗收：[M-20261012-agents-state-registry-complete](docs/archive/milestones-2026-10.md)；登記表在 `docs/repo-guide.md`。
 - 無路徑線索時執行 `scripts/doc-governance.py find '自然語言問題或 stable ID'`；人工 pointer 不作為可檢索性的代理。
 
 ## 待辦入口
