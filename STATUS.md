@@ -81,20 +81,19 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 ### 5. steward 機制改為內容契約，移交給同事為重點（#309）
 
 - **Writer**：`claude:delivery-overhead`
-- **Workspace**：`branch=docs/issue-309-continuity-plan`
+- **Workspace**：`branch=refactor/remove-steward-identity`
 - **Write Scope**：shared/skills/project/, claude/skills/project/, codex/skills/project/, tests/, claude/evals/, docs/testing-contract.md, docs/project-spec.md, docs/document-governance.md, AGENTS.md, claude/CLAUDE.md, codex/AGENTS.md（kernel 段需使用者核定）, docs/plans/2026-10-12-content-continuity-redesign.md, docs/archive/；P1 另含各受治理 repo 的 .doc-governance.json
 - **Dossier Steward**：`claude:delivery-overhead`
 - **Context**：使用者同時用 Codex 與 Claude，現行 steward 機制以 actor 身分授權，造成大量無判斷價值的確認題，卻不檢查接手真正需要的內容；移交給同事的需求即將出現。評估見計畫「評估摘要」。
 - **Goal**：任何 runtime、session、主機只靠 repo 接續進行中的工作；移交給新同事後，repo 足以讓接手者掌握全貌並通過可機械判定的接手驗收。
 - **Acceptance Criteria**：
   1. P1：各啟用 contract 的受治理 repo 關閉 `active_item_contract`，`steward-authority.py` 回 `NOT_APPLICABLE`、`audit --ship` OK、該 repo 測試通過。
-  2. P2：shared skill 移除身分授權層，接續改為內容契約；全套測試通過；native case 不出授權確認題且到達原終點；跨 runtime 接續 fixture 通過。
-  3. P3：移交流程與指南改為讓接手者掌握全貌，含接手驗收題組；fixture repo 實跑一次移交，題組由 fresh-context agent 作答並以腳本判分全數通過。
-  4. P4：kernel「Shared work」段依使用者核定的逐字內容改寫，`kernel-gate.py` 先紅後綠。
-  5. P5：必讀 reference 讀取量與一筆真實交付耗時改善前後已量測。
+  2. P2：移除身分授權層（含移交的 actor 狀態機），接續改為內容契約；kernel「Shared work」段依使用者核定的逐字內容改寫、`kernel-gate.py` 先紅後綠；全套測試通過；native case 不出授權確認題且到達原終點；Writer 為其他 runtime 的 fixture 不阻擋 Log。
+  3. P3：移交指南改為讓接手者掌握全貌，含接手驗收題組；fixture repo 實跑一次移交，題組由 fresh-context agent 作答並以腳本判分全數通過。
+  4. P5：必讀 reference 讀取量與一筆真實交付耗時改善前後已量測。
 - **Constraints**：不新增接續相關的機檢或 gate；不改受信任 scanner；kernel 安全底線不動；各 repo 的 push／PR／merge 須另經具名批次授權；P2 實作前跑一批 deep-plan。claude/settings.json 的 runtime drift 不帶進 commit。本 Spec 未授權任何 commit、push、PR、merge 或部署。
 - **進度**：評估完成，使用者選定 D-20261012-content-continuity-model、D-20261012-handover-to-colleague-focus、D-20261012-kernel-shared-work-rewrite；計畫為 draft。P1 已合併 9 個 repo（kapi-infra #179、kapi-protocol #36、krepo-common #85、krepo-company #61、krepo-judicial #139、krepo-mops-disclosure #115、krepo-mops-major-news #98、krepo-tej-export #11、krepo #192），各 repo authority 回 `NOT_APPLICABLE`、`audit --ship` OK、`unit-tests` 通過；krepo-mops-disclosure 的 ruleset 要求 1 個核准，依使用者指示以 bypass merge（`--admin`）合併。krepo-mops-financial-statements 因工作樹有未 commit 的他人工作未處理。
-- **下一步**：P2（shared skill 移除身分授權層）：先把細節寫進計畫，實作前跑一批 deep-plan。
+- **下一步**：P2 細節已寫進計畫（含 kernel 草稿），跑一批 deep-plan；kernel 逐字內容於 deep-plan 後請使用者核定，再實作。
 - **關聯**：[本項計畫](docs/plans/2026-10-12-content-continuity-redesign.md); GitHub #309; item 3 #285 第 5 步依賴 P2
 
 ## 暫停中
