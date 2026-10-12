@@ -1280,7 +1280,7 @@ baseline 推進 origin，`docs-mixed` 再加一顆改 app.py 的 commit。baseli
 
 這是驗收當下的一次性檢查（opt-in），不是持續執行的防護。
 
-**2026-10-12 驗收**（source `67511ec`，Claude Code 2.1.296、codex-cli 0.162.1，`--once`，兩端 effort high）：
+**2026-10-12 驗收**（source `5074d22`，Claude Code 2.1.296、codex-cli 0.162.1，`--once`，兩端 effort high）：
 
 | Case | Sonnet（claude-sonnet-5-5）新增執行 | Codex（gpt-6.1-sol）新增執行 | 行為 |
 |---|---:|---:|---|
