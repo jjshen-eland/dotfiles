@@ -756,3 +756,9 @@
   - 放棄:none
   - 重議:判分檔改放 repo 外，或 transfer 改由工具自動維護 `.gitignore`
   - 關聯:M-20261012-agents-state-registry-complete;D-20261012-repo-ignore-baseline;shared/skills/project/scripts/grade-handover.py;shared/skills/project/scripts/verify-transfer-credential.sh;tests/project-handover-grade-test.py;tests/modules/project.sh
+- **M-20261013-review-execution-snapshot-local · 2026-10-13 #315 審查執行隔離完成實作與本地驗收，merge pending**:branch `fix/review-diagnostic-isolation` 的 `a5ca616` 加入 `review-scope.sh materialize`、packet `validation_snapshot`、brief／workflow 的 target 執行規則（D-20261013-review-execution-snapshot）。Spec 六條驗收：修前 native eval Codex 2/2 RED（X-20261013-review-import-write-in-target）、修後 Codex 4/4／Claude 2/2 target 全 metadata 零變動且於快照內執行；absent／present 兩情境；判定用 reviewer 啟動前的完整 snapshot（含 ignored、空目錄、mtime、`.git`）；純靜態對照 PASS；既有 fresh-context、metadata 不寫入、retry 額度契約未改。`./tests/run.sh --base origin/main` 選定 18 模組全綠；新測試經突變驗證（拿掉 overlay、target／Git dir 檢查、前置 FRESH、私有 index、snapshot oracle 各自轉紅）。
+  - 日期來源:direct
+  - 證據:native eval artifacts 在當次 session scratchpad，遺失不補造；情境與數字見 deep-review `evals.md` P24
+  - 放棄:none
+  - 重議:未另量「只改 brief、不加 materialize」的對照臂；快照排除 ignored 依賴與 submodule 的邊界在實際 repo 造成大量 incomplete 時重評
+  - 關聯:Issue#315;D-20261013-review-execution-snapshot;X-20261013-review-import-write-in-target;shared/skills/deep-review/evals.md
