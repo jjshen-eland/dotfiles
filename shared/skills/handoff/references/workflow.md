@@ -8,7 +8,8 @@
 - 存放：`<handoff-directory>/<slug>.md`（machine-local；**不放 repo 內**——不污染 git status，跨 repo 工作也只需一份檔多條錨點）。
 - 已消費：`<handoff-directory>/archive/YYYYMMDD-HHMMSS-<原檔名>`（秒級前綴——同日同 slug 二次消費不可互相覆蓋，archive 是 audit trail）。
 - 機制：`<handoff-anchor>` 的 `store` / `survey` / `anchors` / `verify` / `consume`。`store` 判
-  `SPLIT`／`BROKEN` 或任何非零 exit 即 STOP；不可自行挑 canonical 或 legacy 其中一邊。
+  `NEEDS_UPGRADE`／`BROKEN` 或任何非零 exit 即 STOP：`NEEDS_UPGRADE` 代表舊 store 仍在，回報使用者先跑 runtime
+  遷移，不自行搬移或改用舊 store。
 
 ## 模式與引數
 

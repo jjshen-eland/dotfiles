@@ -19,7 +19,7 @@
 #                                              # 底層原語：依 slug 精確定位前一份（active 優先，
 #                                              # 其次 archive 最新一輪）；無命中印 NONE（＝首輪）
 #   handoff-anchor.sh store                     # 解析跨 runtime 共用的 handoff directory；
-#                                              # 偵測 canonical／legacy split-brain 時拒絕
+#                                              # 舊 store 仍為獨立實體時回報 NEEDS_UPGRADE
 #   （SKILL.md 一律走 survey；兩個原語留給除錯與既有守門測試）
 #
 # active 行格式（survey／list 共用，此處為唯一權威）：
@@ -63,9 +63,10 @@ usage() {
     exit 2
 }
 
-# 跨 runtime state store：新安裝用 ~/.agents/handoffs；既有 ~/.claude/handoffs 仍沿用，
-# 避免升級時把 active/archive 歷史靜默切成空目錄。兩者同時存在但不是同一實體時屬
-# split-brain：Claude Code 與 Codex 可能各寫一邊，任何一方的 survey 都會漏資料，故 STOP。
+# 跨 runtime state store 固定為 ~/.agents/handoffs。舊的 ~/.claude/handoffs 已由共用部署
+# 入口遷移；仍以獨立實體存在時代表這台未升級，回報 NEEDS_UPGRADE 並停下，不沿用、不自動
+# 搬移——沿用會讓兩個 runtime 各讀一邊，搬移則應交給有 transaction／備份的遷移工具。
+# 舊路徑若只是指向正式 store 的 alias（同一實體）照常使用。
 STORE_DIR=""; STORE_STATUS=""
 resolve_store() {
     STORE_DIR=""; STORE_STATUS=""
@@ -85,29 +86,21 @@ resolve_store() {
         STORE_STATUS="BROKEN"
         return 1
     fi
-    if [ -e "$legacy" ] && [ ! -d "$legacy" ]; then
-        echo "error: legacy handoff store 不是目錄：$legacy" >&2
-        STORE_STATUS="BROKEN"
-        return 1
-    fi
-    if [ -d "$canonical" ] && [ -d "$legacy" ]; then
-        if [ "$canonical" -ef "$legacy" ]; then
+    if [ -e "$legacy" ] || [ -L "$legacy" ]; then
+        if [ -d "$canonical" ] && [ "$canonical" -ef "$legacy" ]; then
             STORE_DIR="$canonical"
             STORE_STATUS="SHARED"
             return 0
         fi
-        echo "error: canonical 與 legacy handoff stores 同時存在且不是同一實體；先合併或以 symlink 指向同一目錄，拒絕自行選邊" >&2
+        echo "error: 舊 handoff store 仍在且不是正式 store 的 alias：${legacy}；這台尚未完成 runtime 遷移，執行 scripts/ensure-runtime.sh（dotsync／brewup 會呼叫）後再試，不自行搬移" >&2
         echo "handoff-dir-canonical: $canonical"
         echo "handoff-dir-legacy: $legacy"
-        echo "store-status: SPLIT"
+        echo "store-status: NEEDS_UPGRADE"
         return 1
     fi
     if [ -d "$canonical" ]; then
         STORE_DIR="$canonical"
         STORE_STATUS="CANONICAL"
-    elif [ -d "$legacy" ]; then
-        STORE_DIR="$legacy"
-        STORE_STATUS="LEGACY"
     else
         STORE_DIR="$canonical"
         STORE_STATUS="NEW"

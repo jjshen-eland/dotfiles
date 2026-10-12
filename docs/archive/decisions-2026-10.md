@@ -481,3 +481,8 @@
   - 放棄:改成 backlog 等觸發（使用者選擇不保留）；逐台列出自裝工具交使用者判定（需 SSH 盤點，無對應痛點）
   - 重議:有主機需要把自裝工具納入 setup 管理，或自裝工具與 setup 納管工具發生衝突
   - 關聯:M-20261010-setup-fleet-complete;docs/repo-guide.md
+- **D-20261012-handoff-store-fallback-removed · 2026-10-12 handoff 預設 store 固定為正式位置，移除舊 store fallback**:inventory 14 台的正式 store 已驗收（M-20261007-inventory-handoff-cleanup-ready、M-20261007-macs-runtime-layout-accepted），使用者 2026-10-12 告知 inventory 外兩部 MacBook 也已手動完成，`handoff-anchor.sh store` 不再沿用 `~/.claude/handoffs`：它仍以獨立實體存在（只有舊 store，或與正式 store 同時存在）時回報 `NEEDS_UPGRADE`、exit 1，指引執行 `scripts/ensure-runtime.sh` 遷移，不自行搬移或選邊；舊路徑只是指向正式 store 的 alias 時照常使用（SHARED），`HANDOFF_DIR` override 不變。取代 D-20260823-portable-handoff-skill 中「既有 ~/.claude/handoffs 沿用」的預設 store fallback 部分，claims／authorization／archive provenance／consume-once 不變。保留項：舊 archive 命名（`YYYYMMDD-<slug>` 與秒級前綴並存）的 reader，在有無歧義的轉換方法與行為證據前不移除；`ensure-runtime-layout.py` 的 handoff 遷移與 `ensure-codex-skills.sh` 的舊 Codex skills root 清理，是殘留機器的升級路徑，保留到不再有需要升級的機器。
+  - 日期來源:direct
+  - 放棄:繼續沿用舊 store（兩個 runtime 可能各讀一邊）；偵測到舊 store 時自動搬移（搬移應交給有 transaction 與備份的遷移工具）
+  - 重議:出現無法執行共用部署入口、只能沿用舊 store 的機器；或舊 archive 命名有了無歧義轉換方法
+  - 關聯:supersedes:D-20260823-portable-handoff-skill 的預設 store fallback 部分;D-20260917-terminal-macbooks-outside-inventory;M-20261007-inventory-handoff-cleanup-ready;M-20261007-macs-runtime-layout-accepted;docs/plans/2026-10-06-runtime-layout-convergence.md;shared/skills/handoff/scripts/handoff-anchor.sh
