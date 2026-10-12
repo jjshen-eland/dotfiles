@@ -436,3 +436,8 @@
   - 放棄:保留協定（9 個 repo 中 8 個淨效益為負）；只在 dotfiles 移除（協定位於全機隊共用 skill）；量測前照原計畫移除（前提只在 dotfiles 驗證過）；移除 tested 類 native case（會失去觀察摘要冒充證據的唯一入口）
   - 重議:出現全套測試耗時遠高於協定成本的受治理 repo，且收尾重跑成為該 repo 交付的主要成本；或改判準後的 native case 顯示模型以摘要或先前結果代替執行
   - 關聯:supersedes:D-20261003-project-test-evidence-reuse;supersedes:D-20261004-project-reuse-mechanical-check;supersedes:D-20261004-project-reuse-mechanical-adoption;D-20261003-project-reuse-evidence-boundary;M-20261004-project-test-evidence-reuse;docs/plans/2026-10-12-project-process-reduction.md
+- **D-20261012-test-evidence-ci-backstop-caveat · 2026-10-12 test-evidence 移除的 CI 攔截依據限縮為「設有 required status checks」**:更正 D-20261012-test-evidence-removal 中「9 個 repo 中 8 個有 required status checks 會在 merge 前攔下未執行的測試」的表述：已查證的是 8 個 repo 設有 required status checks（dotfiles 為 classic protection，其餘 7 個為 ruleset），各 repo CI 執行的內容是否與本機測試相同未逐一核對，因此 CI 能否攔下 Log 未執行的那些測試屬推論。使用者接受殘留風險的決定不變，依據以本筆為準。
+  - 日期來源:direct
+  - 放棄:直接修改原紀錄（已 commit 的紀錄不可改）
+  - 重議:核對各 repo CI workflow 後發現 required checks 未涵蓋本機測試
+  - 關聯:supersedes:D-20261012-test-evidence-removal 的「會在 merge 前攔下未執行的測試」;docs/plans/2026-10-12-project-process-reduction.md
