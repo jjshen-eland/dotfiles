@@ -196,10 +196,12 @@ def required_references(case, source):
     if (refs / "log-prepare.md").exists():
         if case == "noop":
             return {"workflow.md", "log-workflow.md", "ship-policy.md"}
+        # Sources before the content-continuity redesign also route through authority.md.
+        legacy = {"authority.md"} if (refs / "authority.md").exists() else set()
         if case in {"spec", "transfer"}:
-            return {"workflow.md", "authority.md", "dossier.md", case + "-workflow.md"}
+            return {"workflow.md", "dossier.md", case + "-workflow.md"} | legacy
         expected = {"workflow.md", "log-workflow.md", "ship-policy.md",
-                    "authority.md", "dossier.md", "log-prepare.md", "ship-paths.md"}
+                    "dossier.md", "log-prepare.md", "ship-paths.md"} | legacy
         if case.startswith("merge"):
             expected.add("merge-workflow.md")
         return expected

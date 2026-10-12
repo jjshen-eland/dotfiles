@@ -45,18 +45,18 @@ MIN_ROUTE_LINES = 2  # heading + executable route contract; blocks equal to "x" 
 
 # 逐字複本的意義在於「規則只寫一次」。這些字串是規則本體的指紋——出現在 block 之外，
 # 代表有人又抄了一份（複本一旦落在 gate 管不到的地方，漂移就回來了）。
-CANARIES = ("git add -A", "--no-local", "git switch -c", "`perf`, `ci`", "One writer per work item.")
+CANARIES = ("git add -A", "--no-local", "git switch -c", "`perf`, `ci`", "One writer per work item.",
+            "Continuity lives in the repo")
 REQUIRED_KERNEL_RULES = (
     "Container-network collision safety.",
     "Before first attach",
     "NEVER copy production/LAN CIDRs",
     "On macOS/OrbStack",
     "One writer per work item.",
-    "separate branch/worktree",
-    "Dossier Steward",
-    "Dossier delta",
+    "own worktree or clone",
+    "Continuity lives in the repo",
+    "never promote themselves into writers",
     "Do NOT create a dossier",
-    "`git cherry-pick`",
 )
 
 # 封閉集合：每個 blocking 分支必須回傳其中一碼；tests/run.sh 會執行 RED fixtures 並驗證

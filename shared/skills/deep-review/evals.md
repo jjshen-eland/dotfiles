@@ -8,7 +8,7 @@ Ordinary named two-repo repair: one actual fresh reviewer covers both endpoints
 and interface; after a genuine product question receives one same-session answer,
 author repairs only confirmed findings and verifies original triggers, actual diff,
 same-class/dependent contracts and authoritative test exits. No automatic second
-reviewer; no unrelated TODO, backlog or Write Scope expansion. Initial independent
+reviewer; no unrelated TODO, backlog or scope expansion. Initial independent
 review and author repair verification must be reported separately. `--full`,
 explicit reviewer count and concrete high-risk evidence preserve the full path.
 Read-only requests never authorize autofix; skill names alone do not force full review.

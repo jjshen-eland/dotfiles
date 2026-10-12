@@ -90,7 +90,8 @@ Helper 的 aggregate verdict 採 residue-priority：同一 repo 可能同時是 
   假裝已升格。若既有 native instruction 尚未包含它，這筆未升格候選就是 concrete residue，標 `⚠` 並使
   verdict 為 `NOT READY`；只有讀過 authority、確認已存在才可跳過。
 - project decision／dead end／milestone／known gap／active state／跨主機延續所需 facts → target repo contract 指定的
-  project authority。只有目前 actor 是合法 steward 且 repo 已有 sink 才 additive 寫入；否則列 concrete residue。
+  project authority。只有 repo 已有既定 sink、且 target repo contract 允許本 session 寫入時才 additive 寫入；否則列
+  concrete residue。
 - 只對目前 runtime 有便利價值、遺失不影響 safety／governance／project continuity 的偏好或 reference → optional
   runtime cache。有 supported facility 時 best-effort 新增／純附加；**disabled/unavailable → `skipped`**，不是 residue。
 - 使用者本輪明確提出「記住／保存」的 **explicit retain request**，卻沒有合法 instruction、repo authority 或

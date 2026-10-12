@@ -1,6 +1,6 @@
 # Project Log — 結案準備
 
-已完成唯讀盤點；本檔 prerequisite 為 workflow、ship-policy、authority 與 dossier。
+已完成唯讀盤點；本檔 prerequisite 為 workflow、ship-policy 與 dossier。
 Step 0 結果直接沿用，不重新偵測。
 
 ## Log 模式（/project log，= 舊 /uap 超集）
@@ -106,79 +106,10 @@ These are hard constraints. Read them before touching git.
 
 **Adopted repo**（config + core 兩者皆在）：
 
-1. 先讀 target config 與 active items。若存在 `PREPARED` transfer guide 或 conditional owner `D-*` record，
-   先依 transfer workflow 定位該 record 所在 commit、fetch canonical endpoint 並驗 remote-visible ancestry；
-   未抵達時 active fields 中的 next actor 只是 pending value，effective authority 仍取 guide 的 current steward，
-   查不到證據就 STOP。當次明確順序改派先依 `authority.md`「同機順序 local reassignment」完成角色更新及重驗，
-   不另要Spec invocation或改派確認。其他情況先按 canonical repo root 查找 shared workflow 在同一段未壓縮對話
-   為這條 logical workline 封存的 **current-session binding packet**；有 packet 時必須**先消費該 binding packet、不得先回退到 branch-derived actor**。
-   逐 repo 重讀 active items 與本輪 full HEAD，再帶 packet 的 exact actor、
-   **原始** assignment fingerprint 與剛查得的 HEAD 執行 `steward-authority.py --session-resume-actor ...
-   --expected-assignment ... --expected-head ...`。helper 回 `current-session-workline-binding`／PASS 就沿用該 actor，
-   **重驗通過即不詢問或要求 `resume=`**，也不再補跑 ordinary gate。HEAD／progress 正常前進不構成 delta；不得
-   用目前 fingerprint 覆蓋 packet 原值消除 mismatch。
-
-   Packet 缺席（含新 session、context 壓縮、只有 memory／checkpoint）才走 ordinary gate。Packet 存在但 item
-   identity、Writer／Workspace／Write Scope／Steward、runtime、transfer state 或 fingerprint 改變時，只對
-   **binding delta** 的 repo 套用既有 recovery／STOP；未變 repo 不連帶重問，仍可繼續安全的唯讀檢查，但所有
-   repo 的必要 shipping gates 通過前不得做 outward action。這份 binding 不 carry 舊 endpoint；本輪 push／PR／
-   merge 仍只看當次 invocation 的 authorization。
-
-   Ordinary gate 仍用 shared workflow 的 `steward-authority.py`，runtime prefix 只能由入口提供；initial call 的
-   `resume=`／`as=` 只能來自 normalized invocation arguments；當次 session 工作線指派另依 shared workflow 的
-   authority 規則，以獨立 provenance 與原 assignment snapshot 重驗。ordinary identity claim is not delegation；
-   「我是 owner」、Git author、GitHub login 或同 runtime 都不得改 helper 的 executor actor。
-   若啟用 `active_item_contract`，helper 的 authority actor 必須等於所有 active items 的 durable steward，
-   才能進入 shared dossier／commit／shipping 流程。`resume=` must use the same runtime prefix and exact actor；
-   `as=` 只接受 exact `human:*`／`owner:*` steward，authority source 固定為
-   `explicit-bounded-human-delegation`，且只活本輪。Worker 呼叫 Log 時立即 STOP：不得
-   改 STATUS/backlog/history/plan、不得 push；若已有乾淨 semantic commit，輸出 dossier 規定的完整
-   `Dossier delta` 交給 steward，未 commit 或 scope 無法驗證則列為 blocker。若入口正在評估既有 worker
-   candidate，呼叫 helper 時以 `--commit` 指向**那顆 candidate**；若輸出任何
-   `candidate-shared-surface:`，該 worker candidate 越界，不得原樣 ship／cherry-pick，先拆出乾淨 worker
-   commit 或由合法 steward 在本輪 Step 2 受控重建。不要把本輪稍後由合法 steward 新建的 dossier commit
-   倒填成 `--commit` candidate，否則會把合法 history write 誤報成 worker delta。NEVER 把呼叫 Log 當 ownership transfer。
-   若 current active items 已在 candidate 中被移除，helper 只可從 candidate parent 的 STATUS 恢復 steward；
-   current／parent 都沒有 durable steward 而 candidate 觸碰 shared surface 時，initial helper 必須 STOP；只有符合
-   下節 guided recovery 的 exact local candidate 才能在同一 logical invocation 先走 Spec subflow，否則仍要求
-   先建立 work item。
-
-   **Candidate provenance 前置**：寫任何 shared dossier candidate 前先解析並通過 durable authority；以沒有
-   `--commit` 的 ordinary／session-binding helper 固定 exact actor、原 assignment fingerprint 與 pre-candidate
-   full HEAD，確認 actor 等於 durable steward 後才改 STATUS／backlog／history／plan 並進 Step 3。不得先用
-   branch-derived actor 寫完，再把錯誤 provenance 變成使用者的 resume／transfer 決策。
-
-   若錯誤 provenance 的 candidate 已由**當前 logical Project invocation**產生，只在它是 pre-candidate HEAD 的
-   **直接子 commit**、目前仍為 HEAD、working tree clean、Step 1／本輪 trace 證明尚未 push 且尚未開 PR、
-   session binding 仍以原 fingerprint PASS，且 diff 已驗證只含本 workline scope 時，才可帶
-   `--commit <full-candidate-oid> --candidate-parent <pre-candidate-full-oid>` 重跑 helper。只有同時輸出
-   `candidate-provenance: current-session-direct-child`、`candidate-rebuild: READY` 與 `verdict: PASS`，才把 branch
-   有界退回該 parent、保留這一顆的 diff，依本輪已通過的 steward authority 重跑 Step 2／3、明確 staging、
-   staged diff 檢查及必要驗證，最後以新 full OID 再跑同一 gate。這是 local provenance repair，**不得冒稱
-   formal transfer**，也不新增 endpoint authority。
-
-   Candidate 已進任何 remote-tracking ref、已 push／已有 PR、不是單一直接子 commit、HEAD／parent／binding
-   改變、tree 不乾淨、scope 不可證明，或有任何使用者／worker／parallel work 混入時一律 STOP；不得自動重寫、
-   不得把 `candidate-rebuild: BLOCKED` 降級成確認題。既有 worker candidate 永遠走 Dossier delta／steward
-   integration，不得借本路徑洗成 current workline candidate。
-   唯一特例是 repo 已有 `$project transfer` 產生的 `PREPARED` pending transfer，且依上述 ancestry gate 判定目前
-   actor 仍是其中記錄的
-   current steward：先重跑 portable-knowledge／recipient／endpoint gates，再在本輪 Step 3 的**同一顆 transfer
-   commit**同步所有 active items 與 conditional owner record。不得先切一部分、不得由 next steward 呼叫 Log
-   自我接管；commit 到達 canonical handover endpoint 前仍由 current steward 持有 authority。
-2. Steward 核對本 session 與已驗證 worker deltas 的 decision／dead end 是否已在事件當下寫入；漏記才用
-   `record-path` 決定 shard 與 ID 後補寫。整合 worker commit 前驗 SHA、ancestry、diff、declared scope 與 tests；
-   通過才 cherry-pick，衝突或越界就 STOP，不自動解衝突。
-3. 工作完成時寫 `M-*` milestone、從 `STATUS.md` 移除 completed active item；先依workflow的
-   「同機順序 local reassignment」確保新assignment已在parent可查證，不在同一commit抹掉唯一authority。
-   暫停項必須有恢復條件。執行 completion mutation 前，先用 current-session binding PASS 固定原
-   assignment fingerprint 與 pre-completion full HEAD；Step 3 形成包含 milestone／active-item removal 的單一
-   direct-child candidate 後、任何 push 前，以
-   `--session-resume-actor <actor> --expected-assignment <original-fingerprint> --expected-head <candidate-oid>
-   --commit <candidate-oid> --completion-parent <pre-completion-oid>` 重驗。只有
-   `durable-steward-source: completion-candidate-parent-active-state`、`completion-candidate: READY` 與
-   `verdict: PASS` 同時出現才可送出；任何 exit 2／STOP 都必須停下修正，plain `no-active-items` 結果不得當成 PASS，
-   也不得在 active item 已移除後省略 candidate 再跑 helper 洗掉 parent authority。
+1. 先讀 target config 與 active items，依 [dossier.md](dossier.md)「接續（內容契約）」更新本批相關工作項的進度與
+   下一步；工作樹有不是本批做的變更，或工作項的 branch 正在另一個 worktree checkout，就停下問使用者。
+2. 核對本 session 的 decision／dead end 是否已在事件當下寫入；漏記才用 `record-path` 決定 shard 與 ID 後補寫。
+3. 工作完成時寫 `M-*` milestone、從 `STATUS.md` 移除 completed active item；暫停項必須有恢復條件。
 
    Milestone 只記當時已發生的事：endpoint 尚未達成時不得以 ID、標題或正文宣稱 `shipped`／已 merge／已送出；
    可寫 implementation／candidate 已完成且 endpoint pending。後續只有 remote-visible endpoint evidence 才能在
@@ -188,35 +119,6 @@ These are hard constraints. Read them before touching git.
 5. 文檔更新後執行 `python3 "<project-scripts>/doc-governance.py" --root "$repo" audit --ship`。exit 0 才通過；exit 1 的 findings 必須處置；
    exit 2 是 BROKEN。兩種非零都設定 doc STOP，但繼續收集其餘摘要。**這是 adopted repo 唯一 doc verdict；
    NEVER 再跑 legacy dossier/backlog detector 來覆蓋它。**
-
-### Runtime steward retirement gate
-
-這個 gate 只處理 **durable runtime workline 結案**：本輪 authority helper 已證明 exact
-`claude:*`／`codex:*` actor，且本輪 completion milestone 明確結束該 actor 的 workline、將移除它自己的
-completed active item。一般 milestone、只完成其中一項工作或單純結束 invocation 都不代表 actor 死亡；
-`owner:*`／`human:*` 是 durable steward，也不因某次 runtime invocation 結束而套用本 gate。
-
-在寫 completion milestone、移除任何 completed item 或做其他 completion mutation **之前**：
-
-1. 凍結 Step 0 鎖定的完整 repo set；不得只看 control repo，也不得在 gate 後縮小集合。逐 repo 讀 adopted
-   config 與所有 active contracts，列出 repo、item、Writer、Workspace、Dossier Steward。只存在 config 或
-   scanner 其中之一仍是 BROKEN；legacy repo 不臆造 active-item schema。
-2. 建立不落盤的 post-completion view：只扣除本輪已有 acceptance evidence、確定要結案的 items，其他 active
-   items 原樣保留。枚舉其中 `Dossier Steward` 仍等於 retiring actor 的每一筆；不要用 milestone slug、字串
-   時效、Git identity、最近出現的 runtime 或 session-local memory 猜 actor／successor。
-3. 零筆 dead reference 才可照常進行 Step 2 mutation。若仍有任何一筆，先 STOP：不寫 milestone、不移除 item、
-   不 commit／push／merge，並逐 repo／item 回報 ownership transfer blocker。
-4. Blocker 只能由使用者明示 successor 後走既有 Transfer state machine 解決。`to=` 出現在 ordinary Log 不會把
-   本 invocation 偷換成 Transfer，也不會自行產生 PREPARED evidence；尚未 PREPARED 時，回報需由 current
-   steward 另行明確叫用 `$project transfer ... to=<exact-actor>`／`/project transfer ... to=<exact-actor>`。
-   不得自動 fallback 到 `owner:*`、另一 runtime、最近 actor 或 `unassigned`。
-5. 已有可驗證 PREPARED transfer 時，先以完整 locked set 重跑 portable-knowledge、recipient、active-item
-   mapping、conditional owner 與 endpoint gates。由原 steward 在每個受影響 repo 的同一受控 lifecycle commit
-   寫入 conditional owner record、completion milestone，並原子更新**所有 remaining active items**的 steward／
-   writer／workspace／next step；multi-repo batch 在所有 candidate commits 與 audits 都通過前一律視為未完成。
-6. Step 3 前再從 candidate trees 枚舉一次完整 locked set。任何 active item 仍指向 retiring actor、任一 repo
-   未納入、successor 不一致、mapping／audit 失敗或 endpoint evidence 不成立，都維持 STOP／PREPARED，
-   **不得宣告 workline 完成**；不得以部分 repo 已更新作為 completion evidence。
 
 **Legacy repo**（兩個 adoption 檔都無）：沿用 `ship-state.sh` 印出的 `dossier:`／`dossier-flag:`／
 `dossier-sections:`／`backlog-flag:`。逐 flag 照訊息處置；簽章不符或 backlog 缺必要章節就 STOP。
@@ -237,49 +139,6 @@ STOP。只有 helper 本身印出 `verdict: STOP` 或上述簽章／章節完整
 - 所有更動文檔頂部的 `updated` 日期改為今天（YYYY-MM-DD；STATUS.md 的對應欄位名為「更新日期」）。
 - normalized invocation arguments 中（mode 與 repo token 之後的）module path → 限縮文檔掃描範圍。
 
-## Prompt-bound authority recovery
-
-這是 Step 2 initial helper `verdict: STOP` 的窄 recovery，不是第三種 actor credential，也不改任何 shipping
-說法。先凍結每個 repo 的 canonical root、`repository-head`、`candidate-commit`（若有）、`recovery-kind` 與
-`recovery-actor`；helper 沒輸出 exact classification 就沒有確認捷徑。
-
-只有下列三類可出題：
-
-- `confirm-human-delegation`：唯一 durable steward 是 exact `human:*`／`owner:*`。
-- `confirm-same-runtime-resume`：唯一 durable steward 與入口 runtime prefix 相同。
-- `confirm-create-active-contract`：current／candidate parent 都無 steward，candidate 與 HEAD 是同一顆完整 OID、
-  working tree clean、candidate 尚未 push／開 PR，且變更目的與 write scope 足以先寫 active contract。任何一項
-  不明就不提供選項。
-
-PREPARED transfer、cross-runtime actor、multiple／conflicting stewards、scope mismatch、stale candidate、doc／review／
-CI STOP 不可用本節修復。`candidate-shared-surface:` 也是獨立 gate：human／same-runtime 確認只取得 steward
-authority，仍須由該 steward 重建越界內容；零 steward 路徑則要在 prompt 明列「建立 active contract，重建這顆
-尚未送出的 local candidate，再繼續」，不能只補 STATUS 後原樣 ship。
-
-詢問時逐 repo 顯示 exact actor、snapshot、將執行的 action 與後果。多 repo 的所有修復都符合上列條件時，優先
-合併成一題：`套用列出的精確修復並繼續（建議）`／`停止，不修改`；若 runtime question channel 有題數上限，
-不要把同類 repo 拆成逐一 token 題。依 Runtime adapter 使用文字時，輸出相同的精確編號選項並暫停；使用者對緊接著的
-該題直接回答選項，就在同一個 logical Project invocation 續行，不得要求重新輸入 `$project`。取消時零 mutation。
-
-確認後先重驗 root、HEAD、candidate、working tree 與 remote/PR 狀態，再用 initial output 的 full OID 重跑 helper：
-
-```sh
-# 選一個與 recovery-kind 對應的 confirmed flag
-python3 "<project-scripts>/steward-authority.py" --root "$repo" --runtime <runtime> \
-  [--confirmed-human <actor> | --confirmed-resume-actor <actor> | --confirmed-new-steward <actor>] \
-  [--commit <full-candidate-oid>] --expected-head <full-head-oid>
-```
-
-零 steward 路徑要先執行 Spec subflow，以 `recovery-actor` 建 exact writer／steward；若需重寫 candidate 才能讓
-shared surfaces 成為 steward-authored content，該 history rewrite 必須已在剛才的 action 中明說且只限那顆
-unshipped candidate，完成後以新的 full OID 重驗。Helper 只有 exit 0 且 source 分別為
-`prompt-bound-human-delegation`、`prompt-bound-same-runtime-resume` 或 `prompt-bound-new-workline-confirmation` 才能續行。
-
-Prompt-bound decision 與 normalized invocation arguments 分開，不寫入 memory 或 dossier；它不得授予額外 endpoint。
-僅本輪的確認不得套到未列出的 repo／actor／candidate，或 carry 到下一輪／session；若選項明示接續本 session
-整條工作線，後續只依 shared workflow 的「當次 session 工作線指派」重新驗證身分，不沿用舊 action approval。普通「我是 owner」、
-不同題的回答、自由文字近義詞或 snapshot 改變後的舊回答，一律重新跑 initial helper。
-
 ## Step 3：Adaptive 提交
 
 **在最終 commit set 上執行測試**：本步的 commit 完成後、Step 4 摘要前，在待送出的最終 commit set 上執行 target
@@ -290,7 +149,7 @@ substitute an earlier result or an author's summary for running them.**
 任一指令非零 → 不進 Step 4：本批引入的問題先修正並重跑；超出本批範圍就停下回報。沒有在本次 Log 重跑的結果
 （opt-in native eval／probe、部署 dry-run、clean clone 等）只能附上當時執行的 commit 引用，不寫成本批驗收；
 opt-in native eval 不在 Log 重跑，除非 repo contract 要求。保留 target repo 更嚴要求、kernel「混檔拆分後 clean
-clone」、本輪 doc／authority／shipping gates 及當前 PR HEAD 的 required CI（依 `merge-workflow.md`）；不把條件式
+clone」、本輪 doc／shipping gates 及當前 PR HEAD 的 required CI（依 `merge-workflow.md`）；不把條件式
 clean clone 擴成每次 Log 通則。
 
 依 reviewed code 的狀態決定文檔如何「一起提交」。**前提：送出前所有 reviewed code 都必須已 commit**——working tree 不留未 commit 的 code，否則 Step 5 會送出不完整變更集。
@@ -309,7 +168,7 @@ commit message 以 target repo contract 的格式為優先；只有 repo 沒有 
 先依 workflow 讀齊 `ship-paths.md`；終點含 merge 另讀 `merge-workflow.md`，條件處置另讀 `ship-exceptions.md`。
 讀完、處置與 gate 完成後，push **之前**，逐 repo 印摘要等使用者確認（plan → validate → execute）：
 
-**Outward ordering hard gate**：所有會改變待送 commit set 的處置與 candidate authority gate 完成後，必須先在
+**Outward ordering hard gate**：所有會改變待送 commit set 的處置完成後，必須先在
 當前 invocation 送出一則 user-visible Ship 摘要；只有該訊息已實際交付，才記為 `summary-emitted: yes`。
 Internal draft、tool-call reasoning、預計稍後補摘要或 post-push 摘要都不算；未達 `summary-emitted: yes` 時，
 不得呼叫 `git push`、`git send-pack`、`gh pr create`、merge 或其他 outward command，必須先回到本 Step。
@@ -324,13 +183,8 @@ Ship 摘要：
     branch commit（相對 default，= PR 內容）: 2 feat + 1 docs（push 為冪等，已 push 則 no-op）
     變更檔: src/..., scripts/..., STATUS.md, docs/archive/...
     PR: feat/... → main（將開，不 merge）
-    stewardship: executor actor=...; durable steward=...; authority actor=...; authority source=...
     附註: doc-governance audit OK；新增 D-*、M-* records
 ```
-
-啟用 active-item contract 時，這四個 stewardship 欄位是摘要與 PR body 的必要 evidence；任何一欄未知、
-helper 非 PASS、或摘要把 executor actor 寫成 human／owner 都不得進 Step 3–5。`as=` 的 evidence 只證明本輪
-bounded delegation，不能寫成 ownership transfer 或供下次 invocation 沿用。
 
 「附註」列兩類：**純告知**（已依 flag 處置完的結果）、以及**超出出題上限而未出成選項的待決項**（後者一律標明「未處理」，不得因出不了題就靜默丟掉）。無則省略。輕量路徑摘要縮為 3 行（路徑＋branch＋變更檔），確認語意不變。
 
@@ -378,7 +232,7 @@ Claude Code 的 `AskUserQuestion` 不可用（背景 turn／工具被停用）�
 
 **進入條件（逐次 outward call 的本地可判定 oracle）**：第一個 outward tool call 的
 immediately preceding assistant content 必須以字面 `Ship 摘要：` 開頭，並逐 repo 列出 Step 4
-要求的 exact `canonical repo root`、ship 路徑、branch、commit set、變更檔與 stewardship
+要求的 exact `canonical repo root`、ship 路徑、branch、commit set 與變更檔
 （輕量路徑用其三行版，仍不得省略 `repo root:`）。`ship 路徑=PR` 只是送出方式，
 不能代替 filesystem root；basename 也不是 canonical root。
 `結案 gate 通過`、`送出前重驗`或其他狀態更新，即使先出現在 tool call 前，也不算 Ship 摘要。

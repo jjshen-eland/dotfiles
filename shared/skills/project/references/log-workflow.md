@@ -13,7 +13,7 @@
 | 形狀 | 是什麼 | 例 |
 |---|---|---|
 | `--` 開頭 | **flag**（模式或送出說法） | `--log` `--merge` `--pr` |
-| `resume=`／`as=`／`to=` 開頭 | **authority／transfer control token** | `resume=codex:integration` `as=owner:repo-maintainer` `to=codex:beta` |
+| `to=` 開頭 | **移交接手者**（只用於 transfer） | `to=human:alice` |
 | 裸字，且是模式名 | 模式（僅限**第 1 個** token） | `spec` `log` `transfer` |
 | 裸字，且命中說法表 | **送出說法**（見 `ship-policy.md`「說法表」） | `merge` `bypass merge` |
 | 含 `/` 或 `.` 開頭，或存在的路徑 | repo 或 module —— 交給 `resolve` | `.` `~/Projects/krepo` `./docs/plans` |
@@ -56,7 +56,7 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
    repo range**，直接沿用第 2 項輸出進 Step 1。若重新偵測多出或少了 repo，只列受影響的 roots、保留未變的
    交集並**只詢問 repo-set delta**要加入、保留或移除；在此選擇前不得推進到任何 commit／push／PR／merge，
    本輪 `--merge` 也不代替範圍選擇。不得連帶重問已驗證集合。missing／UNKNOWN／歧義
-   仍停在該 delta，不得猜測。沿用或處理 delta 均不得授予 `as=`／`resume=` authority、shipping authorization、
+   仍停在該 delta，不得猜測。沿用或處理 delta 均不得授予 shipping authorization、
    endpoint 或任何 STOP 豁免。
 4. 沒有可沿用的 closed repo-set evidence 時，展示清單並明列三種互斥確認路徑；第一項是預設建議，
    不把 `ok` 的語意藏在自由回答裡：
@@ -70,7 +70,7 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
    ```
    使用者選「全部偵測到」後，在**同一次 Project invocation** 鎖定剛展示的集合並直接進 Step 1，沿用
    第 2 項的 `ship-state.sh` 輸出；不得要求重新輸入 `/project`／`$project`、逐一補 repo paths 或重跑相同
-   detection。範圍回覆只決定 repo 集合，不寫回 normalized invocation arguments，也不授予 `as=`／`resume=`、
+   detection。範圍回覆只決定 repo 集合，不寫回 normalized invocation arguments，也不授予
    shipping authorization 或任何 STOP 豁免。選「只處理指定」時才過濾既有集合；選「補充其他」時才用
    `resolve` 解析新增 repo 並補取其狀態。
 5. context 被壓縮 → closed repo-set evidence 不可用；以 pwd 的 repo 為底讓使用者補充，使用者指定的 repo
@@ -88,7 +88,7 @@ flag 與裸說法**等價**（`--merge` ≡ `merge`），兩者都只是 Step 4 
   進結案準備確認文件；不能只憑 clean tree 跳過。
 - 有變更、docs-only 或需處置的 gate：先讀 workflow 的 Log 結案 prerequisite，進
   [log-prepare.md](log-prepare.md) Step 1，沿用這次偵測。STOP 只容許該 gate 的合法準備／修復。
-- 無 remote、provider／authority 不明不可假造 no-work；保留偵測錯誤並按 preparation 的 STOP 分流。
+- 無 remote、provider 不明不可假造 no-work；保留偵測錯誤並按 preparation 的 STOP 分流。
 
 `origin` 代表 canonical remote：有 origin 用它，否則第一個；沒有 remote 停下告知。
 多 remote 若是 fork（push 與 PR/protection 目標不同），或 GitHub Enterprise，先讀

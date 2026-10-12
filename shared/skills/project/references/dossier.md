@@ -6,7 +6,7 @@ CLI exit contract 以 repo-local `docs/document-governance.md` 為權威；本�
 ## 目錄
 
 - 角色分工
-- 平行協作與 stewardship
+- 接續（內容契約）
 - 已採用 repo 的開工與檢索
 - 記錄時機與 record schema
 - Log 與 audit
@@ -26,68 +26,21 @@ CLI exit contract 以 repo-local `docs/document-governance.md` 為權威；本�
 `STATUS.md` 只留 `進行中`、`暫停中`、`歷史入口`、`待辦入口`、`移交準備度`。暫停項必須寫可觀察的
 恢復條件；已完成項、決策、死路與 session log 都不能殘留。
 
-## 平行協作與 stewardship
+## 接續（內容契約）
 
-Repo 的 `status_schema.active_item_contract` 啟用時，每個 active H3 除了 spec 欄位，還要有：
+接續靠 repo 內容，不靠 actor 身分；kernel「Shared work and durable project state」是規則本體，本節只說 skill 怎麼做。
 
-- `Writer`：`claude:<workline>`、`codex:<workline>`、`human:<name>`、`external:<party>` 或
-  `unassigned:<slug>`。
-- `Workspace`：repo writer 使用 `branch=<feature-branch>`；外部事項用 `external/no-repo-write`；尚未分派
-  用 `unassigned`。NEVER 寫絕對 worktree path。
-- `Write Scope`：逗號分隔的 repo-relative paths/modules；外部事項用 `none`；`repo-wide` 代表禁止其他
-  repo writer 平行工作。
-- `Dossier Steward`：所有 active items 使用同一個 actor key，且不得是 `unassigned`。
-
-`Write Scope` 約束實作writer；steward另負責本次已授權work item的既有active／history／plan生命週期。
-已明確指派文件維護時，記錄本次決策、更新該plan狀態與結案不是新增產品目標，
-不需為每個必要文件另擴Write Scope或再問授權。只改同work item的必要欄位／紀錄，不改其他工作、
-plan內容契約或新增治理store。使用者明示「只准這些檔案」、排除某檔／文件維護，或repo更嚴約束優先；
-遇此衝突保留該檔、完成其他可做工作後一次提出具體選項，不能用steward身分繞過。
-
-既有 repo 的 human authority 可能寫成 `human:<name>` 或 legacy `owner:<name>`；兩者都代表 durable human
-steward，不代表任何 Claude／Codex session 自動取得該 actor。Runtime executor 與 authority actor 必須分開：
-
-- `resume=<runtime:workline>` 只恢復**同 runtime、exact durable actor key** 的既有 workline；不改 ownership。
-- `as=<human-or-owner>` 是使用者在**本次新的 explicit project invocation arguments** 對 human steward 的
-  bounded execution delegation。值必須 exact match 所有 active items 的 durable steward，只涵蓋本輪
-  Project mutation／shipping，下一輪自動失效，也不把 executor 寫成 owner。
-- Helper 已先 STOP 並揭露唯一 exact actor 時，使用者也可回答 Project 緊接提出、綁定 repo／actor／snapshot／
-  action 的 recovery 選項；這是獨立的 prompt-bound decision，不是把自然語言補寫回 `as=`／`resume=`。確認後
-  必須以 dedicated `prompt-bound-*` authority source 重跑 helper。僅本輪的確認只活在該 logical invocation；
-  明示整條工作線的當次 session 指派，依 authority 的規則獨立重驗，不是沿用 shipping approval。
-- 普通自然語言「我是某人」、Git author、GitHub login、同 runtime 或名稱相似都不是 resume／delegation
-  credential。Agent session 不得把自己重新標成 `human:*`／`owner:*`。
-
-每次 gate 與 ship summary 都分別列 `executor actor`、`durable steward`、`authority actor`、
-`authority source`。沒有 exact match、合法同-runtime resume 或 explicit bounded human delegation 就 STOP。
-若 current STATUS 已因完成而沒有 active item，但入口正在評估一顆同時移除該 item 的 candidate commit，
-可從 candidate parent 的 STATUS 恢復 durable steward evidence；current 與 parent 都沒有 steward 時，candidate
-不得寫 history／backlog／transfer／shared plan，必須先用 Spec 建立 work item，不能把「零 active」當免 steward。
-Log 可在 helper 對 exact local candidate 分類為 `confirm-create-active-contract` 後，讓使用者以 recovery 選項授權
-同一 logical invocation 的 Spec subflow；這仍要在任何後續 shared write 前建立 contract，且既有越界 candidate
-必須由新 steward 受控重建，不能因補了 STATUS 就原樣 ship。
-
-Steward 是 shared `STATUS.md`、backlog、history shards 與 shared plan 的唯一 writer。其他 writer 必須在
-不同 branch/worktree 與不重疊 scope 內工作，不改上述 shared surfaces、不 push，完成後建立符合 repo
-convention 的 semantic commit，交給 steward 驗證並 cherry-pick 到 integration branch。Scope 相交、workspace
-相同、durable state 指向另一位 writer/steward 或 ownership 不明時一律 STOP，不自行接管或解衝突。
-
-Worker 的 `Dossier delta` 固定回報：work item、actor、branch/workspace、commit SHA、changed scope/files、
-tests、progress、decisions with reasons、dead ends、blockers、next step。這是 claim，不是 canonical state；
-steward 必須自行檢查 commit ancestry／diff／scope／tests，再決定是否 cherry-pick 與寫入 dossier。Review
-agent 維持 read-only。Ownership transfer 只接受使用者明示或 current steward 的 durable transfer direction；
-machine-local handoff artifact 不授予 repo mutation。使用者當次明確改派的同機順序工作，只有符合 authority
-「同機順序 local reassignment」前提才可先更新 assignment、重驗後續作；不因多個具名repo或已明確交接的髒檔重問相同指派。其餘正式切換必須依 transfer-workflow 的 state machine，
-由 current steward 在同一 transfer commit 同步**所有 active items**的 steward／writer／workspace／next step；
-該 commit 到達 canonical handover endpoint 前，舊 steward 仍是唯一 shared-dossier authority。若 checkout 已含
-next actor 的 pending coordination fields，任何 authority check 都必須定位 conditional owner record 所在 commit、
-fetch endpoint 並驗 remote-visible ancestry；不得只按字面欄位授權，證據不可得即 STOP。
-
-Bounded human delegation 不是 ownership transfer：durable steward 不變，runtime 只是本輪受指示的 executor。
-它不能代理 `claude:*`／`codex:*` steward；agent workline 的接續須符合 authority 的 same-runtime exact-match 規則。
-Worker commit 若含 `STATUS.md`、backlog、history shard、shared plan 或 transfer guide，delta 已越界；不得原樣
-ship 或當作合格 cherry-pick。先由 worker 交出不含 shared surfaces 的 semantic commit，或由合法 steward
-在受控整合中重建 commit 並重新驗 diff／tests。
+- 進行中工作項至少有 `Goal`、`進度`、`下一步`，另可有 Context、Acceptance Criteria、Constraints 與 `關聯`。
+  Repo 若以 `status_schema.active_item_contract` 宣告必填欄位，依其設定。
+- 把工作留給其他 session 接續時：進度與下一步要正確；自己的未合併工作 commit 在下一步寫明的 branch；
+  本身不 commit 的流程（例如 ready4quit、handoff）改為回報未 commit 的內容。push 只依安全底線取得授權，
+  並告訴使用者還有什麼沒 push。
+- 接手時先拿下一步寫明的 branch 與其 commit 核對工作項；branch 不存在或已合併，代表工作項已過時，先修正再續作。
+  工作項裡的下一步是可以接續的邀請，不是佔用，也不是任何外向動作的授權。
+- 平行 session 各用自己的 branch 與 worktree 或 clone。工作樹有不是自己做的變更，或該 branch 正在另一個
+  worktree checkout，就停下問使用者。
+- STATUS、backlog、history 都是一般檔案：平行 branch 衝突時保留每個工作項最新的內容與各 branch 的紀錄，
+  不確定就停下問；history 只追加，不刪別人的紀錄。
 
 ## 已採用 repo 的開工與檢索
 
@@ -97,8 +50,7 @@ ship 或當作合格 cherry-pick。先由 worker 交出不含 shared surfaces �
    git common-dir 證明同 repo），再執行 `python3 "<project-scripts>/doc-governance.py" --root "$repo" find '<工作問題>'`
    查相關 decision／dead end；命中的 stable IDs
    寫入 active item 的 `關聯`。
-2. Spec 寫 Context／Goal／Acceptance Criteria／Constraints／進度／下一步，不把歷史理由複製進 active state；
-   啟用 active item contract 時，同時依上節寫入四個 coordination fields。
+2. Spec 寫 Context／Goal／Acceptance Criteria／Constraints／進度／下一步，不把歷史理由複製進 active state。
 3. 無路徑線索也使用 `find`；history／archive 的人工 pointer 不作為可檢索性的代理。
 
 ## 記錄時機與 record schema

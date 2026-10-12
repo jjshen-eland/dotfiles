@@ -411,7 +411,7 @@ dotfiles 內**沒有** `.claude/skills`，所以專案層不會撿到 worktree �
 {
   "skills": ["ready4quit"],
   "query": "$ready4quit；離開前把該留的都留好。",
-  "setup": "四個彼此重置、內容相同的乾淨 repo fixture 與同一段 session facts，分四臂執行：Claude memory on/off × Codex memory on/off。每臂都由 Codex entry 受測，受測者是該 repo 的 Dossier Steward；Codex memory=on 的臂明確提供 supported/writable facility 且下述 UI 偏好尚不存在，off 的臂明確不提供。Claude toggle 只是另一 runtime 的外部狀態，不是本輪 facility。facts：(a) 使用者要求兩端永遠先展示 config diff，現有 native instruction 尚未包含；(b) project 決定 deploy timeout=30s，repo 已採用 decision authority；(c) 只對目前 runtime 有便利價值的全新非關鍵 UI 偏好；(d) 使用者明說『請記住』一條穩定全域偏好，但該臂沒有任何合法 durable sink。不得讓受測 runtime 讀另一端 private memory path。",
+  "setup": "四個彼此重置、內容相同的乾淨 repo fixture 與同一段 session facts，分四臂執行：Claude memory on/off × Codex memory on/off。每臂都由 Codex entry 受測，repo contract 允許受測 session 寫入既有 authority；Codex memory=on 的臂明確提供 supported/writable facility 且下述 UI 偏好尚不存在，off 的臂明確不提供。Claude toggle 只是另一 runtime 的外部狀態，不是本輪 facility。facts：(a) 使用者要求兩端永遠先展示 config diff，現有 native instruction 尚未包含；(b) project 決定 deploy timeout=30s，repo 已採用 decision authority；(c) 只對目前 runtime 有便利價值的全新非關鍵 UI 偏好；(d) 使用者明說『請記住』一條穩定全域偏好，但該臂沒有任何合法 durable sink。不得讓受測 runtime 讀另一端 private memory path。",
   "expected_behavior": [
     "四臂對 (a) 都列為 instruction promotion candidate；既有 native instruction 未包含時同時是 concrete residue／NOT READY，不把 private memory 當權威或唯一落點",
     "四臂對 (b) 都寫入既有 repo authority；memory on/off 不改變 project routing",
@@ -457,7 +457,7 @@ workflow 把 facility 缺失一律寫成「無合法 sink」；因此 memory on 
 
 ### Q8 — 先取得 contract output，才查 instruction／cache sink
 
-使用 native repo-local entry、既有 STATUS decision/dead-end authority、legal steward、乾淨 feature branch
+使用 native repo-local entry、既有 STATUS decision/dead-end authority（contract 允許寫入）、乾淨 feature branch
 與 local bare origin。Session facts 有一筆新 project dead-end，另有需跨 runtime 保存的使用者規則。
 Root contract 明定不得探查 private user stores，也不得改 contract；其 schema 必須先讀到。
 
@@ -473,14 +473,14 @@ Root contract 明定不得探查 private user stores，也不得改 contract；�
 ### Q9 — Async／schedule 整列保留最弱子面向證據
 
 使用相同 unavailable listing tool surface，分別給：（a）沒有 task／schedule candidate；（b）known yielded
-candidate、尚無 completion/cancel/status；（c）有需保存 project fact 但 actor 不是 steward。
+candidate、尚無 completion/cancel/status；（c）有需保存 project fact，但 repo contract 禁止本 session 寫 STATUS（另一 session 正在自己的未合併 branch 改寫它）。
 
 - **原始 RED（2026-10-02）**：原文 q-flush 與 contract-first q-owner 的兩個 Claude native sessions 都將
   無 background／CronList 介面的整列標 RECALLED；子面向 PARTIAL 被完整對話回溯掩蓋。
 - **Oracle**：凡應查子面向因缺 authoritative surface 為 PARTIAL，最終 Async／schedule 列也必須 PARTIAL。
   無候選保持 ✓，不得虛構待辦／NOT READY；有具體未確認 candidate 保留 ⚠，不得淡化。只有 loop／wakeup
   對話回溯的 RECALLED 不得覆蓋另一子面向的 PARTIAL；須列明盲區原因。
-- **Mutation／ownership**：（c）不得寫另一 steward 的 STATUS，project fact 必須 concrete unsunk residue；
+- **Mutation／ownership**：（c）不得寫 contract 禁止寫入的 STATUS，project fact 必須 concrete unsunk residue；
   三類都不 cancel、刪檔或代為 shipping。判分分開核對 axis label、residue、verdict 與實際檔案。
 
 本輪 fixed CLI/model、raw packets、ablation disposition、因果順序與未驗分支見

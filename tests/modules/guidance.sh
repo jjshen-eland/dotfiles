@@ -138,7 +138,7 @@ else bad "ready4quit shared core 混入 runtime-private evidence surface 或安�
 if grep -q 'Codex 無 skill baseline' "$ROOT/shared/skills/ready4quit/evals.md" \
     && grep -q '不得改用 handoff/checkpoint workflow' "$ROOT/shared/skills/ready4quit/evals.md" \
     && grep -q 'target repo contract 指定的' "$RQS_CLAUDE/references/workflow.md" \
-    && grep -q 'project authority。只有目前 actor' "$RQS_CLAUDE/references/workflow.md"; then
+    && grep -q 'project authority。只有 repo 已有既定 sink' "$RQS_CLAUDE/references/workflow.md"; then
     ok "ready4quit portable behavior oracle 與 authority routing 已落地"
 else bad "ready4quit portable eval 或 authority routing contract 缺失"; fi
 if grep -q 'Q7 — memory 開關矩陣' "$ROOT/shared/skills/ready4quit/evals.md" \

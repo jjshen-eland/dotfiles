@@ -43,10 +43,9 @@ Committed records are immutable; reversal adds `supersedes:<ID>`.
 existing shape. The object has exactly `required_fields` (a non-empty unique string list) and `uniform_fields` (a
 unique subset of required fields). When enabled, every active work item is an H3 with non-empty bold bullet fields;
 active prose outside an H3 is a finding, while an otherwise empty active section may contain only
-`目前無進行中項目。` plus Markdown `---` section separators. A completed H3 (`✅` or `已完成`) is a finding. The portable coordination profile requires
-`Writer`, `Workspace`, `Write Scope`, and `Dossier Steward`, with `Dossier Steward` uniform across active items and
-never `unassigned`. Workspace stores a portable branch identity, `external/no-repo-write`, or `unassigned`—never an
-absolute worktree path.
+`目前無進行中項目。` plus Markdown `---` section separators. A completed H3 (`✅` or `已完成`) is a finding. Field
+names are repo-defined; this repo requires only `Goal`. Continuity is a content contract (kernel "Shared work"), not
+an actor field. The trusted scanner still validates legacy `Writer`/`Dossier Steward` values where an item carries them.
 
 One plan/work item: edit `draft/approved/in-progress`; freeze `implemented/superseded`. Superseded needs
 `取代計畫: <path>`. No `-v2/-final/-revised`. Legacy blobs are frozen and excluded from `find`, except

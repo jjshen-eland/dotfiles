@@ -59,84 +59,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   Opus target：`/tmp/root-cause-first-opus-{completion,v2-insufficient,v2-controls}-20261005`；
   詳見 `docs/plans/2026-10-05-root-cause-first-model-behavior.md`。
 
-- **B-20260928-project-merge-continuation** · **#229 Scenario 36 的主要修復已交付，剩餘
-  first-delta safety coverage 待驗證**。原始 RED：2026-09-25–28 同一
-  Codex session 以 `krepo-common` 為起點完成 KB Platform 八 repo workline；排除環境說明中的文字後，
-  使用者共明確輸入 10 次 `$project --merge`，8 次在實際 shipping 前停下，合計產生 10 個
-  確認：3 個 repo-set 範圍選擇、7 個 actor／workline／resume 選擇。至少 8 個是正常路徑
-  false STOP：三次 repo set 已由當前任務或緊接的 Spec 封閉，五次是同 session、同 workline
-  且 Writer／Workspace／Write Scope 無變更時重複 resume。2026-09-28 11:00 剛在 Spec 確認
-  Common／Disclosure steward，12:03 的 `--merge` 仍再問一次，是
-  `D-20260923-project-session-workline-binding` 的直接真實回歸。樣本中沒有一次真正需要
-  formal Project Transfer。
-
-  2026-09-29 新增 `kapi-infra` 實例：HEAD `21043519cb885237bceae482f7c2128a44de57b2`，
-  durable steward 是 `codex:ais-infra-org-readiness`，current branch actor 是
-  `codex:infra-closeout-44-45-86`，authority gate 在 outward 前要求「接續／停止」。
-  這個 mismatch 足以支持先停下重驗，但不能單憑這段輸出斷言「必須問使用者」：
-  若同一 session 有可驗證的 Spec／workline binding，應自動對回 durable steward 續行；
-  只有 binding 不存在、過期或有真實 assignment delta 時才把選擇交回使用者。
-
-  兩個其餘中斷是混合情境：Protocol 缺 active contract 且候選修改 shared dossier，當下
-  需先建 contract／重建候選；Disclosure 候選由錯誤 actor 修改 steward-only 文件，當下也需
-  重建，但候選是同 session 自行產生，應在 authoring 前解析 durable steward，不應把自造的
-  actor drift 延後成使用者決策。這些證據表示 9/23 的 Spec／helper fixture 通過不能外推
-  full Log／shipping，現行 multi-repo Step 0 的無條件 range selection 也是獨立成本。
-
-  **分 root cause 改善狀態**：
-
-  1. `closed repo-set reuse` 於 2026-09-29 形成候選、後經 PR #240 合併：當前使用者任務或同一
-     未壓縮 workline 中緊接 Spec 的 exact canonical roots，重新 discovery 與 `ship-state.sh`
-     重驗完全一致時略過 Step 0 range 問題；只對新 repo、遺漏 repo、UNKNOWN 或範圍衝突
-     詢問 delta。此分項有 production RED、deterministic gate 與 1503／0 suite 證據；不能單獨
-     外推為下列 binding／provenance 已修復。
-  2. `workline-binding propagation` 於 2026-09-29 形成候選、後經 PR #240 合併：Spec helper exact PASS
-     後按 canonical root 封存 current-session packet，下一次 Log 先以原 assignment fingerprint
-     與本輪 HEAD 重驗；完全一致就不回退 branch-derived actor 或重問 `resume=`。新 session、壓縮
-     context、item／Writer／Workspace／Write Scope／Steward／transfer delta 仍走既有 recovery。
-     Fresh Claude 首輪暴露「Spec 本輪新建 contract 沒有建 assignment」的缺口，已改為
-     新建 exact same-runtime contract 後直接用 original fingerprint／full HEAD 建立 binding；
-     Claude／Codex fresh normal 重驗皆 PASS。
-  3. `candidate actor provenance` 於 2026-09-29 形成候選、後經 PR #240 合併：任何 shared dossier
-     mutation／commit 前先取得 durable-authority PASS；若錯 actor candidate 已存在，只有 current-session
-     binding PASS、candidate 是 pre-candidate HEAD 的單一直接子 commit、tree clean、無 remote-tracking
-     ref、Step 1 證明未 push／無 PR 且無使用者／worker／parallel work 混入，helper 才回
-     `candidate-rebuild: READY`。
-  4. `completion authority` 的 fresh RED 顯示，active item 移除後可以 plain
-     `no-active-items` 重跑 helper 洗成 PASS，並在 endpoint 前誤寫 shipped。新
-     `--completion-parent` 要求候選是原 assignment parent 的 clean direct child，且同時輸出
-     `completion-candidate: READY`／PASS；兩 primary normal 均通過，milestone 保留 endpoint pending。
-  5. `Ship 摘要 ordering` 的第一版 prose gate 仍有 fresh RED：Claude 把「結案 gate 通過」
-     當成摘要，先 push local fixture branch 才回報。Step 5 現以緊鄰且以字面
-     `Ship 摘要：` 開頭的 assistant content 作 outward entry oracle；一般狀態更新不算。
-     Fresh after 的先後順序已 PASS，但「路徑=PR」被當成 ship route，摘要漏了 exact canonical
-     roots，故該輪仍是 partial FAIL。新 gate 要求每 repo 獨立列
-     `repo root: /absolute/canonical/path`，basename 或 ship route 不能代替。最後新 session
-     的 raw events 已驗證兩個 exact roots 與完整摘要緊鄰第一個 push，此 sub-oracle PASS。
-  6. 如果仍有真實 gate，一次只列出有 delta 的 repo 並合併詢問；已驗證的 repo 繼續授權範圍內
-     準備，不連帶重問。
-
-  **不放寬邊界**：新 session 只有 checkpoint／memory、真實 Writer 衝突、scope 變更、
-  PREPARED transfer、無 active contract 且無當次指派，仍必須停；registry publish、production
-  deploy／service stop、ACL／schema／credential 變更與刪除仍要各自的明確授權。
-  **驗收**：當 exact repo set 與 actors 剛由 Spec 確認，且重驗無 delta，緊接的
-  `$project --merge` 必須零 scope／resume 問題並直接到 endpoint；另以新 repo、真實 writer
-  衝突、scope 變更與 production action 作 safety arms。15 個 helper controls 與完整 suite
-  1508／0 已通過；兩 primary fresh normal 已驗證 binding／completion，Claude 另驗證
-  exact-root Ship 摘要在 push 前緊鄰出現；safety 也證明
-  scope、checkpoint、dirty／remote-visible candidate、deploy／delete 不越權。最後 literal-summary
-  fresh after 已通過 exact canonical roots 與 push ordering 驗收。真實 GitHub PR／兩平台 required checks／
-  rebase merge／本地同步已由 PR #240 驗證；原本未取得的 new-repo delta native packet 於 2026-09-30
-  在雙 primary fresh fixture 重現 RED：從有未送出 commit 的 C 啟動，明列 A/B 為 closed roots，兩端都
-  靜默排除 C 並先推送 A/B local bare feature refs。Step 0 最小修正後，雙端 delta 均只問 C、
-  且三個 repo 的 tree／index／HEAD／remote refs 不變；雙端 normal 均零 range 重問並推送 A/B
-  local feature branches，provider 缺席時不直推 main。修正與原始 trace 雜湊見
-  [#229 驗收計畫](plans/2026-09-30-issue-229-closure-evidence.md)。2026-10-01，修正經 PR #247
-  rebase merge 至 `main`（交付 commit `a3c4170`，結案文件 commit `195732e`）；兩平台 required checks
-  通過、本地 default 已同步，#229 依凍結批次條件關閉。其餘 Scenario 36 safety arms 仍有 fixture
-  在第一個語意 delta 前停下的限制，需依相同獨立 oracle 補有效 native packet；本 backlog 項因此保留。
-  關聯 Scenario 36／GitHub #229／PR #240／PR #247。
-
 - **B-20260924-workflow-verification-economy** · **#229 整合case完成但verification／文件收尾仍有額外成本**。
   2026-09-24同一多步驟task兩primary均一答恢復且不擴scope；Opus仍在文件only變更後重跑suite兩次，另做一次mutation check，
   測試接tail未保留原exit；root獨立suite／semantic exit0只能證實產物正確，不能讓程序瑕疵變GREEN。
@@ -186,19 +108,6 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   不重跑本次同一packet或單純加時洗綠；新證據需能區分修後範圍成本與runtime完成／等待成本。
   **驗收邊界**：小型同機Spec與parallel controls不能外推完整Log／shipping、跨host或所有必要互動；遇實際該路徑失敗再重議。
   證據：[review audit](plans/2026-09-23-review-convergence-audit.md)、[coordination audit](plans/2026-09-23-coordination-audit.md)。
-
-- **B-20260824-remote-human-contributor-path** · **單一 Dossier Steward 模型尚未定義跨機器真人
-  contributor 的 commit 傳遞路徑**(2026-08-24 發現)。`D-20260824-cross-runtime-dossier-stewardship`
-  的 v1 只實證同機 Claude／Codex worker：非 steward 不改 shared dossier、不 push，交 semantic commit
-  給 steward cherry-pick；但真人同事在另一台機器時，若不能 push 專屬 feature branch，就沒有自然的
-  commit 交換媒介。2026-09-16 以現行 feature branch／PR、Project authority gate 與可取得的 rollout repo
-  紀錄重驗：Git 傳遞媒介存在，steward 評估 candidate commit 時也能列出 shared-surface 越界；但 worker
-  no-push 契約與不辨 contributor 身分的 PR CI 尚不能合成一條已驗證的新路徑。可取得的 PR／commit 紀錄沒有
-  remote-human contributor 實例，未觀察到實際傳遞阻塞或 authority drift，故不新增程序、eval 或 provider
-  gate，也不把候選路徑宣告生效。**精確觸發**：第一位具名、跨主機真人 contributor 需要交付 commit，或
-  首次出現非 steward PR；當下保留 exact SHA、declared scope 與 Dossier delta，實測 steward 能否 fetch、
-  以現行 helper 排除 shared-surface 越界並 cherry-pick。任一步受阻，或越權 shared dossier mutation 未被攔下，
-  才以該事件取得 RED 並設計最小 remote-contributor path。
 
 - **B-20260807-gap-04** · **Mac 上 brewup 會被 codex cask 掛死(Gatekeeper)**:2026-08-07 第三次發作。復原已有入口
   `brewfix`(唯讀診斷,`--fix` 才動手);機制、鑑別法、三條走不通的預防路徑全文見
