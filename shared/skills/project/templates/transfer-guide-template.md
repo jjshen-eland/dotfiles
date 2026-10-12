@@ -13,7 +13,7 @@ symlink／mode；本模板中以 <見 credentials 檔> 指涉，不記值。
 
 > 目的:讓 <接手者> 能自行建立完整環境、通過 QA、正式接手 owner。
 > 移交人:<name>|接手者:<name 或 未指名>|目標日:YYYY-MM-DD
-> 狀態:草稿（缺項見 1.1 Known residue；缺項清空前不得宣稱移交完成）
+> 狀態:草稿／可移交（缺項見 1.1 Known residue；全部解除才改為可移交，該次變更由 Log 送出）
 
 ---
 
@@ -39,6 +39,7 @@ symlink／mode；本模板中以 <見 credentials 檔> 指涉，不記值。
 ## 1.1 Portable-knowledge audit
 
 - [ ] fresh clone 能只靠 repo instruction／README／runbook 找到 setup、tests、active state 與 history
+- [ ] adopted repo 的 `audit --ship` 通過；程式碼與 tracked 檔無硬編碼 secret
 - [ ] 移交人已知的 private-only project decision／dead end／progress／blocker 已寫進既有 repo authority
 - [ ] safety／Git／cross-runtime stable preference 已列為 instruction promotion candidate，不塞 project dossier 或 private-memory pointer
 - [ ] 未掃描、未依賴另一 runtime private memory；memory on/off 不作 readiness 證據

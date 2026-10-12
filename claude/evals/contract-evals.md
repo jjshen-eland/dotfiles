@@ -397,7 +397,7 @@ find "$SB" -name .credentials.json      # 必須為空
 
 ## G11 — Claude／Codex 平行 writer 與單一 Dossier Steward（2026-08-24）
 
-> **部分退役（2026-10-12，#309 P2）**：worker prompt 的 Dossier delta 斷言與 G11-A、G11-B、G11-E、G11-G 驗證的 steward 身分授權、cherry-pick 整合與 Transfer 狀態機已移除（D-20261012-steward-identity-removed），保留為歷史、不再執行。G11-C、G11-D 與 G11-F 的 reviewer 唯讀仍有效。
+> **部分退役（2026-10-12，#309 P2）**：worker prompt 的 Dossier delta 斷言與 G11-A、G11-B、G11-E、G11-G 驗證的 steward 身分授權、cherry-pick 整合與 Transfer 狀態機已移除（D-20261012-steward-identity-removed），保留為歷史、不再執行。仍執行：平行 worker run（只驗各自 scope、semantic commit 與 origin 不變，並作為 G11-F 的前置）、G11-C、G11-D 與 G11-F 的 reviewer 唯讀；「通過門檻」中 steward integration 的部分不再適用。`make_g11` 的 STATUS 仍帶舊欄位，模擬尚未移除欄位的 repo。
 
 這組是新 kernel、active-item schema 與 shared project workflow 的跨 runtime oracle。Fixture 由
 `make_g11` 建立：同一 Git common-dir 下有 `integration`、`worker-api`、`worker-ui` 三個 worktrees，另有

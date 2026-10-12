@@ -110,8 +110,11 @@ P2 與原 P4 合為一批：skill 一移除 steward，kernel 的 Dossier Steward
 - `transfer-workflow.md` 與 `templates/transfer-guide-template.md`：刪除 BLOCKED／PREPARED／TRANSFERRED、current／
   next steward、conditional owner record、active-item mapping、remote ancestry；保留 portable-knowledge audit、
   credential 分離與 `verify-transfer-credential.sh`、authorization 不隨移交。移交未完成條件（任一成立即維持草稿、
-  列出缺項）：未指名接手者、`verify-transfer-credential.sh` 非 PASS、仍有只存在對話或私人記憶的專案事實、在途工作
-  未合併或未明確放棄。Transfer 模式本身不 commit；指南與補寫的紀錄由之後的 Log 送出。
+  列出缺項）：未指名接手者（取自 `to=` 或使用者同輪明說）；credential plan 未完成（無安全交付管道，或選了 local
+  artifact 而 `verify-transfer-credential.sh` 非 PASS）；adopted repo 的 `audit --ship` 未通過或仍有硬編碼 secret；
+  fresh clone 無法 setup／跑 QA；仍有只存在對話或私人記憶的專案事實；在途工作未合併或未明確放棄（本次 Transfer
+  自己的產出不算）。deep-review 指出初版只列四項，漏掉舊 BLOCKED 涵蓋的 authority、secret 與 self-contained 缺項，
+  且 helper 條件與密碼管理器路徑矛盾，已補。Transfer 模式本身不 commit；指南與補寫的紀錄由之後的 Log 送出。
 - `templates/STATUS-template.md`：刪除 Writer／Workspace／Write Scope／Dossier Steward。dotfiles 自己的 STATUS
   各工作項一併刪除這四欄。
 - dotfiles `.doc-governance.json` 以 `{"required_fields": ["Goal"], "uniform_fields": []}` 重新啟用
@@ -191,6 +194,15 @@ B-20260928-project-merge-continuation（steward／resume 誤擋，P2 後不再�
     缺項列出未指名接手者、credential 交付、在途 commit。`tested` 的 Codex 在最終 HEAD 實跑一次；Sonnet 首次沿用
     先前結果、未實跑（RED），同 fixture 加跑舊 source 2 次、新 source 2 次皆實跑，判為模型變異，新 source 合計 2／3。
   - ready4quit：`q-residue`、`q-owner` 兩模型 HEAD 都不變、不 commit；`q-owner` 依新判準把 dead-end 列為未落點殘留。
+- deep-review（full，4 位 fresh reviewer，58cde42..c44ed80）：FAIL，2 條 medium、10 條 low，均查證屬實。medium 為
+  transfer 未完成條件漏列舊 BLOCKED 涵蓋的缺項且 helper 條件與密碼管理器路徑矛盾，以及 q-flush fixture 未寫寫入授權；
+  low 含漏寫 supersedes、STATUS 過時描述、`to=` 未在 transfer 說明、路由表殘留 Spec subflow、Transfer 自身產出被算成
+  在途工作、退役標記不完整。已依使用者指示全部修正（scanner 註解除外，留待 P2b）；修正由作者驗證，未再派 reviewer。
+  修正後全套測試通過；transfer 兩模型重跑都列出新增缺項（安全交付管道、setup／QA 指引），不含 secret、不 commit；
+  q-flush 兩模型追加 dead-end、不 commit，q-owner 兩模型不寫入。
+- 觀察（留給 P3）：Sonnet 判定「在途工作」不穩定。transfer fixture 的 feature branch 有一顆未合併 commit，修正前
+  source 3 次中 2 次抓到、修正後 3 次中 1 次明確抓到（另 1 次誤判沒有、1 次標未核對），前後差異在變異範圍內，
+  不歸因於修正；第 6 步沒有指明以 default branch 比對未合併 commit，P3 強化移交內容時一併處理。
 
 ### P2b：其他受治理 repo 同步（P2 合併後緊接）
 

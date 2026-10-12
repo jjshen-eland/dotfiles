@@ -85,8 +85,9 @@
 - adopted repo 評估 active／paused、history IDs、backlog 與 `find` 可定位性並跑 audit；legacy repo 依既有權威
 - credentials 盤點（.env.example 覆蓋度、無硬編碼 secrets）
 - 從模板產出移交指南草稿；待決策事項留給移交雙方拍板，不代填
-- 未指名接手者、credential metadata helper 非 PASS、仍有只存在對話或私人記憶的專案事實、在途工作未合併也未明確放棄，
-  任一成立即維持草稿並列出缺項
+- 未指名接手者、credential plan 未完成（無安全交付管道，或 local artifact 未通過 metadata helper）、adopted repo 的
+  audit 未通過或仍有硬編碼 secret、fresh clone 無法 setup／跑 QA、仍有只存在對話或私人記憶的專案事實、在途工作
+  未合併也未明確放棄，任一成立即維持草稿並列出缺項
 - 本模式不 commit、不 push、不 merge、不改 repo 權限；產物由之後的 Log 送出
 
 ## 硬需求（Hard requirements — 違反即設計不合格）
