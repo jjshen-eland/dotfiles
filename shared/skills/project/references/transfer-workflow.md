@@ -34,21 +34,48 @@ draft guide，並把缺接手者／安全交付管道列為缺項。不得因拒
    local artifact 時不建立檔案或臆造 mode gate。
 5. 以 fresh clone 可取得的 contract、docs、commands 與非秘密 fixture 驗證接手者能 setup、跑 QA、定位 active
    state 與歷史；不把「兩邊 memory 都開著」當作完整的證據。
-6. 在途工作（未合併的 branch、未 commit 的變更）逐項判定：已合併，或以 decision record 明確放棄並記理由；只留在
-   feature branch／worktree 的工作列為缺項。本次 Transfer 自己產出、尚待 Log 送出的指南與紀錄不算在途工作。
+6. 在途工作以 default branch 為準逐項盤點，不憑印象：`git branch -a --no-merged <default>` 列出未合併的 local 與
+   remote branch（含目前所在的 branch），`git worktree list` 列出其他 worktree，`git status --short` 列出未 commit
+   變更。每一項判定為已合併，或以 decision record 明確放棄並記理由；其餘都寫進指南第 5 節並列為缺項。本次 Transfer
+   自己產出、尚待 Log 送出的指南、紀錄與判分檔不算在途工作。
+7. 接手驗收題組：依指南各節出題，涵蓋接手者必須能獨立完成或回答的事（至少含環境驗證、部署或排程、一項決策或
+   死路）。題目寫進指南第 9 節；預期答案寫進 `tmp/transfer-acceptance.json`，不得出現在指南或任何 tracked 檔。
+   該檔必須已被 gitignore（`git check-ignore -q`）且未 tracked；不符就列缺項，Transfer 不改 `.gitignore`。格式：
+
+   ```json
+   {"schema": 1, "questions": [
+     {"id": "Q1", "kind": "command", "stdout_contains": "passed"},
+     {"id": "Q2", "kind": "answer", "contains": ["02:00"], "paths": ["deploy/crontab"], "ids": ["D-YYYYMMDD-slug"]}
+   ]}
+   ```
+
+   `command` 題的答案是一行指令，判分時在接手者的 fresh clone 執行，exit 0 且輸出含 `stdout_contains`（有寫時）
+   才過；`answer` 題的答案須含全部 `contains` 與 `ids`，`paths` 須出現在答案中且在 clone 內存在。預期答案只寫能
+   從 repo 內容查到的事實；只有移交人知道的事要先寫進 repo，不能只放在判分檔。
 
 ### 產物與移交未完成條件
 
 1. 從 `<project-templates>/transfer-guide-template.md` 建立或更新 `<repo>/docs/transfer.md`，記接手者、
-   portable-knowledge audit 結果、credentials separation、進行中工作的指標與缺項清單。
+   portable-knowledge audit 結果、credentials separation、進行中工作的指標、接手驗收題組與缺項清單。
 2. 下列任一成立時，移交未完成，指南維持草稿並逐項列出缺項：
    - 未指名接手者（取自 invocation 的 `to=<recipient>` 或使用者同輪明說；這個 token 不交給 repo resolver）；
    - credential plan 未完成：沒有安全交付管道，或選了 repo-local artifact 而 `verify-transfer-credential.sh` 非 PASS；
    - adopted repo 的 `audit --ship` 未通過，或程式碼與 tracked 檔仍有硬編碼 secret；
    - fresh clone 無法只靠 repo 內的指引 setup、跑 QA、定位 active state 與歷史；
    - 仍有只存在對話或私人記憶的專案事實；
-   - 在途工作未合併也未明確放棄。
+   - 在途工作未合併也未明確放棄；
+   - 接手驗收題組未建立，或判分檔未被 gitignore、已被 tracked。
 
    缺項解除前不得在指南或歷史紀錄宣稱移交完成。
 3. 指南與 audit 補寫的紀錄由之後明確叫用的 `$project log`／`/project log` 送出，Log／shipping 的既有授權
    gate 完整適用。Repo 權限調整由人完成，本 workflow 不代做。
+
+### 接手驗收（指南送出之後）
+
+1. 接手者（或沒有移交人記憶的 fresh-context agent）在 fresh clone 中只靠 repo 與第 9 節題目作答，答案存成
+   `{"<id>": "<答案>"}` JSON。
+2. 移交人在拋棄式 clone 執行
+   `python3 <project-scripts>/grade-handover.py --spec tmp/transfer-acceptance.json --answers <答案檔> --clone <clone>`；
+   exit 0 且 `verdict: PASS` 才算通過，exit 1 列出失敗題，exit 2 是判分檔或答案檔格式錯誤。失敗題代表 repo 少了
+   接手者需要的資訊：先補 repo 內容，再請接手者重答，不改題目或預期答案來遷就。
+3. 指南已合併、移交未完成條件全部解除、驗收通過、權限調整由人完成，才可由 Log 寫移交完成的 milestone。

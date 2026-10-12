@@ -251,6 +251,39 @@ P2 移除 actor 狀態機後，移交改為「讓接手的人掌握全貌」：
 
 驗收：以一個 fixture repo 實跑一次移交，接手驗收題組由 fresh-context agent 作答並以腳本判分全數通過，負對照失敗。
 
+**P3 細節（2026-10-12）**
+
+- `templates/transfer-guide-template.md` 依第 1 點重組章節；原「QA 驗收標準」併入接手驗收題組，原「合併與 owner 切換」
+  併入移交步驟。題組章節只放題目與作答方式，不放預期答案。
+- 判分檔 `tmp/transfer-acceptance.json`（移交人產出，必須被 gitignore 且未 tracked；不 ignore 就列缺項，Transfer 不改
+  `.gitignore`）。格式：`{"schema":1,"questions":[...]}`，每題 `id` 與 `kind`：
+  - `command`：接手者的答案是一行指令，判分在接手者的 fresh clone 執行，exit 0 且（若有）輸出含 `stdout_contains` 才過；
+  - `answer`：答案文字須含全部 `contains` 字串與 `ids`，`paths` 須出現在答案中且在 clone 內存在。
+  接手者的答案檔是 `{"<id>": "<答案>"}`。
+- 新增 `scripts/grade-handover.py --spec --answers --clone`：逐題 PASS／FAIL，全過 exit 0，有失敗 exit 1，格式錯誤 exit 2；
+  只在拋棄式 clone 執行 `command` 題。附 deterministic 測試（全過、缺字串、路徑不存在、指令失敗、格式錯誤）。
+- `transfer-workflow.md`：在途工作改為以 default branch 比對未合併的 local／remote branch，並列出 worktree 與未 commit
+  變更（P2 觀察：Sonnet 判定不穩）；新增出題步驟；移交未完成條件加「接手驗收題組或判分檔未建立」；新增「接手驗收」
+  一節說明 fresh clone 作答、判分與完成紀錄（milestone 由之後的 Log 寫）。Transfer 模式仍不 commit。
+- 驗收：判分測試進 `tests/`；fixture repo（含排程、外部帳號、決策紀錄與一條未合併 branch）由 Sonnet 執行
+  `/project transfer`，產出指南、題組與判分檔；指南 commit 到 fixture 後，fresh-context agent 只用 fresh clone 與題目作答，
+  判分全數通過；負對照把移交人獨有的事實從指南移除，對應題目判分失敗。另以原 `transfer` case 在 Sonnet 跑 3 次，
+  確認在途工作（未合併 commit）每次都列為缺項。
+
+**P3 實作結果（2026-10-12，branch `feat/issue-309-handover-acceptance`）**
+
+- `grade-handover.py` 先寫 9 項測試（紅），實作後全綠；接進 project 模組與選測設定。
+- Fixture（Claude Code 2.1.296、Sonnet claude-sonnet-5-5、effort high）：移交人 session 只給四項 repo 沒寫的事實（主機、
+  log 位置、credential 存放處與核發者、支援期限）。Transfer 產出指南與 5 題題組，事實全部寫進指南、無 credential 值、
+  不 commit；判分檔已 gitignore 且未 tracked；未合併的 `feat/retry-backoff` 列為缺項；另指出 fixture 的 `bin/sync`
+  不在 repo、`tests/run.sh` 寫死 macOS Python 路徑。指南 commit 後，fresh-context Sonnet 只用 fresh clone 作答，未讀
+  clone 外檔案，判分 5／5 通過。
+- 負對照：只刪「部署、排程與維運」一節時仍 5／5 通過，因指南在其他節也提到主機名稱，刪一節不具鑑別力；改為把移交人
+  獨有的事實（主機、credential 存放處）從整份指南移除後，對應的 Q2、Q5 失敗（3／5），作答者照實回答 repo 查不到。
+- 在途工作：原 `transfer` case 在 Sonnet 跑 3 次，3 次都把未合併 commit 寫進指南與缺項（P2 修正後同 case 為 3 次中
+  1 次明確抓到）；加上 fixture 那次共 4／4。
+
+
 ### P5：縮減必讀 reference 與端到端量測
 
 P2 刪除後量測必讀 reference 的讀取量與一筆真實交付的耗時；#285 計畫第 5、6 步由本階段承擔。
