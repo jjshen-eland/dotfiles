@@ -34,23 +34,6 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **下一步**：定位 D-20260917-terminal-macbooks-outside-inventory 及 STATUS 的未完成驗收；先取得兩部額外 MacBook 的識別／revision／legacy store 依賴事實，再決定原 plan 的 cleanup 前提，不能直接部署或刪除。
 - **關聯**：#271; D-20260823-portable-handoff-skill; D-20260912-neutral-portable-skill-core; D-20260912-codex-config-three-layer-merge; M-20260912-codex-config-and-dotsync-exit; M-20261001-handoff-frontmatter-anchor-verify; D-20261007-claude-model-default-unset; M-20261007-claude-native-default-verified; M-20261007-macs-runtime-layout-accepted
 
-### 3. /project 流程減量與驗證成本（#285）
-
-- **Context**：2026-10-12 依風險分層的唯讀評估顯示，2026-09-01 起工時約 53% 在流程本身、產品與機隊部署約 12%；逃到機隊的事故都由部署輸出、canary 或使用者發現，沒有被流程 gate 攔下；多數流程 gate 的實地紀錄誤擋多於攔截。證據與方法見計畫「評估摘要」。
-- **Goal**：gate 只放在錯了代價高、實際發生過、能機械判定之處，把 `/project` 流程壓到支撐部署腳本、agent 契約與受信任 scanner 的最小量，降低小幅變更「交付指令→最終回報」的耗時與讀取量。
-- **Acceptance Criteria**：
-  1. dotfiles 關閉 active-item contract：`audit --ship` OK、`steward-authority.py` 回 `NOT_APPLICABLE`、`./tests/run.sh --base origin/main` 通過。
-  2. 移除 test-evidence 沿用協定：Log 在最終 commit set 執行 repo 宣告的測試與檢查（有選測時涵蓋整批），以 exit code 判定、非零不送出；選測錯誤或空集合不得假綠；改判準後的 tested 類 native case 依計畫判準通過。
-  3. ship-state 每個 STOP 與 wait-required-enrollment 附實地攔截／誤擋紀錄與涵蓋機制，0 攔截且已涵蓋者移除；保留項仍有 RED。（已完成：清點後全部保留，D-20261012-ship-state-stops-kept）
-  4. PR 已承載的實作結果不另寫 milestone、merge 後不另開補記 PR，D／X 照舊；`find` 命中不退步。（不做：D-20261012-record-reduction-dropped）
-  5. 依前述移除縮減 `/project` 必讀 reference，以同一回溯方法量讀取量與耗時改善前後。
-  6. 改善後一筆真實小改動交付與 51 次基線（扣等待中位 760 秒）比較。
-  7. 會改共用 skill 的第 2–5 項重跑受影響 eval，Claude Code 與 Codex 各實跑一次 Log 比對行為、reader bytes 與耗時。
-- **Constraints**：不新增 gate 或機檢；不改 `scripts/doc-governance.py` 受信任 scanner（fleet byte-identical）與 kernel managed block；controller 測試隨所測腳本移除，不單獨刪；branch protection 與 required checks 調整需另經具名授權。claude/settings.json 的 runtime drift 不帶進 commit（dotsync／brewup 會丟棄）。item 2／4 不在本項範圍。本 Spec 未授權任何 commit、push、PR、merge 或部署。
-- **進度**：原計畫第 1、2 項已合併（M-20261011-ci-platform-matrix-merged）；第 3 項不實作（D-20261012-record-rules-dropped）；第 5、6 項合併為本版驗收（D-20261012-project-reduction-scope）；deep-plan 路由見 D-20261012-deep-plan-full-review-routing。第 1 項已合併（PR #310，關閉 active-item contract；四個 coordination 欄位其後由 #309 P2 移除，見 D-20261012-steward-identity-removed）；第 2 項已合併（PR #312，收尾改為在最終 commit set 執行測試，D-20261012-test-evidence-removal）；第 3 項清點後全部保留（D-20261012-ship-state-stops-kept）；第 4 項不做（D-20261012-record-reduction-dropped）。另已退役 title-free 召回 ratchet（D-20261012-title-free-recall-ratchet-retired），真實語料排名測試維持現狀（D-20261012-live-corpus-ranking-tests-kept）。
-- **下一步**：第 2 項已合併（PR #312）；第 3 項清點後不移除（D-20261012-ship-state-stops-kept）。第 4 項不做（D-20261012-record-reduction-dropped）；第 5 項（縮減必讀 reference）的主要部分是 steward 文字，依使用者選擇先做 #309（item 5）再處理。
-- **關聯**：[本項計畫](docs/plans/2026-10-12-project-process-reduction.md); [前一版計畫](docs/plans/2026-10-08-workflow-verification-economy.md); GitHub #285; D-20261012-dotfiles-active-item-contract-off; D-20261010-delivery-overhead-spec; M-20261009-ci-modular-redesign-local; B-20260924-workflow-verification-economy
-
 ### 4. Setup 工具與 agent shell 環境對齊
 
 - **Context**：現有 setup 混合必要與互動便利工具，brew 失敗被吞掉；環境依賴各平台生成的 shell 設定。使用者要求按 Codex／Claude Code 需求改版，統一 npm 措辭，提供 14 台既有主機免重跑 setup 的對齊方式。
@@ -59,24 +42,11 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **Constraints**：本批使用者選擇 `$project --merge` 交付修正、七台僅更新 ca-certificates 並續部署；已依此完成 PR #297 與下列驗收。既有工具未經確認不 adopt／移除／升級，除本批具名憑證更新外保持原版本；settings runtime drift 不帶進 commit（dotsync／brewup 會丟棄），不重跑 setup 覆寫 rc，不放行 direnv trust。使用者完成 macmini Xcode license 處理後，本輪依原部署範圍續作該台；後續外向動作依新批指令，歷史紀錄不是授權來源。
 - **進度**：PR #297 已 rebase merge 至 `792f154`（修復 manifest stdin 消耗與未使用的 build dependencies 誤擋）；新 HEAD macOS／Ubuntu CI 3m29s／2m04s 全綠，39 個工具／shell 隔離測試通過。14 台 source 與雙端全域指引均同步此版本，core check 掃足 22 項全過。eagle03／db01／ap01／ap02／m4mini／fe01／be01 已完成 plan、限定憑證更新、apply／check／apply／check、原內容保全及 CLI probes；m4mini／be01 新增 Claude Code 2.1.295。七台 ca-certificates 活躍 opt target 均為 2026-09-25，其餘既有套件版本不變、舊憑證 keg 留存；shell 原內容／mode 與 settings hash 保留。macmini 已完成 fresh inventory、plan、apply／check／apply／check，新增 actionlint 1.7.12／ast-grep 0.50.0；92 個既有 Homebrew 套件（含 ca-certificates 2026-08-13）版本不變，雙 shell CLI probes 通過，第二次完整 snapshot 相同。
 - **下一步**：先讀 M-20261010-setup-fleet-complete，將待辦限制在歷史工具歸屬／用途核對；依已有 plan／ledger 的非秘密事實列出需使用者判定的 adopt／keep，沒有當批授權不做 SSH／更新／移除。
-- **關聯**：item 2 Runtime 目錄收斂；item 3 #285；[環境使用說明](docs/repo-guide.md)
-
-### 5. steward 機制改為內容契約；transfer 模式改以移交給同事為重點（#309）
-
-- **Context**：使用者同時用 Codex 與 Claude，現行 steward 機制以 actor 身分授權，造成大量無判斷價值的確認題，卻不檢查接手真正需要的內容；移交給同事的需求即將出現。評估見計畫「評估摘要」。
-- **Goal**：任何 runtime、session、主機只靠 repo 接續進行中的工作；移交給新同事後，repo 足以讓接手者掌握全貌並通過可機械判定的接手驗收。
-- **Acceptance Criteria**：
-  1. P1：各啟用 contract 的受治理 repo 關閉 `active_item_contract`，`steward-authority.py` 回 `NOT_APPLICABLE`、`audit --ship` OK、該 repo 測試通過。
-  2. P2：移除身分授權層（含移交的 actor 狀態機），接續改為內容契約；kernel「Shared work」段依使用者核定的逐字內容改寫、`kernel-gate.py` 先紅後綠；全套測試通過；native case 不出授權確認題且到達原終點；Writer 為其他 runtime 的 fixture 不阻擋 Log。
-  3. P3：移交指南改為讓接手者掌握全貌，含接手驗收題組；fixture repo 實跑一次移交，題組由 fresh-context agent 作答並以腳本判分全數通過。
-  4. P5：必讀 reference 讀取量與一筆真實交付耗時改善前後已量測。
-- **Constraints**：不新增接續相關的機檢或 gate；不改受信任 scanner；kernel 安全底線不動；各 repo 的 push／PR／merge 須另經具名批次授權；P2 實作前跑一批 deep-plan。claude/settings.json 的 runtime drift 不帶進 commit。本 Spec 未授權任何 commit、push、PR、merge 或部署。
-- **進度**：評估完成，使用者選定 D-20261012-content-continuity-model、D-20261012-handover-to-colleague-focus、D-20261012-kernel-shared-work-rewrite；計畫為 in-progress。P1 已合併 9 個 repo（kapi-infra #179、kapi-protocol #36、krepo-common #85、krepo-company #61、krepo-judicial #139、krepo-mops-disclosure #115、krepo-mops-major-news #98、krepo-tej-export #11、krepo #192），各 repo authority 回 `NOT_APPLICABLE`、`audit --ship` OK、`unit-tests` 通過；krepo-mops-disclosure 的 ruleset 要求 1 個核准，依使用者指示以 bypass merge（`--admin`）合併。krepo-mops-financial-statements 因工作樹有未 commit 的他人工作未處理。P2 已合併（PR #316，main `3fb6fd8`..`838f654`；D-20261012-steward-identity-removed，驗證與 review 結果見計畫 P2「實作結果」）。P2b 已在 9 個 repo 合併（kapi-infra #180、kapi-protocol #37、krepo-common #86、krepo-company #62、krepo-judicial #140、krepo-mops-disclosure #116（依使用者指示 bypass merge）、krepo-mops-major-news #99、krepo-tej-export #12、krepo #193）：kernel 與 dotfiles 逐字相同、Goal contract 啟用、STATUS 四欄刪除（見計畫 P2b「實作結果」）。
-- **下一步**：P3 已在 branch feat/issue-309-handover-acceptance 實作、驗證並修正 deep-review（full）的 findings（見計畫 P3「實作結果」），送出合併後做 P5；待補 P1／P2b 的 repo 有兩個（觸發時才做，見計畫「待補 repo」）：krepo-mops-financial-statements 待其開發完成；kapi-nc-v2 待通過驗證、成為取代現行 NC 的生產 repo 並採用文件治理時。
-- **關聯**：[本項計畫](docs/plans/2026-10-12-content-continuity-redesign.md); GitHub #309; item 3 #285 第 5 步依賴 P2
+- **關聯**：item 2 Runtime 目錄收斂；#285（已結案，M-20261012-project-process-reduction-complete）；[環境使用說明](docs/repo-guide.md)
 
 ## 暫停中
 
+- **#309 內容契約與移交給同事**：P1、P2、P2b、P3、P5 已完成（[計畫](docs/plans/2026-10-12-content-continuity-redesign.md)、D-20261012-steward-identity-removed），剩兩個 repo 待補 P1／P2b，見計畫「待補 repo」；**恢復條件**：使用者告知 krepo-mops-financial-statements 開發完成且工作樹淨空，或 kapi-nc-v2 通過驗證、取代現行 NC 成為生產 repo 並採用文件治理。
 - **B-20260902-gh-account-autoswitch**：pending；維持 backlog 既有觸發條件，在條件實際發生前不開發、
   不結案。**恢復條件**：跨帳號操作成為常態，或相同症狀再次被查錯方向。
 
@@ -91,6 +61,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - 「brewup 自動更新 bun 全域套件」的本地結案契約與驗收：[M-20261008-brewup-bun-global-update-local](docs/archive/milestones-2026-10.md)；已完成本批本地來源，尚未取得 push／PR／merge／部署授權。
 - legacy dead-end 的完整推導與實驗證據：`docs/dead-ends.md`「分工」。
 - 「移除 turbo skill 與其他 skill 的耦合」的結案與散佈結果：[M-20261011-turbo-retired](docs/archive/milestones-2026-10.md)；計畫 `docs/plans/2026-10-11-turbo-retirement.md` 已凍結。
+- 「/project 流程減量與驗證成本（#285）」的結案與量測：[M-20261012-project-process-reduction-complete](docs/archive/milestones-2026-10.md)；計畫 `docs/plans/2026-10-12-project-process-reduction.md` 已凍結。
 - 無路徑線索時執行 `scripts/doc-governance.py find '自然語言問題或 stable ID'`；人工 pointer 不作為可檢索性的代理。
 
 ## 待辦入口

@@ -299,6 +299,22 @@ P2 移除 actor 狀態機後，移交改為「讓接手的人掌握全貌」：
 
 P2 刪除後量測必讀 reference 的讀取量與一筆真實交付的耗時；#285 計畫第 5、6 步由本階段承擔。
 
+**P5 量測結果（2026-10-12）**
+
+- 方法：沿用評估時的回溯腳本（`extract.py`／`runs.py`，暫存於評估 session 的 scratchpad，不入庫），規則不變，只把原本
+  排除的評估 session 納入，因為改善後的真實送出都在該 session。淨耗時＝總時間扣 CI 與等使用者。
+- 必讀 reference（靜態 bytes）：Log 路徑 workflow、log-workflow、ship-policy、dossier、log-prepare、ship-paths 由 P2 前
+  91,284 B（含 authority.md）降為 64,867 B；log-prepare.md 35,160 B 仍最大。#285 第 5 步要縮的是前幾步移除的分支，
+  test-evidence（PR #312）與 steward（PR #316）對應文字都已刪除；沒有量到指向其他段落的痛點，本階段不再縮減。
+- 同一 fixture 的 native 前後對照（Sonnet claude-sonnet-5-5，`tested` case，`project-reference-metrics.py` 正規化）：
+  P2 前 2 次 12 次 reader、100,308 B、讀 reference 32–48 秒、整輪 60–69 秒；P2 後 3 次 9 次 reader、約 71.3 KB、28–33 秒、
+  52–56 秒。Codex（gpt-6.1-sol）P2 後 9 次 reader、71,252 B，整輪 `tested` 186 秒、`committed` 145 秒；Scenario 38 記錄的
+  P2 前三案為 144／125／115 秒，這個樣本看不出 Codex 變快。
+- 真實交付：P2 合併後的小改動交付 PR #318（`/project --merge`，2 個文件檔）淨耗時 220 秒，51 次基線中位 760 秒。但同一
+  session 在 P2 前的小改動交付（PR #313、#314）已約 200 秒，差距主要來自同 session 已讀 reference 可沿用、輕量
+  路徑與 Claude 的較短回合，不能歸因於本次改動；能歸因的是完整讀取一次的量由 118.4 KB／14 次降為 71.2 KB／9 次。
+  P2 後尚無 Codex 的真實送出，無法比較。
+
 ## 不做
 
 - 不新增接續相關的新機檢；重新啟用的 `active_item_contract` 只沿用 scanner 既有的兩項內容檢查，不改 scanner。
