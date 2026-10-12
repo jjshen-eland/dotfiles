@@ -204,6 +204,15 @@ B-20260928-project-merge-continuation（steward／resume 誤擋，P2 後不再�
   source 3 次中 2 次抓到、修正後 3 次中 1 次明確抓到（另 1 次誤判沒有、1 次標未核對），前後差異在變異範圍內，
   不歸因於修正；第 6 步沒有指明以 default branch 比對未合併 commit，P3 強化移交內容時一併處理。
 
+### 待補 repo（觸發時做 P1／P2b）
+
+- krepo-mops-financial-statements：已採用文件治理、仍是舊 kernel 與四欄 contract。觸發條件：使用者告知其開發完成、
+  工作樹淨空。屆時一次做完 P1 與 P2b（kernel 換 dotfiles 現版、Goal contract、STATUS 刪四欄、scanner 與受信任版本
+  一致）。
+- kapi-nc-v2：2026-10-12 尚未採用文件治理（無 `.doc-governance.json`、scanner 與 kernel 區塊），準備在通過驗證後
+  取代現行 NC 成為生產 repo。觸發條件：該 repo 上線並採用文件治理時，直接套 dotfiles 現版 kernel 與只要求 `Goal` 的
+  contract，沒有舊 contract 需要關閉。
+
 ### P2b：其他受治理 repo 同步（P2 合併後緊接）
 
 對 P1 的 9 個 repo（krepo-mops-financial-statements 待其工作樹淨空）：kernel 複本換為新內容、`tests/test_agent_contract.py`
