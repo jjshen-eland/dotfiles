@@ -44,11 +44,14 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
   條件式 shell 中未能停止，已先重現再修正。開發整批 29 模組 exit 0（133.598 秒）。本輪使用者
   明示 `$project --merge`，正式最終 commit set 的 29 模組亦 exit 0（128.043 秒）。PR #330 已開，
   HEAD `84368cc`；macOS required check 兩次因既有 review fixture 的 maintenance.lock 競態失敗，
-  Ubuntu 通過，未 merge。前段到 PR 仍花 7:01.0；真實修後完整交付及端到端收益未驗。
+  Ubuntu 通過，未 merge。使用者選擇 1，已明示把 fixture maintenance 修復納入同 PR；
+  配置／背景 maintenance 的 RED 已重現，repo-local 隔離修復的 17 個案例 exit 0（25.646 秒）。
+  修復尚待最終 commit set 與 hosted required checks 驗證。前段到 PR 仍花 7:01.0；
+  真實修後完整交付及端到端收益未驗。
 - **下一步**：接續 `docs/pr329-delivery-measurement`，先核對 PR #330 的 `84368cc` 與本地觀測紀錄。
-  等使用者決定是否將既有 `tests/review-primary-native-eval.py` 的 fixture 自動 maintenance 納入同 PR。
-  接受後先重現並驗證 repo-local 隔離候選，再更新同 PR、重驗 required checks、rebase merge 與本地清理；
-  未接受則保留 OPEN，不盲目重跑／bypass。現有同批 CI 修復提交數為 0，重跑 job 不算修復提交。
+  完成 `tests/review-primary-native-eval.py` 的 fixture 隔離修復驗證，再更新同 PR、重驗全部 required
+  checks、rebase merge 與本地清理；不盲目重跑／bypass。此修復將是同批第 1 次 CI 修復提交，
+  最多兩次；前兩次執行同 HEAD 的 job 不算修復提交。
   本輪授權只依 Project shipping table，不能由本契約延伸到下一批。不得以 focused fixture 耗時結案。
 - **關聯**：B-20260924-workflow-verification-economy；M-20261013-pr329-latency-root-cause；
   M-20261013-pr329-delivery-measurement；M-20261013-cross-repo-delivery-measurement；

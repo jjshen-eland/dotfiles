@@ -514,3 +514,11 @@
   - 放棄:只將舊範例多行一起執行；只靠 set -e 保證條件式呼叫中的停止；新增 merge／push wrapper 省略 gate；更動 CI／模型／摘要政策以試圖回收全部非命令秒數
   - 重議:下一筆真實交付仍有短命令額外 poll、連續收尾無淨收益，或新執行環境未遵守失敗停止；先保留 exact trace 與因果證據，不追加泛用規則
   - 關聯:project-shipping-latency;B-20260924-workflow-verification-economy;M-20261013-pr329-latency-root-cause;shared/skills/project/references/pressure-tests.md;tests/project-local-finish-test.py
+
+- **D-20261013-review-fixture-maintenance-isolation · 2026-10-13 PR #330 的既有 review fixture 自動 maintenance 納入同批修復**：使用者直接選擇上一輪選項 1，接受新增 tests/review-primary-native-eval.py 的 fixture 隔離範圍，並接續同 PR 的 required checks／merge 終點。只在自建 fixture 第一顆 baseline commit 前設 repo-local maintenance.auto=false、gc.auto=0，阻止 creator 的 Git 背景 maintenance 改動 metadata；不改使用者 repo、全域 Git 或 snapshot oracle。既有本批兩次 job 執行沒有 source 修復，此處開始第 1 次 CI 修復提交，最多兩次的界線不重設。
+  - 日期來源:direct
+  - 證據:兩次 hosted CI 的 .git/objects/maintenance.lock 遍歷／lstat 競態；隔離 GIT_TRACE 顯示 baseline commit 啟動 maintenance --auto --quiet --detach。新增真 Git regression 在 global maintenance.auto=true／gc.auto=1 下，舊 prepare() 因缺 repo-local 隔離為 RED；修後需在 baseline commit trace 無 maintenance run、local 配置正確、read-only status 前後全 metadata snapshot 相同。原 import 寫入偵測與中斷清理測試仍保留。
+  - 放棄:忽略消失的 lock 或修改 snapshot 範圍；全域關閉 Git maintenance；增加 blind CI rerun；以新增 fixture 配置代替 required CI 通過
+  - 重議:修後 hosted CI 仍失敗或其他 fixture 另有背景寫入時，按具體因果處理，不擴成全 repo 配置變更
+  - 關聯:M-20261013-pr330-shipping-ci-blocked;B-20260924-workflow-verification-economy;PR#330;tests/review-primary-native-eval.py;tests/review-primary-scope.py
+  - 本地驗證:新增 RED 修後通過，review-primary-scope 的 17 個案例 exit 0／25.646 秒（/tmp/pr330-fixture-repair-focused.log），未重跑模型 eval；整批與 hosted 驗證接續於本輪 Log。
