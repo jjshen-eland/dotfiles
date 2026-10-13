@@ -2,6 +2,9 @@
 # Sourced by module-shell.sh; ROOT, TMP and assertions are supplied by the harness.
 # shellcheck disable=SC2154,SC2034
 echo "▶ 12c. project skill 跨 Claude Code／Codex 共用核心"
+python3 -B "$ROOT/tests/project-local-finish-test.py" >"$TMP/project-local-finish-test.out" 2>&1
+project_local_finish_rc=$?
+assert_rc "project 本地收尾：同步成功才清理、query／ref／工作樹／pull 失敗停止" 0 "$project_local_finish_rc"
 python3 "$ROOT/tests/project-reference-metrics-test.py" >"$TMP/project-reference-metrics-test.out" 2>&1
 project_metrics_rc=$?
 assert_rc "project native trace normalizer：完整末行／partial／重讀／截斷有效性／cache 計費" 0 "$project_metrics_rc"

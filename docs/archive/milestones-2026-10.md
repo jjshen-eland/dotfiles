@@ -834,3 +834,13 @@
   - 放棄:把全部非命令時間叫純推理時間；把 root contract 當 global contract；以長 context 或第二摘要的相關性冒充已確認因果；未修復即宣稱优化完成
   - 重議:有修復授權後，先驗最短因果鏈；仍慢時取得 model request 的 generation／queue／prefill 分段或相同 context／runtime 對照，才調整模型或摘要契約
   - 關聯:M-20261013-pr329-delivery-measurement;M-20261013-cross-repo-delivery-measurement;B-20260924-workflow-verification-economy;shared/skills/project/references/log-prepare.md;shared/skills/project/references/merge-workflow.md
+
+- **M-20261013-project-shipping-latency-local · 2026-10-13 提交延遲首批本地修復與行為驗證**：Codex 入口加入短命令預設等待的 runtime binding；共享 merge reference 的本地同步／核對／清理以一段 Bash 成功鏈接續，merge 與 push 仍保留獨立 outward gate。沿用 cleanup-stale-branch.sh，不新增產品 helper／全域規則、CI 或模型設定。STATUS 的 project-shipping-latency 保留 active，因 AC 4 的真實修後交付尚未量測。
+  - 驗證:3 秒命令的 before 以 1 秒 yield 回 session、另 poll，after 預設等待同次 exit 0；本地收尾原範例 1 正常 PASS／8 failure RED。第一候選 native Claude 發現 set -e 在條件式工具包裝中失效、pull 42 後仍刪 branch；deterministic RED 重現並改為顯式成功鏈。最終 14 個執行案例 PASS，含正常、本地 default 實際 fast-forward、gh 已清理、不相關 branch、同步前後 dirty、pull／provider／local-ref query 失敗、PR state／head／feature tip／merge ancestry 不符及 conditional-context 失敗停止。
+  - Focused forward:最終 Codex fresh agents 的兩份獨立 fixture 正常清理與 pull 42 停止皆由 call log／Git 終態核對；Claude CLI requested opus[1m]、resolved claude-opus-5-5[1m]、high 的正常及錯誤分支亦成立。Claude 首次最終錯誤案的輔助 script 寫到 fixture 外的 /tmp，故不當完整 scope PASS；獨立 contained case 的同一停止行為成立、script 留在 fixture。Opaque bash -c 曾被工具安全檢查拒絕，受測端改以可檢視的腳本執行；不宣稱零工具拒絕／完整 Project shipping 或 latency 驗收。Codex 使用本 session 繼承的模型，不把 fresh subagent 結果冒充與 PR #329 相同 CLI／reasoning／context 的前後比較。
+  - 整批驗證:最終行為 source 以基線 0e54e8ee2361bb8063a3d7c8777045a34ff4c2d1 跑整批測試，untracked input 回 full，29 模組 exit 0／133.598 秒（/tmp/pr329-shipping-latency-final-batch.log）；第一候選的 135.196 秒只作開發紀錄。Codex quick_validate PASS。測試後只更新本條與 STATUS 的驗證結果文字，另做 content 定向檢查及 audit，不把定向檢查冒充整批驗收。
+  - 日期來源:direct
+  - 證據:/tmp/pr329-local-finish-before.log、/tmp/pr329-local-finish-final.log；第一候選 packet /var/folders/t5/4b3mtjj52fvdplz5f15mf_ym0000gp/T/pr329-forward-cl1h5b4h；最終 packet /var/folders/t5/4b3mtjj52fvdplz5f15mf_ym0000gp/T/pr329-final-forward-ua0fqq60，含 frozen references、bindings、provider call logs、Claude native JSONL。只核對工具與終態，不讀 reasoning 內容；本機 raw 遺失不補造。
+  - 放棄:用 focused fixture 的 wall time 推算真實送出節省秒數；以失敗後模型自己恢復 branch 的結果宣稱原候選安全；把第一候選全套結果當最終来源全綠
+  - 重議:下一筆獲具名授權的真實送出核對 AC 4；短命令／cleanup 仍有多餘回合或新 failure 時保留 exact trace，尚無端到端改善證據不關 backlog
+  - 關聯:D-20261013-project-shipping-latency-local;M-20261013-pr329-latency-root-cause;B-20260924-workflow-verification-economy;STATUS.md;shared/skills/project/references/pressure-tests.md;tests/project-local-finish-test.py
