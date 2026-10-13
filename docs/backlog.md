@@ -88,6 +88,11 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   記錄中的命令運行 21.701 秒，其餘 395.144 秒為操作間編排／模型／transport。pull 實跑 2.559 秒、退出後 64.088 秒才 poll；
   優先處置短命令的 1 秒 yield 與多輪本地收尾。global AGENTS 切 branch 時重載、摘要「逐次／第一個」文字歧義另有證據，
   但各自對秒數的因果尚未分離；不先改契約或模型。診斷完成、行為修復與修後收益未驗，本項仍 open。
+  **本地修復（2026-10-13）**：`D-20261013-project-shipping-latency-local`／
+  `M-20261013-project-shipping-latency-local` 記錄短命令預設等待與有失敗停止的本地連續收尾；
+  14 個 deterministic controls 及雙端 focused forward 已驗。首候選的條件式 errexit 失效有 RED，
+  已由明確成功鏈修復；不是刪 gate。下一筆真實交付依 STATUS 的 AC 4 量測，端到端收益未驗，
+  本項不因局部修復結案，亦不重跑舊整合 fixture。
 
 - **B-20260924-workflow-review-residuals** · **#229 完整高風險review與大型工程驗收仍有限制**。
   後續single-pass四案已完成；原harness自行設定USD4／600秒截斷，不能據此判定工作流不收斂，

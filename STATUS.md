@@ -12,7 +12,46 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 進行中
 
-目前無進行中項目。
+### PR #329 提交延遲改善（project-shipping-latency）
+
+- **Context**：正式提交的延遲調查與跨 repo 對照已完成；以 `M-20261013-pr329-latency-root-cause`
+  為基準。已確認短命令過早 yield 增加結果取回回合；本地收尾亦有多次操作間隔。
+  global instructions 切換、長 context、模型／provider 耗時與摘要歧義的個別影響尚未分離。
+- **Goal**：減少 Project 正式送出中可避免的結果等待與本地收尾往返，保持既有安全及驗證契約，
+  並用真實交付記錄確認收益；不以 skill／文檔類 repo 的性質直接解釋延遲。
+- **Acceptance Criteria**：
+  1. 短命令等待：以已觀察的 2–5 秒命令重現原先 1 秒 yield 的額外取回回合；修後在工具正常等待
+     範圍內完成者，同次 call 取得 exit／結果，額外 poll 回合為 0。超時仍正確接續等待，失敗 exit
+     不被吞掉；suite／CI 等長任務保留進度回報能力。先重現，再驗修後行為。
+  2. 本地收尾：列出 merge 結果確認後同步、核對、cleanup 的相依與停止條件；能在同一次執行中
+     安全接續的本地步驟減少模型往返。以正常路徑及同步失敗、ref 不符、非預期工作樹變更驗證：
+     成功才繼續，失敗不進入後續清理，也不誤報完成。保留每個 push 的獨立 outward call、canonical
+     cwd、merge exact-head 與 mandatory non-watch recheck；實作不以呼叫合併繞過 gate。
+  3. 行為驗證：若需修改 skill，依 repo authoring route 對實際失敗做 focused before／after eval，
+     以工具軌跡與結果判定，不以新增文字或 static gate 通過代替。整批測試依 root 測試契約選擇，
+     文件治理 audit 通過；不因本次優化增加每次送出的模型驗收或重複 suite。
+  4. 真實收益：下一筆獲當批送出授權的真實工作，記錄 invocation → final、使用者等待、CI、
+     本地 suite、三個既有分段、命令 exit → 結果取回間隔及模型／tool 回合數；程序區間取聯集，
+     不重複加總重疊時間。附 runtime／reasoning、context 熱度、scope 與版本，對照 PR #329；
+     條件不匹配時只報本筆觀察。沒有真實修後資料時標示「行為已驗、端到端收益未驗」，
+     不將全部 395.144 秒當可回收時間，亦不據此關閉整條 backlog。
+- **Constraints**：首批實作範圍為上述等待及本地收尾機制；
+  CI 架構、測試選擇器、模型／reasoning 設定、指示重載與摘要授權契約的變更不在首批範圍。
+  後者若仍有瓶頸，先補因果證據再修訂本契約。不重開已結案的 #285／#279，不改其他 repo，
+  不為取得耗時製造人工 shipping fixture；新增 helper 或指引的成本也納入評估。
+- **進度**：2026-10-13 首批本地實作已完成：Codex 短命令採預設等待，共享本地收尾改為明確成功鏈；
+  14 個執行案例及 Codex／Claude 的正常與 pull 失敗 focused forward 通過。第一候選在 Claude 的
+  條件式 shell 中未能停止，已先重現再修正。開發整批 29 模組 exit 0（133.598 秒）。本輪使用者
+  明示 `$project --merge`，本批進入正式提交與 AC 4 實況量測；endpoint 尚未達成，端到端收益未驗。
+- **下一步**：本輪在 `docs/pr329-delivery-measurement` 完成最終 commit set 測試、PR required checks、
+  rebase merge 與本地清理；按 AC 4 留下工具／程序及 provider 時間。合併後實作基線轉為 `origin/main`，
+  不從已清理的 feature branch 接續；後續量測文件若尚未合併，另在其下一步具名 branch 保存。
+  本輪授權只依 Project shipping table，不能由本契約延伸到下一批。不得以 focused fixture 耗時結案。
+- **關聯**：B-20260924-workflow-verification-economy；M-20261013-pr329-latency-root-cause；
+  M-20261013-pr329-delivery-measurement；M-20261013-cross-repo-delivery-measurement；
+  M-20261012-project-process-reduction-complete；D-20261009-small-change-delivery-spec（歷史，
+  已由 D-20261009-ci-system-redesign 取代其設計上限）；D-20261013-project-shipping-latency-local；
+  M-20261013-project-shipping-latency-local；PR #329。
 
 ## 暫停中
 

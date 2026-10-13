@@ -507,3 +507,10 @@
   - 放棄:所有 repo 共用固定目錄樹；由 personal remote 自動換個人規範；403/404 當無保護；空 repo 首推任意產品 HEAD；init 與一般 audit 共用 mutation 授權
   - 重議:公司正式 org-governance 發布新規範、provider creation policy 能力變更，或 frozen behavior oracle 出現新錯誤時；以來源 revision 與 observed failure 更新，不抄多份組織文件
   - 關聯:shared/skills/repo-check/references/workflow.md;shared/skills/repo-check/evals.md;shared/skills/project/references/ship-exceptions.md;AGENTS.md
+
+- **D-20261013-project-shipping-latency-local · 2026-10-13 Project 短命令等待與本地收尾連續執行**：依使用者「開工」實作 STATUS 的 project-shipping-latency 首批。Codex 的等待工具 binding 留在薄入口，正常短命令採工具預設等待、長任務仍可 yield 並取得終態；共享 merge reference 將 outward merge 與本地收尾分開，後者以明確 `&&` 成功鏈接續，不增加另一支 helper。既有 cleanup-stale-branch.sh 承接執行當下 tip 重驗與本地刪除；push canonical cwd／獨立 call、merge exact-head、required non-watch check 與摘要契約保持原有規範。雙入口／canonical core／links topology 沿用 D-20260822-portable-project-skill 與 D-20260912-neutral-portable-skill-core。
+  - 日期來源:direct
+  - 證據:3 秒本地命令以 1 秒 yield 回 session 並需一次 poll，預設等待同次取得 exit 0。舊本地收尾範例正常控制通過、8 個失敗控制為 RED；第一候選增加 guards 後，fresh Claude 的條件式 shell 包裝仍令 `set -e` 失效，pull exit 42 後繼續刪 branch。deterministic conditional-context RED 重現後改為成功鏈；本地 ref query failure 另由 RED 修正為可區分不存在與查詢失敗的讀取。最終 14 個執行案例通過，並非靠 static 文字比對。
+  - 放棄:只將舊範例多行一起執行；只靠 set -e 保證條件式呼叫中的停止；新增 merge／push wrapper 省略 gate；更動 CI／模型／摘要政策以試圖回收全部非命令秒數
+  - 重議:下一筆真實交付仍有短命令額外 poll、連續收尾無淨收益，或新執行環境未遵守失敗停止；先保留 exact trace 與因果證據，不追加泛用規則
+  - 關聯:project-shipping-latency;B-20260924-workflow-verification-economy;M-20261013-pr329-latency-root-cause;shared/skills/project/references/pressure-tests.md;tests/project-local-finish-test.py

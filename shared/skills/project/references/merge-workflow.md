@@ -19,10 +19,46 @@ Prerequisite：[ship-policy.md](ship-policy.md)、Log 結案階段與 [ship-path
 ```bash
 gh pr merge <PR-number|URL> -R "$repo_slug" <merge-flag> --delete-branch
 # --delete-branch 刪 remote branch；在該 repo 工作目錄內執行時，gh 會順帶切回 default 並刪本地 branch
-git -C <repo> switch <default>          # 若 gh 未代切（如以 -R 在 repo 外執行）
-git -C <repo> pull origin <default>     # 同步本地 default——merge 產生新 commit，本地必落後
-git -C <repo> branch -D <feature>       # 本地 branch 若仍殘留。squash/rebase 後 -d 會誤判「未 merge」拒刪，
-                                        # 故先確認 PR 已 MERGED（gh pr view --json state）再 -D
+```
+
+merge 是獨立 outward call。它成功後，本地同步／核對／清理可在一次 shell 執行內接續，無需逐步
+重新進模型；任一步失敗就停，回報已做到的位置，不把最後一行成功當整段成功。
+以明確的 `&&` 成功鏈接續，不單靠 `set -e`：工具若把整段包在條件式中，errexit 可能失效。
+以下 Bash 範例使用既有 repo／default／feature 與 merge 前已確認的 exact `feature_head`，
+`project_scripts` 是目前 skill 解析出的 scripts 絕對路徑；不是補做遠端授權的 wrapper。
+
+```bash
+(
+  set -uo pipefail
+  merged="$(gh pr view "$pr" -R "$repo_slug" --json state,headRefOid,mergeCommit \
+    --jq '[.state,.headRefOid,.mergeCommit.oid] | @tsv')" &&
+  IFS=$'\t' read -r pr_state pr_head merge_oid <<< "$merged" &&
+  test "$pr_state" = MERGED &&
+  test "$pr_head" = "$feature_head" &&
+  test -n "$merge_oid" &&
+  test "$feature" != "$default" &&
+  tree="$(git -C "$repo" status --porcelain)" &&
+  test -z "$tree" &&
+  current="$(git -C "$repo" symbolic-ref --short HEAD)" &&
+  { test "$current" = "$feature" || test "$current" = "$default"; } &&
+  branch_tip="$(git -C "$repo" for-each-ref --format='%(objectname)' "refs/heads/$feature")" &&
+  if test -n "$branch_tip"; then
+    test "$branch_tip" = "$feature_head"
+  fi &&
+  if test "$current" != "$default"; then git -C "$repo" switch "$default"; fi &&
+  git -C "$repo" pull --ff-only origin "$default" &&
+  local_head="$(git -C "$repo" rev-parse HEAD)" &&
+  remote_head="$(git -C "$repo" rev-parse "refs/remotes/origin/$default")" &&
+  test "$local_head" = "$remote_head" &&
+  git -C "$repo" merge-base --is-ancestor "$merge_oid" HEAD &&
+  tree="$(git -C "$repo" status --porcelain)" &&
+  test -z "$tree" &&
+  branch_tip="$(git -C "$repo" for-each-ref --format='%(objectname)' "refs/heads/$feature")" &&
+  if test -n "$branch_tip"; then
+    "$project_scripts/cleanup-stale-branch.sh" "$repo" local "$feature" "$feature_head"
+  fi &&
+  printf 'local finish: synced %s; feature %s absent; clean tree\n' "$default" "$feature"
+)
 ```
 
 - PR 內仍殘留 review 樣式 commit → **先跑 `ship-state.sh <repo>` 取 `review-residue:` 判定，不自行看 `git log` 認**（同ship-exceptions squash 節與 `log-prepare.md`「Step 1：逐 repo 狀態 + 流程偵測（先於任何 commit）」的禁令；誤認就是壓掉使用者自己的歷史，且緊接 force-push 不可回復）：有 `top-contiguous:` → 照該行的 `squash-cmd:` 壓掉再送，不必詢問；只有 `buried:` → **照常送出**，在摘要標明「N 顆 review 痕跡夾在語意 commit 中間，非互動式壓不掉」；`UNKNOWN` → 如實說明現況、不猜。

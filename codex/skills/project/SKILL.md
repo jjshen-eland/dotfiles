@@ -11,6 +11,8 @@ description: "Manages a work item's repository-resident lifecycle in three expli
    或猜漏掉的 token。
 2. 以本 `SKILL.md` 的實際位置解析 skill directory；`references/`、`scripts/` 與 `templates/` 是指向
    neutral shared core 的 links。若從 worktree 測試，必須使用 worktree 這份，不得跳去其他 checkout。
+   一般短命令沿用 exec 工具的預設等待，不設 1 秒 `yield_time_ms` 而多加一次模型取回回合；
+   suite／CI watch 等長任務才按進度需求提早 yield，返回 session 後仍須取得完成結果與 exit code。
 3. 先用 `<skill-dir>/scripts/read-reference.py` 逐段讀取 `workflow.md`，每次 tool call 只呼叫 reader 取得一個 chunk，不合併其他命令或結果；看見該檔 `EOF` 前不得執行任何 repo mutation。
    呼叫形式：`python3 "<skill-dir>/scripts/read-reference.py" workflow.md --start 1`；reference 引數只傳 basename。
    若首段缺少 `NEXT`／`EOF`，從最後完整可見的 `Lnnnnnn` 下一行續讀；`RANGE` 不代表已收到全部內容。

@@ -1538,3 +1538,25 @@ Fixture 與執行步驟：`tests/handover-acceptance-eval.py`（opt-in，會消�
 **2026-10-12 實測**（Sonnet claude-sonnet-5-5）：移交 5 題、完整指南 5／5 PASS；只刪「部署、排程與維運」仍 5／5（主機名稱
 在其他節重複），移除獨有事實後 3／5 FAIL。原 `transfer` case 3 次都把未合併 commit 列為缺項。審查修正後重跑時發現負對照
 可被 `git diff` 讀回、判分檔比題目嚴兩個設計缺口，修正後完整版 5／5、負對照 3／5。詳見計畫 P3「實作結果」。
+
+## Scenario 43 — 短命令結果取回與本地連續收尾
+
+**Observed RED（2026-10-13）**：PR #329 的 pull 實跑 2.559 秒，1 秒 yield 返回 session，
+退出後 64.088 秒才 poll；push／PR create／merge 亦均在預設等待內完成卻另取結果。
+本地 3 秒命令以 1 秒 yield 重現 session＋額外 poll。詳見 M-20261013-pr329-latency-root-cause。
+`tests/project-local-finish-test.py` 實跑舊收尾範例的隔離 Git repo，正常控制通過，8 個失敗控制為 RED；
+其中 pull exit 42 後仍刪 feature 並以 exit 0 結束，不能直接把舊多行範例批次化。
+
+**Oracle**：
+
+- Codex 一般短命令在正常等待內完成時，同次 tool result 含 completion／exit，無額外 poll。
+  長任務可 yield，但仍取得終態，非零 exit 不遮蔽；不以此測試宣稱真實交付節省固定秒數。
+- MERGED／exact head 已驗的本地同步、核對、清理能連續執行，成功後 default 與 origin 同步、
+  feature absent、工作樹 clean；不把 merge 與其他 outward calls 包入本地收尾。
+- pull／provider query 失敗、PR 未 MERGED、head 不符、feature 前進、merge commit 不在 default、
+  同步前後有非預期變更時非零退出，不刪 feature、不報完成。已由 gh 切回／清 branch 的正常路徑亦成立。
+  本地 ref 查詢失敗也須停止，不以非零查詢當 branch 已不存在；此控制在第一候選已重現誤報成功。
+  Claude fresh forward 的條件式 shell 包裝曾令第一候選的 `set -e` 失效、pull 失敗後刪 branch；
+  deterministic conditional-context RED 已重現，修後須不依賴 errexit 才能停止。
+- before／after 使用相同獨立 fixture，oracle 與模型可讀 references 分離；雙端 shared 收尾語意相同。
+  工具軌跡與 Git 終態判分；不重播真 GitHub shipping，不當作端到端效益驗收。
