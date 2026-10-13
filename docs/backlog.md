@@ -102,7 +102,8 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   第二次／最後一次修復的本地與 hosted 邊界見 `M-20261013-review-fixture-maintenance-second-repair`。
   **交付結果**：PR #330 已合併，兩次 source 修復後 required checks 通過，見 `M-20261013-pr330-delivered`。
   本地收尾單次呼叫 6.197 秒，但建立 PR 前仍 7:01.0；到本地同步共 37:28.8，含失敗／修復。
-  不將這個終點當 final，不把局部行為支持當端到端收益；完整回報終點與正常 workload 的匹配對照仍未補齊。
+  **目前評估：尚不能確定整體提交流程已優化。**不將這個終點當 final，不把局部行為支持當端到端收益；
+  完整回報終點與正常 workload 的匹配對照仍未補齊。
 
 - **B-20260924-workflow-review-residuals** · **#229 完整高風險review與大型工程驗收仍有限制**。
   後續single-pass四案已完成；原harness自行設定USD4／600秒截斷，不能據此判定工作流不收斂，

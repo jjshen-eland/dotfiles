@@ -16,6 +16,8 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 - **Context**：PR #330 已於 2026-10-13 合併為 `8ea1fbf`，等待／本地連續收尾與兩處 fixture 隔離均已交付；
   結果與原規格來源見 `M-20261013-pr330-delivered` 及 PR #330 的 STATUS 歷史。建立 PR 前仍花 7:01.0。
+- **評估**：尚不能確定整體提交流程已優化。已驗證的局部等待／收尾行為與 fixture 可靠性修正，
+  不等於端到端效率改善。
 - **Goal**：確認並減少真實提交在 PR 建立前的可避免成本，用相同終點的實況量測評估端到端收益。
 - **Acceptance Criteria**：補齊本輪 invocation→final／merged→final，保留使用者等待、CI 失敗／修復與記錄成本；
   固定 runtime／effort／context／scope 的可比較資料，或明示其不匹配。取得下一筆正常真實工作後才判斷
