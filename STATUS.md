@@ -42,16 +42,19 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **進度**：2026-10-13 首批本地實作已完成：Codex 短命令採預設等待，共享本地收尾改為明確成功鏈；
   14 個執行案例及 Codex／Claude 的正常與 pull 失敗 focused forward 通過。第一候選在 Claude 的
   條件式 shell 中未能停止，已先重現再修正。開發整批 29 模組 exit 0（133.598 秒）。本輪使用者
-  明示 `$project --merge`，本批進入正式提交與 AC 4 實況量測；endpoint 尚未達成，端到端收益未驗。
-- **下一步**：本輪在 `docs/pr329-delivery-measurement` 完成最終 commit set 測試、PR required checks、
-  rebase merge 與本地清理；按 AC 4 留下工具／程序及 provider 時間。合併後實作基線轉為 `origin/main`，
-  不從已清理的 feature branch 接續；後續量測文件若尚未合併，另在其下一步具名 branch 保存。
+  明示 `$project --merge`，正式最終 commit set 的 29 模組亦 exit 0（128.043 秒）。PR #330 已開，
+  HEAD `84368cc`；macOS required check 兩次因既有 review fixture 的 maintenance.lock 競態失敗，
+  Ubuntu 通過，未 merge。前段到 PR 仍花 7:01.0；真實修後完整交付及端到端收益未驗。
+- **下一步**：接續 `docs/pr329-delivery-measurement`，先核對 PR #330 的 `84368cc` 與本地觀測紀錄。
+  等使用者決定是否將既有 `tests/review-primary-native-eval.py` 的 fixture 自動 maintenance 納入同 PR。
+  接受後先重現並驗證 repo-local 隔離候選，再更新同 PR、重驗 required checks、rebase merge 與本地清理；
+  未接受則保留 OPEN，不盲目重跑／bypass。現有同批 CI 修復提交數為 0，重跑 job 不算修復提交。
   本輪授權只依 Project shipping table，不能由本契約延伸到下一批。不得以 focused fixture 耗時結案。
 - **關聯**：B-20260924-workflow-verification-economy；M-20261013-pr329-latency-root-cause；
   M-20261013-pr329-delivery-measurement；M-20261013-cross-repo-delivery-measurement；
   M-20261012-project-process-reduction-complete；D-20261009-small-change-delivery-spec（歷史，
   已由 D-20261009-ci-system-redesign 取代其設計上限）；D-20261013-project-shipping-latency-local；
-  M-20261013-project-shipping-latency-local；PR #329。
+  M-20261013-project-shipping-latency-local；M-20261013-pr330-shipping-ci-blocked；PR #329；PR #330。
 
 ## 暫停中
 
