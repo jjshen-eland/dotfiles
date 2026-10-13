@@ -501,3 +501,9 @@
   - 放棄:runtime 層的檔案系統保護（Claude subagent 沒有逐 agent 的寫入 sandbox，Codex `spawn_agent` 繼承上層 sandbox，兩邊都無法只對 reviewer 鎖 target）；controller 在派遣前後對 target 全量 stat 比對（大 repo 的 ignored 依賴目錄成本高，且只能事後發現、擋不住）；reviewer 自行 `cp`／`git ls-files` 複製（實測 Claude 會這樣做，但 `git ls-files` 漏掉未追蹤的 subject 檔，dirty 範圍也各自解讀）；`git archive`（會套用 export-ignore／export-subst，內容可能和 head tree 不同）
   - 重議:快照排除的內容（ignored 依賴、submodule）讓必要檢查普遍無法執行；或修後任一 runtime 再次在 target 內執行
   - 關聯:Issue#315;X-20261013-review-import-write-in-target;X-20261007-review-python-isolated-bytecode;shared/skills/deep-review/scripts/review-scope.sh;shared/skills/deep-review/scripts/review-control.py;shared/skills/deep-review/references/portable-reviewer-brief.md;tests/review-readonly.py;tests/review-primary-native-eval.py
+
+- **D-20261013-repo-check-org-default · 2026-10-13 Repo 檢查預設 elandcomtw 與一次文件基線初始化**：依使用者選定，新增 portable repo-check 的內建公司 profile，只有當輪明示替代規範才替換，不依 remote owner 或 API 權限猜規範。Profile 是 skill 的可檢查標準，與當輪 GitHub 強制政策、repo 契約分開；不把 snapshot 的 unit-tests／approval 要求硬套全部 repo。使用者要 agent 建 README／CONTRIBUTING 等初始 main 基線，因此三份 kernel 同步加入有界 document-only bootstrap 例外：feature 上 commit，verified empty remote／creation policy／exact reviewed baseline 及具名 push 授權，首推後失效；既有 default、產品 code/data 與後續直推仍禁止。Project 的 bootstrap 入口先驗上層 document-only 邊界，不再把任意 HEAD/ancestor 當可推基線。本筆只記本地 authoring，未改組織設定、未首推公司 repo、未部署。
+  - 日期來源:direct
+  - 放棄:所有 repo 共用固定目錄樹；由 personal remote 自動換個人規範；403/404 當無保護；空 repo 首推任意產品 HEAD；init 與一般 audit 共用 mutation 授權
+  - 重議:公司正式 org-governance 發布新規範、provider creation policy 能力變更，或 frozen behavior oracle 出現新錯誤時；以來源 revision 與 observed failure 更新，不抄多份組織文件
+  - 關聯:shared/skills/repo-check/references/workflow.md;shared/skills/repo-check/evals.md;shared/skills/project/references/ship-exceptions.md;AGENTS.md

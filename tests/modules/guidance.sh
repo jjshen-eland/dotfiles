@@ -315,7 +315,7 @@ else bad "send-mail fallback relay facts 缺失"; fi
 
 echo "▶ 28. neutral shared skill core topology"
 SHARED_SKILLS="$ROOT/shared/skills"
-portable_skills="check-crawl-quality deep-plan handoff nc-notify ready4quit root-cause-first send-mail wait4me"
+portable_skills="repo-check check-crawl-quality deep-plan handoff nc-notify ready4quit root-cause-first send-mail wait4me"
 if [ -d "$SHARED_SKILLS" ] && [ -z "$(find "$SHARED_SKILLS" -name SKILL.md -print 2>/dev/null)" ]; then
     ok "shared skill core 存在且不暴露 runtime entry"
 else bad "shared skill core 缺漏或誤放 SKILL.md"; fi

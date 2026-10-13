@@ -767,3 +767,9 @@
   - 放棄:none
   - 重議:任一主機的審查在 target 內執行 target 程式碼，或 materialize 在實際 repo 失敗
   - 關聯:Issue#315;PR#326;M-20261013-review-execution-snapshot-local;D-20261013-review-execution-snapshot
+
+- **M-20261013-repo-check-local · 2026-10-13 Repo-check 公司規範與文件基線初始化本地完成**：新增 Claude Code／Codex 薄入口及 single shared elandcomtw-v1 profile、audit／initialize 流程與原生 opt-in eval harness；預設唯讀、只依當輪明示替代規範切換，並同步三份 kernel 的 document-only bootstrap 例外及 Project 上層邊界。兩端 production targets 完成 32 個 native outcomes，含 native discovery／negative、ignore、403、fork routing、核准基線與七種初始化停止條件；30 個唯讀／停止 packet bytes 與 Git metadata 不變，兩個合法基線逐 byte 與一次 create-only push 經獨立 Git probes 驗證。兩項 observed RED（先推不合規作者、虛構本機 origin/HEAD）已最小修正並雙端重驗。Skill validators、全 repo 29 模組 batch suite、kernel／doc audit 通過。本批為 feat/repo-check-elandcomtw 的未提交本地 authoring，沒有實際公司 repo 首推、push dotfiles 或部署；依 authoring guide 不自動 commit。
+  - 日期來源:direct
+  - 放棄:用 native CLI success 代替 behavior PASS；把 model capacity／unborn collector failure 洗成 GREEN；runtime 複製組織規範；任意 HEAD 直接建立 default
+  - 重議:正式公司規範 revision 更新或同 oracle 回歸；發布前依具名 endpoint 授權與當輪 repo 狀態驗證，不延用本次 fixture 授權
+  - 關聯:D-20261013-repo-check-org-default;shared/skills/repo-check/evals.md;tests/repo-check-model-eval.py;codex/README.md
