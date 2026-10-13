@@ -6,6 +6,10 @@
 
 ## Bootstrap：全新空 repo 的第一次 ship
 
+**上層 kernel 的 document-only bootstrap 邊界優先**：本路徑只能送經核准的組織通用文件基線，
+不得推產品 code/data 或任意 existing HEAD。列出 SHA／ancestor 選項前先驗 baseline tree；不符合者
+只列準備文件基線的安全暫停。既有 default 直推與之後產品提交不屬例外。
+
 **唯一觸發來源**：`ship-state.sh` 印 `verdict: BOOTSTRAP`。遠端零 branch 只是第一個必要條件；腳本還會驗
 intended default、local baseline ancestry 與 effective creation policy。任何其他來源——使用者說「這是新
 repo」、上一輪對話的授權、你自己的推論——都**不構成** bootstrap。

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Repo Check"
+  short_description: "Check repositories against elandcomtw standards"
+  default_prompt: "Use $repo-check to check this repository against the built-in elandcomtw standards."

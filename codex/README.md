@@ -10,6 +10,13 @@
 - `skills/`：團隊共用 skills
 - `skill-building-guide.md`：本 dotfiles 的 Codex skill authoring、eval、validation 與發布流程
 
+## Repo 狀態檢查
+
+`$repo-check <repo-path>` 檢查結構、ignore、Git／remote／身分及有效組織政策。
+預設規範與初始化邊界以 [repo-check 共用流程](../shared/skills/repo-check/references/workflow.md) 為準。
+明示 `使用 /path/to/other-policy.md` 才切換規範；`準備初始化` 只準備可 review 的文件基線，
+實際首推須具名核准目標、預設分支與內容。Claude Code 對應叫用 `/repo-check`。
+
 ## 不納入版控
 
 - `auth.json`
