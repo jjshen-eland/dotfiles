@@ -861,3 +861,13 @@
   - 放棄:把第 1 個 fixture 的通過宣稱整套 hosted 全綠；忽略 .git 目錄／mtime 或縮小 snapshot；增加第三次修復提交
   - 重議:新 HEAD 仍失敗時回報新的具體證據與剩餘缺口，不再自行重試／擴 scope
   - 關聯:D-20261013-review-fixture-maintenance-isolation;M-20261013-pr330-shipping-ci-blocked;B-20260924-workflow-verification-economy;PR#330;tests/review-readonly.py
+
+- **M-20261013-pr330-delivered · 2026-10-13 PR #330 已合併，局部收尾改善成立但端到端收益未證明**：PR #330 的最終 head 5b8933e372d93e3c036b4e5e26f36835ccbae260 在 2026-10-13T10:24:15Z rebase merge 為 8ea1fbf62cb082b043c2dd9a7cbc95dcd8414c9d，7 顆 commit／12 檔保留。最後整批 29 模組 exit 0／125.290 秒；required run 38382787626 created 10:21:23、updated 10:23:46，143 秒、macOS job 134 秒／Ubuntu 110 秒通過。watch 後 mandatory non-watch exit 0，head 不變且 CLEAN 才以 --match-head-commit merge；沒有 bypass。兩次 CI 修復提交後成功，未追加第三次修復。
+  - **實況量測**：原 invocation 09:47:11.006 → 本地收尾完成 10:24:39.791 為 2248.785 秒（37:28.8），不是 invocation→final。包含原 CI 失敗、一次同 HEAD failed-job 重跑、兩次 source 修復、修後本地 suite／CI、診斷與文件處理；不靜默刪成本。唯一詢問的 assistant final 10:07:28.851 → 使用者選項 1 在 10:08:16.556，47.705 秒；扣此等待到本地收尾仍 2201.080 秒（36:41.1）。建立 PR 前 7:01.0、其中非本地程序時間約 4:52.9 的事實保留，不拿後段 CI 問題掩蓋前段仍慢。
+  - **分段與機制**：suite exit→PR created 76.657 秒（首推前本地 suite 128.043 秒）；最後成功 CI updated→merge 29.000 秒；merge→本地收尾完成 24.791 秒。單次本地呼叫驗 MERGED／exact head、switch、ff-only pull、ref／merge ancestry／clean tree、cleanup helper 與 audit，程序 6.196899 秒、exit 0，同次取得完成結果；main==origin/main==8ea1fbf，送出 feature 已清理。push／PR create／merge 也未採 1 秒 yield，多餘短命令 poll 已移除。最後一段終點是 local finish，不能與 PR #329 的 merged→final 205.141 秒直接比較宣稱省時；這次保存文件與最後回報仍有成本。本條落筆時尚無本輪最後 final timestamp，完整 invocation→final／merged→final 必須從同一原生 trace 後續補證。
+  - **驗收結論**：等待／連續收尾有真實工具行為支持，fixture 隔離的兩個根因都由 RED、保全 controls 與 hosted CI 驗證；本次完整流程卻受修復／不同 scope／長 context／未核對 model-effort 影響，沒有端到端明顯加速證據。實作及 endpoint 已完成，B-20260924-workflow-verification-economy 仍 open，繼續針對送出前的實際成本查證，不能以再加規則或人工 shipping fixture 結案。
+  - 日期來源:direct
+  - 證據:/tmp/pr330-merged.json、/tmp/pr330-final-ci.json、/tmp/pr330-final-observation.json、/tmp/pr330-second-repair-batch.log；原生 session 同 M-20261013-pr330-shipping-ci-blocked。只讀 metadata／工具與程序事件，不讀 reasoning。主要值、時間口徑與來源已存本條；raw 遺失不補造。
+  - 放棄:宣稱整體優化有效；比較不同終點的區間；漏算 CI 失敗／修復與收尾記錄成本；端到端 benchmark 尚未補證就關閉整條 backlog
+  - 重議:取得本輪 final timestamp 後補齊完整分段；下一筆正常、無 repair 的同条件真實提交再評估前段模型／工具往返，不重跑已完成模型 fixtures
+  - 關聯:M-20261013-pr330-shipping-ci-blocked;M-20261013-review-fixture-maintenance-second-repair;D-20261013-review-fixture-maintenance-isolation;B-20260924-workflow-verification-economy;PR#330
