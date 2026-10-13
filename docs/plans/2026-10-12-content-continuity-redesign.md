@@ -62,12 +62,13 @@ fixture；`AGENTS.md` 中「上面三個 managed block 由工具維護」的不�
 
 每階段各開 branch、各自驗收、可單獨回退。
 
-### P1：各受治理 repo 關閉 active_item_contract（已完成 9／10）
+### P1：各受治理 repo 切換 active_item_contract（已完成 10／10，財報增量尚未 push）
 
 2026-10-12 在 kapi-infra #179、kapi-protocol #36、krepo-common #85、krepo-company #61、krepo-judicial #139、
 krepo-mops-disclosure #115（ruleset 要求核准，依使用者指示 bypass merge）、krepo-mops-major-news #98、krepo-tej-export #11、
 krepo #192 刪除 `status_schema.active_item_contract`，各 repo `audit --ship` OK、authority 回 `NOT_APPLICABLE`、
-`unit-tests` 通過；STATUS 欄位保留。krepo-mops-financial-statements 的工作樹有他人未 commit 的工作，待淨空後處理。
+`unit-tests` 通過；STATUS 欄位保留。當時 krepo-mops-financial-statements 因工作樹有他人未 commit 的工作而暫緩；
+2026-10-13 已依使用者指示在乾淨 XBRL checkpoint 同批完成 P1／P2b，見下方財報套用結果。
 已封存的 kapi-kb-hub-legacy 不處理。關閉 contract 時一併關掉了 scanner 的兩項內容檢查，由 P2／P2b 以 `Goal`
 contract 恢復。
 
@@ -204,11 +205,23 @@ B-20260928-project-merge-continuation（steward／resume 誤擋，P2 後不再�
   source 3 次中 2 次抓到、修正後 3 次中 1 次明確抓到（另 1 次誤判沒有、1 次標未核對），前後差異在變異範圍內，
   不歸因於修正；第 6 步沒有指明以 default branch 比對未合併 commit，P3 強化移交內容時一併處理。
 
+### 財報 repo P1／P2b 套用結果（2026-10-13，本地完成）
+
+- 使用者明示在 XBRL checkpoint 已提交、已推送且工作樹乾淨時提前套用；整體 XBRL 開發仍在進行，
+  以此授權取代原「開發完成後」的套用排程，財報 repo 不再列為待補項。
+- 受信任來源固定為 dotfiles `8ea1fbf`；財報 kernel 整段逐 byte 相同。Contract 直接改為
+  `{"required_fields": ["Goal"], "uniform_fields": []}`，保留內容檢查，STATUS 原成功條件只改名為 Goal，
+  文字、驗收、進度及下一步 branch 保留；移除四個 actor 欄位並同步治理說明。
+- `.mypy_cache/`、`.DS_Store` 已補齊且 check-ignore 通過。Scanner 未修改，逐 byte 一致，SHA256
+  `eb4518c6e142099ad5000f722e9ac8963dc1abf2dd3468b0b2bb4ac9de5d08e1`。
+- 完整隔離 pytest 586 passed／420.96 秒、Ruff、audit --ship 通過；git clone --no-local 的
+  audit 通過，缺 Goal／已完成 active 標題的負對照皆 exit 1，還原後 audit 通過且 clone clean。
+- 財報 commit：`0bacb6ec134b271cf4457d53a8a5f37014559848`，branch `fix/xbrl-structured-ingestion`。
+  本次無 push／PR／merge 授權，財報與本追蹤增量均尚未送出。使用者另明示完成後留言 #309；
+  原 XBRL Draft PR #62 仍指向舊 checkpoint，本批不變更 DB、發布或部署。
+
 ### 待補 repo（觸發時做 P1／P2b）
 
-- krepo-mops-financial-statements：已採用文件治理、仍是舊 kernel 與四欄 contract。觸發條件：使用者告知其開發完成、
-  工作樹淨空。屆時一次做完 P1 與 P2b（kernel 換 dotfiles 現版、Goal contract、STATUS 刪四欄、scanner 與受信任版本
-  一致）。同批補 D-20261012-repo-ignore-baseline 的缺項：`.mypy_cache/`、`.DS_Store`。
 - kapi-nc-v2：2026-10-12 尚未採用文件治理（無 `.doc-governance.json`、scanner 與 kernel 區塊），準備在通過驗證後
   取代現行 NC 成為生產 repo。觸發條件：該 repo 上線並採用文件治理時，直接套 dotfiles 現版 kernel 與只要求 `Goal` 的
   contract，沒有舊 contract 需要關閉。同批補 D-20261012-repo-ignore-baseline：default branch 還沒有 `.gitignore`，
@@ -216,7 +229,7 @@ B-20260928-project-merge-continuation（steward／resume 誤擋，P2 後不再�
 
 ### P2b：其他受治理 repo 同步（P2 合併後緊接）
 
-對 P1 的 9 個 repo（krepo-mops-financial-statements 待其工作樹淨空）：kernel 複本換為新內容、`tests/test_agent_contract.py`
+2026-10-12 對 P1 的 9 個 repo 同步；財報 repo 於 2026-10-13 補齊，見前節財報套用結果。Kernel 複本換為新內容、`tests/test_agent_contract.py`
 （krepo-common、krepo）改驗新句、`.doc-governance.json` 以 `{"required_fields": ["Goal"], "uniform_fields": []}` 重新啟用
 contract（先確認該 repo 進行中工作項都有 Goal，否則先補）、STATUS 刪除四欄。每個 repo 的 push／PR／merge 另經使用者
 具名批次授權。驗收：各 repo `audit --ship` OK、該 repo 測試通過、kernel 與 dotfiles 逐字相同。
