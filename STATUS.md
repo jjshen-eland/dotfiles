@@ -26,10 +26,11 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
   模型設定、指示重載或摘要授權。新修改先取得因果證據；新 batch／PR 的 outward 動作需另有授權。
 - **進度**：送出前段與四次 CI attempt、兩次 repair 的實況已記錄；最後本地 29 模組 exit 0／125.290 秒，
   雙 OS required checks 通過，main 已同步、原 feature 已清。到本地收尾為 37:28.8（扣回答等待 36:41.1），
-  尚不是到 final。本輪資料目前保存在本地觀測 branch，未 push；未證明端到端明顯加速。
-- **下一步**：接續 `docs/pr330-delivery-result`（實作基線 `8ea1fbf`）核對本地觀測 commit；
-  等本輪 final 出現在原生 trace 後補齊上述終點。正常真實工作到來前不造 shipping fixture；
-  當前 branch 的文件尚未 push，不能承接已完成 PR #330 的送出授權。
+  尚不是到 final。實況紀錄與評估修正在 `docs/pr330-delivery-result`，本次已另獲 `$project --merge`
+  授權、待 PR／required checks／merge；未證明端到端明顯加速。
+- **下一步**：本批文件合併後從 `origin/main` 的本工作項接續；另開 feature branch，
+  核對原生 trace 補齊 PR #330 的 invocation→final／merged→final。正常真實工作到來前不造
+  shipping fixture；本次送出授權只涵蓋此文件批次，不延伸至後續調查或新 PR。
 - **關聯**：B-20260924-workflow-verification-economy；M-20261013-pr330-delivered；
   M-20261013-pr330-shipping-ci-blocked；M-20261013-pr329-latency-root-cause。
 
