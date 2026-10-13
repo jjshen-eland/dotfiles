@@ -813,3 +813,24 @@
   - 放棄:以不同 runtime／暖 context／多 repo 批量 merge 的時間直接宣稱 dotfiles 特有流程慢，或以最快案例宣稱既有優化有效
   - 重議:用真實工作取得相同條件的對照，或從 PR #329 具體間隔取得可刪併步驟的根因證據
   - 關聯:M-20261013-pr329-delivery-measurement;M-20261012-project-process-reduction-complete;B-20260924-workflow-verification-economy;Issue#285;Issue#279
+- **M-20261013-pr329-latency-root-cause · 2026-10-13 PR #329 非測試提交延遲的執行機制根因**:依使用者「開始調查」完成 diagnosis-only；核對原生 trace 的 `event_msg.item_completed` 中 `CommandExecution` 程序開始／完成毫秒與 exit code，和 tool result／下一 call 分開計算。**ROOT CAUSE CONFIRMED（執行機制層）**：短命令設定 `yield_time_ms=1000` 過早返回 session，完成結果必須另經模型回合再 poll；收尾多次重新進模型，形成主要時間成本。這不代表已找出每一模型回合內部的延遲根因，也不代表下表所有非命令時間都能刪除。未改 skill、hook、CI 或 shipping 行為，未重播真實 push／merge。
+  - **精確分段**（UTC，命令時間以各程序區間的聯集裁切至階段邊界；非命令時間含 model generation、dispatch／transport、摘要與其他編排，不冒充純推理時間）：
+
+    | 階段 | 起訖 | 牆鐘秒 | 記錄中的命令運行秒 | 非命令秒 |
+    |---|---|---:|---:|---:|
+    | suite exit → PR created | 07:03:27.296–07:05:35 | 127.704 | 5.432 | 122.272 |
+    | CI updated → merged | 07:08:11–07:09:35 | 84.000 | 6.345 | 77.655 |
+    | merged → final | 07:09:35–07:13:00.141 | 205.141 | 9.924 | 195.217 |
+    | 合計 | 三個互不重疊區間 | **416.845** | **21.701** | **395.144** |
+
+    更新 M-20261013-pr329-delivery-measurement 的 suite 完成時刻估計：程序 `58677` 在 `07:03:27.296` exit 0，132.514 秒，與 runner 132.515 秒及 log mtime `07:03:27.292364` 一致；至 `07:04:02.628` 才 poll，結果已完成 **35.332 秒**。backend 對極短程序的 duration 有近零值，上表適用於定位延遲所在，不把數十毫秒的 shell／transport 分界當精密 CPU 測量。
+  - **最強因果鏈與反證**：pull 程序 `42035` `07:10:37.506–07:10:40.065`、exit 0、**2.559 秒**；call 只等 1 秒便返回，下一個取結果 call 到 `07:11:44.153` 才發生，退出後空等 **64.088 秒**。`main` reflog `15:10:40+08:00` 獨立吻合，dispatcher 對 post-merge 只 chain 既有 hook 後返回，而本 repo 沒有可執行的 repo-local post-merge hook；此處無需用「Git／網路還在跑」解釋。push `13497` 實跑 3.164 秒、完成後 8.350 秒才 poll；merge `12156` 實跑 4.792 秒、完成後 4.858 秒才 poll；PR create `25142` 實跑 4.064 秒、完成後 5.360 秒才 poll（此段跨入 CI window，不另加至表中）。这些正常短命令都在工具預設 10 秒等待內完成，1 秒 yield 導致的額外結果取回回合不是 Git 完成所需步驟。
+  - **多輪成本**：CI 的 mandatory non-watch checks／head／mergeability 查詢在 `07:08:39.826` 已返回全綠、exact head `4ddecb6`、CLEAN，至 merge call `07:09:31.943` 有 **52.117 秒**；前面的 watch result 到 recheck call 有 **20.337 秒**。merge 後，已確認 MERGED 的 result 到 switch/pull call **39.478 秒**，refs／tree 核對 result 到 cleanup call **35.337 秒**，最後 audit OK result 到 final **37.016 秒**。工具本身快速成功、無 repair／retry／人類授權等待；耗時發生在操作之間。kapi-infra #163 的 trace 亦保存 required enrollment、watch 後 non-watch recheck與 mergeability 確認，merge／本地 cleanup 在一個 Bash call 內完成（11.281 秒）；它有舊版 pipeline push 偏離，故僅作本地收尾可連續執行的旁證，不當作整體合規修法。
+  - **本 repo 特有的載入耦合**：`~/.codex/AGENTS.md` 實際 symlink 至 `~/.dotfiles/codex/AGENTS.md`。switch 舊 main／pull 後，`07:10:38.531` 和 `07:11:44.708` 各出現新的 user instruction message，21,373／21,917 B；與兩個 revision 的全文比對，前者含舊 global contract，後者含新 global contract，兩者都保留舊 repo contract 的既有 snapshot。這是已觀察的 global 指示切換，不能誤寫為兩次 root AGENTS 全文更新。input tokens 291,551 → 297,202 → 304,087，多數仍 cached；重新進模型的兩筆 output/reasoning tokens 為 1123/994、547/412。可確認 instructions churn 與額外回合存在，**UNCONFIRMED**：churn／長 context、模型 generation 與 provider scheduling 各造成多少秒；不從 token 數或相關性宣稱純推理因果。
+  - **摘要歧義與未確認部分**：同一 SHA／19 檔的 Ship 摘要在 `07:04:52.154` 與 `07:09:27.371` 重出；`log-prepare.md` Step 4 要當前 invocation 在 first outward 前的一則摘要，Step 5 標題寫「逐次 outward call」而正文又寫「第一個 outward tool call」。現行 static gate 保留 immediately preceding literal 摘要，不能先把第二份算 agent 無理由多做、刪掉安全契約或宣稱整個 52 秒可省。此文字歧義已定位，但是否主導模型回合成本尚 **UNCONFIRMED**。
+  - **修復優先序**：第一個有因果證據的處置是短命令沿用工具預設等待，避免 1 秒 yield 造成不必要的結果取回回合；再驗證本地 cleanup 能否在明確的先決條件／失敗停止下連續執行。保持每個 push 的 canonical cwd／獨立 outward call、merge exact-head 與 mandatory non-watch recheck；不拿合併呼叫來繞過 gate。使用者本輪只授權調查，尚未實作或量測修後收益；不承諾回收全部 395 秒。下一筆真實工作先核對預期短命令是否仍返回 session，以及 command exit→結果消費的間隔；不為清 backlog 造人工 shipping fixture。
+  - 日期來源:direct
+  - 證據:同一原生 session `~/.codex/sessions/2026/10/13/rollout-2026-10-13T13-59-40-01a133d8-5fba-7673-aee6-18b1b4a1f4e2.jsonl`；重建只取 invocation 區段的 tool calls/results、CommandExecution 與 usage 計數，不讀 reasoning 內容。程序 packet `/tmp/pr329-process-completions.json`、timeline `/tmp/pr329-latency-diagnostic-timeline.json`、分段 `/tmp/pr329-latency-diagnostic-phases.json`；主要時間、原理及限制已存本條，raw 遺失不補造。
+  - 放棄:把全部非命令時間叫純推理時間；把 root contract 當 global contract；以長 context 或第二摘要的相關性冒充已確認因果；未修復即宣稱优化完成
+  - 重議:有修復授權後，先驗最短因果鏈；仍慢時取得 model request 的 generation／queue／prefill 分段或相同 context／runtime 對照，才調整模型或摘要契約
+  - 關聯:M-20261013-pr329-delivery-measurement;M-20261013-cross-repo-delivery-measurement;B-20260924-workflow-verification-economy;shared/skills/project/references/log-prepare.md;shared/skills/project/references/merge-workflow.md
