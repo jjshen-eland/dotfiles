@@ -332,6 +332,27 @@ class PrimaryScope(unittest.TestCase):
                 after = module.snapshot(repo)
                 self.assertEqual({k for k in set(before) | set(after) if before.get(k) != after.get(k)}, changed)
 
+    def test_native_fixture_stops_background_maintenance_before_baseline_commit(self):
+        module = self.eval_module()
+        global_config = self.root / 'global-git-config'
+        global_config.write_text('[maintenance]\n\tauto = true\n[gc]\n\tauto = 1\n')
+        trace = self.root / 'fixture-git.trace'
+        with mock.patch.dict(os.environ, {'GIT_CONFIG_GLOBAL': str(global_config),
+                                         'GIT_CONFIG_NOSYSTEM': '1', 'GIT_TRACE': str(trace)}):
+            _, _, repos, env = module.prepare(self.root / 'stable-fixture', 'two', 'codex')
+            repo = repos[0]
+            for key, expected in [('maintenance.auto', 'false'), ('gc.auto', '0')]:
+                actual = subprocess.run(['git', '-C', str(repo), 'config', '--local', '--get', key],
+                                        env=env, text=True, capture_output=True)
+                self.assertEqual(actual.returncode, 0, actual.stderr)
+                self.assertEqual(actual.stdout.strip(), expected)
+            # Observe the actual baseline commit, not just configuration written after it.
+            self.assertNotIn('maintenance run --auto', trace.read_text())
+            before = module.snapshot(repo)
+            subprocess.run(['git', '-C', str(repo), 'status', '--short'], env=env,
+                           check=True, capture_output=True)
+            self.assertEqual(module.snapshot(repo), before)
+
     def test_incomplete_partial_duplicate_and_reused_results_block(self):
         for case in ('incomplete', 'partial', 'duplicate', 'reused'):
             with self.subTest(case=case):

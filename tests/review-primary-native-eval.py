@@ -176,8 +176,10 @@ def prepare(destination, case, runtime):
     repos = []
     for name, files in baseline.items():
         repo = root / name; repo.mkdir()
+        # Own fixtures must be quiescent before metadata snapshots; Git may detach maintenance after commit.
         for args in (('init', '-q', '-b', 'feature/native'), ('config', 'user.name', 'Fixture'),
-                     ('config', 'user.email', 'fixture@example.invalid')):
+                     ('config', 'user.email', 'fixture@example.invalid'),
+                     ('config', 'maintenance.auto', 'false'), ('config', 'gc.auto', '0')):
             execute(['git', *args], env, repo)
         contract = ('# Repository contract\nReview only; preserve repository files and Git metadata. '
                     'No commit, push, PR or merge is authorized. All dirty changes belong to this request.\n')
