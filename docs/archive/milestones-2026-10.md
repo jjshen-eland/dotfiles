@@ -871,3 +871,13 @@
   - 放棄:宣稱整體優化有效；比較不同終點的區間；漏算 CI 失敗／修復與收尾記錄成本；端到端 benchmark 尚未補證就關閉整條 backlog
   - 重議:取得本輪 final timestamp 後補齊完整分段；下一筆正常、無 repair 的同条件真實提交再評估前段模型／工具往返，不重跑已完成模型 fixtures
   - 關聯:M-20261013-pr330-shipping-ci-blocked;M-20261013-review-fixture-maintenance-second-repair;D-20261013-review-fixture-maintenance-isolation;B-20260924-workflow-verification-economy;PR#330
+
+- **M-20261013-pr330-final-timing · 2026-10-13 補齊 PR #330 完整回報終點，整體優化仍不能確定**：原生 trace 已有 PR #330 最後交付回報，補足 M-20261013-pr330-delivered 落筆時尚缺的 final timestamp；原 committed record 保持不變。起點為使用者 `$project --merge` 訊息 2026-10-13T09:47:11.006Z（line 1952），終點為確認 PR #330 已合併且觀測紀錄已本地提交的 assistant `phase=final_answer` 訊息 10:28:40.122Z（line 2654），不是中途 CI 修復選項的 final，也不包含之後的評價討論、PR #331 或本次補證工作。
+  - **完整區間**：invocation→final 2489.116 秒（41:29.116）；GitHub mergedAt 10:24:15Z→final 265.122 秒（4:25.122）。原本本地收尾完成 10:24:39.791Z→final 為 240.331 秒（4:00.331），包括觀測紀錄保存、文件驗證及最後回報，不能省略或把單次 cleanup 程序 6.197 秒當整段耗時。Final 採 public response message timestamp；同文 task_complete 10:28:40.550Z 晚 0.428 秒，不混用終點。
+  - **等待與比較邊界**：修復選項回報 10:07:28.851Z（line 2335）→使用者選 1 的 10:08:16.556Z（line 2342），回答等待 47.705 秒；扣除後 invocation→final 2441.411 秒（40:41.411）。原 CI 失敗、重跑、兩次修復、本地 suite、診斷及記錄成本均保留。Runtime／effort／context／scope 的匹配對照仍不完整，這筆修復工作不能證明正常 workload 的穩定收益；「尚不能確定整體提交流程已優化」與 backlog open 的評估維持。
+  - **文件狀態**：PR #331 已於 10:44:11Z rebase merge 為 8d34f5160fbdcef35c979367695ae4475ecb1504，先前實況紀錄與評估文字已交付；本次更正 STATUS 的 pending 說法並補證，尚未取得本批 push／PR／merge 授權。
+  - 日期來源:direct
+  - 證據:/Users/jjshen/.codex/sessions/2026/10/13/rollout-2026-10-13T13-59-40-01a133d8-5fba-7673-aee6-18b1b4a1f4e2.jsonl 的上述 public message rows；/tmp/pr330-merged.json 的 GitHub mergedAt；本輪 gh pr view 331 的 MERGED／mergedAt／mergeCommit。僅解析公開訊息與 provider metadata，不讀 reasoning；主要時間與口徑已保存，raw 遺失不補造。
+  - 放棄:改寫既有 committed milestone；把 local finish 當 final；把之後另一批文件送出算入 PR #330；補齊時間便宣稱端到端優化成功
+  - 重議:下一筆正常真實工作有可比較的 runtime／effort／context／scope 與完整交付時間時，再評估穩定收益
+  - 關聯:M-20261013-pr330-delivered;B-20260924-workflow-verification-economy;PR#330;PR#331;project-shipping-latency
