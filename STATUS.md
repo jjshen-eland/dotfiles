@@ -29,9 +29,9 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
   扣回答等待 47.705 秒為 40:41.411；merged→final 為 4:25.122，含本地收尾完成後 4:00.331
   的記錄／驗證／回報成本，見 `M-20261013-pr330-final-timing`。實況紀錄與評估修正已由 PR #331
   合併為 `8d34f51`；未證明端到端明顯加速。
-- **下一步**：本次終點補證保存在 `docs/pr330-final-timing`（基線 `8d34f51`），尚未 push。
+- **下一步**：本批文件合併後從 `origin/main` 的本工作項接續，後續修改另開 feature branch。
   等下一筆正常真實工作的可比較資料，評估 PR 建立前成本；正常工作到來前不造 shipping fixture。
-  後續送出需另有當批授權，不承接已完成 PR #330／#331 的授權。
+  後續送出需另有當批授權，不承接已完成批次的授權。
 - **關聯**：B-20260924-workflow-verification-economy；M-20261013-pr330-delivered；
   M-20261013-pr330-shipping-ci-blocked；M-20261013-pr329-latency-root-cause；M-20261013-pr330-final-timing；PR #331。
 
