@@ -79,6 +79,11 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   [M-20261013-pr329-delivery-measurement](archive/milestones-2026-10.md)。沒有在正式 Log 重跑整批 suite，
   也不能以 null `task_complete` 判成模型主動 early stop；本项仍 open，優先調查實際非測試階段的成本，
   不以重跑舊 fixture、追加規則或不同工作量的樣本宣稱已改善。
+  **跨 repo 對照（2026-10-13）**：[kapi-infra／krepo-common 實測](archive/milestones-2026-10.md)（`M-20261013-cross-repo-delivery-measurement`）
+  已補：kapi-infra 四筆 Claude 小提交扣使用者等待後中位 3:46.4；krepo-common 同批三筆 CI 17–21 秒。
+  但前者多為暖 context，後者屬跨 repo 批量送出，且 kapi-infra 的舊 Codex 案亦有 32:45.1；
+  不把 runtime／互動／CI 版本差異當 dotfiles 特有根因。下一步以 PR #329 非測試階段的 exact trace 調查，
+  或取得固定條件的真實對照；本項不因此結案。
 
 - **B-20260924-workflow-review-residuals** · **#229 完整高風險review與大型工程驗收仍有限制**。
   後續single-pass四案已完成；原harness自行設定USD4／600秒截斷，不能據此判定工作流不收斂，
