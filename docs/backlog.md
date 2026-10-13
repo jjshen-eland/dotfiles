@@ -93,6 +93,10 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   14 個 deterministic controls 及雙端 focused forward 已驗。首候選的條件式 errexit 失效有 RED，
   已由明確成功鏈修復；不是刪 gate。下一筆真實交付依 STATUS 的 AC 4 量測，端到端收益未驗，
   本項不因局部修復結案，亦不重跑舊整合 fixture。
+  **正式送出補證（PR #330）**：`M-20261013-pr330-shipping-ci-blocked` 保存前段 7:01.0、
+  本地 suite 128.043 秒，以及既有 review fixture maintenance.lock 的兩次 macOS CI 失敗。
+  短命令沒有額外 poll，前段仍慢；PR 未合併，端到端收益未驗。既有 fixture 修復候選只在隔離 scratch，
+  是否納入同 PR 待使用者決定，不以第三次重跑或刪 metadata 檢查洗綠。
 
 - **B-20260924-workflow-review-residuals** · **#229 完整高風險review與大型工程驗收仍有限制**。
   後續single-pass四案已完成；原harness自行設定USD4／600秒截斷，不能據此判定工作流不收斂，
