@@ -98,6 +98,8 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   短命令沒有額外 poll，前段仍慢；PR 未合併，端到端收益未驗。既有 fixture 修復已由使用者選擇納入
   同 PR，範圍與反例見 `D-20261013-review-fixture-maintenance-isolation`；
   17 個修後案例通過，仍待 hosted checks，不以第三次重跑或刪 metadata 檢查洗綠。
+  第 1 個 fixture hosted 已通過，但 materialize fixture 尚有同一機制，已用 trace RED 重現並補齊；
+  第二次／最後一次修復的本地與 hosted 邊界見 `M-20261013-review-fixture-maintenance-second-repair`。
 
 - **B-20260924-workflow-review-residuals** · **#229 完整高風險review與大型工程驗收仍有限制**。
   後續single-pass四案已完成；原harness自行設定USD4／600秒截斷，不能據此判定工作流不收斂，

@@ -854,3 +854,10 @@
   - 放棄:第三次 blind rerun；將既有 fixture bug 當成本批已授權 code 修復；把短命令無 poll 說成端到端已改善；把 CI 重跑或診斷間隔從完整耗時靜默刪除
   - 重議:使用者明示納入既有 fixture 自動 maintenance 修復後，先建立配置／背景程序反例與修後 controls，再同 PR 更新 HEAD 並重驗 required checks；不接受則 PR 保持 OPEN／未合併
   - 關聯:project-shipping-latency;B-20260924-workflow-verification-economy;M-20261013-project-shipping-latency-local;M-20261013-pr329-latency-root-cause;PR#330;tests/review-primary-native-eval.py
+
+- **M-20261013-review-fixture-maintenance-second-repair · 2026-10-13 PR #330 第二次 CI 修復補齊 materialize fixture 的相同隔離**：第 1 次修復 HEAD 463b96b 的 review-primary-scope 與 project 模組已通過 hosted CI；macOS 改在 tests/review-readonly.py 的 materialize 全 metadata 比對失敗，Ubuntu 通過。此檔的 inspection fixture 原已有 maintenance.auto=false／gc.auto=0，materialize fixture 卻未設；新增實際 Git trace 反例，在 baseline commit 後重現 maintenance --auto --quiet --detach 為 RED，確認是同一背景寫入機制，而非放棄 metadata oracle。只補齊該自建 fixture 的 repo-local 設定，不改 production scope/materialize 實作。修後兩個 readonly 案例 exit 0／2.638 秒；全檔 metadata、working-tree／range、linked worktree、import 寫入與 stale scope 判準保留。這是原 logical Project invocation 第 2 次、也是最後一次 CI 修復提交；hosted endpoint 尚未達成，若再次失敗不重設額度。
+  - 日期來源:direct
+  - 證據:/tmp/pr330-repair-ci-failed.log；run 38381908169／HEAD 463b96bc4603679aa0988dc4b9ff51ba86565de6；/tmp/pr330-materialize-before.log、/tmp/pr330-materialize-after.log；最終整批與新 HEAD required checks 接續於本輪 Log
+  - 放棄:把第 1 個 fixture 的通過宣稱整套 hosted 全綠；忽略 .git 目錄／mtime 或縮小 snapshot；增加第三次修復提交
+  - 重議:新 HEAD 仍失敗時回報新的具體證據與剩餘缺口，不再自行重試／擴 scope
+  - 關聯:D-20261013-review-fixture-maintenance-isolation;M-20261013-pr330-shipping-ci-blocked;B-20260924-workflow-verification-economy;PR#330;tests/review-readonly.py
