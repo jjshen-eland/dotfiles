@@ -5,7 +5,7 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
 
 # Backlog
 
-待辦清單:技術債與已知缺口(更新日期:2026-10-05)
+待辦清單:技術債與已知缺口(更新日期:2026-10-13)
 
 > **為什麼與 `STATUS.md`／history 分家**：三者生命週期不同。STATUS 只留 active／paused；history
 > event 發生後 append-only；backlog 只留未結案狀態，直到做掉或明確放棄才會消失。
@@ -74,6 +74,11 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   不把修好的 fixture 預檢當行為通過，也不把剩餘缺口留成等待一句「繼續」的工作。
   **觸發條件**：日常同類工作再次出現無新失敗的重複驗證、exit masking或完成後重新要「繼續」時，保留實際trace與scope，優先刪除或合併該步；
   不為此重跑已完成的整合fixture，不靠新增always-on規範宣稱修好。詳見[整合驗收](plans/2026-09-23-coordination-audit.md)。
+  **真實交付補證（2026-10-13）**：Codex PR #329 從「繼續」至交付 14:49.7，本地 suite 132.515 秒、CI 152 秒，
+  測試完成至 PR、CI 完成至 merge、merge 至回報合計約 6:57；尚無端到端加速證據。口徑、回合空檔與比較限制見
+  [M-20261013-pr329-delivery-measurement](archive/milestones-2026-10.md)。沒有在正式 Log 重跑整批 suite，
+  也不能以 null `task_complete` 判成模型主動 early stop；本项仍 open，優先調查實際非測試階段的成本，
+  不以重跑舊 fixture、追加規則或不同工作量的樣本宣稱已改善。
 
 - **B-20260924-workflow-review-residuals** · **#229 完整高風險review與大型工程驗收仍有限制**。
   後續single-pass四案已完成；原harness自行設定USD4／600秒截斷，不能據此判定工作流不收斂，
