@@ -34,6 +34,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - 「/project 流程減量與驗證成本（#285）」的結案與量測：[M-20261012-project-process-reduction-complete](docs/archive/milestones-2026-10.md)；計畫 `docs/plans/2026-10-12-project-process-reduction.md` 已凍結。
 - 「Codex 真實送出 PR #329 的流程／CI 成本」：[M-20261013-pr329-delivery-measurement](docs/archive/milestones-2026-10.md)；未取得端到端加速證據，後續追蹤見 `B-20260924-workflow-verification-economy`。
 - 「kapi-infra／krepo-common 的真實提交對照」：[M-20261013-cross-repo-delivery-measurement](docs/archive/milestones-2026-10.md)；區分 runtime、暖 context、使用者等待與批量送出，不以 PR 牆鐘代替獨立交付。
+- 「PR #329 非測試延遲根因」：[M-20261013-pr329-latency-root-cause](docs/archive/milestones-2026-10.md)；已定位短命令 yield／模型往返造成完成結果延遲取回，行為修復與修後收益尚未驗證。
 - 「Setup 工具與 agent shell 環境對齊」的結案與 14 台驗收：[M-20261010-setup-fleet-complete](docs/archive/milestones-2026-10.md)；未做的 adopt／keep 整理見 D-20261012-setup-adopt-review-dropped。
 - 「Runtime 目錄收斂與 legacy 遷移」的結案與 14 台驗收：[M-20261012-runtime-layout-complete](docs/archive/milestones-2026-10.md)；計畫 `docs/plans/2026-10-06-runtime-layout-convergence.md` 已凍結。
 - 「`~/.agents` 狀態目錄治理與審查紀錄搬出 repo／`/tmp`」的結案與 14 台驗收：[M-20261012-agents-state-registry-complete](docs/archive/milestones-2026-10.md)；登記表在 `docs/repo-guide.md`。

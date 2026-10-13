@@ -84,6 +84,10 @@ record、保留 B-* 關聯，再移除本檔條目。decision／dead end 不留�
   但前者多為暖 context，後者屬跨 repo 批量送出，且 kapi-infra 的舊 Codex 案亦有 32:45.1；
   不把 runtime／互動／CI 版本差異當 dotfiles 特有根因。下一步以 PR #329 非測試階段的 exact trace 調查，
   或取得固定條件的真實對照；本項不因此結案。
+  **根因調查（2026-10-13）**：`M-20261013-pr329-latency-root-cause` 已由程序完成事件確認：三段 416.845 秒中，
+  記錄中的命令運行 21.701 秒，其餘 395.144 秒為操作間編排／模型／transport。pull 實跑 2.559 秒、退出後 64.088 秒才 poll；
+  優先處置短命令的 1 秒 yield 與多輪本地收尾。global AGENTS 切 branch 時重載、摘要「逐次／第一個」文字歧義另有證據，
+  但各自對秒數的因果尚未分離；不先改契約或模型。診斷完成、行為修復與修後收益未驗，本項仍 open。
 
 - **B-20260924-workflow-review-residuals** · **#229 完整高風險review與大型工程驗收仍有限制**。
   後續single-pass四案已完成；原harness自行設定USD4／600秒截斷，不能據此判定工作流不收斂，
