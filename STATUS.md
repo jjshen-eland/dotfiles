@@ -19,20 +19,21 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 - **評估**：尚不能確定整體提交流程已優化。已驗證的局部等待／收尾行為與 fixture 可靠性修正，
   不等於端到端效率改善。
 - **Goal**：確認並減少真實提交在 PR 建立前的可避免成本，用相同終點的實況量測評估端到端收益。
-- **Acceptance Criteria**：補齊本輪 invocation→final／merged→final，保留使用者等待、CI 失敗／修復與記錄成本；
-  固定 runtime／effort／context／scope 的可比較資料，或明示其不匹配。取得下一筆正常真實工作後才判斷
+- **Acceptance Criteria**：PR #330 的完整回報終點已補齊，保留使用者等待、CI 失敗／修復與記錄成本；
+  後續固定 runtime／effort／context／scope 的可比較資料，或明示其不匹配。取得下一筆正常真實工作後才判斷
   穩定收益；不以短命令無 poll、部分區間或不同終點數字關閉 backlog。
 - **Constraints**：已交付的等待、cleanup 與 fixture controls 保持既有契約；不擴 scope 至 CI 架構、
   模型設定、指示重載或摘要授權。新修改先取得因果證據；新 batch／PR 的 outward 動作需另有授權。
 - **進度**：送出前段與四次 CI attempt、兩次 repair 的實況已記錄；最後本地 29 模組 exit 0／125.290 秒，
-  雙 OS required checks 通過，main 已同步、原 feature 已清。到本地收尾為 37:28.8（扣回答等待 36:41.1），
-  尚不是到 final。實況紀錄與評估修正在 `docs/pr330-delivery-result`，本次已另獲 `$project --merge`
-  授權、待 PR／required checks／merge；未證明端到端明顯加速。
-- **下一步**：本批文件合併後從 `origin/main` 的本工作項接續；另開 feature branch，
-  核對原生 trace 補齊 PR #330 的 invocation→final／merged→final。正常真實工作到來前不造
-  shipping fixture；本次送出授權只涵蓋此文件批次，不延伸至後續調查或新 PR。
+  雙 OS required checks 通過，main 已同步、原 feature 已清。完整 invocation→final 為 41:29.116，
+  扣回答等待 47.705 秒為 40:41.411；merged→final 為 4:25.122，含本地收尾完成後 4:00.331
+  的記錄／驗證／回報成本，見 `M-20261013-pr330-final-timing`。實況紀錄與評估修正已由 PR #331
+  合併為 `8d34f51`；未證明端到端明顯加速。
+- **下一步**：本次終點補證保存在 `docs/pr330-final-timing`（基線 `8d34f51`），尚未 push。
+  等下一筆正常真實工作的可比較資料，評估 PR 建立前成本；正常工作到來前不造 shipping fixture。
+  後續送出需另有當批授權，不承接已完成 PR #330／#331 的授權。
 - **關聯**：B-20260924-workflow-verification-economy；M-20261013-pr330-delivered；
-  M-20261013-pr330-shipping-ci-blocked；M-20261013-pr329-latency-root-cause。
+  M-20261013-pr330-shipping-ci-blocked；M-20261013-pr329-latency-root-cause；M-20261013-pr330-final-timing；PR #331。
 
 ## 暫停中
 
