@@ -37,7 +37,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 暫停中
 
-- **#309 內容契約與移交給同事**：P1、P2、P2b、P3、P5 已完成（[計畫](docs/plans/2026-10-12-content-continuity-redesign.md)、D-20261012-steward-identity-removed），剩兩個 repo 待補 P1／P2b，見計畫「待補 repo」；**恢復條件**：使用者告知 krepo-mops-financial-statements 開發完成且工作樹淨空，或 kapi-nc-v2 通過驗證、取代現行 NC 成為生產 repo 並採用文件治理。
+- **#309 內容契約與移交給同事**：P1、P2、P2b、P3、P5 已完成（[計畫](docs/plans/2026-10-12-content-continuity-redesign.md)、D-20261012-steward-identity-removed）；2026-10-13 財報 repo 已本地套用 P1／P2b 並移出待補清單，提交與驗證見 M-20261013-financial-content-continuity-applied，本追蹤增量位於 docs/309-financial-continuity，尚未 push。只剩 kapi-nc-v2 待補；**恢復條件**：kapi-nc-v2 通過驗證、取代現行 NC 成為生產 repo 並採用文件治理。
 - **B-20260902-gh-account-autoswitch**：pending；維持 backlog 既有觸發條件，在條件實際發生前不開發、
   不結案。**恢復條件**：跨帳號操作成為常態，或相同症狀再次被查錯方向。
 

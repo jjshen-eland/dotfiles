@@ -881,3 +881,22 @@
   - 放棄:改寫既有 committed milestone；把 local finish 當 final；把之後另一批文件送出算入 PR #330；補齊時間便宣稱端到端優化成功
   - 重議:下一筆正常真實工作有可比較的 runtime／effort／context／scope 與完整交付時間時，再評估穩定收益
   - 關聯:M-20261013-pr330-delivered;B-20260924-workflow-verification-economy;PR#330;PR#331;project-shipping-latency
+
+- **M-20261013-financial-content-continuity-applied · 2026-10-13 財報 repo 完成 P1／P2b 本地套用並移出待補追蹤**：
+  使用者明示在已保存、已推送且工作樹乾淨的 XBRL checkpoint 提前套用 #309；財報整體開發
+  尚未完成，不將治理切換視為 XBRL 結案。受信任來源固定 dotfiles8ea1fbf，kernel 整段與來源
+  逐 byte 相同；config 只將四欄 contract 改為 Goal-only，STATUS 原成功條件文字只改欄名，
+  進度、驗收及下一步 branch 保留。同步治理說明、補 .mypy_cache/ 與 .DS_Store。
+  Scanner 未修改，SHA256 eb4518c6e142099ad5000f722e9ac8963dc1abf2dd3468b0b2bb4ac9de5d08e1。
+  財報 commit0bacb6ec134b271cf4457d53a8a5f37014559848，branch fix/xbrl-structured-ingestion；
+  完整隔離586 tests／420.96秒、Ruff、audit --ship 通過。git clone --no-local 核對 trusted
+  kernel／scanner 與 Goal config，缺 Goal／已完成 active 標題各產生 finding／exit1；還原後
+  audit 通過且 clone clean。原遠端03d8e04的unit-tests通過，不當作本批新 head 的 CI。
+  既有計畫及STATUS移除財報待補項，只保留kapi-nc-v2原上線／採用治理觸發條件；追蹤增量
+  由 main8ea1fbf 的獨立 docs/309-financial-continuity worktree 保存，不修改另一觀測工作線。
+  本追蹤文件依整批基線8ea1fbf驗收，runner選中content模組，exit0／17.982秒，audit --ship通過。
+  本批財報與追蹤提交尚未push，沒有PR／merge授權；使用者另授權完成後留言#309。
+  - 日期來源:direct
+  - 放棄:等待整體財報重設完成；只關閉 contract 而移除內容檢查；把本地套用或原 CI 當成本批已發布
+  - 重議:kapi-nc-v2通過驗證、取代現行NC且採用治理，或內容契約／受信任核心變更時
+  - 關聯:work-item=issue-309-content-continuity；branch=docs/309-financial-continuity；financial-commit=0bacb6ec134b271cf4457d53a8a5f37014559848；docs/plans/2026-10-12-content-continuity-redesign.md；STATUS.md；GitHub#309
