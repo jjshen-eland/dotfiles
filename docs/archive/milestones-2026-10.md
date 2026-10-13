@@ -785,3 +785,31 @@
   - 放棄:none
   - 重議:下一次 dotfiles 真實送出再觀察到非測試階段的高成本，或取得相同 endpoint／工作量／runtime 的跨 repo 對照，可針對具體步驟調查；本筆不支持宣稱優化有效或全部無效
   - 關聯:M-20261012-project-process-reduction-complete;B-20260924-workflow-verification-economy;Issue#285;Issue#279;Issue#309;PR#329;docs/plans/2026-10-12-project-process-reduction.md;docs/plans/2026-10-12-content-continuity-redesign.md
+- **M-20261013-cross-repo-delivery-measurement · 2026-10-13 kapi-infra／krepo-common 真實提交與 CI 成本對照**:依使用者要求，唯讀收集兩個 repo 的本機 primary trace、merged PR 與 pull_request CI；不操作 production、不在兩個 target repo 寫檔。沿用 M-20261013-pr329-delivery-measurement：總時間＝使用者交付指令到包含終態的 assistant final；CI＝run createdAt 到 updatedAt（含 queue／setup），互動等待＝AskUserQuestion call 到相應 tool_result。Claude streaming message 以 message.id 合併 text 與最後 end_turn，避免把空的 terminal chunk 當 final。以下全部秒數，時間為 UTC；本次是回溯觀察，不是相同 workload／版本的前後實驗。
+  - **kapi-infra 四筆可核對的 1–3 檔完成交付**（Claude `claude-opus-5-5`）：
+
+    | PR | 檔數 | 指令 → final | 等使用者 | CI | 扣等待與 CI | CI 完成 → merge | merge → final |
+    |---|---:|---:|---:|---:|---:|---:|---:|
+    | [#161](https://github.com/elandcomtw/kapi-infra/pull/161) | 1 | 258.848 | 0 | 137 | 121.848 | 13 | 53.624 |
+    | [#163](https://github.com/elandcomtw/kapi-infra/pull/163) | 1 | 193.934 | 0 | 125 | 68.934 | 12 | 12.073 |
+    | [#176](https://github.com/elandcomtw/kapi-infra/pull/176) | 1 | 1112.551 | 830.033 | 129 | 153.518 | 12 | 13.924 |
+    | [#177](https://github.com/elandcomtw/kapi-infra/pull/177) | 3 | 174.027 | 0 | 130 | 44.027 | 17 | 13.323 |
+
+    #161 `/project --merge resume=…`：2026-10-10 `15:58:48.776–16:03:07.624`；#163 `/project --merge`：同日 `16:43:23.139–16:46:37.073`；#176 `/project merge`：2026-10-11 `16:03:28.373–16:22:00.924`；#177 裸 `merge`：2026-10-12 `01:38:30.296–01:41:24.323`。四筆均確認最後回報 merged、本地 main 同步及 branch cleanup；扣等待後中位 **226.391 秒（3:46.4）**，再扣 CI 中位 **95.391 秒（1:35.4）**。#176 兩次問題 `16:04:16.537–16:15:53.532`（696.995 秒）、`16:16:34.026–16:18:47.064`（133.038 秒）解釋其 18:32.6 的大部分；扣等待為 **282.518 秒（4:42.5）**，不是慢 19 分鐘的獨立流程證據。#161／#163／#177 本段 reader calls 為 0，同 session 已載入 reference；#176 重新讀舊版含 authority 的 reference 14 次。不能把暖 context 的 Claude 文件提交與 PR #329 的 Codex high／19 檔／11 次完整讀取直接歸因比較。
+  - **kapi-infra 同 runtime 的保留反例**：Codex `gpt-6.1-sol`／xhigh [PR #116](https://github.com/elandcomtw/kapi-infra/pull/116)，18 檔、+1944／-86；2026-10-05 `$project --merge` `10:15:53.641` → final `10:48:38.732`，**1965.091 秒（32:45.1）**，期間沒有要求使用者回答或新的使用者交付指令，有一筆 `compacted` `10:27:09.890`。PR created `10:33:18`、merged `10:47:15`；[run 37297325870](https://github.com/elandcomtw/kapi-infra/actions/runs/37297325870) `10:33:22–10:46:35`，成功、CI **793 秒（13:13）**；CI 後 merge 40 秒、merge 後 final 83.732 秒。扣 CI 為 1172.091 秒（19:32.1），仍含 compaction，不能外推現版的純流程成本。當時舊 CI／Project 規則、xhigh 與本次 high 不同；本筆反證「kapi-infra 永遠比 dotfiles 快」，沒有提供相同條件下的 repo 根因。
+  - **krepo-common 與 kapi-infra 同批工作配對**（2026-10-12，同一 Claude session 的跨 repo 送出）：
+
+    | 工作 | kapi-infra PR／檔數 | CI | PR → merge | krepo-common PR／檔數 | CI | PR → merge |
+    |---|---|---:|---:|---|---:|---:|
+    | 關閉 active-item contract | [#179](https://github.com/elandcomtw/kapi-infra/pull/179)／1 | 120 | 455 | [#85](https://github.com/elandcomtw/krepo-common/pull/85)／1 | 17 | 125 |
+    | content continuity kernel | [#180](https://github.com/elandcomtw/kapi-infra/pull/180)／3 | 96 | 331 | [#86](https://github.com/elandcomtw/krepo-common/pull/86)／3 | 17 | 257 |
+    | gitignore baseline | [#181](https://github.com/elandcomtw/kapi-infra/pull/181)／1 | 110 | 232 | [#87](https://github.com/elandcomtw/krepo-common/pull/87)／1 | 21 | 136 |
+
+    這三筆的 krepo-common CI 比 kapi-infra 分別少 103／79／89 秒，真實 CI 成本差異成立。#87 [run 38251685454](https://github.com/elandcomtw/krepo-common/actions/runs/38251685454) attempt 1、created `12:51:25`、updated `12:51:46`：單一 unit-tests job 17 秒，pytest step 4 秒；#163 [run 38068858052](https://github.com/elandcomtw/kapi-infra/actions/runs/38068858052) attempt 1：三測試 job 加 required aggregator，critical path 是 host-baseline job 117 秒，其中 apply/check/rollback step 105 秒。krepo-common CI 不是因為省掉 commit 或 merge 才快，兩者的測試 workload 本來不同。
+    三組同批參與 9–10 個 repo；required enrollment 誤判、merge 順序與權限拒絕也會增加 PR 的空等，不能分攤成每個 repo 的獨立端到端時間。#179 曾被誤判沒有 required job，後續回報明確更正；#181／#87 是同一次授權送出的成功子項，其他三個 repo 被 auto review 擋下。krepo-common [#84](https://github.com/elandcomtw/krepo-common/pull/84) 的 23 檔清理同樣記入：CI 17 秒、PR→merge 324 秒，CI→merge 303 秒，屬八 repo 批量 merge 且指令另含實作／部署，排除獨立交付中位值。本機 krepo-common primary cwd trace 未找到能完整核對的獨立 `$project --merge`／`/project --merge` 成功案例，不能拿上述 PR 牆鐘冒充從指令到 final 的時間。
+  - **比較結論**：使用者記得 kapi-infra 的 Claude 小提交很快，有真實資料支持；krepo-common 的近期 CI 確實僅 17–21 秒。本次也保留慢案例、使用者等待與批量處理，故不足以證明 dotfiles repo 本身是獨立致慢原因。PR #329 的 CI 152 秒比 kapi-infra 四筆 125–137 秒只多 15–27 秒，解釋不了整體多出的數分鐘；其 CI→merge 84 秒、merge→final 205.141 秒仍值得針對 exact trace 查。後續需要固定 runtime／reasoning／context 熱度／endpoint／工作量，區分 agent/tool 間隔、必要步驟、compaction 與 provider 等待；不因本次觀察加規則、跑人工 shipping fixture 或修改其他 repo 的 CI。
+  - 日期來源:direct
+  - 證據:kapi-infra Claude 主 trace `~/.claude/projects/-Users-jjshen-Projects-kapi-infra/5242dc30-07f5-4c24-91cd-315c3bade4cb.jsonl`；#116 Codex `~/.codex/sessions/2026/10/05/rollout-2026-10-05T13-24-06-01a10a84-f0a0-7111-bc78-a0f6602645d0.jsonl`；三組配對的 Claude 主 trace `~/.claude/projects/-Users-jjshen--dotfiles/07ccfaf9-9ff6-49d4-9355-dffe82291fa7.jsonl`；#84 主 trace `~/.claude/projects/-Users-jjshen-Projects-kapi-infra/e50ae762-51be-4132-9d89-a9d81d8d5669.jsonl`。kapi CI run 依序為 38065839814／38068858052／38154971836／38192684878、配對 38211728753／38226888638／38251662155；common 為 38211734033／38226890357／38251685454、#84 為 37735841623。本機中間 packet `/tmp/kapi-infra-delivery-verified.json` 與 `/tmp/{kapi-infra,krepo-common}-{pr,run}-measurement-list.json`；主要值與來源已存本條，raw artifacts 遺失不補造。
+  - 放棄:以不同 runtime／暖 context／多 repo 批量 merge 的時間直接宣稱 dotfiles 特有流程慢，或以最快案例宣稱既有優化有效
+  - 重議:用真實工作取得相同條件的對照，或從 PR #329 具體間隔取得可刪併步驟的根因證據
+  - 關聯:M-20261013-pr329-delivery-measurement;M-20261012-project-process-reduction-complete;B-20260924-workflow-verification-economy;Issue#285;Issue#279
