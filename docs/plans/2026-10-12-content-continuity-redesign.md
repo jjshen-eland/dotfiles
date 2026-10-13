@@ -217,7 +217,8 @@ B-20260928-project-merge-continuation（steward／resume 誤擋，P2 後不再�
 - 完整隔離 pytest 586 passed／420.96 秒、Ruff、audit --ship 通過；git clone --no-local 的
   audit 通過，缺 Goal／已完成 active 標題的負對照皆 exit 1，還原後 audit 通過且 clone clean。
 - 財報 commit：`0bacb6ec134b271cf4457d53a8a5f37014559848`，branch `fix/xbrl-structured-ingestion`。
-  本次無 push／PR／merge 授權，財報與本追蹤增量均尚未送出。使用者另明示完成後留言 #309；
+  原套用時無 push／PR／merge 授權；後續使用者另授權合併 dotfiles 的追蹤文件，財報來源提交的送出
+  仍由該 repo 工作線處理，不從追蹤文件授權延伸。使用者另明示完成後留言 #309；
   原 XBRL Draft PR #62 仍指向舊 checkpoint，本批不變更 DB、發布或部署。
 
 ### 待補 repo（觸發時做 P1／P2b）
