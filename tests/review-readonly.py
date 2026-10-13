@@ -69,7 +69,8 @@ class ReadonlyReview(unittest.TestCase):
             tmp = Path(tmp).resolve()
             repo = tmp / "repo"
             repo.mkdir()
-            env = dict(os.environ, DOTFILES_PRECOMMIT_OFF="1", TMPDIR=str(tmp), GIT_OPTIONAL_LOCKS="0")
+            env = dict(os.environ, DOTFILES_PRECOMMIT_OFF="1", TMPDIR=str(tmp), GIT_OPTIONAL_LOCKS="0",
+                       GIT_TRACE=str(tmp / "git.trace"))
             scope = str(ROOT / "shared/skills/deep-review/scripts/review-scope.sh")
 
             def run(*args, ok=True):
@@ -81,6 +82,8 @@ class ReadonlyReview(unittest.TestCase):
             run("git", "init", "-q", "-b", "fix/example")
             run("git", "config", "user.name", "fixture")
             run("git", "config", "user.email", "fixture@example.invalid")
+            run("git", "config", "maintenance.auto", "false")
+            run("git", "config", "gc.auto", "0")
             files = {".gitignore": "logs/\n", "app/main.py": "VALUE = 1\n", "app/gone.py": "OLD = 1\n",
                      "docs/note.md": "base\n"}
             for name, content in files.items():
@@ -88,6 +91,7 @@ class ReadonlyReview(unittest.TestCase):
                 (repo / name).write_text(content)
             run("git", "add", *files)
             run("git", "commit", "-qm", "test: seed")
+            self.assertNotIn("maintenance run --auto", (tmp / "git.trace").read_text())
             (repo / "app/main.py").write_text("VALUE = 2\n")
             (repo / "app/gone.py").unlink()
             (repo / "app/new.py").write_text("NEW = 1\n")
