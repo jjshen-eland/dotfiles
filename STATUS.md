@@ -6,7 +6,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 # STATUS.md
 
-個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-10-13)
+個人 dotfiles——內網主機(清單見 `scripts/inventory.conf`,現 14 台)開發環境與 Claude Code 工作流(skills/hooks/templates)的單一來源(更新日期:2026-10-15)
 
 ---
 
@@ -37,12 +37,12 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 暫停中
 
-- **#309 內容契約與移交給同事**：P1、P2、P2b、P3、P5 已完成（[計畫](docs/plans/2026-10-12-content-continuity-redesign.md)、D-20261012-steward-identity-removed）；2026-10-13 財報 repo 已本地套用 P1／P2b 並移出待補清單，提交與驗證見 M-20261013-financial-content-continuity-applied。財報來源提交的送出仍由該 repo 工作線處理；本批追蹤文件合併後從 origin/main 接續。只剩 kapi-nc-v2 待補；**恢復條件**：kapi-nc-v2 通過驗證、取代現行 NC 成為生產 repo 並採用文件治理。
 - **B-20260902-gh-account-autoswitch**：pending；維持 backlog 既有觸發條件，在條件實際發生前不開發、
   不結案。**恢復條件**：跨帳號操作成為常態，或相同症狀再次被查錯方向。
 
 ## 歷史入口
 
+- 「#309 最後待補 kapi-nc 的 P1／P2b 與文件治理」本地結案：[M-20261015-kapi-nc-content-continuity-applied](docs/archive/milestones-2026-10.md)；[計畫](docs/plans/2026-10-12-content-continuity-redesign.md)已 implemented。來源未 push；接續 NC 的 docs/kapi-nc-document-governance 與本追蹤 docs/309-kapi-nc-governance，各自送出需當批授權。
 - 決策：`docs/archive/decisions-2026-10.md`「事件記錄（event-time）」。
 - 死路：`docs/archive/dead-ends-2026-10.md`「事件記錄（event-time）」。
 - 里程碑：`docs/archive/milestones-2026-10.md`「事件記錄（event-time）」。
