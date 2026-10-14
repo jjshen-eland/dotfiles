@@ -42,7 +42,7 @@ STATUS.md — 專案 dossier(單一事實來源:repo 內、隨 git 跨主機、�
 
 ## 歷史入口
 
-- 「#309 最後待補 kapi-nc 的 P1／P2b 與文件治理」本地結案：[M-20261015-kapi-nc-content-continuity-applied](docs/archive/milestones-2026-10.md)；[計畫](docs/plans/2026-10-12-content-continuity-redesign.md)已 implemented。來源未 push；接續 NC 的 docs/kapi-nc-document-governance 與本追蹤 docs/309-kapi-nc-governance，各自送出需當批授權。
+- 「#309 最後待補 kapi-nc 的 P1／P2b 與文件治理」本地結案：[M-20261015-kapi-nc-content-continuity-applied](docs/archive/milestones-2026-10.md)；[計畫](docs/plans/2026-10-12-content-continuity-redesign.md)已 implemented。NC 與追蹤文件的送出進度以各自 PR 為準；接續前核對 main 與原來源分支是否已合併。
 - 決策：`docs/archive/decisions-2026-10.md`「事件記錄（event-time）」。
 - 死路：`docs/archive/dead-ends-2026-10.md`「事件記錄（event-time）」。
 - 里程碑：`docs/archive/milestones-2026-10.md`「事件記錄（event-time）」。
