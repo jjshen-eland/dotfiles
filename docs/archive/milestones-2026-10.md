@@ -900,3 +900,22 @@
   - 放棄:等待整體財報重設完成；只關閉 contract 而移除內容檢查；把本地套用或原 CI 當成本批已發布
   - 重議:kapi-nc-v2通過驗證、取代現行NC且採用治理，或內容契約／受信任核心變更時
   - 關聯:work-item=issue-309-content-continuity；branch=docs/309-financial-continuity；financial-commit=0bacb6ec134b271cf4457d53a8a5f37014559848；docs/plans/2026-10-12-content-continuity-redesign.md；STATUS.md；GitHub#309
+
+- **M-20261015-kapi-nc-content-continuity-applied · 2026-10-15 NC 完成最後待補 P1／P2b 並登記 #309 本地結案**：
+  使用者明示趁收斂版已部署且 clean 時執行原排程，NC（舊名 kapi-nc-v2）採用既定治理 rollout。
+  Trusted source dotfiles 9c5e850，kernel／scanner bytes 與 mode 同源；Goal-only contract 保留內容檢查，
+  不加入 actor 欄位；repo ignore 補 tmp/、.env。37 條歷史、17 條待辦的 normalized manifest 一對一，
+  兩塊非條目文字保留、evidence layer 未搬，plan 原 blob 凍結。治理 audit 接既有 CI／make 路徑。
+  NC commit 7c521126400b9c34bc57bbc4ced29a71d5708b76，branch docs/kapi-nc-document-governance；
+  完整 make check exit 0／346.74 秒、892 passed／2 warnings，actionlint、secrets、audit 通過。
+  Clean clone 的 core／kernel／contract 檢查與缺 Goal／已完成 active H3 負對照通過；最終 HEAD audit
+  通過且 clone clean。macOS isolation cleanup CLEAN。Scanner SHA256
+  eb4518c6e142099ad5000f722e9ac8963dc1abf2dd3468b0b2bb4ac9de5d08e1。
+  追蹤整批基線 9c5e850 的 tests/run.sh 選中 content 模組，exit 0／14.881 秒；audit --ship OK。
+  #309 待補 repo 清單清空，計畫轉 implemented、STATUS 移除已完成暫停項；本地治理與登記結案。
+  NC 與本追蹤尚未 push／PR／merge，也未留言或關閉 GitHub issue；不冒稱新 hosted 或部署證據。
+  原 dotfiles git/gitignore_global 未提交變更與 NC 舊 checkout 草稿均保留；papp01 未改。
+  - 日期來源: direct
+  - 放棄: 等到正式通道切換才套內容契約；只關閉 contract；混入他人未提交修改；以本地完成冒稱已發布。
+  - 重議: owner 授權當批送出時，分別續接 NC 與 dotfiles 的本地 feature branches。
+  - 關聯: work-item=issue-309-content-continuity；branch=docs/309-kapi-nc-governance；nc-commit=7c521126400b9c34bc57bbc4ced29a71d5708b76；docs/plans/2026-10-12-content-continuity-redesign.md；GitHub#309。

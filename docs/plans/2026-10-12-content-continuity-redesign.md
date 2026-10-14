@@ -2,7 +2,7 @@
 
 - 日期：2026-10-12
 - 工作項：issue-309-content-continuity
-- 狀態：in-progress
+- 狀態：implemented
 - 種類：implementation plan
 - 需求來源：[GitHub #309](https://github.com/jjshen-eland/dotfiles/issues/309)。使用者 2026-10-12 指出機制的實際目標是「同時使用 Codex 與
   Claude 時如何接續」，並在評估後選定 D-20261012-content-continuity-model、D-20261012-handover-to-colleague-focus、
@@ -221,12 +221,30 @@ B-20260928-project-merge-continuation（steward／resume 誤擋，P2 後不再�
   仍由該 repo 工作線處理，不從追蹤文件授權延伸。使用者另明示完成後留言 #309；
   原 XBRL Draft PR #62 仍指向舊 checkpoint，本批不變更 DB、發布或部署。
 
-### 待補 repo（觸發時做 P1／P2b）
+### kapi-nc P1／P2b 與治理 rollout 套用結果（2026-10-15，本地完成）
 
-- kapi-nc-v2：2026-10-12 尚未採用文件治理（無 `.doc-governance.json`、scanner 與 kernel 區塊），準備在通過驗證後
-  取代現行 NC 成為生產 repo。觸發條件：該 repo 上線並採用文件治理時，直接套 dotfiles 現版 kernel 與只要求 `Goal` 的
-  contract，沒有舊 contract 需要關閉。同批補 D-20261012-repo-ignore-baseline：default branch 還沒有 `.gitignore`，
-  feature branch 的版本缺 `tmp/`、`.env`（`.env` 目前只靠本機全域 gitignore 擋住）。
+- 原待補名稱 kapi-nc-v2 已改名 kapi-nc；收斂版於 2026-10-14 部署 papp01 並通過 smoke，
+  使用者明示趁 clean checkpoint 執行文檔治理及 #309 剩餘程序。待補清單現在為空；本計畫實作結案，
+  各 repo 本地來源的 push／PR／merge 仍需各工作線取得當批授權，不由本追蹤授權。
+- 從乾淨 main 2b1a932 建立 docs/kapi-nc-document-governance；trusted source 固定 dotfiles
+  9c5e8504bf86b16e633fd1aa000f98dd29fe4e3b，kernel 整段與 scanner（含 mode）逐 byte 同源。
+  Contract 直接採 {"required_fields": ["Goal"], "uniform_fields": []}，沒有舊 contract 需要關閉；
+  保留原 caller 工作項的目標／驗收／進度／接續 branch，不新增 actor 欄位。
+- D-20261012-repo-ignore-baseline 的 NC 缺口已補 tmp/、.env；兩者 check-ignore 命中 repo
+  .gitignore。現行 main 原本已具基本 .gitignore，不再沿用 10/12「default branch 無檔」的舊判斷。
+- 按既定 rollout checklist 將 37 條歷史與 17 條待辦移入 monthly shards／backlog，兩塊非條目
+  文字保留；pre/post normalized manifest 一對一，歷史 prose／日期未改，僅重定位同一相對 link 目標。
+  Evidence layer／Git blob 入口留 STATUS；原 plan blob 凍結不改。Audit 接入既有 CI／make 路徑，
+  不新增 CI 輪次；scanner 納入 Ruff／mypy 的 byte-pinned 排除。
+- 完整 make check exit 0／346.74 秒，892 passed／2 upstream warnings（pytest 341.12 秒）；
+  actionlint、文件 secrets、audit --ship 通過。git clone --no-local 核對 core／kernel／Goal-only；
+  缺 Goal、已完成 active H3 負對照各 exit 1，還原後及最終 HEAD 的 audit exit 0、clone clean。
+  macOS isolation 清理檢查 CLEAN，未刪 unrelated entries。
+- NC 最終本地 commit：7c521126400b9c34bc57bbc4ced29a71d5708b76（含 adoption 67b6d65）；
+  scanner SHA256 eb4518c6e142099ad5000f722e9ac8963dc1abf2dd3468b0b2bb4ac9de5d08e1。
+  未 push／PR／merge／重部署；papp01 仍使用已部署的 61e4c88，未改 caller／正式通道。
+- 本追蹤由 origin/main 9c5e850 的獨立 docs/309-kapi-nc-governance worktree 保存；
+  原 dotfiles 未提交 git/gitignore_global 與 NC 舊 detached checkout 草稿不碰、不納入。
 
 ### P2b：其他受治理 repo 同步（P2 合併後緊接）
 
