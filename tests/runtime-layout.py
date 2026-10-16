@@ -503,6 +503,24 @@ class RuntimeLayoutTests(unittest.TestCase):
         r = self.receipt()
         self.assertTrue(Path(r['operations'][0]['stage']).is_dir())
 
+    def test_common_entry_leaves_runtime_alone_once_gen2_owns_it(self):
+        # dotfiles-gen2 deploys the agent runtime and records ~/.local/state/dotfiles-gen2/deploy.json; brewup and
+        # dotsync kept running this entry and put gen1's Codex AGENTS.md and hooks back (2026-10-16).
+        scripts = self.repo / 'scripts'
+        scripts.mkdir()
+        for name in ('ensure-runtime.sh', 'ensure-runtime-layout.py', 'ensure-codex-guidance.sh', 'ensure-codex-config.py'):
+            shutil.copy2(ROOT / 'scripts' / name, scripts / name)
+        (self.repo / 'codex/AGENTS.md').write_text('# gen1 guidance\n')
+        (self.repo / 'codex/config.toml').write_text('model = "gen1-model"\n')
+        state = self.home / '.local/state/dotfiles-gen2'
+        state.mkdir(parents=True)
+        (state / 'deploy.json').write_text('{}\n')
+        before = self.module.snapshot(self.home)
+        run = subprocess.run(['bash', str(scripts / 'ensure-runtime.sh')], env=self.env, text=True, capture_output=True)
+        self.assertEqual(0, run.returncode, run.stdout + run.stderr)
+        self.assertIn('dotfiles-gen2', run.stdout)
+        self.assertEqual(before, self.module.snapshot(self.home))
+
     def test_common_entry_never_writes_config_through_repo_parent_alias(self):
         scripts = self.repo / 'scripts'
         scripts.mkdir()
