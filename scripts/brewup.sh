@@ -13,6 +13,12 @@ set -uo pipefail
 DOTFILES="${DOTFILES_DIR:-$HOME/.dotfiles}"
 SELF="${BASH_SOURCE[0]}"
 
+# dotfiles-gen2 已接手這台（dotctl 取代 brewup／sysup／allup／dotsync 與 rc；2026-10-16）：gen1 入口不再動它。
+if [ -f "$HOME/.local/state/dotfiles-gen2/deploy.json" ]; then
+    echo "ℹ 此主機已改用 dotfiles-gen2：升級請用 dotctl upgrade，同步設定請用 dotctl sync"
+    exit 0
+fi
+
 # 1. dotfiles 同步
 #    settings.json 為唯一權威、由選定的權威機器刻意 commit；其他機器上 harness 寫入的
 #    runtime drift 是拋棄式的，故 pull 前先丟棄。rebase.autoStash 作為其他 dirty 檔的安全網。

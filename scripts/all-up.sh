@@ -22,6 +22,12 @@
 
 set -uo pipefail
 
+# dotfiles-gen2 已接手這台（dotctl 取代 brewup／sysup／allup／dotsync 與 rc；2026-10-16）：gen1 入口不再動它。
+if [ -f "$HOME/.local/state/dotfiles-gen2/deploy.json" ]; then
+    echo "✗ 此主機已改用 dotfiles-gen2：機隊更新請用 dotctl fleet upgrade" >&2
+    exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # 主機清單：從 inventory.conf 載入（與 dotfiles-sync.sh 同一來源）

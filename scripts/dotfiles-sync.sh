@@ -43,7 +43,13 @@ fi
 echo -e "${BLUE}▶ 本機同步${NC}"
 local_state=ok
 overall_failed=0
-if (cd "$DOTFILES_DIR" && git checkout -- claude/settings.json 2>/dev/null && git pull --autostash 2>&1); then
+gen2_local=0
+# dotfiles-gen2 已接手這台（dotctl 取代 brewup／sysup／allup／dotsync 與 rc；2026-10-16）：gen1 入口不再動它。
+if [ -f "$HOME/.local/state/dotfiles-gen2/deploy.json" ]; then
+    gen2_local=1
+    local_state=gen2
+    echo -e "${YELLOW}  ℹ 本機已改用 dotfiles-gen2：同步請用 dotctl sync，略過本機${NC}"
+elif (cd "$DOTFILES_DIR" && git checkout -- claude/settings.json 2>/dev/null && git pull --autostash 2>&1); then
     :
 else
     local_state=failed
@@ -51,6 +57,7 @@ else
     echo -e "${RED}  ❌ 本機：git pull 失敗${NC}"
 fi
 
+if [ "$gen2_local" -eq 0 ]; then
 # helper 部署失敗不中止同步，但必須反映進本機終判——不可誤報完成（codex C2）
 local_helper_warn=0
 
@@ -80,6 +87,7 @@ else
     local_state=failed
     overall_failed=1
 fi
+fi
 
 # 遠端同步（並行）
 echo -e "${BLUE}▶ 遠端同步 ${#HOSTS[@]} 台${NC}"
@@ -88,7 +96,9 @@ sync_remote() {
     local host="$1"
     local result
     if result=$(ssh -o BatchMode=yes -o ConnectTimeout=5 "$host" '
-        if [ -d ~/.dotfiles ]; then
+        if [ -f ~/.local/state/dotfiles-gen2/deploy.json ]; then
+            echo "GEN2_MANAGED"
+        elif [ -d ~/.dotfiles ]; then
             cd ~/.dotfiles && git checkout -- claude/settings.json 2>/dev/null
             # pull 失敗必須中止並回報：否則主機停在舊 revision（衝突／認證／remote 錯誤），
             # 後面的檔案檢查只會靜默跳過，最後仍 echo OK → 使用者看到 ✅ 卻什麼都沒部署。
@@ -131,6 +141,7 @@ sync_remote() {
     last_line="$(echo "$result" | tail -1)"
     case "$last_line" in
         OK)             echo -e "${GREEN}  ✅ ${host}${NC}"; return 0 ;;
+        GEN2_MANAGED)   echo -e "${GREEN}  ℹ ${host}：已改用 dotfiles-gen2（在該台執行 dotctl sync）${NC}"; return 0 ;;
         OK_HELPER_WARN) echo -e "${YELLOW}  ⚠️  ${host}：pull 完成，但 helper 部署有警告（見上方 ⚠️ 行）${NC}"; return 1 ;;
         NO_DOTFILES)    echo -e "${YELLOW}  ⚠️  ${host}：~/.dotfiles 不存在${NC}"; return 1 ;;
         PULL_FAILED)    echo -e "${RED}  ❌ ${host}：git pull 失敗（仍停在舊 revision，本次未部署）${NC}"; return 1 ;;

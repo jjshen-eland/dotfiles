@@ -27,6 +27,7 @@
     "runtime-layout": {"command": ["{python}", "-B", "tests/runtime-layout.py"]},
     "mac-metadata": {"command": ["{python}", "-B", "tests/test_mac_metadata.py"]},
     "fleet-contract": {"command": ["{python}", "-B", "tests/test_ci_confidence.py", "HostsTests", "AllUpTests", "SigningTests"]},
+    "gen2-handoff": {"command": ["{python}", "-B", "tests/gen2-handoff.py"]},
     "ci-regression": {"command": ["{python}", "-B", "tests/test_ci_confidence.py", "GateTests"]},
     "selection": {"command": ["{python}", "-B", "tests/test_ci_selection.py"]},
     "runner": {"command": ["{python}", "-B", "tests/test_suite.py"]}
@@ -72,6 +73,7 @@
     {"paths": ["scripts/agent-turn-end-timestamp.sh"], "modules": ["session"]},
     {"paths": ["scripts/routing_10.10.sh", "scripts/routing_172.18.sh", "scripts/sign-user-cert.sh", "scripts/tmux-ls.sh", "tmux.conf", "gh/config.yml"], "modules": ["content"]},
     {"paths": ["tests/modules/*.sh"], "modules": ["platform", "shell-contract"]},
-    {"paths": ["tests/modules/lint.sh", "tests/modules/platform.sh", "tests/modules/shell-contract.sh"], "modules": ["ci-regression"]}
+    {"paths": ["tests/modules/lint.sh", "tests/modules/platform.sh", "tests/modules/shell-contract.sh"], "modules": ["ci-regression"]},
+    {"paths": ["scripts/brewup.sh", "scripts/all-up.sh", "scripts/dotfiles-sync.sh", "setup-mac-env.sh", "setup-linux-env.sh", "tests/gen2-handoff.py"], "modules": ["gen2-handoff"]}
   ]
 }

@@ -22,6 +22,13 @@
 
 set -e  # 遇到錯誤立即退出
 
+# dotfiles-gen2 已接手這台（dotctl 取代 brewup／sysup／allup／dotsync 與 rc；2026-10-16）：gen1 入口不再動它。
+if [ -f "$HOME/.local/state/dotfiles-gen2/deploy.json" ]; then
+    echo "✗ 此主機由 dotfiles-gen2 管理；重跑 gen1 setup 會把 rc 與 Claude 設定換回 gen1。" >&2
+    echo "  要回到 gen1：先在 dotfiles-gen2 執行 uv run --locked python scripts/deploy.py rollback" >&2
+    exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 
 # 解析參數
