@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 # Shared runtime deployment entry; layout failures stay visible to every caller.
 set -uo pipefail
+# dotfiles-gen2 owns the agent runtime once it has deployed here (it records this file and deletes it on
+# rollback). Every caller — brewup, dotsync, setup — would otherwise put gen1's skills, Codex guidance and
+# hooks back over gen2's deployment (2026-10-16).
+if [ -f "$HOME/.local/state/dotfiles-gen2/deploy.json" ]; then
+    echo 'ℹ agent runtime 由 dotfiles-gen2 管理，略過 gen1 的 runtime 部署'
+    exit 0
+fi
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
 export DOTFILES_DIR
 runtime_rc=0
