@@ -8,6 +8,7 @@ import hashlib
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -57,7 +58,9 @@ class Gen2Handoff(unittest.TestCase):
                 before = snapshot(self.home)
                 r = self.run_script(ROOT / script)
                 self.assertNotEqual(r.returncode, 0)
-                self.assertIn('dotfiles-gen2', r.stdout + r.stderr)
+                # On the other platform the script's own platform check refuses first, which is just as inert.
+                if (script == 'setup-mac-env.sh') == (sys.platform == 'darwin'):
+                    self.assertIn('dotfiles-gen2', r.stdout + r.stderr)
                 self.assertEqual(snapshot(self.home), before)
                 self.assertEqual(self.tool_calls(), '')
 
